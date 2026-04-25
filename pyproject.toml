@@ -24,7 +24,6 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
-    "chromadb>=0.4.24,<0.6.0",
     "networkx>=3.0",
     "litellm>=1.0.0",
     "pydantic>=2.0",
@@ -44,6 +43,9 @@ dev = [
 Homepage = "https://github.com/soma-project/soma-core"
 Repository = "https://github.com/soma-project/soma-core.git"
 Issues = "https://github.com/soma-project/soma-core/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["soma"]
 
 [tool.ruff]
 line-length = 100
