@@ -1,5 +1,5 @@
 <script setup>
-import { ref, inject, computed, onMounted, watch } from 'vue'
+import { ref, inject, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { api } from '../api'
 
@@ -341,16 +341,16 @@ onMounted(loadData)
                 :class="pv === 'mock' ? 'badge-amber' : 'badge-accent'">{{ pv }}</span>
             </div>
             <div class="timeline-mini">
-              <div v-for="(t, i) in weightTimeline" :key="i" class="timeline-dot-row">
-                <div class="timeline-dot-label">{{ Object.keys(t.weights).length }} {{ t('analytics.items') }}</div>
+              <div v-for="(wt, i) in weightTimeline" :key="i" class="timeline-dot-row">
+                <div class="timeline-dot-label">{{ Object.keys(wt.weights).length }} {{ t('analytics.items') }}</div>
                 <div class="timeline-dots">
-                  <span v-for="(w, id) in t.weights" :key="id"
+                  <span v-for="(w, id) in wt.weights" :key="id"
                     class="timeline-dot-single"
                     :style="{ background: `hsl(${240 + w * 140}, 70%, ${40 + w * 25}%)`,
                       width: Math.max(4, w * 20) + 'px' }"
                     :title="id + ': ' + w.toFixed(2)" />
                 </div>
-                <div class="timeline-dot-provider">{{ t.provider }}</div>
+                <div class="timeline-dot-provider">{{ wt.provider }}</div>
               </div>
             </div>
           </div>
