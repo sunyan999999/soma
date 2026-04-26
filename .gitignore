@@ -50,6 +50,13 @@ soma_runs/
 soma_data/
 dashboard_data/
 
+# LLM config (contains API keys — NEVER commit)
+dash/llm_config.json
+
+# Integration guide example data directories
+soma_test_data/
+soma_langchain_data/
+
 # Frontend
 dash/frontend/dist/
 dash/frontend/node_modules/
@@ -63,3 +70,6 @@ dash/frontend/node_modules/
 
 # Benchmarks
 benchmark_results/
+
+# Screenshots (source materials)
+ysimages/

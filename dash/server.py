@@ -99,7 +99,7 @@ def mock_llm_response(foci, activated, problem):
         )
 
     if activated:
-        sections.append("## 可用资粮分析\n")
+        sections.append("## 相关记忆分析\n")
         for am in activated[:5]:
             snippet = am["content"][:150]
             sections.append(
@@ -124,7 +124,7 @@ def mock_llm_response(foci, activated, problem):
 
     if memory_count > 0:
         sections.append(
-            f"\n> 💡 本次分析激活了 **{memory_count}** 条相关记忆资粮\n"
+            f"\n> 💡 本次分析激活了 **{memory_count}** 条相关记忆\n"
         )
 
     sections.append(
@@ -677,6 +677,47 @@ def framework_log():
 def framework_clear_log():
     get_agent().evolver.clear_log()
     return {"status": "cleared"}
+
+
+class DiscoverLawsRequest(BaseModel):
+    llm_model: Optional[str] = None
+
+
+class ApproveLawRequest(BaseModel):
+    candidate: dict
+
+
+@app.post("/api/framework/discover-laws")
+def framework_discover_laws(req: Optional[DiscoverLawsRequest] = None):
+    """从高关联记忆簇中自动发现新思维规律。
+
+    返回候选规律 dict（供人工审核），或 None 表示当前无条件生成。
+    建议每 50 次会话调用一次。
+    """
+    agent = get_agent()
+    if req and req.llm_model:
+        llm_model = req.llm_model
+    else:
+        pm = get_provider_manager()
+        llm_model = None if _use_mock() else pm.get_current().get("model", None)
+
+    candidate = agent.evolver.discover_laws(
+        embedder=agent.embedder,
+        llm_model=llm_model,
+    )
+    if candidate is None:
+        return {"status": "no_discovery", "candidate": None}
+    return {"status": "discovered", "candidate": candidate}
+
+
+@app.post("/api/framework/approve-law")
+def framework_approve_law(req: ApproveLawRequest):
+    """审批通过一条候选规律，将其加入思维框架。"""
+    agent = get_agent()
+    ok = agent.evolver.approve_law(req.candidate, embedder=agent.embedder)
+    if not ok:
+        raise HTTPException(400, "审批失败：候选规律无效或嵌入器未就绪")
+    return {"status": "approved", "law_id": req.candidate.get("id", "unknown")}
 
 
 # ── Analytics ────────────────────────────────────────────────

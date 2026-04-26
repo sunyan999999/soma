@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 
 from soma.config import SOMAConfig, load_config
@@ -100,7 +101,7 @@ class SOMA:
         if self._session_count > 0 and self._session_count % 10 == 0:
             self._agent.evolver.evolve()
 
-        return {
+        result = {
             "problem": problem,
             "answer": answer,
             "foci": [
@@ -120,6 +121,27 @@ class SOMA:
             "weights": self._agent.evolver.get_weights(),
         }
 
+        # 记录到 AnalyticsStore（与 REST API 共享同一数据库）
+        try:
+            from soma.analytics import AnalyticsStore
+            store = AnalyticsStore(self._config.episodic_persist_dir)
+            store.record_session({
+                "id": f"session_{int(time.time())}_{self._session_count}",
+                "problem": problem,
+                "mock_mode": self._config.llm_model == "mock" or self._config.llm_model is None,
+                "provider_used": self._config.llm_model or "mock",
+                "response_time_ms": 0,
+                "foci": result["foci"],
+                "activated_memories": result["activated_memories"],
+                "answer": answer,
+                "memory_stats": result["memory_stats"],
+                "weights": result["weights"],
+            })
+        except Exception:
+            pass
+
+        return result
+
     def _mock_respond(self, problem, foci=None, activated=None):
         """无 LLM 时的 mock 响应"""
         if foci is None:
@@ -130,7 +152,7 @@ class SOMA:
         for f in foci:
             parts.append(f"- **{f.law_id}**（权重 {f.weight:.2f}）：{f.dimension[:120]}")
         if activated:
-            parts.append(f"\n## 激活记忆资粮（{len(activated)} 条）")
+            parts.append(f"\n## 激活的相关记忆（{len(activated)} 条）")
             for am in activated[:5]:
                 snippet = am.memory.content[:100]
                 parts.append(f"- [{am.source}] {snippet}...")

@@ -68,6 +68,26 @@ Four-Step Wisdom Pipeline:
   Problem → Decompose → Activate → Synthesize → Evolve
 ```
 
+## Dashboard
+
+SOMA ships with a Vue 3 dashboard (i18n: English / Chinese). Start the API server and open `http://localhost:8765`:
+
+```bash
+SOMA_API_KEY=test python dash/server.py
+```
+
+| Chat | Framework | Memory |
+|:---:|:---:|:---:|
+| [![Chat](docs/images/screenshot-chat.png)](docs/images/screenshot-chat.png) | [![Framework](docs/images/screenshot-framework.png)](docs/images/screenshot-framework.png) | [![Memory](docs/images/screenshot-memory.png)](docs/images/screenshot-memory.png) |
+| **Wisdom-driven conversation** — decompose → activate → synthesize | **7 thinking laws** — live weights, manual & auto adjustment | **Memory bank** — semantic search, bidirectional activation |
+
+| Analytics | Benchmarks | Settings |
+|:---:|:---:|:---:|
+| [![Analytics](docs/images/screenshot-analytics.png)](docs/images/screenshot-analytics.png) | [![Benchmarks](docs/images/screenshot-benchmarks.png)](docs/images/screenshot-benchmarks.png) | [![Settings](docs/images/screenshot-settings.png)](docs/images/screenshot-settings.png) |
+| **Usage analytics** — session history, weight evolution, dimension trends | **3D benchmarks** — memory, wisdom, evolution scores + competitor compare | **LLM config** — multi-provider, API key, model selector |
+
+> 🇬🇧 [English UI](docs/images/screenshot-chat-en.png)
+
 ## Installation
 
 ```bash

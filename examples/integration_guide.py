@@ -97,6 +97,32 @@ class SOMAClient:
         )
         return resp.json()
 
+    def discover_laws(self) -> dict:
+        """从高关联记忆簇中自动发现新思维规律。
+
+        返回 {"status": "discovered", "candidate": {...}} 或
+             {"status": "no_discovery", "candidate": None}
+        建议每 50 次会话调用一次。
+        """
+        resp = requests.post(
+            f"{self.base_url}/api/framework/discover-laws",
+            headers=self.headers,
+            json={},
+        )
+        return resp.json()
+
+    def approve_law(self, candidate: dict) -> dict:
+        """审批通过一条候选规律，加入思维框架。
+
+        candidate 应为 discover_laws() 返回的 candidate 字典。
+        """
+        resp = requests.post(
+            f"{self.base_url}/api/framework/approve-law",
+            headers=self.headers,
+            json={"candidate": candidate},
+        )
+        return resp.json()
+
 
 def demo_mode_a():
     """
@@ -164,6 +190,16 @@ def demo_mode_a():
         print(f"  - [{am.get('source', '')}] 分数: {am.get('activation_score', 0):.3f}")
 
     print(f"\n智者回答:\n{result.get('answer', '')[:500]}...")
+
+    # 5. 定期运行规律发现（如每 50 次会话）
+    discovery = soma.discover_laws()
+    if discovery.get("status") == "discovered":
+        cand = discovery["candidate"]
+        print(f"\n发现候选规律: {cand.get('name', cand.get('id', '?'))}")
+        # 人工审核后：
+        # soma.approve_law(cand)
+    else:
+        print("\n当前无新规律发现条件")
 
 
 # ═════════════════════════════════════════════════════════════
@@ -251,13 +287,53 @@ def demo_mode_c():
               ▼
          SOMA 返回
       结构化分析结果
-      (拆解+激活+回答)
+      (拆解+激活+回答+进化)
 
 关键原则:
   1. SOMA 只负责"深度分析"场景 — 不替代原系统的日常对话和记忆
   2. SOMA 的记忆库独立管理 — 可以注入原系统的关键知识作为"资粮"
   3. 原系统保持完全不变 — SOMA 作为可选增强，随时可开关
   4. 测试阶段建议用模式A (REST API) — 隔离最彻底
+
+
+═══════════════════════════════════════════════════════════════
+能力覆盖对照表
+═══════════════════════════════════════════════════════════════
+
+┌──────────────────────────────┬──────────┬──────────┬──────────┐
+│        能力项                  │ 模式A   │ 模式B   │ 模式C   │
+│                              │ REST API │ Python  │LangChain│
+├──────────────────────────────┼──────────┼──────────┼──────────┤
+│ 问题拆解 (decompose)          │   ✅     │   ✅     │   ✅    │
+│ 记忆激活 (activate)           │   ✅     │   ✅     │   ✅    │
+│ 智者合成 (synthesize)         │   ✅     │   ✅     │   ✅    │
+│ SSE 流式输出                  │   ✅     │   ✅     │   ✅    │
+│ 注入情境记忆 (remember)       │   ✅     │   ✅     │   ✅    │
+│ 注入语义记忆 (remember_sem)   │   ✅     │   ✅     │   ✅    │
+│ 记忆搜索 (search)             │   ✅     │   ✅     │   ✅    │
+│ 查询/调整权重                  │   ✅     │   ✅     │   ✅    │
+│ 手动触发进化 (evolve)         │   ✅     │   ✅     │   ✅    │
+│ 自动进化 (每10次会话)          │   ✅     │   ✅     │   ✅    │
+│ 反思记录 (reflect)            │ 自动     │   ✅     │   ✅    │
+│ 规律发现 (discover_laws) ★    │   ✅     │   ✅     │   ✅    │
+│ 审批新规律 (approve_law) ★    │   ✅     │   ✅     │   ✅    │
+│ 分析数据看板                   │   ✅     │   —      │   —     │
+│ 基准测试                       │   ✅     │   —      │   —     │
+│ 独立数据目录隔离               │   ✅     │   ✅     │   ✅    │
+│ 原系统零代码改动               │   ✅     │   ❌     │   ❌    │
+└──────────────────────────────┴──────────┴──────────┴──────────┘
+
+★ 规律发现与审批是 SOMA 的进阶能力：
+  1. discover_laws() — 分析高关联记忆簇，尝试从中提取通用思维模式
+  2. approve_law()   — 人工审核通过后，将新规律正式加入7律框架
+  建议每 50 次深度分析后调用一次 discover_laws()，
+  产生的候选规律经人工审核确认后调用 approve_law()。
+
+  注意：规律发现需要 LLM 支持（Mock 模式下无法使用），
+  且记忆库中需要有足够数量的高关联记忆作为"原料"。
+
+  模式C (LangChain Tool) 也有完整访问权限，
+  因为 SOMA_Agent 实例直接暴露了所有 API。
 """
 
 if __name__ == "__main__":

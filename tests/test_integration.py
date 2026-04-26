@@ -92,11 +92,11 @@ class TestIntegration:
         assert stats["episodic"] == 6
         assert stats["semantic"] == 4
 
-        # 第一步：拆解问题
+        # 第一步：拆解问题（无触发词匹配时从权重前3随机选取）
         foci = soma_agent.decompose("为什么新产品增长停滞？")
-        assert len(foci) >= 1  # "为什么" → first_principles
+        assert len(foci) >= 1
         law_ids = {f.law_id for f in foci}
-        assert "first_principles" in law_ids
+        assert law_ids <= {"first_principles", "systems_thinking", "contradiction_analysis"}
 
         # 第二步：验证激活的记忆
         activated = soma_agent.hub.activate(foci)
@@ -118,7 +118,7 @@ class TestIntegration:
         # 第四步：验证 Prompt 结构
         prompt = mock_completion.call_args.kwargs["messages"][0]["content"]
         assert "## 思维框架" in prompt
-        assert "## 可用资粮" in prompt
+        assert "## 相关记忆与经验" in prompt
         assert "## 当前问题" in prompt
         assert "为什么新产品增长停滞？" in prompt
 
