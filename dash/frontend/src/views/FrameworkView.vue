@@ -1,7 +1,9 @@
 <script setup>
 import { ref, inject, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { api } from '../api'
 
+const { t } = useI18n()
 const toast = inject('toast')
 
 const weights = ref({})
@@ -30,9 +32,9 @@ async function adjustWeight(lawId, newWeight) {
   try {
     await api.frameworkAdjust(lawId, newWeight)
     weights.value = { ...weights.value, [lawId]: newWeight }
-    toast(`权重已更新: ${lawId} → ${newWeight.toFixed(2)}`, 'success')
+    toast(`${t('framework.weightUpdated')}: ${lawId} → ${newWeight.toFixed(2)}`, 'success')
   } catch (e) {
-    toast(`调整失败: ${e.message}`, 'error')
+    toast(`${t('framework.adjustFailed')}: ${e.message}`, 'error')
   }
 }
 
@@ -44,12 +46,12 @@ async function doEvolve() {
     weights.value = data.weights
     evolveChanges.value = data.changes
     if (data.changes.length) {
-      toast(`已应用 ${data.changes.length} 项变更`, 'success')
+      toast(`${t('framework.applied')} ${data.changes.length} ${t('framework.changesApplied')}`, 'success')
     } else {
-      toast('数据不足，无变更', 'info')
+      toast(t('framework.noData'), 'info')
     }
   } catch (e) {
-    toast(`进化失败: ${e.message}`, 'error')
+    toast(`${t('framework.evolveFailed')}: ${e.message}`, 'error')
   } finally {
     evolving.value = false
   }
@@ -60,9 +62,9 @@ async function clearLog() {
   try {
     await api.frameworkClearLog()
     logData.value = { entries: [], total: 0 }
-    toast('日志已清空', 'info')
+    toast(t('framework.logCleared'), 'info')
   } catch (e) {
-    toast(`清空失败: ${e.message}`, 'error')
+    toast(`${t('framework.clearFailed')}: ${e.message}`, 'error')
   } finally {
     clearingLog.value = false
   }
@@ -71,13 +73,13 @@ async function clearLog() {
 
 <template>
   <div>
-    <h1 class="page-title">框架进化</h1>
-    <p class="page-subtitle">思维规律的权重调优与进化闭环</p>
+    <h1 class="page-title">{{ t('framework.title') }}</h1>
+    <p class="page-subtitle">{{ t('framework.subtitle') }}</p>
 
     <div class="grid-2" style="margin-bottom:24px;">
       <!-- Weights -->
       <div class="card">
-        <h3 class="card-title">⚖️ 规律权重</h3>
+        <h3 class="card-title">{{ t('framework.lawWeights') }}</h3>
         <div class="gap-sm" style="margin-top:16px;">
           <div v-for="(w, lawId) in weights" :key="lawId">
             <div class="row row-between" style="margin-bottom:4px;">
@@ -101,7 +103,7 @@ async function clearLog() {
 
       <!-- Adjust -->
       <div class="card">
-        <h3 class="card-title">🔧 手动调权</h3>
+        <h3 class="card-title">{{ t('framework.manualAdjust') }}</h3>
         <div class="gap-sm" style="margin-top:16px;">
           <div v-for="(w, lawId) in weights" :key="'adj_'+lawId" class="row" style="gap:12px;">
             <span style="width:120px;font-size:0.8rem;">{{ lawId }}</span>
@@ -118,7 +120,7 @@ async function clearLog() {
 
     <!-- Success Rate Stats -->
     <div v-if="Object.keys(lawStats).length" class="card" style="margin-bottom:24px;">
-      <h3 class="card-title">📊 成功率统计</h3>
+      <h3 class="card-title">{{ t('framework.successRate') }}</h3>
       <div class="grid-3" style="margin-top:16px;">
         <div v-for="(s, lawId) in lawStats" :key="lawId" style="text-align:center;">
           <div
@@ -132,7 +134,7 @@ async function clearLog() {
           </div>
           <div style="font-size:0.85rem;font-weight:600;margin-top:2px;">{{ lawId }}</div>
           <div style="font-size:0.75rem;color:var(--text-muted);">
-            {{ s.successes }}/{{ s.total }} 成功
+            {{ s.successes }}/{{ s.total }} {{ t('chat.analysisComplete').split(' ')[0] || '成功' }}
           </div>
         </div>
       </div>
@@ -142,30 +144,30 @@ async function clearLog() {
     <div class="card" style="margin-bottom:24px;">
       <div class="row row-between">
         <div>
-          <h3 class="card-title">🔄 自动进化</h3>
+          <h3 class="card-title">{{ t('framework.autoEvolve') }}</h3>
           <p style="font-size:0.8rem;color:var(--text-muted);margin-top:4px;">
-            成功率 &gt; 70% → 权重 +0.02 | 成功率 &lt; 30% → 权重 -0.02 | 最小样本数 3
+            {{ t('framework.evolveRule') }}
           </p>
         </div>
         <button class="btn btn-primary" :disabled="evolving" @click="doEvolve">
-          {{ evolving ? '进化中...' : '执行 evolve()' }}
+          {{ evolving ? t('framework.evolving') : t('framework.doEvolve') }}
         </button>
       </div>
 
       <div v-if="evolveChanges" class="mt-md">
         <div v-if="evolveChanges.length === 0" style="color:var(--text-muted);font-size:0.85rem;">
-          无变更 — 数据不足或无需调整
+          {{ t('framework.noChange') }}
         </div>
         <div v-for="c in evolveChanges" :key="c.law_id || c.skill_name" class="card" style="margin-top:12px;background:rgba(99,102,241,0.05);">
           <template v-if="c.type === 'skill_solidified'">
-            🔨 <strong>技能固化</strong>: {{ c.skill_name }}
-            <span style="font-size:0.8rem;color:var(--text-muted);"> ({{ c.occurrences }} 次成功)</span>
+            {{ t('framework.skillSolidified') }}: {{ c.skill_name }}
+            <span style="font-size:0.8rem;color:var(--text-muted);"> ({{ c.occurrences }} {{ t('framework.successCount') }})</span>
           </template>
           <template v-else>
             <strong>{{ c.law_id }}</strong>:
             {{ c.old_weight }} → <strong>{{ c.new_weight }}</strong>
             <span style="font-size:0.8rem;color:var(--text-muted);">
-              (成功率 {{ (c.success_rate * 100).toFixed(0) }}%, n={{ c.total_samples }})
+              ({{ t('framework.successRateLabel') }} {{ (c.success_rate * 100).toFixed(0) }}%, n={{ c.total_samples }})
             </span>
           </template>
         </div>
@@ -175,13 +177,13 @@ async function clearLog() {
     <!-- Reflection Log -->
     <div class="card">
       <div class="row row-between">
-        <h3 class="card-title">📝 反思日志 ({{ logData.total }})</h3>
+        <h3 class="card-title">{{ t('framework.reflectionLog') }} ({{ logData.total }})</h3>
         <button class="btn btn-secondary btn-sm" :disabled="clearingLog || logData.total === 0" @click="clearLog">
-          🗑 清空
+          {{ t('framework.clear') }}
         </button>
       </div>
       <div v-if="logData.entries.length === 0" style="text-align:center;padding:24px;color:var(--text-muted);font-size:0.85rem;">
-        暂无日志 — 完成分析后自动记录
+        {{ t('framework.noLog') }}
       </div>
       <div v-else class="gap-sm" style="margin-top:16px;max-height:400px;overflow-y:auto;">
         <div

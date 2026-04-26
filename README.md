@@ -1,7 +1,7 @@
 # SOMA — Somatic Wisdom Architecture
 
 <p align="center">
-  <strong>🧠 五分钟接入，给你的 Agent 一个会思考的灵魂</strong><br>
+  <strong>Wisdom over Memory — 智慧超越记忆</strong><br>
   <em>Framework-First Cognitive Architecture for AI Agents</em>
 </p>
 
@@ -12,6 +12,8 @@
   <a href="#benchmarks"><img src="https://img.shields.io/badge/semantic_recall-100%25-brightgreen" alt="Semantic Recall"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/query_latency-5.4ms-brightgreen" alt="Latency"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/overall_score-89-brightgreen" alt="Overall Score"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-139-brightgreen" alt="Tests"></a>
+  <a href="#"><img src="https://img.shields.io/badge/coverage-~97%25-brightgreen" alt="Coverage"></a>
 </p>
 
 ---
@@ -19,6 +21,8 @@
 **SOMA** is a lightweight, pluggable cognitive framework that gives AI agents the ability to *think*, not just retrieve. It organizes memory around an explicit **wisdom framework** — seven thinking laws from first-principles reasoning to contradiction analysis. The result: agents that decompose problems systematically, activate relevant knowledge bidirectionally, and evolve their own reasoning over time.
 
 > **Not "make AI remember more." Make AI *understand deeper*.**
+
+📖 **[中文文档](README_zh.md)** | **[Documentation](docs/)** | **[Contributing](CONTRIBUTING.md)** | **[Changelog](CHANGELOG.md)**
 
 ## ⚡ Five-Minute Integration
 
@@ -148,6 +152,8 @@ soma.reflect(task_id, outcome) -> None   # record outcome for evolution
 soma.evolve() -> list                    # trigger automatic weight adjustment
 soma.get_weights() -> dict               # current law weights
 soma.adjust_weight(law_id, new_weight)   # manual override
+soma.discover_laws() -> dict | None      # autonomous law discovery
+soma.approve_law(candidate) -> bool      # approve a discovered law
 soma.stats -> dict                       # memory store statistics
 ```
 
@@ -232,7 +238,7 @@ git clone https://github.com/soma-project/soma-core.git
 cd soma-core
 pip install -e ".[dev]"
 
-pytest -v --cov=soma --cov-report=term    # 132 tests, ~97% coverage
+pytest -v --cov=soma --cov-report=term    # 139 tests, ~97% coverage
 
 python -m soma                              # quickstart verification
 
@@ -256,6 +262,8 @@ soma-core/
 │   ├── base.py            # Data models (Focus, MemoryUnit, etc.)
 │   ├── abc.py             # Abstract base classes
 │   ├── langchain_tool.py  # LangChain BaseTool wrapper
+│   ├── law_discovery.py   # Autonomous law discovery from clusters
+│   ├── plugin.py          # Entry-points plugin auto-discovery
 │   ├── analytics.py       # Usage analytics & benchmark storage
 │   ├── benchmarks.py      # 3D benchmark engine (memory/wisdom/evolution)
 │   ├── wisdom_laws.yaml   # Default thinking framework (bundled)
@@ -267,8 +275,9 @@ soma-core/
 ├── dash/                  # Dashboard & API server
 │   ├── server.py          # FastAPI (REST + SSE streaming + auth)
 │   ├── providers.py       # LLM provider manager
-│   └── frontend/          # Vue 3 dashboard UI
-├── tests/                 # 132 tests, ~97% coverage
+│   └── frontend/          # Vue 3 dashboard UI (i18n: EN/ZH)
+├── docs/                  # Documentation (EN + ZH bilingual)
+├── tests/                 # 139 tests, ~97% coverage
 ├── examples/              # Usage examples
 └── pyproject.toml         # Build config
 ```

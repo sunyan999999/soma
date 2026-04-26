@@ -1,7 +1,10 @@
 <script setup>
-import { ref, provide } from 'vue'
+import { ref, provide, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import LanguageSwitcher from './components/LanguageSwitcher.vue'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 
@@ -18,20 +21,21 @@ function addToast(message, type = 'info') {
 
 provide('toast', addToast)
 
-const navItems = [
-  { path: '/', icon: '💬', label: 'Chat' },
-  { path: '/benchmarks', icon: '📐', label: 'Benchmarks' },
-  { path: '/analytics', icon: '📊', label: 'Analytics' },
-  { path: '/memory', icon: '📚', label: 'Memory' },
-  { path: '/framework', icon: '⚖️', label: 'Framework' },
-  { path: '/settings', icon: '⚙️', label: 'Settings' },
-]
+const navItems = computed(() => [
+  { path: '/', icon: '💬', label: t('nav.chat') },
+  { path: '/benchmarks', icon: '📐', label: t('nav.benchmarks') },
+  { path: '/analytics', icon: '📊', label: t('nav.analytics') },
+  { path: '/memory', icon: '📚', label: t('nav.memory') },
+  { path: '/framework', icon: '⚖️', label: t('nav.framework') },
+  { path: '/settings', icon: '⚙️', label: t('nav.settings') },
+])
 </script>
 
 <template>
   <div class="app-shell">
     <aside class="sidebar">
       <div class="sidebar-logo">SOMA</div>
+      <LanguageSwitcher />
       <nav style="display:flex;flex-direction:column;gap:4px;">
         <button
           v-for="item in navItems"

@@ -1,7 +1,7 @@
 # SOMA — 体悟式智慧架构
 
 <p align="center">
-  <strong>🧠 五分钟接入，给你的 Agent 一个会思考的灵魂</strong><br>
+  <strong>Wisdom over Memory — 智慧超越记忆</strong><br>
   <em>为 AI Agent 构建的框架优先式认知架构</em>
 </p>
 
@@ -12,6 +12,8 @@
   <a href="#基准测试"><img src="https://img.shields.io/badge/语义召回-100%25-brightgreen" alt="语义召回率"></a>
   <a href="#基准测试"><img src="https://img.shields.io/badge/查询延迟-5.4ms-brightgreen" alt="延迟"></a>
   <a href="#基准测试"><img src="https://img.shields.io/badge/综合评分-89-brightgreen" alt="综合评分"></a>
+  <a href="#"><img src="https://img.shields.io/badge/测试-139-brightgreen" alt="测试"></a>
+  <a href="#"><img src="https://img.shields.io/badge/覆盖率-~97%25-brightgreen" alt="覆盖率"></a>
 </p>
 
 ---
@@ -19,6 +21,8 @@
 **SOMA**（Somatic Wisdom Architecture，体悟式智慧架构）是一个轻量、可拔插的 AI Agent 认知框架。与传统记忆库把记忆当被动存储不同，SOMA 以**显式思维框架**为索引来组织记忆——七条从第一性原理到矛盾分析的底层思考规律。结果：Agent 能系统拆解问题、双向激活知识、随时间自我进化。
 
 > **不是让 AI 记更多，而是让 AI 悟更深。**
+
+📖 **[English README](README.md)** | **[文档](docs/)** | **[贡献指南](CONTRIBUTING.md)** | **[变更日志](CHANGELOG.md)**
 
 ## ⚡ 五分钟接入
 
@@ -148,6 +152,8 @@ soma.reflect(task_id, outcome) -> None   # 记录结果供进化
 soma.evolve() -> list                    # 触发自动进化
 soma.get_weights() -> dict               # 当前规律权重
 soma.adjust_weight(law_id, new_weight)   # 手动调整权重
+soma.discover_laws() -> dict | None      # 自主发现新规律
+soma.approve_law(candidate) -> bool      # 审批通过候选规律
 soma.stats -> dict                       # 记忆库统计
 ```
 
@@ -232,7 +238,7 @@ git clone https://github.com/soma-project/soma-core.git
 cd soma-core
 pip install -e ".[dev]"
 
-pytest -v --cov=soma --cov-report=term    # 132 测试，~97% 覆盖率
+pytest -v --cov=soma --cov-report=term    # 139 测试，~97% 覆盖率
 
 python -m soma                              # 快速验证
 
@@ -256,6 +262,8 @@ soma-core/
 │   ├── base.py            # 数据模型（Focus, MemoryUnit 等）
 │   ├── abc.py             # 抽象基类
 │   ├── langchain_tool.py  # LangChain BaseTool 封装
+│   ├── law_discovery.py   # 自主发现新规律
+│   ├── plugin.py          # Entry-points 插件自动发现
 │   ├── analytics.py       # 使用分析 & 基准存储
 │   ├── benchmarks.py      # 三维基准测试引擎
 │   ├── wisdom_laws.yaml   # 默认思维框架（包内置）
@@ -267,8 +275,9 @@ soma-core/
 ├── dash/                  # 仪表盘 & API 服务
 │   ├── server.py          # FastAPI（REST + SSE 流式 + 认证）
 │   ├── providers.py       # LLM 提供商管理
-│   └── frontend/          # Vue 3 仪表盘界面
-├── tests/                 # 132 测试，~97% 覆盖率
+│   └── frontend/          # Vue 3 仪表盘界面（中英文切换）
+├── docs/                  # 文档（中英双语）
+├── tests/                 # 139 测试，~97% 覆盖率
 ├── examples/              # 使用示例
 └── pyproject.toml         # 构建配置
 ```
