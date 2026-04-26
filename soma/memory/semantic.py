@@ -1,25 +1,81 @@
-import uuid
+import sqlite3
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import networkx as nx
 
+from soma.abc import BaseMemoryStore
 from soma.base import MemoryUnit
 
 
-class SemanticStore:
-    """语义记忆存储 — 基于 NetworkX 有向图存储三元组"""
+class SemanticStore(BaseMemoryStore):
+    """语义记忆存储 — NetworkX 有向图 + SQLite 持久化"""
 
-    def __init__(self):
+    def __init__(self, persist_dir: Optional[Path] = None):
         self.graph = nx.DiGraph()
+        if persist_dir is None:
+            persist_dir = Path("dashboard_data")
+        persist_dir.mkdir(parents=True, exist_ok=True)
+        self._db_path = persist_dir / "semantic.db"
+        self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
+        self._conn.row_factory = sqlite3.Row
+        self._create_table()
+        self._load_from_db()
+
+    def _create_table(self):
+        self._conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS semantic_triples (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                subject TEXT NOT NULL,
+                predicate TEXT NOT NULL,
+                object TEXT NOT NULL,
+                confidence REAL DEFAULT 1.0,
+                created_at REAL NOT NULL
+            )
+            """
+        )
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_semantic_subject ON semantic_triples(subject)"
+        )
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_semantic_object ON semantic_triples(object)"
+        )
+        self._conn.commit()
+
+    def _load_from_db(self):
+        """启动时从 SQLite 重建 NetworkX 图"""
+        import time
+        rows = self._conn.execute(
+            "SELECT subject, predicate, object, confidence FROM semantic_triples"
+        ).fetchall()
+        for row in rows:
+            self.graph.add_node(row["subject"], type="concept")
+            self.graph.add_node(row["object"], type="concept")
+            self.graph.add_edge(
+                row["subject"], row["object"],
+                predicate=row["predicate"],
+                confidence=row["confidence"],
+            )
 
     def add_triple(
         self, subject: str, predicate: str, object_: str, confidence: float = 1.0
     ) -> None:
+        """添加三元组并持久化到 SQLite"""
+        import time
         self.graph.add_node(subject, type="concept")
         self.graph.add_node(object_, type="concept")
         self.graph.add_edge(
             subject, object_, predicate=predicate, confidence=confidence
         )
+        self._conn.execute(
+            """
+            INSERT INTO semantic_triples (subject, predicate, object, confidence, created_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (subject, predicate, object_, confidence, time.time()),
+        )
+        self._conn.commit()
 
     def query_by_keywords(
         self, keywords: List[str], top_k: int = 5
@@ -29,7 +85,6 @@ class SemanticStore:
 
         for kw in keywords:
             kw_lower = kw.lower()
-            # Search nodes
             for node in self.graph.nodes:
                 if kw_lower in node.lower():
                     node_id = f"sem_node_{node}"
@@ -46,7 +101,6 @@ class SemanticStore:
                             )
                         )
 
-            # Search edges
             for u, v, data in self.graph.edges(data=True):
                 pred = data.get("predicate", "")
                 if kw_lower in u.lower() or kw_lower in v.lower() or kw_lower in pred.lower():
@@ -68,7 +122,6 @@ class SemanticStore:
                             )
                         )
 
-        # Sort by some heuristic — more matched keywords = more relevant
         return sorted(
             results,
             key=lambda m: sum(
@@ -100,5 +153,11 @@ class SemanticStore:
     def list_nodes(self) -> List[str]:
         return list(self.graph.nodes)
 
-    def count_triples(self) -> int:
+    def count(self) -> int:
         return self.graph.number_of_edges()
+
+    def count_triples(self) -> int:
+        return self.count()
+
+    def close(self):
+        self._conn.close()

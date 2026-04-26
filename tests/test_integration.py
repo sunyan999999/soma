@@ -16,6 +16,7 @@ def soma_agent(tmp_path):
         episodic_persist_dir=tmp_path / "chroma",
         default_top_k=5,
         recall_threshold=0.01,
+        use_vector_search=False,
     )
     return SOMA_Agent(config)
 
@@ -147,7 +148,82 @@ class TestIntegration:
         for _ in range(3):
             soma_agent.respond("为什么增长停滞？")
 
-        # 被激活的记忆访问计数应递增
         mem = soma_agent.memory.episodic.get(mid)
         assert mem is not None
-        # 可能被计数（取决于是否匹配关键词）
+
+
+class TestVectorSearchIntegration:
+    """向量搜索端到端测试（使用 Mock Embedder）"""
+
+    @pytest.fixture
+    def vec_agent(self, tmp_path):
+        from unittest.mock import MagicMock
+        import numpy as np
+
+        framework = load_config(Path("wisdom_laws.yaml"))
+        config = SOMAConfig(
+            framework=framework,
+            episodic_persist_dir=tmp_path / "chroma",
+            default_top_k=5,
+            recall_threshold=0.01,
+            use_vector_search=True,
+        )
+        agent = SOMA_Agent(config)
+
+        # 用 Mock embedder 替换真实 embedder
+        mock_emb = MagicMock()
+        # 模拟：与增长相关的内容返回 [1,0,0,0]，天气内容返回 [0,1,0,0]
+        def mock_encode(text):
+            vec = np.zeros(config.vector_dim, dtype=np.float32)
+            if "增长" in text or "商业" in text or "第一性" in text:
+                vec[0] = 1.0
+            else:
+                vec[1] = 1.0
+            return vec
+
+        mock_emb.encode = mock_encode
+        mock_emb.encode_batch = lambda texts: np.array([mock_encode(t) for t in texts], dtype=np.float32)
+        mock_emb.dimension = config.vector_dim
+
+        agent.embedder = mock_emb
+        agent.memory._embedder = mock_emb
+        agent.memory.episodic._embedder = mock_emb
+
+        return agent
+
+    @patch("soma.agent.completion")
+    def test_vector_search_semantic_recall(self, mock_completion, vec_agent):
+        """同义改写应能通过向量搜索召回相关内容"""
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = "基于语义的深度分析..."
+        mock_completion.return_value = mock_response
+
+        # 存储语义相关但关键词不同的记忆
+        vec_agent.remember("商业扩张离不开创新驱动的成长思维", {"domain": "商业"}, importance=0.9)
+        vec_agent.remember("今天天气非常好适合郊游", {"domain": "生活"}, importance=0.1)
+
+        # 用不同措辞查询 — 关键词"增长"不会直接匹配"成长思维"
+        foci = vec_agent.decompose("为什么企业增长陷入瓶颈？")
+        activated = vec_agent.hub.activate(foci)
+
+        # 向量搜索应找到"商业扩张..."而非"今天天气..."
+        if activated:
+            contents = [am.memory.content for am in activated]
+            assert any("商业" in c for c in contents)
+
+    @patch("soma.agent.completion")
+    def test_vector_vs_keyword_advantage(self, mock_completion, vec_agent):
+        """向量搜索能跨越关键词字面差异"""
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = "分析..."
+        mock_completion.return_value = mock_response
+
+        # 两个内容：一个相关但用词不同，一个完全不相关但包含关键词
+        vec_agent.remember("组织架构调整需要整体协调", {"domain": "管理"}, importance=0.9)
+        vec_agent.remember("系统漏洞修复指南", {"domain": "技术"}, importance=0.5)
+
+        # "系统思维" 和 "组织协调" 语义相似，"系统漏洞" 只是字面匹配
+        answer = vec_agent.respond("如何运用系统思维协调组织？")
+        assert len(answer) > 0

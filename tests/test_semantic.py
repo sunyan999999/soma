@@ -1,11 +1,11 @@
 import pytest
-
+from pathlib import Path
 from soma.memory.semantic import SemanticStore
 
 
 @pytest.fixture
-def store():
-    s = SemanticStore()
+def store(tmp_path: Path):
+    s = SemanticStore(tmp_path)
     s.add_triple("快速决策", "依赖", "第一性原理")
     s.add_triple("系统思维", "关联", "矛盾分析")
     s.add_triple("逆向思考", "突破", "认知盲区")

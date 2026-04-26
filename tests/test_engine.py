@@ -33,21 +33,20 @@ def engine(sample_framework):
 
 class TestExtractKeywords:
     def test_chinese(self):
-        # 中文无空格分词在 MVP 中返回整体作为单个 token
-        # 这是已知限制，Alpha 阶段替换为更精确的分词
         kws = _extract_keywords("新产品 增长 停滞 怎么办")
-        assert "新产品" in kws or "增长" in kws or "停滞" in kws
+        assert "增长" in kws or "产品" in kws or "停滞" in kws
 
     def test_mixed(self):
-        # 混合文本按空格和标点分词
         kws = _extract_keywords("AI 模型 优化 策略 有哪些")
         assert len(kws) >= 2
 
     def test_chinese_no_spaces(self):
-        """中文无空格的连续文本，MVP 返回整体作为一个关键词 token"""
+        """jieba 应正确切分中文无空格文本"""
         kws = _extract_keywords("新产品增长停滞怎么办")
-        # 整体作为一个 token 保留（已知限制，Alpha 阶段升级）
-        assert len(kws) >= 1
+        # jieba 会将连续中文切分为多个词
+        assert len(kws) >= 2
+        has_relevant = any(kw in ("产品", "增长", "停滞") for kw in kws)
+        assert has_relevant
 
     def test_stop_words_filtered(self):
         kws = _extract_keywords("我的系统有问题了")

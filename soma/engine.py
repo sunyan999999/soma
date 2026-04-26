@@ -1,6 +1,9 @@
 import re
 from typing import List
 
+import jieba
+
+from soma.abc import BaseFrameworkEngine
 from soma.base import Focus
 from soma.config import FrameworkConfig, WisdomLaw
 
@@ -22,21 +25,22 @@ _STOP_WORDS = {
     "these", "those", "what", "which", "who", "whom",
 }
 
+# 标点/空白模式 — 用于过滤纯标点 token
+_PUNCT_PATTERN = re.compile(r"^[\s,\.!?;:：；，。！？、\-+()（）\[\]【】/\\\"'""''‘’]+$")
+
 
 def _extract_keywords(text: str, max_keywords: int = 10) -> List[str]:
-    """从文本中提取关键词 — MVP 简单分词 + 停用词过滤"""
-    # 按中英文标点、空格、引号分割
-    tokens = re.split(
-        r"[，。！？、\s,.!?;:；：\-+()（）\[\]【】/\\"
-        + "\""
-        + "'"
-        + r"“”‘’]+",
-        text,
-    )
+    """从文本中提取关键词 — jieba 分词 + 停用词过滤"""
+    tokens = jieba.cut(text)
     keywords = []
     for token in tokens:
         token = token.strip().lower()
-        if token and token not in _STOP_WORDS and len(token) >= 2:
+        if (
+            token
+            and token not in _STOP_WORDS
+            and len(token) >= 2
+            and not _PUNCT_PATTERN.match(token)
+        ):
             keywords.append(token)
     # 去重保持顺序
     seen = set()
@@ -48,7 +52,7 @@ def _extract_keywords(text: str, max_keywords: int = 10) -> List[str]:
     return unique[:max_keywords]
 
 
-class WisdomEngine:
+class WisdomEngine(BaseFrameworkEngine):
     """思维框架引擎 — 基于规律图谱拆解问题为分析焦点"""
 
     def __init__(self, framework: FrameworkConfig):

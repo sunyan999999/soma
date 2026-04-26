@@ -12,6 +12,7 @@ def config(tmp_path):
     return SOMAConfig(
         episodic_persist_dir=tmp_path / "chroma",
         default_top_k=5,
+        use_vector_search=False,
     )
 
 

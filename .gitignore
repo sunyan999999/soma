@@ -47,3 +47,19 @@ Thumbs.db
 # SOMA specific
 *.log
 soma_runs/
+soma_data/
+dashboard_data/
+
+# Frontend
+dash/frontend/dist/
+dash/frontend/node_modules/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Ruff
+.ruff_cache/
+
+# Benchmarks
+benchmark_results/
