@@ -44,3 +44,8 @@ Welcome to the SOMA documentation. SOMA (Somatic Wisdom Architecture) is a light
 
 - **[贡献指南](../CONTRIBUTING.md)** — 如何贡献
 - **[变更日志](../CHANGELOG.md)** — 版本历史
+
+## 论文
+
+- **[SOMA：智慧超越记忆 (中文)](%E5%AD%99%E5%B2%A9%EF%BC%9ASOMA%E2%80%94%E2%80%94%E6%99%BA%E6%85%A7%E8%B6%85%E8%B6%8A%E8%AE%B0%E5%BF%86%EF%BC%8C%E4%B8%BAAI%20Agent%E6%9E%84%E5%BB%BA%E7%9A%84%E6%A1%86%E6%9E%B6%E4%BC%98%E5%85%88%E5%BC%8F%E8%AE%A4%E7%9F%A5%E6%9E%B6%E6%9E%84.pdf)** — 孙岩，SOMA 体悟式智慧架构学术论文
+- **[SOMA: Intelligence Transcends Memory (EN)](Sun%20Yan%EF%BC%9ASOMA%20-%20Intelligence%20Transcends%20Memory,%20a%20Framework-Prioritized%20Cognitive%20Architecture%20for%20AI%20Agents.pdf)** — Sun Yan, English paper
