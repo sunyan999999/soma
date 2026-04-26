@@ -4,6 +4,7 @@ from soma.config import SOMAConfig, load_config
 from soma.base import MemoryUnit, Focus, ActivatedMemory
 from soma.agent import SOMA_Agent
 from soma.evolve import MetaEvolver
+from soma.law_discovery import LawDiscovery
 from soma.embedder import SOMAEmbedder
 from soma.langchain_tool import create_soma_tool
 
@@ -17,6 +18,7 @@ __all__ = [
     "SOMAConfig",
     "SOMAEmbedder",
     "MetaEvolver",
+    "LawDiscovery",
     "load_config",
     "create_soma_tool",
     "MemoryUnit",
@@ -163,6 +165,23 @@ class SOMA:
 
     def adjust_weight(self, law_id: str, new_weight: float) -> bool:
         return self._agent.evolver.adjust_weight(law_id, new_weight)
+
+    def discover_laws(self) -> dict | None:
+        """尝试从高关联记忆中自动发现新的思维规律。
+
+        返回候选规律字典（供人工审核），或 None 表示当前无条件生成。
+        建议每 50 次会话调用一次。需要 LLM 时设置 llm 参数。
+        """
+        return self._agent.evolver.discover_laws(
+            embedder=self._agent.embedder,
+            llm_model=self._config.llm_model if self._config.llm_model != "mock" else None,
+        )
+
+    def approve_law(self, candidate: dict) -> bool:
+        """审批通过一条候选规律，加入思维框架。返回是否成功。"""
+        return self._agent.evolver.approve_law(
+            candidate, embedder=self._agent.embedder,
+        )
 
     @property
     def stats(self) -> dict:
