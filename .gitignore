@@ -1,0 +1,75 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+eggs/
+*.egg
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+
+# Type checking
+.mypy_cache/
+
+# ChromaDB persistence (user data)
+chroma_data/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# SOMA specific
+*.log
+soma_runs/
+soma_data/
+dashboard_data/
+
+# LLM config (contains API keys — NEVER commit)
+dash/llm_config.json
+
+# Integration guide example data directories
+soma_test_data/
+soma_langchain_data/
+
+# Frontend
+dash/frontend/dist/
+dash/frontend/node_modules/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Ruff
+.ruff_cache/
+
+# Benchmarks
+benchmark_results/
+
+# Screenshots (source materials)
+ysimages/

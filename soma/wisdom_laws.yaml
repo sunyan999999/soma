@@ -1,0 +1,54 @@
+# SOMA 智慧规律图谱配置
+framework:
+  name: "默认智者思维框架"
+  version: "0.1.0"
+
+  laws:
+    - id: "first_principles"
+      name: "第一性原理"
+      description: "回归事物最基本的要素，从底层逻辑推导，不被既有经验束缚"
+      weight: 0.9
+      triggers: ["第一性", "基本原理", "底层逻辑", "回归本质", "最基础"]
+      relations: ["systems_thinking"]
+
+    - id: "systems_thinking"
+      name: "系统思维"
+      description: "将事物视为相互关联的整体，识别要素、连接和目的，寻找杠杆点"
+      weight: 0.85
+      triggers: ["整体", "系统", "关联", "循环", "回路", "闭环", "全局", "联动", "结构", "系统性", "全局观", "全貌"]
+      relations: ["first_principles", "contradiction_analysis"]
+
+    - id: "contradiction_analysis"
+      name: "矛盾分析"
+      description: "识别事物的对立统一关系，找出主要矛盾和矛盾的主要方面"
+      weight: 0.8
+      triggers: ["矛盾", "冲突", "对立", "平衡", "取舍", "两难", "悖论", "紧张", "主要矛盾", "对立统一", "难题", "纠结"]
+      relations: ["systems_thinking", "inversion"]
+
+    - id: "pareto_principle"
+      name: "二八法则"
+      description: "20%的原因导致80%的结果，聚焦关键少数而非平均用力"
+      weight: 0.75
+      triggers: ["重点", "最关键", "最重要", "效率", "优先", "聚焦", "瓶颈", "突破口", "少数", "二八", "帕累托", "20%"]
+      relations: ["first_principles"]
+
+    - id: "inversion"
+      name: "逆向思考"
+      description: "从相反方向思考问题，考虑如何失败而非如何成功，避开盲区"
+      weight: 0.7
+      triggers: ["反过来", "反面", "避免", "逆向", "反直觉", "反向思考", "失败原因", "为什么失败", "反面角度"]
+      relations: ["contradiction_analysis"]
+
+    - id: "analogical_reasoning"
+      name: "类比推理"
+      description: "将不同领域的知识结构映射到当前问题，寻找同构性"
+      weight: 0.65
+      triggers: ["类比", "相似", "借鉴", "跨界", "迁移", "对应", "模式", "比喻", "类推", "其他行业", "映射关系"]
+      relations: ["systems_thinking", "first_principles"]
+
+    - id: "evolutionary_lens"
+      name: "演进视角"
+      description: "从时间维度观察事物的演化规律，理解当下阶段所处的位置"
+      weight: 0.6
+      triggers: ["变化", "趋势", "阶段", "演化", "发展", "周期", "成熟", "下一个", "演进", "进化", "未来走向", "生命周期", "下一步"]
+      relations: ["systems_thinking"]

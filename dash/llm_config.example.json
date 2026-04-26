@@ -1,0 +1,60 @@
+{
+  "current_provider": "deepseek",
+  "providers": {
+    "deepseek": {
+      "model": "deepseek-chat",
+      "api_key": "your-deepseek-api-key",
+      "base_url": ""
+    },
+    "openai": {
+      "model": "gpt-4o",
+      "api_key": "your-openai-api-key",
+      "base_url": ""
+    },
+    "claude": {
+      "model": "claude-opus-4-7",
+      "api_key": "your-claude-api-key",
+      "base_url": ""
+    },
+    "gemini": {
+      "model": "gemini-2.5-flash",
+      "api_key": "your-gemini-api-key",
+      "base_url": ""
+    },
+    "qwen": {
+      "model": "qwen-turbo-latest",
+      "api_key": "your-qwen-api-key",
+      "base_url": ""
+    },
+    "zhipu": {
+      "model": "glm-4-flash",
+      "api_key": "your-zhipu-api-key",
+      "base_url": ""
+    },
+    "kimi": {
+      "model": "moonshot-v1-8k",
+      "api_key": "your-kimi-api-key",
+      "base_url": ""
+    },
+    "minimax": {
+      "model": "abab6.5s-chat",
+      "api_key": "your-minimax-api-key",
+      "base_url": ""
+    },
+    "doubao": {
+      "model": "doubao-pro-32k",
+      "api_key": "your-doubao-api-key",
+      "base_url": ""
+    },
+    "gemma": {
+      "model": "gemma-3-27b-it",
+      "api_key": "",
+      "base_url": ""
+    },
+    "custom": {
+      "model": "",
+      "api_key": "",
+      "base_url": ""
+    }
+  }
+}

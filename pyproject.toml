@@ -1,0 +1,77 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "soma-core"
+version = "0.2.0a1"
+description = "SOMA: Somatic Wisdom Architecture — Wisdom over Memory"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.10"
+authors = [
+    {name = "SOMA Project Team"}
+]
+keywords = ["agent", "memory", "wisdom", "llm", "rag", "cognitive"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "networkx>=3.0",
+    "litellm>=1.0.0",
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+    "numpy>=1.24",
+    "jieba>=0.42",
+    "scikit-learn>=1.3.0",
+    "fastembed>=0.4.0",
+    "faiss-cpu>=1.8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "pytest-cov>=4.0",
+    "pytest-timeout>=2.0",
+    "ruff>=0.1",
+    "mypy>=1.5",
+]
+alpha = [
+    "langchain-core>=0.3.0",
+    "streamlit>=1.40.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/sunyan999999/soma"
+Repository = "https://github.com/sunyan999999/soma.git"
+Issues = "https://github.com/sunyan999999/soma/issues"
+
+[project.scripts]
+soma-quickstart = "soma.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["soma"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+addopts = "-v --tb=short"
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
