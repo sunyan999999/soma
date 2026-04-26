@@ -194,6 +194,31 @@ class MetaEvolver:
         solidified = self._solidify_skills()
         return the_changes + solidified
 
+    def discover_laws(self, embedder=None, llm_model: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """尝试从高关联记忆中发现新规律。
+
+        需要提供 embedder 和 memory_core（构造时传入）。
+        返回候选规律 dict（供人工审核），或 None 表示无条件。
+        建议在 evolve() 后每隔 N 次会话调用一次（如每 50 次）。
+        """
+        if not self.memory_core or not embedder:
+            return None
+
+        from soma.law_discovery import LawDiscovery
+
+        discovery = LawDiscovery(self.memory_core, embedder, llm_model=llm_model)
+        return discovery.discover(current_law_count=len(self.engine.laws))
+
+    def approve_law(self, candidate: Dict[str, Any], embedder=None) -> bool:
+        """审批通过一条候选规律，加入框架。"""
+        if not self.memory_core or not embedder:
+            return False
+
+        from soma.law_discovery import LawDiscovery
+
+        discovery = LawDiscovery(self.memory_core, embedder)
+        return discovery.approve(candidate, self.engine)
+
     def _solidify_skills(self) -> List[Dict[str, Any]]:
         if not self.memory_core:
             return []
