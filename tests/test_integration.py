@@ -22,7 +22,7 @@ def soma_agent(tmp_path):
 
 
 def populate_memories(agent):
-    """注入测试用记忆资粮"""
+    """注入测试用记忆"""
     # 情节记忆
     agent.remember(
         "第一性原理的核心：回归事物最基本的要素，从底层逻辑推导。"

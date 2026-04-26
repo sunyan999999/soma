@@ -53,11 +53,11 @@ def build_prompt(agent, problem, foci, activated):
             parts.append(f"   理由: {f.rationale}")
 
     if activated:
-        parts.append("\n## 相关记忆资粮")
+        parts.append("\n## 相关记忆")
         for i, am in enumerate(activated, 1):
             parts.append(f"{i}. [{am.source}] {am.memory.content[:300]}")
 
-    parts.append("\n请基于以上框架和记忆资粮，给出深度分析回答。")
+    parts.append("\n请基于以上框架和相关记忆，给出深度分析回答。")
     return "\n".join(parts)
 
 

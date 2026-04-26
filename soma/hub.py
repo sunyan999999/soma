@@ -5,7 +5,7 @@ from soma.memory.core import MemoryCore
 
 
 class ActivationHub:
-    """双向激活调度器 — 计算关联潜力并返回 Top-K 资粮"""
+    """双向激活调度器 — 计算关联潜力并返回 Top-K 相关记忆"""
 
     def __init__(
         self,

@@ -28,7 +28,7 @@ def render_chat_tab(agent):
             with st.spinner("正在激活相关记忆..."):
                 activated = agent.hub.activate(foci)
 
-            st.markdown("### 🧩 激活的记忆资粮")
+            st.markdown("### 🧩 激活的相关记忆")
             if activated:
                 for am in activated:
                     with st.container(border=True):
@@ -40,7 +40,7 @@ def render_chat_tab(agent):
                         cols[1].metric("重要度", f"{am.memory.importance:.2f}")
                         cols[1].metric("访问", am.memory.access_count)
             else:
-                st.info("无直接相关的记忆资粮")
+                st.info("暂无直接相关的记忆")
 
             with st.spinner("正在综合分析..."):
                 answer = agent.respond(problem)
