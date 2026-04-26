@@ -1,7 +1,9 @@
 <script setup>
 import { ref, inject, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { api } from '../api'
 
+const { t } = useI18n()
 const toast = inject('toast')
 
 const loading = ref(true)
@@ -57,7 +59,7 @@ async function loadConfig() {
       editBaseUrl.value = p.base_url || ''
     }
   } catch (e) {
-    toast(`加载配置失败: ${e.message}`, 'error')
+    toast(`${t('settings.loadFailed')}: ${e.message}`, 'error')
   } finally {
     loading.value = false
   }
@@ -87,9 +89,9 @@ async function saveProvider() {
       }
     }
     editKey.value = ''
-    toast('配置已保存', 'success')
+    toast(t('settings.configSaved'), 'success')
   } catch (e) {
-    toast(`保存失败: ${e.message}`, 'error')
+    toast(`${t('settings.saveFailed')}: ${e.message}`, 'error')
   } finally {
     saving.value = false
   }
@@ -103,9 +105,9 @@ async function switchProvider() {
       ...llmConfig.value,
       current_provider: result.current_provider,
     }
-    toast(`已切换至 ${result.provider.name}`, 'success')
+    toast(`${t('settings.switched')} ${result.provider.name}`, 'success')
   } catch (e) {
-    toast(`切换失败: ${e.message}`, 'error')
+    toast(`${t('settings.switchFailed')}: ${e.message}`, 'error')
   }
 }
 
@@ -121,10 +123,8 @@ onMounted(loadConfig)
 
 <template>
   <div>
-    <h1 class="page-title">⚙️ 设置</h1>
-    <p class="page-subtitle">
-      配置大模型提供商，切换后 Chat 页面将自动使用所选模型
-    </p>
+    <h1 class="page-title">{{ t('settings.title') }}</h1>
+    <p class="page-subtitle">{{ t('settings.subtitle') }}</p>
 
     <!-- Status Banner -->
     <div
@@ -134,10 +134,10 @@ onMounted(loadConfig)
       <span style="font-size:1.3rem;">⚡</span>
       <div>
         <div style="font-weight:600;color:var(--amber);font-size:0.9rem;">
-          Mock 模式 — 未检测到可用的 API Key
+          {{ t('settings.mockBanner') }}
         </div>
         <div style="font-size:0.8rem;color:var(--text-muted);margin-top:2px;">
-          选择一个提供商并填写 API Key 后，将自动切换至真实模型。
+          {{ t('settings.mockHint') }}
         </div>
       </div>
     </div>
@@ -148,10 +148,10 @@ onMounted(loadConfig)
       <span style="font-size:1.3rem;">🧠</span>
       <div>
         <div style="font-weight:600;color:var(--emerald);font-size:0.9rem;">
-          真实模型模式 — {{ currentProvider?.name }}
+          {{ t('settings.realBanner') }} — {{ currentProvider?.name }}
         </div>
         <div style="font-size:0.8rem;color:var(--text-muted);margin-top:2px;">
-          Chat 页面将调用真实 LLM 进行分析。
+          {{ t('settings.realHint') }}
         </div>
       </div>
     </div>
@@ -166,27 +166,27 @@ onMounted(loadConfig)
       <!-- Current Status Card -->
       <div class="card">
         <div class="card-header">
-          <span class="card-title">📡 当前状态</span>
+          <span class="card-title">{{ t('settings.currentStatus') }}</span>
           <span
             class="badge"
             :class="currentProvider?.has_key ? 'badge-emerald' : 'badge-amber'"
           >
-            {{ currentProvider?.has_key ? 'Key 已配置' : '未配置 Key' }}
+            {{ currentProvider?.has_key ? t('settings.keyConfigured') : t('settings.keyNotConfigured') }}
           </span>
         </div>
         <div class="row" style="gap:24px;flex-wrap:wrap;">
           <div>
-            <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">当前模型</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">{{ t('settings.currentModel') }}</div>
             <div style="font-weight:600;">{{ currentProvider?.name || '-' }}</div>
           </div>
           <div>
-            <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Model ID</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">{{ t('settings.modelId') }}</div>
             <div style="font-weight:600;font-family:monospace;font-size:0.85rem;">
-              {{ currentProvider?.model || '未设置' }}
+              {{ currentProvider?.model || t('settings.notSet') }}
             </div>
           </div>
           <div v-if="currentProvider?.base_url">
-            <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">Base URL</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">{{ t('settings.baseUrl') }}</div>
             <div style="font-weight:600;font-family:monospace;font-size:0.8rem;">
               {{ currentProvider.base_url }}
             </div>
@@ -196,7 +196,7 @@ onMounted(loadConfig)
 
       <!-- Provider Grid -->
       <section>
-        <h2 style="font-size:1.1rem;margin-bottom:16px;">🔌 选择提供商</h2>
+        <h2 style="font-size:1.1rem;margin-bottom:16px;">{{ t('settings.selectProvider') }}</h2>
         <div class="provider-grid">
           <button
             v-for="p in providerList"
@@ -227,7 +227,7 @@ onMounted(loadConfig)
               v-if="llmConfig.current_provider === p.id"
               style="margin-top:8px;font-size:0.7rem;color:var(--accent);font-weight:600;"
             >
-              ✓ 当前使用
+              {{ t('settings.currentInUse') }}
             </div>
           </button>
         </div>
@@ -237,7 +237,7 @@ onMounted(loadConfig)
       <section v-if="selectedProvider" class="card">
         <div class="card-header">
           <span class="card-title">
-            {{ selectedProvider.name }} 配置
+            {{ selectedProvider.name }} {{ t('settings.configTitle') }}
           </span>
           <div class="row" style="gap:8px;">
             <button
@@ -245,14 +245,14 @@ onMounted(loadConfig)
               class="btn btn-primary btn-sm"
               @click="switchProvider"
             >
-              切换至此模型
+              {{ t('settings.switchTo') }}
             </button>
             <span
               v-else
               class="badge badge-accent"
               style="padding:6px 14px;"
             >
-              当前使用中
+              {{ t('settings.using') }}
             </span>
           </div>
         </div>
@@ -261,9 +261,9 @@ onMounted(loadConfig)
           <!-- API Key -->
           <div>
             <label style="font-size:0.8rem;font-weight:500;color:var(--text-secondary);display:block;margin-bottom:6px;">
-              API Key
+              {{ t('settings.apiKey') }}
               <span style="color:var(--text-muted);font-weight:400;">
-                — {{ selectedProvider.has_key ? '已保存' : '输入新 Key' }}
+                — {{ selectedProvider.has_key ? t('settings.keySaved') : t('settings.enterNewKey') }}
               </span>
             </label>
             <div class="row" style="gap:8px;">
@@ -271,7 +271,7 @@ onMounted(loadConfig)
                 <input
                   v-model="editKey"
                   :type="showKey ? 'text' : 'password'"
-                  :placeholder="selectedProvider.has_key ? 'Key 已保存，留空不修改' : '输入 API Key...'"
+                  :placeholder="selectedProvider.has_key ? t('settings.keySavedHint') : t('settings.keyPlaceholder')"
                   style="padding-right:44px;"
                 />
               </div>
@@ -288,20 +288,20 @@ onMounted(loadConfig)
           <!-- Model -->
           <div>
             <label style="font-size:0.8rem;font-weight:500;color:var(--text-secondary);display:block;margin-bottom:6px;">
-              Model ID
+              {{ t('settings.modelIdLabel') }}
             </label>
             <input
               v-model="editModel"
-              :placeholder="selectedProvider.model || '输入模型 ID...'"
+              :placeholder="selectedProvider.model || t('settings.modelIdPlaceholder')"
             />
           </div>
 
           <!-- Base URL -->
           <div>
             <label style="font-size:0.8rem;font-weight:500;color:var(--text-secondary);display:block;margin-bottom:6px;">
-              Base URL
+              {{ t('settings.baseUrlLabel') }}
               <span style="color:var(--text-muted);font-weight:400;">
-                — 留空使用默认
+                {{ t('settings.baseUrlHint') }}
               </span>
             </label>
             <input
@@ -312,14 +312,14 @@ onMounted(loadConfig)
 
           <div class="row row-between" style="margin-top:4px;">
             <span style="font-size:0.75rem;color:var(--text-muted);">
-              API Key 将安全存储至本地配置文件
+              {{ t('settings.keyStoredLocally') }}
             </span>
             <button
               class="btn btn-primary"
               :disabled="saving"
               @click="saveProvider"
             >
-              {{ saving ? '保存中...' : '💾 保存配置' }}
+              {{ saving ? t('settings.saving') : t('settings.saveConfig') }}
             </button>
           </div>
         </div>

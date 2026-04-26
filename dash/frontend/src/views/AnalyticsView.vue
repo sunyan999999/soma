@@ -1,7 +1,9 @@
 <script setup>
 import { ref, inject, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { api } from '../api'
 
+const { t } = useI18n()
 const toast = inject('toast')
 const loading = ref(true)
 const error = ref(null)
@@ -12,7 +14,7 @@ const detailSession = ref(null)
 const filterProvider = ref('')
 const filterMock = ref(undefined)
 
-// 进化监控
+// Evolution monitoring
 const evoStats = ref({})
 const evoLog = ref({ entries: [], total: 0 })
 const evoLoading = ref(false)
@@ -50,13 +52,13 @@ const timelineProviders = computed(() => {
 const statCards = computed(() => {
   if (!summary.value) return []
   return [
-    { label: '总会话数', value: summary.value.total_sessions, color: 'var(--accent)' },
-    { label: '真实模型', value: summary.value.mock_vs_real?.real || 0, color: 'var(--emerald)' },
-    { label: 'Mock 模式', value: summary.value.mock_vs_real?.mock || 0, color: 'var(--amber)' },
-    { label: '平均响应 (ms)', value: summary.value.avg_response_time_ms, color: 'var(--cyan)' },
-    { label: '平均拆解维度', value: summary.value.avg_foci_count, color: 'var(--accent)' },
-    { label: '平均激活记忆', value: summary.value.avg_activated_count, color: 'var(--emerald)' },
-    { label: '平均回答长度', value: Math.round(summary.value.avg_answer_length) + ' 字', color: 'var(--cyan)' },
+    { label: t('analytics.totalSessions'), value: summary.value.total_sessions, color: 'var(--accent)' },
+    { label: t('analytics.realModel'), value: summary.value.mock_vs_real?.real || 0, color: 'var(--emerald)' },
+    { label: t('analytics.mockMode'), value: summary.value.mock_vs_real?.mock || 0, color: 'var(--amber)' },
+    { label: t('analytics.avgResponse'), value: summary.value.avg_response_time_ms, color: 'var(--cyan)' },
+    { label: t('analytics.avgDimensions'), value: summary.value.avg_foci_count, color: 'var(--accent)' },
+    { label: t('analytics.avgActivated'), value: summary.value.avg_activated_count, color: 'var(--emerald)' },
+    { label: t('analytics.avgAnswerLen'), value: Math.round(summary.value.avg_answer_length) + ' ' + t('analytics.characters'), color: 'var(--cyan)' },
   ]
 })
 
@@ -101,7 +103,7 @@ async function loadData() {
     sessions.value = sess
   } catch (e) {
     error.value = e.message
-    toast(`加载分析数据失败: ${e.message}`, 'error')
+    toast(`${t('analytics.loadFailed')}: ${e.message}`, 'error')
   } finally {
     loading.value = false
   }
@@ -121,7 +123,7 @@ async function loadEvolution() {
       lastEvo.value = evoLog.value.entries[0]
     }
   } catch {
-    // 进化数据加载失败不影响主面板
+    // evolution data load failure does not affect main panel
   } finally {
     evoLoading.value = false
   }
@@ -131,7 +133,7 @@ async function showDetail(id) {
   try {
     detailSession.value = await api.analyticsSession(id)
   } catch (e) {
-    toast(`加载详情失败: ${e.message}`, 'error')
+    toast(`${t('analytics.loadDetailFailed')}: ${e.message}`, 'error')
   }
 }
 
@@ -150,10 +152,10 @@ function formatDate(ts) {
 async function clearOld() {
   try {
     const res = await api.analyticsClear(200)
-    toast(`已清理 ${res.removed} 条旧记录`, 'success')
+    toast(t('analytics.cleaned', { count: res.removed }), 'success')
     loadData()
   } catch (e) {
-    toast(`清理失败: ${e.message}`, 'error')
+    toast(`${t('analytics.cleanFailed')}: ${e.message}`, 'error')
   }
 }
 
@@ -164,12 +166,10 @@ onMounted(loadData)
   <div>
     <div class="row row-between" style="margin-bottom:8px;">
       <div>
-        <h1 class="page-title">📊 分析面板</h1>
-        <p class="page-subtitle">
-          自我监控与统计分析 — 追踪每次对话的全部数据
-        </p>
+        <h1 class="page-title">{{ t('analytics.title') }}</h1>
+        <p class="page-subtitle">{{ t('analytics.subtitle') }}</p>
       </div>
-      <button class="btn btn-secondary btn-sm" @click="loadData">🔄 刷新</button>
+      <button class="btn btn-secondary btn-sm" @click="loadData">{{ t('analytics.refresh') }}</button>
     </div>
 
     <div v-if="loading" class="gap-md">
@@ -179,9 +179,9 @@ onMounted(loadData)
 
     <div v-if="!loading && error" style="text-align:center;padding:60px 20px;color:var(--text-muted);">
       <div style="font-size:3rem;margin-bottom:16px;">⚠️</div>
-      <div style="font-size:1rem;margin-bottom:8px;">数据加载失败</div>
+      <div style="font-size:1rem;margin-bottom:8px;">{{ t('analytics.loadFailed') }}</div>
       <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:20px;">{{ error }}</div>
-      <button class="btn btn-primary" @click="loadData">🔄 重试</button>
+      <button class="btn btn-primary" @click="loadData">{{ t('analytics.retry') }}</button>
     </div>
 
     <div v-if="!loading && summary" class="gap-lg">
@@ -197,7 +197,7 @@ onMounted(loadData)
 
       <!-- Provider Comparison -->
       <section class="card" v-if="providerBars.length">
-        <h2 style="font-size:1rem;margin-bottom:16px;">🔌 提供商对比</h2>
+        <h2 style="font-size:1rem;margin-bottom:16px;">{{ t('analytics.providerCompare') }}</h2>
         <div class="bar-chart">
           <div v-for="bar in providerBars" :key="bar.name" class="bar-row">
             <div class="bar-label">{{ bar.name }}</div>
@@ -206,12 +206,12 @@ onMounted(loadData)
                 class="bar-fill"
                 :style="{ width: bar.pct + '%', background: bar.name === 'mock' ? 'var(--amber)' : 'var(--accent)' }"
               />
-              <span class="bar-val">{{ bar.count }} 次</span>
+              <span class="bar-val">{{ bar.count }} {{ t('analytics.times') }}</span>
             </div>
             <div class="bar-meta">
-              <span title="平均拆解维度">{{ bar.avgFoci }} 维度</span>
-              <span title="平均激活记忆">{{ bar.avgActivated }} 记忆</span>
-              <span title="平均响应时间">{{ bar.avgTime }}ms</span>
+              <span :title="t('analytics.avgDimensions')">{{ bar.avgFoci }} {{ t('analytics.dimensions') }}</span>
+              <span :title="t('analytics.avgActivated')">{{ bar.avgActivated }} {{ t('analytics.memories') }}</span>
+              <span :title="t('analytics.avgResponse')">{{ bar.avgTime }}ms</span>
             </div>
           </div>
         </div>
@@ -221,7 +221,7 @@ onMounted(loadData)
       <div class="grid-2">
         <!-- Weight Distribution -->
         <section class="card">
-          <h2 style="font-size:1rem;margin-bottom:16px;">⚖️ 当前权重分布</h2>
+          <h2 style="font-size:1rem;margin-bottom:16px;">{{ t('analytics.weightDistribution') }}</h2>
           <div v-if="weightBars.length" class="bar-chart">
             <div v-for="bar in weightBars" :key="bar.id" class="bar-row">
               <div class="bar-label" style="font-size:0.75rem;">{{ bar.label }}</div>
@@ -241,69 +241,69 @@ onMounted(loadData)
 
         <!-- Mock vs Real -->
         <section class="card" v-if="compareData?.mode_stats">
-          <h2 style="font-size:1rem;margin-bottom:16px;">🧪 Mock vs 真实模型</h2>
+          <h2 style="font-size:1rem;margin-bottom:16px;">{{ t('analytics.mockVsReal') }}</h2>
           <div class="bar-chart" style="margin-top:12px;">
             <div class="bar-row" v-if="compareData.mode_stats.real?.count">
-              <div class="bar-label">真实模型</div>
+              <div class="bar-label">{{ t('analytics.realModelLabel') }}</div>
               <div class="bar-track">
                 <div
                   class="bar-fill"
                   :style="{ width: Math.min(100, (compareData.mode_stats.real.count / Math.max(summary.total_sessions,1) * 100)) + '%', background: 'var(--emerald)' }"
                 />
-                <span class="bar-val">{{ compareData.mode_stats.real.count }} 次</span>
+                <span class="bar-val">{{ compareData.mode_stats.real.count }} {{ t('analytics.times') }}</span>
               </div>
             </div>
             <div class="bar-row" v-if="compareData.mode_stats.mock?.count">
-              <div class="bar-label">Mock</div>
+              <div class="bar-label">{{ t('analytics.mockLabel') }}</div>
               <div class="bar-track">
                 <div
                   class="bar-fill"
                   :style="{ width: Math.min(100, (compareData.mode_stats.mock.count / Math.max(summary.total_sessions,1) * 100)) + '%', background: 'var(--amber)' }"
                 />
-                <span class="bar-val">{{ compareData.mode_stats.mock.count }} 次</span>
+                <span class="bar-val">{{ compareData.mode_stats.mock.count }} {{ t('analytics.times') }}</span>
               </div>
             </div>
           </div>
 
           <div v-if="compareData.mode_stats.real && compareData.mode_stats.mock" style="margin-top:16px;font-size:0.8rem;color:var(--text-muted);line-height:1.6;">
-            <div>真实模型: 平均 {{ compareData.mode_stats.real.avg_foci }} 维度 | {{ compareData.mode_stats.real.avg_activated }} 记忆 | {{ compareData.mode_stats.real.avg_answer_length }} 字</div>
-            <div>Mock 模式: 平均 {{ compareData.mode_stats.mock.avg_foci }} 维度 | {{ compareData.mode_stats.mock.avg_activated }} 记忆 | {{ compareData.mode_stats.mock.avg_answer_length }} 字</div>
+            <div>{{ t('analytics.realModelStats', { dims: compareData.mode_stats.real.avg_foci, mems: compareData.mode_stats.real.avg_activated, len: compareData.mode_stats.real.avg_answer_length }) }}</div>
+            <div>{{ t('analytics.mockStats', { dims: compareData.mode_stats.mock.avg_foci, mems: compareData.mode_stats.mock.avg_activated, len: compareData.mode_stats.mock.avg_answer_length }) }}</div>
           </div>
         </section>
       </div>
 
-      <!-- 🧬 Evolution Monitoring -->
+      <!-- Evolution Monitoring -->
       <section class="card">
         <div class="row row-between" style="margin-bottom:16px;">
-          <h2 style="font-size:1rem;">🧬 进化监控</h2>
+          <h2 style="font-size:1rem;">{{ t('analytics.evolution') }}</h2>
           <div class="row" style="gap:8px;">
             <span v-if="lastEvo" style="font-size:0.7rem;color:var(--text-muted);">
-              最近反思: {{ lastEvo.task_id }} — {{ lastEvo.outcome }}
+              {{ t('analytics.lastReflect') }}: {{ lastEvo.task_id }} — {{ lastEvo.outcome }}
             </span>
             <button class="btn btn-secondary btn-sm" @click="loadEvolution" :disabled="evoLoading" style="font-size:0.7rem;">
-              {{ evoLoading ? '加载中...' : '🔄' }}
+              {{ evoLoading ? t('analytics.loadEvolution') : '🔄' }}
             </button>
           </div>
         </div>
 
         <div v-if="!hasEvolutionData && !evoLoading" style="text-align:center;padding:24px;color:var(--text-muted);font-size:0.85rem;">
-          暂无进化数据 — 在 Chat 页面完成更多对话后，系统将自动追踪规律表现
+          {{ t('analytics.noEvolution') }}
         </div>
 
         <div v-else class="gap-md">
           <!-- Law Stats Table -->
           <div v-if="lawStatCards.length">
-            <div style="font-size:0.8rem;font-weight:600;margin-bottom:8px;">📈 规律成功率追踪</div>
+            <div style="font-size:0.8rem;font-weight:600;margin-bottom:8px;">{{ t('analytics.lawSuccessTracking') }}</div>
             <div style="overflow-x:auto;">
               <table style="width:100%;font-size:0.78rem;border-collapse:collapse;">
                 <thead>
                   <tr style="color:var(--text-muted);text-align:left;">
-                    <th style="padding:6px 10px;">规律</th>
-                    <th style="padding:6px 10px;">成功</th>
-                    <th style="padding:6px 10px;">失败</th>
-                    <th style="padding:6px 10px;">总计</th>
-                    <th style="padding:6px 10px;">成功率</th>
-                    <th style="padding:6px 10px;">趋势</th>
+                    <th style="padding:6px 10px;">{{ t('analytics.law') }}</th>
+                    <th style="padding:6px 10px;">{{ t('analytics.success') }}</th>
+                    <th style="padding:6px 10px;">{{ t('analytics.failure') }}</th>
+                    <th style="padding:6px 10px;">{{ t('analytics.total') }}</th>
+                    <th style="padding:6px 10px;">{{ t('framework.successRateLabel') }}</th>
+                    <th style="padding:6px 10px;">{{ t('analytics.trend') }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -329,20 +329,20 @@ onMounted(loadData)
               </table>
             </div>
             <div style="font-size:0.65rem;color:var(--text-muted);margin-top:6px;">
-              💡 成功率 >70% 自动加权重，<30% 自动减权重（需 ≥3 次样本）
+              {{ t('analytics.evoTip') }}
             </div>
           </div>
 
           <!-- Weight Timeline -->
           <div v-if="weightTimeline.length > 1">
-            <div style="font-size:0.8rem;font-weight:600;margin-bottom:8px;">📉 权重演化时间线</div>
+            <div style="font-size:0.8rem;font-weight:600;margin-bottom:8px;">{{ t('analytics.weightTimeline') }}</div>
             <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:10px;">
               <span v-for="pv in timelineProviders" :key="pv" class="badge" style="margin-right:6px;"
                 :class="pv === 'mock' ? 'badge-amber' : 'badge-accent'">{{ pv }}</span>
             </div>
             <div class="timeline-mini">
               <div v-for="(t, i) in weightTimeline" :key="i" class="timeline-dot-row">
-                <div class="timeline-dot-label">{{ Object.keys(t.weights).length }} 项</div>
+                <div class="timeline-dot-label">{{ Object.keys(t.weights).length }} {{ t('analytics.items') }}</div>
                 <div class="timeline-dots">
                   <span v-for="(w, id) in t.weights" :key="id"
                     class="timeline-dot-single"
@@ -357,7 +357,7 @@ onMounted(loadData)
 
           <!-- Reflect Log -->
           <div v-if="evoLog.entries?.length">
-            <div style="font-size:0.8rem;font-weight:600;margin-bottom:8px;">📝 反思日志 (最近 10 条)</div>
+            <div style="font-size:0.8rem;font-weight:600;margin-bottom:8px;">{{ t('analytics.reflectLog') }}</div>
             <div class="gap-sm">
               <div v-for="(entry, i) in evoLog.entries.slice(0, 10)" :key="i"
                 class="row" style="justify-content:space-between;padding:6px 10px;font-size:0.75rem;
@@ -376,25 +376,25 @@ onMounted(loadData)
       <!-- Sessions List -->
       <section>
         <div class="row row-between mb-md">
-          <h2 style="font-size:1rem;">📋 会话历史</h2>
+          <h2 style="font-size:1rem;">{{ t('analytics.sessionHistory') }}</h2>
           <div class="row" style="gap:8px;">
             <select v-model="filterProvider" style="width:auto;font-size:0.8rem;padding:6px 10px;">
-              <option value="">全部提供商</option>
+              <option value="">{{ t('analytics.allProviders') }}</option>
               <option v-for="bar in providerBars" :key="bar.name" :value="bar.name">{{ bar.name }}</option>
             </select>
             <select v-model="filterMock" style="width:auto;font-size:0.8rem;padding:6px 10px;">
-              <option :value="undefined">全部模式</option>
+              <option :value="undefined">{{ t('analytics.allModes') }}</option>
               <option :value="true">Mock</option>
-              <option :value="false">真实模型</option>
+              <option :value="false">{{ t('analytics.realModelLabel') }}</option>
             </select>
             <button class="btn btn-secondary btn-sm" @click="clearOld()" style="font-size:0.75rem;">
-              🗑 清理旧记录
+              {{ t('analytics.cleanOld') }}
             </button>
           </div>
         </div>
 
         <div v-if="sessions.length === 0" style="text-align:center;padding:40px;color:var(--text-muted);">
-          暂无数据 — 在 Chat 页面完成分析后自动记录
+          {{ t('analytics.noSessions') }}
         </div>
 
         <div v-else class="session-list">
@@ -416,9 +416,9 @@ onMounted(loadData)
                   </span>
                 </div>
                 <div class="row" style="gap:16px;font-size:0.7rem;color:var(--text-muted);">
-                  <span>{{ s.foci_count }} 维度</span>
-                  <span>{{ s.activated_count }} 记忆</span>
-                  <span>{{ s.answer_length }} 字</span>
+                  <span>{{ s.foci_count }} {{ t('analytics.dimensions') }}</span>
+                  <span>{{ s.activated_count }} {{ t('analytics.memories') }}</span>
+                  <span>{{ s.answer_length }} {{ t('analytics.characters') }}</span>
                   <span>{{ s.response_time_ms }}ms</span>
                 </div>
               </div>
@@ -435,13 +435,13 @@ onMounted(loadData)
     <div v-if="detailSession" class="modal-overlay" @click.self="closeDetail">
       <div class="modal-card">
         <div class="row row-between mb-md">
-          <h3 style="font-size:1.05rem;">会话详情</h3>
+          <h3 style="font-size:1.05rem;">{{ t('analytics.sessionDetail') }}</h3>
           <button class="btn btn-secondary btn-sm" @click="closeDetail">✕</button>
         </div>
 
         <div class="gap-md" style="max-height:70vh;overflow-y:auto;">
           <div>
-            <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">问题</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:4px;">{{ t('analytics.problem') }}</div>
             <div style="font-size:0.9rem;line-height:1.6;">{{ detailSession.problem }}</div>
           </div>
 
@@ -450,37 +450,37 @@ onMounted(loadData)
               {{ detailSession.mock_mode ? 'Mock' : detailSession.provider_used }}
             </span>
             <span style="font-size:0.8rem;color:var(--text-muted);">
-              {{ detailSession.foci?.length || 0 }} 维度
+              {{ detailSession.foci?.length || 0 }} {{ t('analytics.dimensions') }}
             </span>
             <span style="font-size:0.8rem;color:var(--text-muted);">
-              {{ detailSession.activated_memories?.length || 0 }} 记忆
+              {{ detailSession.activated_memories?.length || 0 }} {{ t('analytics.memories') }}
             </span>
           </div>
 
           <div v-if="detailSession.foci?.length">
-            <div style="font-size:0.8rem;font-weight:600;margin-bottom:8px;">🔬 拆解维度</div>
+            <div style="font-size:0.8rem;font-weight:600;margin-bottom:8px;">{{ t('analytics.decomposeDimensions') }}</div>
             <div v-for="f in detailSession.foci" :key="f.law_id" class="card" style="padding:10px 14px;margin-bottom:6px;">
               <span class="badge badge-accent">{{ f.law_id }}</span>
-              <span style="margin-left:8px;font-size:0.8rem;color:var(--text-muted);">权重 {{ f.weight.toFixed(2) }}</span>
+              <span style="margin-left:8px;font-size:0.8rem;color:var(--text-muted);">{{ t('chat.weight') }} {{ f.weight.toFixed(2) }}</span>
               <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px;">{{ f.dimension?.slice(0, 200) }}</div>
             </div>
           </div>
 
           <div v-if="detailSession.activated_memories?.length">
-            <div style="font-size:0.8rem;font-weight:600;margin-bottom:8px;">🧩 激活记忆</div>
+            <div style="font-size:0.8rem;font-weight:600;margin-bottom:8px;">{{ t('analytics.activatedMemories') }}</div>
             <div v-for="am in detailSession.activated_memories.slice(0, 10)" :key="am.id"
               class="card" style="padding:10px 14px;margin-bottom:6px;"
             >
               <div class="row row-between">
                 <span class="badge badge-amber">{{ am.source }}</span>
-                <span style="font-size:0.7rem;color:var(--text-muted);">分数 {{ am.activation_score.toFixed(4) }}</span>
+                <span style="font-size:0.7rem;color:var(--text-muted);">{{ t('chat.score') }} {{ am.activation_score.toFixed(4) }}</span>
               </div>
               <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px;">{{ am.content?.slice(0, 150) }}</div>
             </div>
           </div>
 
           <div>
-            <div style="font-size:0.8rem;font-weight:600;margin-bottom:8px;">📝 回答 ({{ detailSession.answer?.length || 0 }} 字)</div>
+            <div style="font-size:0.8rem;font-weight:600;margin-bottom:8px;">{{ t('analytics.answer') }} ({{ detailSession.answer?.length || 0 }} {{ t('analytics.characters') }})</div>
             <div class="card answer-content" style="max-height:300px;overflow-y:auto;" v-html="(detailSession.answer || '')
               .replace(/^## (.+)$/gm, '<h2>$1</h2>')
               .replace(/^### (.+)$/gm, '<h3>$1</h3>')
@@ -491,7 +491,7 @@ onMounted(loadData)
           </div>
 
           <div v-if="detailSession.weights">
-            <div style="font-size:0.8rem;font-weight:600;margin-bottom:4px;">⚖️ 权重快照</div>
+            <div style="font-size:0.8rem;font-weight:600;margin-bottom:4px;">{{ t('analytics.weightSnapshot') }}</div>
             <div style="font-size:0.75rem;color:var(--text-muted);">
               <span v-for="(w, id) in detailSession.weights" :key="id" style="margin-right:12px;">
                 {{ id }}: {{ w.toFixed(2) }}

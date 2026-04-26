@@ -1,7 +1,9 @@
 <script setup>
 import { ref, inject, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { api } from '../api'
 
+const { t } = useI18n()
 const toast = inject('toast')
 const loading = ref(true)
 const running = ref(false)
@@ -33,10 +35,10 @@ async function runBenchmark() {
   running.value = true
   try {
     await api.benchmarksRun()
-    toast('基准测试完成', 'success')
+    toast(t('benchmarks.runComplete'), 'success')
     await loadData()
   } catch (e) {
-    toast(`测试失败: ${e.message}`, 'error')
+    toast(`${t('benchmarks.runFailed')}: ${e.message}`, 'error')
   } finally {
     running.value = false
   }
@@ -45,25 +47,24 @@ async function runBenchmark() {
 const scoreCards = computed(() => {
   if (!latest.value?.scores) return []
   const s = latest.value.scores
-  const items = [
-    { label: '综合评分', value: s.overall, color: 'var(--accent)', icon: '🎯' },
-    { label: '记忆能力', value: s.memory, color: 'var(--cyan)', icon: '🧠' },
-    { label: '智慧推理', value: s.wisdom, color: 'var(--emerald)', icon: '💡' },
-    { label: '进化闭环', value: s.evolution, color: 'var(--amber)', icon: '🧬' },
+  return [
+    { label: t('benchmarks.overallScore'), value: s.overall, color: 'var(--accent)', icon: '🎯' },
+    { label: t('benchmarks.memoryAbility'), value: s.memory, color: 'var(--cyan)', icon: '🧠' },
+    { label: t('benchmarks.wisdomReasoning'), value: s.wisdom, color: 'var(--emerald)', icon: '💡' },
+    { label: t('benchmarks.evolutionLoop'), value: s.evolution, color: 'var(--amber)', icon: '🧬' },
   ]
-  return items
 })
 
 const memoryMetrics = computed(() => {
   if (!latest.value?.memory) return []
   const m = latest.value.memory
   return [
-    { label: '语义召回率', value: (m.semantic_recall_rate * 100).toFixed(0) + '%', target: '>90%' },
-    { label: '写入延迟', value: m.avg_insert_latency_ms + 'ms', target: '<5ms' },
-    { label: '查询延迟', value: m.avg_query_latency_ms + 'ms', target: '<20ms' },
-    { label: '跨会话持久', value: m.cross_session_persistence ? '✅' : '❌', target: '✅' },
-    { label: '去重率', value: (m.dedup_ratio * 100).toFixed(0) + '%', target: '>80%' },
-    { label: '记忆总量', value: m.total_memories + '条', target: '-' },
+    { label: t('benchmarks.semanticRecall'), value: (m.semantic_recall_rate * 100).toFixed(0) + '%', target: '>90%' },
+    { label: t('benchmarks.insertLatency'), value: m.avg_insert_latency_ms + 'ms', target: '<5ms' },
+    { label: t('benchmarks.queryLatency'), value: m.avg_query_latency_ms + 'ms', target: '<20ms' },
+    { label: t('benchmarks.crossSession'), value: m.cross_session_persistence ? '✅' : '❌', target: '✅' },
+    { label: t('benchmarks.dedupRate'), value: (m.dedup_ratio * 100).toFixed(0) + '%', target: '>80%' },
+    { label: t('benchmarks.totalMemories'), value: m.total_memories + '条', target: '-' },
   ]
 })
 
@@ -71,12 +72,12 @@ const wisdomMetrics = computed(() => {
   if (!latest.value?.wisdom) return []
   const w = latest.value.wisdom
   return [
-    { label: '拆解覆盖率', value: (w.decomposition_coverage * 100).toFixed(0) + '%', target: '100%' },
-    { label: '思维多样性熵', value: w.thinking_diversity_entropy?.toFixed(2) || '0', target: '>0.8' },
-    { label: '基尼系数', value: w.thinking_diversity_gini?.toFixed(2) || '0', target: '<0.3' },
-    { label: '合成深度增益', value: '+' + w.synthesis_gain_depth_pct + '%', target: '>10%' },
-    { label: '合成结构增益', value: '+' + w.synthesis_gain_structure_pct + '%', target: '>50%' },
-    { label: '记忆关联度', value: w.memory_relevance_score?.toFixed(3) || '0', target: '>0.8' },
+    { label: t('benchmarks.decompositionCoverage'), value: (w.decomposition_coverage * 100).toFixed(0) + '%', target: '100%' },
+    { label: t('benchmarks.thinkingDiversity'), value: w.thinking_diversity_entropy?.toFixed(2) || '0', target: '>0.8' },
+    { label: t('benchmarks.giniCoefficient'), value: w.thinking_diversity_gini?.toFixed(2) || '0', target: '<0.3' },
+    { label: t('benchmarks.synthesisDepthGain'), value: '+' + w.synthesis_gain_depth_pct + '%', target: '>10%' },
+    { label: t('benchmarks.synthesisStructureGain'), value: '+' + w.synthesis_gain_structure_pct + '%', target: '>50%' },
+    { label: t('benchmarks.memoryRelevance'), value: w.memory_relevance_score?.toFixed(3) || '0', target: '>0.8' },
   ]
 })
 
@@ -84,10 +85,10 @@ const evolutionMetrics = computed(() => {
   if (!latest.value?.evolution) return []
   const e = latest.value.evolution
   return [
-    { label: '反思总数', value: e.total_reflections + '次', target: '>30' },
-    { label: '成熟规律数', value: e.laws_with_enough_samples + '/7', target: '7/7' },
-    { label: '平均成功率', value: (e.avg_success_rate * 100).toFixed(0) + '%', target: '>70%' },
-    { label: '已固化技能', value: e.skills_solidified + '个', target: '>5' },
+    { label: t('benchmarks.totalReflections'), value: e.total_reflections + '次', target: '>30' },
+    { label: t('benchmarks.matureLaws'), value: e.laws_with_enough_samples + '/7', target: '7/7' },
+    { label: t('benchmarks.avgSuccessRate'), value: (e.avg_success_rate * 100).toFixed(0) + '%', target: '>70%' },
+    { label: t('benchmarks.solidifiedSkills'), value: e.skills_solidified + '个', target: '>5' },
   ]
 })
 
@@ -108,7 +109,6 @@ const maxHistoryScore = computed(() => {
 
 const competitors = computed(() => {
   if (!compareData.value?.competitors) return []
-  const soma = compareData.value.soma || {}
   return Object.entries(compareData.value.competitors).map(([name, data]) => ({
     name,
     stars: data.stars,
@@ -134,15 +134,13 @@ onMounted(loadData)
   <div>
     <div class="row row-between" style="margin-bottom:8px;">
       <div>
-        <h1 class="page-title">📐 基准测试</h1>
-        <p class="page-subtitle">
-          三维基准测试 — 记忆 · 智慧 · 进化 — 追踪 SOMA 能力演进
-        </p>
+        <h1 class="page-title">{{ t('benchmarks.title') }}</h1>
+        <p class="page-subtitle">{{ t('benchmarks.subtitle') }}</p>
       </div>
       <div class="row" style="gap:8px;">
-        <button class="btn btn-secondary btn-sm" @click="loadData">🔄 刷新</button>
+        <button class="btn btn-secondary btn-sm" @click="loadData">{{ t('benchmarks.refresh') }}</button>
         <button class="btn btn-primary btn-sm" @click="runBenchmark" :disabled="running">
-          {{ running ? '⏳ 测试中...' : '▶ 运行基准测试' }}
+          {{ running ? t('benchmarks.running') : t('benchmarks.runBenchmark') }}
         </button>
       </div>
     </div>
@@ -155,15 +153,15 @@ onMounted(loadData)
     <div v-if="error" style="text-align:center;padding:60px;color:var(--text-muted);">
       <div style="font-size:3rem;margin-bottom:16px;">⚠️</div>
       <div>{{ error }}</div>
-      <button class="btn btn-primary" @click="loadData" style="margin-top:16px;">🔄 重试</button>
+      <button class="btn btn-primary" @click="loadData" style="margin-top:16px;">{{ t('analytics.retry') }}</button>
     </div>
 
     <div v-if="!loading && !error && !latest" style="text-align:center;padding:60px;color:var(--text-muted);">
       <div style="font-size:3rem;margin-bottom:16px;">📐</div>
-      <div style="font-size:1.1rem;margin-bottom:8px;">暂无基准测试数据</div>
-      <div style="font-size:0.85rem;margin-bottom:20px;">点击"运行基准测试"按钮开始首次评测</div>
+      <div style="font-size:1.1rem;margin-bottom:8px;">{{ t('benchmarks.noData') }}</div>
+      <div style="font-size:0.85rem;margin-bottom:20px;">{{ t('benchmarks.noDataDesc') }}</div>
       <button class="btn btn-primary" @click="runBenchmark" :disabled="running">
-        {{ running ? '⏳ 测试中...' : '▶ 运行基准测试' }}
+        {{ running ? t('benchmarks.running') : t('benchmarks.runBenchmark') }}
       </button>
     </div>
 
@@ -181,7 +179,7 @@ onMounted(loadData)
 
       <!-- Score History Mini Chart -->
       <section class="card" v-if="historyScores.length > 1">
-        <h2 style="font-size:1rem;margin-bottom:16px;">📈 评分趋势</h2>
+        <h2 style="font-size:1rem;margin-bottom:16px;">{{ t('benchmarks.scoreTrend') }}</h2>
         <div class="history-chart">
           <div class="history-bar-row" v-for="h in historyScores" :key="h.id">
             <div class="history-bar-label">{{ h.time }}</div>
@@ -189,23 +187,25 @@ onMounted(loadData)
               <div class="history-bar-seg" :style="{
                 width: (h.memory / maxHistoryScore * 100) + '%',
                 background: 'var(--cyan)',
-              }" :title="'记忆: ' + h.memory" />
+              }" :title="t('benchmarks.memoryAbility') + ': ' + h.memory" />
               <div class="history-bar-seg" :style="{
                 width: (h.wisdom / maxHistoryScore * 100) + '%',
                 background: 'var(--emerald)',
                 marginLeft: '2px',
-              }" :title="'智慧: ' + h.wisdom" />
+              }" :title="t('benchmarks.wisdomReasoning') + ': ' + h.wisdom" />
               <div class="history-bar-seg" :style="{
                 width: (h.evolution / maxHistoryScore * 100) + '%',
                 background: 'var(--amber)',
                 marginLeft: '2px',
-              }" :title="'进化: ' + h.evolution" />
+              }" :title="t('benchmarks.evolutionLoop') + ': ' + h.evolution" />
               <span class="history-bar-overall">{{ h.overall }}</span>
             </div>
           </div>
         </div>
         <div class="row" style="gap:16px;margin-top:8px;font-size:0.7rem;color:var(--text-muted);">
-          <span>▪ 记忆</span><span>▪ 智慧</span><span>▪ 进化</span>
+          <span>{{ '▪ ' + t('benchmarks.memoryAbility') }}</span>
+          <span>{{ '▪ ' + t('benchmarks.wisdomReasoning') }}</span>
+          <span>{{ '▪ ' + t('benchmarks.evolutionLoop') }}</span>
         </div>
       </section>
 
@@ -213,7 +213,7 @@ onMounted(loadData)
       <div class="grid-3-dim">
         <!-- Memory -->
         <section class="card">
-          <h2 style="font-size:1rem;margin-bottom:12px;">🧠 记忆能力</h2>
+          <h2 style="font-size:1rem;margin-bottom:12px;">{{ t('benchmarks.memoryCap') }}</h2>
           <div class="metric-list">
             <div v-for="m in memoryMetrics" :key="m.label" class="metric-row">
               <span class="metric-label">{{ m.label }}</span>
@@ -225,7 +225,7 @@ onMounted(loadData)
 
         <!-- Wisdom -->
         <section class="card">
-          <h2 style="font-size:1rem;margin-bottom:12px;">💡 智慧推理</h2>
+          <h2 style="font-size:1rem;margin-bottom:12px;">{{ t('benchmarks.wisdomCap') }}</h2>
           <div class="metric-list">
             <div v-for="m in wisdomMetrics" :key="m.label" class="metric-row">
               <span class="metric-label">{{ m.label }}</span>
@@ -237,7 +237,7 @@ onMounted(loadData)
 
         <!-- Evolution -->
         <section class="card">
-          <h2 style="font-size:1rem;margin-bottom:12px;">🧬 进化闭环</h2>
+          <h2 style="font-size:1rem;margin-bottom:12px;">{{ t('benchmarks.evolutionCap') }}</h2>
           <div class="metric-list">
             <div v-for="m in evolutionMetrics" :key="m.label" class="metric-row">
               <span class="metric-label">{{ m.label }}</span>
@@ -250,17 +250,17 @@ onMounted(loadData)
 
       <!-- Competitive Comparison -->
       <section class="card" v-if="competitors.length">
-        <h2 style="font-size:1rem;margin-bottom:16px;">🏆 竞品对比</h2>
+        <h2 style="font-size:1rem;margin-bottom:16px;">{{ t('benchmarks.competitorCompare') }}</h2>
         <div style="overflow-x:auto;">
           <table class="compare-table">
             <thead>
               <tr>
-                <th>项目</th>
-                <th>⭐ Stars</th>
-                <th>语义召回</th>
-                <th>查询延迟</th>
-                <th>去重</th>
-                <th>SOMA 优势</th>
+                <th>{{ t('benchmarks.project') }}</th>
+                <th>{{ t('benchmarks.stars') }}</th>
+                <th>{{ t('benchmarks.semanticRecall') }}</th>
+                <th>{{ t('benchmarks.queryLatency') }}</th>
+                <th>{{ t('benchmarks.dedupRate') }}</th>
+                <th>{{ t('benchmarks.advantage') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -270,7 +270,7 @@ onMounted(loadData)
                 <td>{{ latest.memory ? (latest.memory.semantic_recall_rate * 100).toFixed(0) + '%' : '-' }}</td>
                 <td>{{ latest.memory ? latest.memory.avg_query_latency_ms + 'ms' : '-' }}</td>
                 <td>{{ latest.memory ? (latest.memory.dedup_ratio * 100).toFixed(0) + '%' : '-' }}</td>
-                <td style="color:var(--accent);font-weight:600;">思维框架+进化闭环</td>
+                <td style="color:var(--accent);font-weight:600;">{{ t('benchmarks.frameworkEvo') }}</td>
               </tr>
               <tr v-for="c in competitors" :key="c.name">
                 <td><strong>{{ c.name }}</strong></td>
@@ -287,7 +287,7 @@ onMounted(loadData)
 
       <!-- Last Updated -->
       <div style="text-align:center;font-size:0.75rem;color:var(--text-muted);">
-        最近测试: {{ formatTime(latest.timestamp) }} | 历史记录: {{ history.length }} 次
+        {{ t('benchmarks.lastTest') }}: {{ formatTime(latest.timestamp) }} | {{ t('benchmarks.historyCount') }}: {{ history.length }} {{ t('analytics.times') }}
       </div>
     </div>
   </div>
