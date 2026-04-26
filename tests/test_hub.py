@@ -8,7 +8,7 @@ from soma.hub import ActivationHub
 
 @pytest.fixture
 def memory(tmp_path):
-    config = SOMAConfig(episodic_persist_dir=tmp_path / "chroma")
+    config = SOMAConfig(episodic_persist_dir=tmp_path / "chroma", use_vector_search=False)
     mc = MemoryCore(config)
     # 预填充数据
     mc.remember("第一性原理在增长分析中的核心价值", {"domain": "分析"}, importance=0.9)

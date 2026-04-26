@@ -27,12 +27,17 @@ class FrameworkConfig(BaseModel):
 class SOMAConfig(BaseModel):
     """SOMA 顶层配置"""
 
-    framework_path: Path = Path("wisdom_laws.yaml")
+    framework_path: Optional[Path] = None
     episodic_persist_dir: Path = Path("chroma_data")
     llm_model: str = "deepseek-chat"
-    embedding_model: str = "text-embedding-ada-002"
     default_top_k: int = 5
     recall_threshold: float = 0.3
+
+    # 嵌入模型配置（Alpha 新增）
+    embedding_model_name: str = "BAAI/bge-small-zh-v1.5"
+    use_vector_search: bool = True
+    vector_dim: int = 512
+    embedder_device: str = "cpu"  # "cpu" | "cuda"
 
     # Lazily loaded framework config
     framework: Optional[FrameworkConfig] = None

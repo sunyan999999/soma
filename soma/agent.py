@@ -4,6 +4,7 @@ from litellm import completion
 
 from soma.base import ActivatedMemory, Focus
 from soma.config import SOMAConfig, load_config
+from soma.embedder import SOMAEmbedder
 from soma.engine import WisdomEngine
 from soma.evolve import MetaEvolver
 from soma.hub import ActivationHub
@@ -20,8 +21,13 @@ class SOMA_Agent:
         framework = config.framework or load_config(config.framework_path)
         self.engine = WisdomEngine(framework)
 
+        # 嵌入器（Alpha 新增）
+        self.embedder = None
+        if config.use_vector_search:
+            self.embedder = SOMAEmbedder(config)
+
         # 记忆核心
-        self.memory = MemoryCore(config)
+        self.memory = MemoryCore(config, embedder=self.embedder)
 
         # 双向激活调度器
         self.hub = ActivationHub(
@@ -30,8 +36,9 @@ class SOMA_Agent:
             threshold=config.recall_threshold,
         )
 
-        # 元认知进化器（MVP 存根）
-        self.evolver = MetaEvolver(self.engine)
+        # 元认知进化器（持久化到 dashboard_data）
+        self.evolver = MetaEvolver(self.engine, memory_core=self.memory,
+                                   persist_dir=config.episodic_persist_dir)
 
     def respond(self, problem: str) -> str:
         """完整管道：拆解 → 双向激活 → 合成 → 应答"""
@@ -50,6 +57,9 @@ class SOMA_Agent:
         # Step 5: 更新访问计数
         for am in activated:
             am.memory.access_count += 1
+
+        # Step 6: 写入进化器上下文（Alpha 新增）
+        self.evolver.set_current_context(foci, activated)
 
         return answer
 
@@ -140,7 +150,12 @@ class SOMA_Agent:
             weight=1.0,
             rationale="用户直接查询",
         )
-        activated = self.hub.activate([focus])
+        original_top_k = self.hub.top_k
+        self.hub.top_k = top_k
+        try:
+            activated = self.hub.activate([focus])
+        finally:
+            self.hub.top_k = original_top_k
         return [self.hub.explain_activation(am) for am in activated]
 
     def decompose(self, problem: str) -> List[Focus]:

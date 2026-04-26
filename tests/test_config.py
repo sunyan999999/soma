@@ -10,7 +10,7 @@ from soma.config import SOMAConfig, WisdomLaw, FrameworkConfig, load_config
 class TestSOMAConfig:
     def test_default_values(self):
         config = SOMAConfig()
-        assert config.framework_path == Path("wisdom_laws.yaml")
+        assert config.framework_path is None  # 默认 None，由 SOMA facade 赋予包内置路径
         assert config.default_top_k == 5
         assert config.recall_threshold == 0.3
         assert config.llm_model == "deepseek-chat"

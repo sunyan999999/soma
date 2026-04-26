@@ -4,8 +4,8 @@ from soma.memory.skill import SkillStore
 
 
 @pytest.fixture
-def store():
-    s = SkillStore()
+def store(tmp_path):
+    s = SkillStore(persist_dir=tmp_path)
     s.add_skill("逆向决策", "遇到困境时，先假设目标已失败，反推可能原因", {"domain": "决策"})
     s.add_skill("系统映射", "将问题映射为要素-连接-目的的拓扑图", {"domain": "分析"})
     return s

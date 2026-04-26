@@ -1,0 +1,41 @@
+{
+  "current_provider": "gemma",
+  "providers": {
+    "deepseek": {
+      "api_key": "sk-36a73f1ad94d4799802d181deadad4bb"
+    },
+    "qwen": {
+      "api_key": "sk-498cdb9ba24944a1a4d892cbd0e310be"
+    },
+    "gemini": {
+      "model": "gemini-3.1-flash-lite-preview",
+      "api_key": "sk-WVxJdq45Wz7Efknci7MArfIo48gk8AQBdigrkOhozHHwSjC8",
+      "base_url": "https://billionengine.ai/v1/chat/completions"
+    },
+    "claude": {
+      "model": "claude-opus-4-7",
+      "api_key": "sk-WVxJdq45Wz7Efknci7MArfIo48gk8AQBdigrkOhozHHwSjC8",
+      "base_url": "https://billionengine.ai/v1/chat/completions"
+    },
+    "doubao": {
+      "model": "doubao-seed-2-0-pro-260215",
+      "api_key": "798c1cb2-70fc-4afa-803c-ae25ac16f908"
+    },
+    "gemma": {},
+    "openai": {
+      "model": "gpt-5.3-chat-latest",
+      "api_key": "sk-WVxJdq45Wz7Efknci7MArfIo48gk8AQBdigrkOhozHHwSjC8",
+      "base_url": "https://billionengine.ai/v1/chat/completions"
+    },
+    "zhipu": {
+      "api_key": "d3c1a09d52584d4cac1e67a9e37237cb.O3JCvKvl70OJGzVC"
+    },
+    "minimax": {
+      "api_key": "sk-api-hFOOcearFfNEuF0h6uz4NlE2Z-15c8TXlNMp1L4wIb1xFKR-aBhvOYUoPfC5ZMzLjD_JuHHWOebTUQv-MDRPw_LXV8AEUb2Q4-UjfyuDAthRSwS0ajq_Q84"
+    },
+    "kimi": {
+      "api_key": "sk-Jo7OyPbDql1Xf48af8wQTWHbKz2kyJIOBKC6e1eKRByStqvz"
+    },
+    "custom": {}
+  }
+}
