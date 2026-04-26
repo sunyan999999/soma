@@ -27,6 +27,14 @@ class MetaEvolver:
     def _create_tables(self):
         self._conn.execute(
             """
+            CREATE TABLE IF NOT EXISTS weights (
+                law_id TEXT PRIMARY KEY,
+                weight REAL NOT NULL
+            )
+            """
+        )
+        self._conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS reflection_log (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 task_id TEXT NOT NULL,
@@ -62,6 +70,15 @@ class MetaEvolver:
 
     def _load_state(self):
         """启动时从 SQLite 恢复内存状态"""
+        # 恢复权重（覆盖 YAML 默认值）
+        rows = self._conn.execute("SELECT law_id, weight FROM weights").fetchall()
+        if rows:
+            weight_map = {r["law_id"]: r["weight"] for r in rows}
+            for law in self.engine.laws:
+                if law.id in weight_map:
+                    law.weight = weight_map[law.id]
+            self.engine.laws.sort(key=lambda law: law.weight, reverse=True)
+
         # 加载 law_stats
         rows = self._conn.execute("SELECT law_id, successes, failures FROM law_stats").fetchall()
         self._law_stats: Dict[str, Dict[str, int]] = {}
@@ -83,6 +100,16 @@ class MetaEvolver:
                 "source": r["source"],
                 "timestamp": r["timestamp"],
             })
+
+    def _save_weights(self):
+        """将当前权重写入 SQLite"""
+        for law in self.engine.laws:
+            self._conn.execute(
+                "INSERT INTO weights (law_id, weight) VALUES (?, ?) "
+                "ON CONFLICT(law_id) DO UPDATE SET weight = excluded.weight",
+                (law.id, law.weight),
+            )
+        self._conn.commit()
 
     # ── 上下文捕获 ──────────────────────────────────────────
 
@@ -145,6 +172,7 @@ class MetaEvolver:
             if law.id == law_id:
                 law.weight = clamped
                 self.engine.laws.sort(key=lambda law: law.weight, reverse=True)
+                self._save_weights()
                 return True
         return False
 
@@ -189,6 +217,7 @@ class MetaEvolver:
         if changes:
             self._load_state()
             self.engine.laws.sort(key=lambda law: law.weight, reverse=True)
+            self._save_weights()
 
         the_changes: List[Dict[str, Any]] = changes
         solidified = self._solidify_skills()
@@ -217,7 +246,10 @@ class MetaEvolver:
         from soma.law_discovery import LawDiscovery
 
         discovery = LawDiscovery(self.memory_core, embedder)
-        return discovery.approve(candidate, self.engine)
+        ok = discovery.approve(candidate, self.engine)
+        if ok:
+            self._save_weights()
+        return ok
 
     def _solidify_skills(self) -> List[Dict[str, Any]]:
         if not self.memory_core:

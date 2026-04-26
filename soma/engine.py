@@ -1,3 +1,4 @@
+import random
 import re
 from typing import List
 
@@ -88,9 +89,11 @@ class WisdomEngine(BaseFrameworkEngine):
                 )
                 foci.append(focus)
 
-        # 兜底：无匹配时使用最高权重规律
+        # 兜底：无匹配时从权重前3条中加权随机选取
         if not foci:
-            top_law = self.laws[0]
+            candidates = self.laws[:3]
+            weights = [law.weight for law in candidates]
+            top_law = random.choices(candidates, weights=weights, k=1)[0]
             dimension = f"从「{top_law.name}」视角审视：{top_law.description}。应用于问题：「{problem}」"
             keywords = _extract_keywords(problem) + top_law.triggers
             foci.append(
@@ -99,10 +102,10 @@ class WisdomEngine(BaseFrameworkEngine):
                     dimension=dimension,
                     keywords=keywords,
                     weight=top_law.weight,
-                    rationale="无特定规律匹配，默认应用最高权重思维规律",
+                    rationale="无特定规律匹配，加权随机选取思维规律",
                 )
             )
 
-        # 按 weight 降序排列
-        foci.sort(key=lambda f: f.weight, reverse=True)
+        # 按 weight + 随机抖动排序，避免同权规律永远同一顺序
+        foci.sort(key=lambda f: f.weight + random.uniform(-0.03, 0.03), reverse=True)
         return foci

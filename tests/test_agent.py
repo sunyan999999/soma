@@ -52,7 +52,7 @@ class TestSOMA_Agent:
         prompt = agent._build_prompt("增长停滞的根本原因是什么？", foci, activated)
         # 检查 Prompt 结构
         assert "## 思维框架" in prompt
-        assert "## 可用资粮" in prompt
+        assert "## 相关记忆与经验" in prompt
         assert "## 当前问题" in prompt
         assert "增长停滞的根本原因是什么？" in prompt
 
@@ -78,7 +78,7 @@ class TestSOMA_Agent:
         assert "第一性原理" in answer or "系统思维" in answer
         mock_completion.assert_called_once()
 
-        # 验证 prompt 包含了框架和资粮
+        # 验证 prompt 包含了框架和相关记忆
         call_args = mock_completion.call_args
         prompt_sent = call_args.kwargs["messages"][0]["content"]
         assert "为什么新产品增长停滞？" in prompt_sent

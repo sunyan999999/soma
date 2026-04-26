@@ -68,6 +68,26 @@ print(answer)
   问题拆解 → 双向资粮激活 → 记忆拼图与方案合成 → 沉淀与进化
 ```
 
+## 仪表盘界面
+
+SOMA 自带 Vue 3 仪表盘（支持中英文切换）。启动 API 服务后打开 `http://localhost:8765`：
+
+```bash
+SOMA_API_KEY=test python dash/server.py
+```
+
+| 智慧对话 | 思维框架 | 记忆资粮 |
+|:---:|:---:|:---:|
+| [![智慧对话](docs/images/screenshot-chat.png)](docs/images/screenshot-chat.png) | [![思维框架](docs/images/screenshot-framework.png)](docs/images/screenshot-framework.png) | [![记忆资粮](docs/images/screenshot-memory.png)](docs/images/screenshot-memory.png) |
+| **智者深度对话** — 拆解→激活→合成 | **7 条思维规律** — 实时权重，手动/自动调权 | **记忆库** — 语义搜索，双向激活 |
+
+| 分析看板 | 基准测试 | 设置 |
+|:---:|:---:|:---:|
+| [![分析看板](docs/images/screenshot-analytics.png)](docs/images/screenshot-analytics.png) | [![基准测试](docs/images/screenshot-benchmarks.png)](docs/images/screenshot-benchmarks.png) | [![设置](docs/images/screenshot-settings.png)](docs/images/screenshot-settings.png) |
+| **使用分析** — 会话历史、权重演变、维度趋势 | **三维基准** — 记忆/智慧/进化评分 + 竞品对比 | **LLM 配置** — 多提供商、API Key、模型选择 |
+
+> 🇬🇧 [英文版界面](docs/images/screenshot-chat-en.png)
+
 ## 安装
 
 ```bash

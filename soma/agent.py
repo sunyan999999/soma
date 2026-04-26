@@ -69,22 +69,22 @@ class SOMA_Agent:
         foci: List[Focus],
         memories: List[ActivatedMemory],
     ) -> str:
-        """构建 LLM Prompt：框架上下文 + 可用资粮 + 问题"""
+        """构建 LLM Prompt：框架上下文 + 相关记忆 + 问题"""
         # 框架上下文
         foci_text = "\n".join(
             f"### {i+1}. {f.dimension}\n*触发原因*: {f.rationale}"
             for i, f in enumerate(foci)
         )
 
-        # 记忆资粮
+        # 记忆参考
         if memories:
             memory_text = "\n\n".join(
-                f"**[资粮 {i+1}]** (来源: {am.source}, 关联度: {am.activation_score:.3f})\n"
+                f"**[参考 {i+1}]** (来源: {am.source}, 关联度: {am.activation_score:.3f})\n"
                 f"{am.memory.content}"
                 for i, am in enumerate(memories)
             )
         else:
-            memory_text = "（暂无直接相关的记忆资粮）"
+            memory_text = "（暂无直接相关的参考信息）"
 
         prompt = f"""你是一位**智者**，运用系统性的思维框架来分析和回答问题。
 
@@ -93,8 +93,8 @@ class SOMA_Agent:
 
 {foci_text}
 
-## 可用资粮
-以下是你过往积累的相关记忆片段和知识，请将其作为思考的养料：
+## 相关记忆与经验
+以下是你过往积累的相关记忆片段和知识：
 
 {memory_text}
 
@@ -102,10 +102,10 @@ class SOMA_Agent:
 {problem}
 
 ---
-请综合运用思维框架和可用资粮，给出有深度、有洞见的回答。
+请综合运用思维框架和相关经验，给出有深度、有洞见的回答。
 在回答中：
-1. 展示你是如何用思维规律拆解这个问题的
-2. 引用相关的记忆资粮来支撑你的分析
+1. 可以自然融入框架思维，但不必逐条罗列
+2. 结合你的经验和知识给出分析
 3. 给出综合性的解答与建议"""
 
         return prompt
