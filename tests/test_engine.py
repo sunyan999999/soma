@@ -89,7 +89,7 @@ class TestWisdomEngine:
         """无关键词匹配时从权重前3加权随机选取"""
         foci = engine.decompose("今天天气很好")
         assert len(foci) == 1
-        assert foci[0].law_id in {"first_principles", "systems_thinking", "contradiction_analysis"}
+        assert foci[0].law_id in {"first_principles", "systems_thinking", "contradiction"}
         assert "加权随机选取" in foci[0].rationale
 
     def test_decompose_keywords(self, engine):
@@ -113,4 +113,4 @@ class TestWisdomEngine:
         foci = engine.decompose("Why is the system broken?")
         # 无中文触发词匹配，从权重前3加权随机选取
         assert len(foci) == 1
-        assert foci[0].law_id in {"first_principles", "systems_thinking", "contradiction_analysis"}
+        assert foci[0].law_id in {"first_principles", "systems_thinking", "contradiction"}
