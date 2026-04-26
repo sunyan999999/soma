@@ -49,9 +49,9 @@ alpha = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/soma-project/soma-core"
-Repository = "https://github.com/soma-project/soma-core.git"
-Issues = "https://github.com/soma-project/soma-core/issues"
+Homepage = "https://github.com/sunyan999999/soma"
+Repository = "https://github.com/sunyan999999/soma.git"
+Issues = "https://github.com/sunyan999999/soma/issues"
 
 [project.scripts]
 soma-quickstart = "soma.__main__:main"
