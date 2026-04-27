@@ -13,8 +13,8 @@ const searching = ref(false)
 
 // Add form
 const addContent = ref('')
-const addDomain = ref('通用')
-const addType = ref('笔记')
+const addDomain = ref(t('memory.defaultDomain'))
+const addType = ref(t('memory.defaultType'))
 const addImportance = ref(0.7)
 const adding = ref(false)
 

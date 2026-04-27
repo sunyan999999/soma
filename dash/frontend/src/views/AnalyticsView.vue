@@ -3,7 +3,9 @@ import { ref, inject, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { api } from '../api'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+function lawName(id) { return t(`laws.${id}`) || id }
+const dateLocale = () => locale.value === 'zh' ? 'zh-CN' : 'en-US'
 const toast = inject('toast')
 const loading = ref(true)
 const error = ref(null)
@@ -27,7 +29,7 @@ const hasEvolutionData = computed(() => {
 const lawStatCards = computed(() => {
   return Object.entries(evoStats.value).map(([id, s]) => ({
     id,
-    label: id.replace(/_/g, ' '),
+    label: lawName(id),
     successes: s.successes,
     failures: s.failures,
     total: s.total,
@@ -83,7 +85,7 @@ const weightBars = computed(() => {
   if (!entries.length) return []
   return entries.sort((a, b) => b[1] - a[1]).map(([id, w]) => ({
     id,
-    label: id.replace(/_/g, ' '),
+    label: lawName(id),
     weight: w,
     pct: Math.round(w * 100),
   }))
@@ -142,11 +144,11 @@ function closeDetail() {
 }
 
 function formatTime(ts) {
-  return new Date(ts * 1000).toLocaleString('zh-CN')
+  return new Date(ts * 1000).toLocaleString(dateLocale())
 }
 
 function formatDate(ts) {
-  return new Date(ts * 1000).toLocaleDateString('zh-CN')
+  return new Date(ts * 1000).toLocaleDateString(dateLocale())
 }
 
 async function clearOld() {
@@ -278,7 +280,7 @@ onMounted(loadData)
           <h2 style="font-size:1rem;">{{ t('analytics.evolution') }}</h2>
           <div class="row" style="gap:8px;">
             <span v-if="lastEvo" style="font-size:0.7rem;color:var(--text-muted);">
-              {{ t('analytics.lastReflect') }}: {{ lastEvo.task_id }} — {{ lastEvo.outcome }}
+              {{ t('analytics.lastReflect') }}: {{ lastEvo.task_id }} — {{ lastEvo.outcome === 'success' ? t('common.success') : t('common.failure') }}
             </span>
             <button class="btn btn-secondary btn-sm" @click="loadEvolution" :disabled="evoLoading" style="font-size:0.7rem;">
               {{ evoLoading ? t('analytics.loadEvolution') : '🔄' }}
@@ -364,7 +366,7 @@ onMounted(loadData)
                   background:rgba(255,255,255,0.02);border-radius:6px;">
                 <span>{{ entry.task_id }}</span>
                 <span :style="{ color: entry.outcome === 'success' ? 'var(--emerald)' : 'var(--rose)' }">
-                  {{ entry.outcome }}
+                  {{ entry.outcome === 'success' ? t('common.success') : t('common.failure') }}
                 </span>
                 <span style="color:var(--text-muted);">{{ formatTime(entry.timestamp) }}</span>
               </div>
@@ -460,7 +462,7 @@ onMounted(loadData)
           <div v-if="detailSession.foci?.length">
             <div style="font-size:0.8rem;font-weight:600;margin-bottom:8px;">{{ t('analytics.decomposeDimensions') }}</div>
             <div v-for="f in detailSession.foci" :key="f.law_id" class="card" style="padding:10px 14px;margin-bottom:6px;">
-              <span class="badge badge-accent">{{ f.law_id }}</span>
+              <span class="badge badge-accent">{{ lawName(f.law_id) }}</span>
               <span style="margin-left:8px;font-size:0.8rem;color:var(--text-muted);">{{ t('chat.weight') }} {{ f.weight.toFixed(2) }}</span>
               <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:4px;">{{ f.dimension?.slice(0, 200) }}</div>
             </div>

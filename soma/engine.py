@@ -89,11 +89,10 @@ class WisdomEngine(BaseFrameworkEngine):
                 )
                 foci.append(focus)
 
-        # 兜底：无匹配时从权重前3条中加权随机选取
+        # 兜底：无匹配时从全部规律中加权随机选取
         if not foci:
-            candidates = self.laws[:3]
-            weights = [law.weight for law in candidates]
-            top_law = random.choices(candidates, weights=weights, k=1)[0]
+            weights = [law.weight for law in self.laws]
+            top_law = random.choices(self.laws, weights=weights, k=1)[0]
             dimension = f"从「{top_law.name}」视角审视：{top_law.description}。应用于问题：「{problem}」"
             keywords = _extract_keywords(problem) + top_law.triggers
             foci.append(
