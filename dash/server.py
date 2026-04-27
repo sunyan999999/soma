@@ -77,12 +77,13 @@ def _use_mock() -> bool:
     pm = get_provider_manager()
     return not bool(pm.get_current().get("api_key", ""))
 
+_DATA_DIR = Path(os.environ.get("SOMA_DATA_DIR", "dashboard_data"))
 _analytics: Optional[AnalyticsStore] = None
 
 def _get_analytics() -> AnalyticsStore:
     global _analytics
     if _analytics is None:
-        _analytics = AnalyticsStore(Path("dashboard_data"))
+        _analytics = AnalyticsStore(_DATA_DIR)
     return _analytics
 
 
@@ -148,7 +149,7 @@ def get_agent() -> SOMA_Agent:
         framework = load_config(_DEFAULT_FRAMEWORK)
         config = SOMAConfig(
             framework=framework,
-            episodic_persist_dir=Path("dashboard_data"),
+            episodic_persist_dir=_DATA_DIR,
             default_top_k=5,
             recall_threshold=0.01,
             use_vector_search=True,
@@ -793,7 +794,7 @@ def benchmarks_run():
         from soma.benchmarks import run_full_benchmark
         agent = get_agent()
         # 尝试加载消融实验数据
-        ablation_path = Path(__file__).parent.parent / "dashboard_data" / "ablation_results.json"
+        ablation_path = _DATA_DIR / "ablation_results.json"
         ablation_data = None
         if ablation_path.exists():
             import json as _json

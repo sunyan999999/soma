@@ -42,6 +42,8 @@ class SOMA_Agent:
 
     def respond(self, problem: str) -> str:
         """完整管道：拆解 → 双向激活 → 合成 → 应答"""
+        import time
+
         # Step 1: 问题拆解
         foci = self.engine.decompose(problem)
 
@@ -58,8 +60,29 @@ class SOMA_Agent:
         for am in activated:
             am.memory.access_count += 1
 
-        # Step 6: 写入进化器上下文（Alpha 新增）
+        # Step 6: 写入进化器上下文
         self.evolver.set_current_context(foci, activated)
+
+        # Step 7: 录制 session 到 AnalyticsStore（供仪表盘消费）
+        try:
+            from soma.analytics import AnalyticsStore
+            store = AnalyticsStore(self.config.episodic_persist_dir)
+            store.record_session({
+                "id": f"session_{int(time.time())}",
+                "problem": problem,
+                "mock_mode": False,
+                "provider_used": self.config.llm_model or "unknown",
+                "response_time_ms": 0,
+                "foci": [{"law_id": f.law_id, "dimension": f.dimension,
+                          "keywords": f.keywords[:8], "weight": f.weight,
+                          "rationale": f.rationale} for f in foci],
+                "activated_memories": [self.hub.explain_activation(am) for am in activated],
+                "answer": answer,
+                "memory_stats": self.memory.stats(),
+                "weights": self.evolver.get_weights(),
+            })
+        except Exception:
+            pass
 
         return answer
 
