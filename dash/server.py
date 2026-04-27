@@ -14,7 +14,7 @@ from typing import AsyncGenerator, Optional
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from soma.config import SOMAConfig, load_config
@@ -816,10 +816,15 @@ def benchmarks_run():
 
 @app.get("/{full_path:path}")
 async def spa_fallback(full_path: str):
-    """将所有非 API 路径回退到 Vue SPA 入口"""
+    """将所有非 API 路径回退到 Vue SPA 入口，注入 API Key 配置"""
     index_html = FRONTEND_DIR / "index.html"
     if index_html.exists():
-        return FileResponse(str(index_html))
+        html = index_html.read_text(encoding="utf-8")
+        # 注入 API Key（若启用认证），供前端自动配置
+        if _AUTH_ENABLED:
+            inject = f'<script>window.__SOMA_API_KEY__ = "{_SOMA_API_KEY}";</script>'
+            html = html.replace("</head>", inject + "\n</head>")
+        return HTMLResponse(html)
     raise HTTPException(404, "Frontend not built. Run `npm run build` in dash/frontend.")
 
 

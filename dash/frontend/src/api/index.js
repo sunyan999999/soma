@@ -1,8 +1,15 @@
 const BASE = '/api'
 
+function getApiKey() {
+  return localStorage.getItem('soma_api_key') || ''
+}
+
 async function request(path, options = {}) {
+  const headers = { 'Content-Type': 'application/json' }
+  const key = getApiKey()
+  if (key) headers['X-API-Key'] = key
   const res = await fetch(BASE + path, {
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     ...options,
   })
   if (!res.ok) {
