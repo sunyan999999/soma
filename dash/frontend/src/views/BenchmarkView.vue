@@ -3,7 +3,8 @@ import { ref, inject, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { api } from '../api'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const dateLocale = () => locale.value === 'zh' ? 'zh-CN' : 'en-US'
 const toast = inject('toast')
 const loading = ref(true)
 const running = ref(false)
@@ -64,7 +65,7 @@ const memoryMetrics = computed(() => {
     { label: t('benchmarks.queryLatency'), value: m.avg_query_latency_ms + 'ms', target: '<20ms' },
     { label: t('benchmarks.crossSession'), value: m.cross_session_persistence ? '✅' : '❌', target: '✅' },
     { label: t('benchmarks.dedupRate'), value: (m.dedup_ratio * 100).toFixed(0) + '%', target: '>80%' },
-    { label: t('benchmarks.totalMemories'), value: m.total_memories + '条', target: '-' },
+    { label: t('benchmarks.totalMemories'), value: '' + m.total_memories + t('common.itemsUnit'), target: '-' },
   ]
 })
 
@@ -85,17 +86,17 @@ const evolutionMetrics = computed(() => {
   if (!latest.value?.evolution) return []
   const e = latest.value.evolution
   return [
-    { label: t('benchmarks.totalReflections'), value: e.total_reflections + '次', target: '>30' },
+    { label: t('benchmarks.totalReflections'), value: '' + e.total_reflections + t('common.timesUnit'), target: '>30' },
     { label: t('benchmarks.matureLaws'), value: e.laws_with_enough_samples + '/7', target: '7/7' },
     { label: t('benchmarks.avgSuccessRate'), value: (e.avg_success_rate * 100).toFixed(0) + '%', target: '>70%' },
-    { label: t('benchmarks.solidifiedSkills'), value: e.skills_solidified + '个', target: '>5' },
+    { label: t('benchmarks.solidifiedSkills'), value: '' + e.skills_solidified + t('common.countUnit'), target: '>5' },
   ]
 })
 
 const historyScores = computed(() => {
   return history.value.map(h => ({
     id: h.id,
-    time: new Date(h.timestamp * 1000).toLocaleDateString('zh-CN'),
+    time: new Date(h.timestamp * 1000).toLocaleDateString(dateLocale()),
     memory: h.scores.memory,
     wisdom: h.scores.wisdom,
     evolution: h.scores.evolution,
@@ -124,7 +125,7 @@ const competitors = computed(() => {
 
 function formatTime(ts) {
   if (!ts) return '-'
-  return new Date(ts * 1000).toLocaleString('zh-CN')
+  return new Date(ts * 1000).toLocaleString(dateLocale())
 }
 
 onMounted(loadData)

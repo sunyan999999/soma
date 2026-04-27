@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { api } from '../api'
 
 const { t } = useI18n()
+function lawName(id) { return t(`laws.${id}`) || id }
 const toast = inject('toast')
 
 const weights = ref({})
@@ -32,7 +33,7 @@ async function adjustWeight(lawId, newWeight) {
   try {
     await api.frameworkAdjust(lawId, newWeight)
     weights.value = { ...weights.value, [lawId]: newWeight }
-    toast(`${t('framework.weightUpdated')}: ${lawId} → ${newWeight.toFixed(2)}`, 'success')
+    toast(`${t('framework.weightUpdated')}: ${lawName(lawId)} → ${newWeight.toFixed(2)}`, 'success')
   } catch (e) {
     toast(`${t('framework.adjustFailed')}: ${e.message}`, 'error')
   }
@@ -83,7 +84,7 @@ async function clearLog() {
         <div class="gap-sm" style="margin-top:16px;">
           <div v-for="(w, lawId) in weights" :key="lawId">
             <div class="row row-between" style="margin-bottom:4px;">
-              <span style="font-size:0.85rem;font-weight:500;">{{ lawId }}</span>
+              <span style="font-size:0.85rem;font-weight:500;">{{ lawName(lawId) }}</span>
               <span style="font-size:0.8rem;color:var(--text-muted);">{{ w.toFixed(3) }}</span>
             </div>
             <div style="position:relative;height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;">
@@ -106,7 +107,7 @@ async function clearLog() {
         <h3 class="card-title">{{ t('framework.manualAdjust') }}</h3>
         <div class="gap-sm" style="margin-top:16px;">
           <div v-for="(w, lawId) in weights" :key="'adj_'+lawId" class="row" style="gap:12px;">
-            <span style="width:120px;font-size:0.8rem;">{{ lawId }}</span>
+            <span style="width:120px;font-size:0.8rem;">{{ lawName(lawId) }}</span>
             <input
               type="range" min="0" max="1" step="0.01"
               :value="w"
@@ -132,9 +133,9 @@ async function clearLog() {
           >
             {{ (s.success_rate * 100).toFixed(0) }}%
           </div>
-          <div style="font-size:0.85rem;font-weight:600;margin-top:2px;">{{ lawId }}</div>
+          <div style="font-size:0.85rem;font-weight:600;margin-top:2px;">{{ lawName(lawId) }}</div>
           <div style="font-size:0.75rem;color:var(--text-muted);">
-            {{ s.successes }}/{{ s.total }} {{ t('chat.analysisComplete').split(' ')[0] || '成功' }}
+            {{ s.successes }}/{{ s.total }} {{ t('common.success') }}
           </div>
         </div>
       </div>
@@ -164,7 +165,7 @@ async function clearLog() {
             <span style="font-size:0.8rem;color:var(--text-muted);"> ({{ c.occurrences }} {{ t('framework.successCount') }})</span>
           </template>
           <template v-else>
-            <strong>{{ c.law_id }}</strong>:
+            <strong>{{ lawName(c.law_id) }}</strong>:
             {{ c.old_weight }} → <strong>{{ c.new_weight }}</strong>
             <span style="font-size:0.8rem;color:var(--text-muted);">
               ({{ t('framework.successRateLabel') }} {{ (c.success_rate * 100).toFixed(0) }}%, n={{ c.total_samples }})
@@ -191,8 +192,8 @@ async function clearLog() {
           :key="entry.task_id + entry.timestamp"
           style="padding:8px 0;border-bottom:1px solid var(--border);font-size:0.85rem;"
         >
-          <span :style="{color: entry.outcome === 'success' || entry.outcome === '成功' ? 'var(--emerald)' : 'var(--rose)'}">
-            [{{ entry.outcome }}]
+          <span :style="{color: entry.outcome === 'success' ? 'var(--emerald)' : 'var(--rose)'}">
+            [{{ entry.outcome === 'success' ? t('common.success') : t('common.failure') }}]
           </span>
           <span style="color:var(--text-muted);margin-left:8px;">{{ entry.task_id }}</span>
         </div>

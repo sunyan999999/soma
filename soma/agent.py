@@ -63,7 +63,21 @@ class SOMA_Agent:
         # Step 6: 写入进化器上下文
         self.evolver.set_current_context(foci, activated)
 
-        # Step 7: 录制 session 到 AnalyticsStore（供仪表盘消费）
+        # Step 7: 录制 session（供仪表盘消费）
+        self.record_session(problem, answer, foci, activated)
+
+        return answer
+
+    def record_session(
+        self, problem: str, answer: str,
+        foci: List[Focus], activated: List[ActivatedMemory],
+    ) -> None:
+        """录制一次对话会话到 AnalyticsStore。
+
+        供所有调用路径（respond / chat / 外部流式）统一使用。
+        接入方在流式收集完 answer 后调用此方法即可。
+        """
+        import sys, time
         try:
             from soma.analytics import AnalyticsStore
             store = AnalyticsStore(self.config.episodic_persist_dir)
@@ -81,10 +95,9 @@ class SOMA_Agent:
                 "memory_stats": self.memory.stats(),
                 "weights": self.evolver.get_weights(),
             })
-        except Exception:
-            pass
-
-        return answer
+        except Exception as e:
+            print(f"[soma] 录制会话失败 (dir={self.config.episodic_persist_dir}): {e}",
+                  file=sys.stderr)
 
     def _build_prompt(
         self,
@@ -92,12 +105,21 @@ class SOMA_Agent:
         foci: List[Focus],
         memories: List[ActivatedMemory],
     ) -> str:
-        """构建 LLM Prompt：框架上下文 + 相关记忆 + 问题"""
-        # 框架上下文
-        foci_text = "\n".join(
-            f"### {i+1}. {f.dimension}\n*触发原因*: {f.rationale}"
-            for i, f in enumerate(foci)
-        )
+        """构建 LLM Prompt：思考角度 + 相关记忆 + 问题"""
+        # 思考角度 — 剥离规律名称，只保留思考方向描述
+        angles = []
+        for i, f in enumerate(foci):
+            clean = f.dimension
+            # 去掉 "从「规律名」出发：" 或 "从「规律名」视角审视：" 前缀
+            if "出发：" in clean:
+                clean = clean.split("出发：", 1)[1]
+            elif "视角审视：" in clean:
+                clean = clean.split("视角审视：", 1)[1]
+            # 去掉尾部 "应用于问题：「...」"
+            if "。应用于问题：" in clean:
+                clean = clean.split("。应用于问题：")[0]
+            angles.append(f"{i+1}. {clean}")
+        foci_text = "\n".join(angles)
 
         # 记忆参考
         if memories:
@@ -109,10 +131,10 @@ class SOMA_Agent:
         else:
             memory_text = "（暂无直接相关的参考信息）"
 
-        prompt = f"""你是一位**智者**，运用系统性的思维框架来分析和回答问题。
+        prompt = f"""你是一位**智者**，善于从多个角度深入思考问题。
 
-## 思维框架
-以下是你用来拆解当前问题的思维规律和分析维度：
+## 思考角度
+针对当前问题，可以从以下角度切入分析：
 
 {foci_text}
 
@@ -125,10 +147,10 @@ class SOMA_Agent:
 {problem}
 
 ---
-请综合运用思维框架和相关经验，给出有深度、有洞见的回答。
-在回答中：
-1. 可以自然融入框架思维，但不必逐条罗列
-2. 结合你的经验和知识给出分析
+请综合以上思考角度和相关经验，给出有深度、有洞见的回答。
+重要：
+1. **不要在回答中提及任何规律、理论或框架的名称**，将思考方式自然融入分析
+2. 用日常交流的语言表达，像一位智者在自然交谈
 3. 给出综合性的解答与建议"""
 
         return prompt

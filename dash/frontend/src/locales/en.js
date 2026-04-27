@@ -1,4 +1,26 @@
 export default {
+  common: {
+    success: 'Success',
+    failure: 'Failure',
+    countUnit: '',
+    timesUnit: 'x',
+    itemsUnit: '',
+  },
+  lang: {
+    switchToEn: 'Switch to English',
+    switchToZh: '切换到中文',
+    zh: '中',
+    en: 'EN',
+  },
+  laws: {
+    first_principles: 'First Principles',
+    systems_thinking: 'Systems Thinking',
+    contradiction_analysis: 'Contradiction Analysis',
+    pareto_principle: 'Pareto Principle',
+    inversion: 'Inversion',
+    analogical_reasoning: 'Analogical Reasoning',
+    evolutionary_lens: 'Evolutionary Lens',
+  },
   nav: {
     chat: 'Chat',
     benchmarks: 'Benchmarks',
@@ -68,6 +90,8 @@ export default {
     searchTab: '🔍 Search',
     episodicTab: '➕ Episodic',
     semanticTab: '🔗 Semantic',
+    defaultDomain: 'General',
+    defaultType: 'Note',
     searchPlaceholder: 'Enter keywords to search memories...',
     searching: 'Searching...',
     search: 'Search',

@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { api } from '../api'
 
 const { t } = useI18n()
+function lawName(id) { return t(`laws.${id}`) || id }
 const toast = inject('toast')
 
 const problem = ref('')
@@ -124,7 +125,7 @@ const hasResult = computed(() => result.value !== null)
             @click="activeFocusIdx = i"
           >
             <div class="row row-between">
-              <span class="badge badge-accent">{{ f.law_id }}</span>
+              <span class="badge badge-accent">{{ lawName(f.law_id) }}</span>
               <span class="badge badge-cyan">{{ t('chat.weight') }} {{ f.weight.toFixed(2) }}</span>
             </div>
             <p style="font-size:0.85rem;margin-top:12px;color:var(--text-secondary);line-height:1.6;">

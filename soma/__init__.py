@@ -1,3 +1,4 @@
+import os
 import time
 from pathlib import Path
 
@@ -47,10 +48,12 @@ class SOMA:
         framework_config: str = None,
         llm: str = "deepseek-chat",
         use_vector_search: bool = True,
-        persist_dir: str = "soma_data",
+        persist_dir: str = None,
         recall_threshold: float = 0.01,
         top_k: int = 5,
     ):
+        if persist_dir is None:
+            persist_dir = os.environ.get("SOMA_DATA_DIR", "soma_data")
         if framework_config is None:
             framework_config = str(_DEFAULT_FRAMEWORK)
         framework_path = Path(framework_config)
@@ -121,25 +124,7 @@ class SOMA:
             "weights": self._agent.evolver.get_weights(),
         }
 
-        # 记录到 AnalyticsStore（与 REST API 共享同一数据库）
-        try:
-            from soma.analytics import AnalyticsStore
-            store = AnalyticsStore(self._config.episodic_persist_dir)
-            store.record_session({
-                "id": f"session_{int(time.time())}_{self._session_count}",
-                "problem": problem,
-                "mock_mode": self._config.llm_model == "mock" or self._config.llm_model is None,
-                "provider_used": self._config.llm_model or "mock",
-                "response_time_ms": 0,
-                "foci": result["foci"],
-                "activated_memories": result["activated_memories"],
-                "answer": answer,
-                "memory_stats": result["memory_stats"],
-                "weights": result["weights"],
-            })
-        except Exception:
-            pass
-
+        self._agent.record_session(problem, answer, foci, activated)
         return result
 
     def _mock_respond(self, problem, foci=None, activated=None):

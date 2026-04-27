@@ -1,7 +1,11 @@
 <script setup>
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
+
+const tooltip = computed(() => locale.value === 'zh' ? t('lang.switchToEn') : t('lang.switchToZh'))
+const label = computed(() => locale.value === 'zh' ? t('lang.zh') : t('lang.en'))
 
 function toggle() {
   locale.value = locale.value === 'zh' ? 'en' : 'zh'
@@ -11,11 +15,11 @@ function toggle() {
 <template>
   <button
     class="lang-switcher"
-    :title="locale === 'zh' ? 'Switch to English' : '切换到中文'"
+    :title="tooltip"
     @click="toggle"
   >
     <span class="lang-icon">{{ locale === 'zh' ? '🌐' : '🌏' }}</span>
-    <span class="lang-label">{{ locale === 'zh' ? '中' : 'EN' }}</span>
+    <span class="lang-label">{{ label }}</span>
   </button>
 </template>
 
