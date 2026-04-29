@@ -25,6 +25,10 @@
 
 📖 **[中文文档](README_zh.md)** | **[Documentation](docs/)** | **[Contributing](CONTRIBUTING.md)** | **[Changelog](CHANGELOG.md)**
 
+<p align="center">
+  <img src="docs/images/demo-pipeline.gif" alt="SOMA Pipeline Demo" width="720">
+</p>
+
 ## ⚡ Five-Minute Integration
 
 ```bash
