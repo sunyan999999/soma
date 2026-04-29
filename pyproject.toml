@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "soma-core"
+name = "soma-wisdom"
 version = "0.3.0b1"
 description = "SOMA: Somatic Wisdom Architecture — Wisdom over Memory"
 readme = "README.md"
