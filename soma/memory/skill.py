@@ -22,6 +22,7 @@ class SkillStore(BaseMemoryStore):
         self._create_table()
 
     def _create_table(self):
+        self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute(
             """
             CREATE TABLE IF NOT EXISTS skills (
@@ -36,7 +37,47 @@ class SkillStore(BaseMemoryStore):
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_skill_created ON skills(created_at DESC)"
         )
+        self._create_fts5()
         self._conn.commit()
+
+    def _create_fts5(self):
+        """创建 FTS5 trigram 全文索引"""
+        self._conn.execute(
+            """
+            CREATE VIRTUAL TABLE IF NOT EXISTS skills_fts USING fts5(
+                name,
+                pattern,
+                context_json,
+                content='skills',
+                content_rowid='rowid',
+                tokenize='trigram'
+            )
+            """
+        )
+        self._conn.executescript("""
+            CREATE TRIGGER IF NOT EXISTS skills_fts_ai AFTER INSERT ON skills BEGIN
+                INSERT INTO skills_fts(rowid, name, pattern, context_json)
+                VALUES (new.rowid, new.name, new.pattern, new.context_json);
+            END;
+            CREATE TRIGGER IF NOT EXISTS skills_fts_ad AFTER DELETE ON skills BEGIN
+                INSERT INTO skills_fts(skills_fts, rowid, name, pattern, context_json)
+                VALUES ('delete', old.rowid, old.name, old.pattern, old.context_json);
+            END;
+            CREATE TRIGGER IF NOT EXISTS skills_fts_au AFTER UPDATE ON skills BEGIN
+                INSERT INTO skills_fts(skills_fts, rowid, name, pattern, context_json)
+                VALUES ('delete', old.rowid, old.name, old.pattern, old.context_json);
+                INSERT INTO skills_fts(rowid, name, pattern, context_json)
+                VALUES (new.rowid, new.name, new.pattern, new.context_json);
+            END;
+        """)
+        populated = self._conn.execute(
+            "SELECT COUNT(*) FROM skills_fts"
+        ).fetchone()[0]
+        if populated == 0:
+            self._conn.execute(
+                "INSERT INTO skills_fts(rowid, name, pattern, context_json) "
+                "SELECT rowid, name, pattern, context_json FROM skills"
+            )
 
     def add_skill(
         self,
@@ -64,36 +105,78 @@ class SkillStore(BaseMemoryStore):
         if not keywords:
             return []
 
-        conditions = []
-        params = []
-        for kw in keywords:
-            pattern = f"%{kw}%"
-            conditions.append("(name LIKE ? OR pattern LIKE ? OR context_json LIKE ?)")
-            params.extend([pattern, pattern, pattern])
+        # FTS5 trigram 全文搜索（3字及以上）+ LIKE 兜底
+        fts_keywords = [kw for kw in keywords if len(kw) >= 3]
+        memories: List[MemoryUnit] = []
+        seen_ids: set = set()
 
-        where_clause = " OR ".join(conditions)
-        sql = f"""
-            SELECT * FROM skills
-            WHERE {where_clause}
-            ORDER BY created_at DESC
-            LIMIT ?
-        """
-        params.append(top_k)
+        if fts_keywords:
+            fts_query = " OR ".join(f'"{kw}"' for kw in fts_keywords)
+            try:
+                sql = """
+                    SELECT s.* FROM skills s
+                    INNER JOIN skills_fts fts ON s.rowid = fts.rowid
+                    WHERE skills_fts MATCH ?
+                    ORDER BY s.created_at DESC
+                    LIMIT ?
+                """
+                rows = self._conn.execute(sql, (fts_query, top_k)).fetchall()
+                for row in rows:
+                    mid = row["id"]
+                    if mid not in seen_ids:
+                        seen_ids.add(mid)
+                        memories.append(
+                            MemoryUnit(
+                                id=mid,
+                                content=f"技能: {row['name']} — {row['pattern']}",
+                                timestamp=row["created_at"],
+                                context=json.loads(row["context_json"]),
+                                memory_type="skill",
+                                importance=0.8,
+                            )
+                        )
+            except sqlite3.OperationalError:
+                pass
 
-        rows = self._conn.execute(sql, params).fetchall()
-        results = []
-        for row in rows:
-            results.append(
-                MemoryUnit(
-                    id=row["id"],
-                    content=f"技能: {row['name']} — {row['pattern']}",
-                    timestamp=row["created_at"],
-                    context=json.loads(row["context_json"]),
-                    memory_type="skill",
-                    importance=0.8,
-                )
-            )
-        return results
+        # LIKE 兜底（短关键词 1-2 字）
+        remaining = top_k - len(memories)
+        like_keywords = [kw for kw in keywords if len(kw) < 3]
+        if like_keywords and remaining > 0:
+            conditions = []
+            params = []
+            if seen_ids:
+                placeholders = ",".join("?" * len(seen_ids))
+                conditions.append(f"id NOT IN ({placeholders})")
+                params.extend(seen_ids)
+            kw_conds = []
+            for kw in like_keywords:
+                pattern = f"%{kw}%"
+                kw_conds.append("(name LIKE ? OR pattern LIKE ? OR context_json LIKE ?)")
+                params.extend([pattern, pattern, pattern])
+            conditions.append("(" + " OR ".join(kw_conds) + ")")
+            sql = f"""
+                SELECT * FROM skills
+                WHERE {' AND '.join(conditions)}
+                ORDER BY created_at DESC
+                LIMIT ?
+            """
+            params.append(remaining)
+            rows = self._conn.execute(sql, params).fetchall()
+            for row in rows:
+                mid = row["id"]
+                if mid not in seen_ids:
+                    memories.append(
+                        MemoryUnit(
+                            id=mid,
+                            content=f"技能: {row['name']} — {row['pattern']}",
+                            timestamp=row["created_at"],
+                            context=json.loads(row["context_json"]),
+                            memory_type="skill",
+                            importance=0.8,
+                        )
+                    )
+
+        return memories
 
     def count(self) -> int:
         row = self._conn.execute("SELECT COUNT(*) FROM skills").fetchone()

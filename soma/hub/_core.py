@@ -77,10 +77,12 @@ class ActivationHub:
         return {
             "memory_id": mem.id,
             "content_preview": mem.content[:200],
+            "content": mem.content,
             "activation_score": activated.activation_score,
             "source": activated.source,
             "match_rationale": activated.match_rationale,
             "relevance_potential": mem.relevance_potential(),
             "importance": mem.importance,
+            "context": getattr(mem, "context", {}) or {},
             "access_count": mem.access_count,
         }

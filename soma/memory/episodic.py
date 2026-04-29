@@ -48,6 +48,7 @@ class EpisodicStore(BaseMemoryStore):
                     )
 
     def _create_table(self):
+        self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute(
             """
             CREATE TABLE IF NOT EXISTS episodic_memories (
@@ -75,7 +76,48 @@ class EpisodicStore(BaseMemoryStore):
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_content_hash ON episodic_memories(content_hash)"
         )
+        self._create_fts5()
         self._conn.commit()
+
+    def _create_fts5(self):
+        """创建 FTS5 trigram 全文索引表，用于加速中文关键词搜索"""
+        self._conn.execute(
+            """
+            CREATE VIRTUAL TABLE IF NOT EXISTS episodic_fts USING fts5(
+                content,
+                context_json,
+                content='episodic_memories',
+                content_rowid='rowid',
+                tokenize='trigram'
+            )
+            """
+        )
+        # 触发器: INSERT → 同步到 FTS
+        self._conn.executescript("""
+            CREATE TRIGGER IF NOT EXISTS episodic_fts_ai AFTER INSERT ON episodic_memories BEGIN
+                INSERT INTO episodic_fts(rowid, content, context_json)
+                VALUES (new.rowid, new.content, new.context_json);
+            END;
+            CREATE TRIGGER IF NOT EXISTS episodic_fts_ad AFTER DELETE ON episodic_memories BEGIN
+                INSERT INTO episodic_fts(episodic_fts, rowid, content, context_json)
+                VALUES ('delete', old.rowid, old.content, old.context_json);
+            END;
+            CREATE TRIGGER IF NOT EXISTS episodic_fts_au AFTER UPDATE ON episodic_memories BEGIN
+                INSERT INTO episodic_fts(episodic_fts, rowid, content, context_json)
+                VALUES ('delete', old.rowid, old.content, old.context_json);
+                INSERT INTO episodic_fts(rowid, content, context_json)
+                VALUES (new.rowid, new.content, new.context_json);
+            END;
+        """)
+        # 迁移已有数据到 FTS（幂等：如果 FTS 刚创建且为空）
+        populated = self._conn.execute(
+            "SELECT COUNT(*) FROM episodic_fts"
+        ).fetchone()[0]
+        if populated == 0:
+            self._conn.execute(
+                "INSERT INTO episodic_fts(rowid, content, context_json) "
+                "SELECT rowid, content, context_json FROM episodic_memories"
+            )
 
     def _compute_hash(self, content: str) -> str:
         return hashlib.sha256(content.encode("utf-8")).hexdigest()
@@ -123,22 +165,84 @@ class EpisodicStore(BaseMemoryStore):
         if not keywords:
             return []
 
+        # 分离长关键词(FTS5 trigram)和短关键词(LIKE兜底)
+        fts_keywords = [kw for kw in keywords if len(kw) >= 3]
+        like_keywords = [kw for kw in keywords if len(kw) < 3]
+
+        seen_ids = set()
+        memories = []
+
+        # 路径1: FTS5 trigram 全文搜索（3字及以上，毫秒级）
+        if fts_keywords:
+            fts_query = " OR ".join(f'"{kw}"' for kw in fts_keywords)
+            try:
+                sql = """
+                    SELECT em.* FROM episodic_memories em
+                    INNER JOIN episodic_fts fts ON em.rowid = fts.rowid
+                    WHERE episodic_fts MATCH ?
+                    ORDER BY em.timestamp DESC, em.importance DESC
+                    LIMIT ?
+                """
+                rows = self._conn.execute(sql, (fts_query, top_k)).fetchall()
+                for r in rows:
+                    mem = self._row_to_memory(r)
+                    if mem.id not in seen_ids:
+                        seen_ids.add(mem.id)
+                        memories.append(mem)
+            except sqlite3.OperationalError:
+                pass  # FTS 语法错误时退回到 LIKE
+
+        # 路径2: LIKE 兜底（短关键词 1-2 字）
+        remaining = top_k - len(memories)
+        if like_keywords and remaining > 0:
+            conditions = []
+            params = []
+            if seen_ids:
+                placeholders = ",".join("?" * len(seen_ids))
+                conditions.append(f"id NOT IN ({placeholders})")
+                params.extend(seen_ids)
+            kw_conds = []
+            for kw in like_keywords:
+                pattern = f"%{kw}%"
+                kw_conds.append("(content LIKE ? OR context_json LIKE ?)")
+                params.extend([pattern, pattern])
+            conditions.append("(" + " OR ".join(kw_conds) + ")")
+            where_clause = " AND ".join(conditions)
+            sql = f"""
+                SELECT * FROM episodic_memories
+                WHERE {where_clause}
+                ORDER BY timestamp DESC, importance DESC
+                LIMIT ?
+            """
+            params.append(remaining)
+            rows = self._conn.execute(sql, params).fetchall()
+            for r in rows:
+                mem = self._row_to_memory(r)
+                if mem.id not in seen_ids:
+                    seen_ids.add(mem.id)
+                    memories.append(mem)
+
+        # 路径3: 纯 LIKE 兜底（FTS 失败时的完整回退）
+        if not memories and not fts_keywords:
+            return self._like_fallback(keywords, top_k)
+
+        return memories
+
+    def _like_fallback(self, keywords: List[str], top_k: int = 5) -> List[MemoryUnit]:
+        """纯 LIKE 搜索兜底（保留用于边缘情况）"""
         conditions = []
         params = []
         for kw in keywords:
             pattern = f"%{kw}%"
             conditions.append("(content LIKE ? OR context_json LIKE ?)")
             params.extend([pattern, pattern])
-
-        where_clause = " OR ".join(conditions)
         sql = f"""
             SELECT * FROM episodic_memories
-            WHERE {where_clause}
+            WHERE {' OR '.join(conditions)}
             ORDER BY timestamp DESC, importance DESC
             LIMIT ?
         """
         params.append(top_k)
-
         rows = self._conn.execute(sql, params).fetchall()
         return [self._row_to_memory(r) for r in rows]
 
