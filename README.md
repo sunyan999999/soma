@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-0.2.0--alpha-orange" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-0.3.0b1-orange" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/python-3.10%2B-green" alt="Python"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/semantic_recall-100%25-brightgreen" alt="Semantic Recall"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/query_latency-5.4ms-brightgreen" alt="Latency"></a>
@@ -27,7 +27,7 @@
 ## ⚡ Five-Minute Integration
 
 ```bash
-pip install soma-core
+pip install soma-wisdom
 python -m soma          # one-command verification
 ```
 
@@ -91,7 +91,7 @@ SOMA_API_KEY=test python dash/server.py
 ## Installation
 
 ```bash
-pip install soma-core
+pip install soma-wisdom
 ```
 
 Requires **Python 3.10+**. The embedding engine uses ONNX Runtime for CPU inference — no CUDA, no Docker, no external services.
