@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-0.2.0--alpha-orange" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-0.3.0b1-orange" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/python-3.10%2B-green" alt="Python"></a>
   <a href="#基准测试"><img src="https://img.shields.io/badge/语义召回-100%25-brightgreen" alt="语义召回率"></a>
   <a href="#基准测试"><img src="https://img.shields.io/badge/查询延迟-5.4ms-brightgreen" alt="延迟"></a>
@@ -27,7 +27,7 @@
 ## ⚡ 五分钟接入
 
 ```bash
-pip install soma-core
+pip install soma-wisdom
 python -m soma          # 一行命令验证全部功能
 ```
 
@@ -91,7 +91,7 @@ SOMA_API_KEY=test python dash/server.py
 ## 安装
 
 ```bash
-pip install soma-core
+pip install soma-wisdom
 ```
 
 需要 **Python 3.10+**。嵌入引擎使用 ONNX Runtime 进行 CPU 推理，无需 CUDA、Docker 或外部服务。
