@@ -8,7 +8,7 @@ framework:
       name: "第一性原理"
       description: "回归事物最基本的要素，从底层逻辑推导，不被既有经验束缚"
       weight: 0.9
-      triggers: ["第一性", "基本原理", "底层逻辑", "回归本质", "最基础"]
+      triggers: ["第一性", "基本原理", "底层逻辑", "回归本质", "最基础", "为什么", "本质", "根源", "根本", "本源", "第一性原理", "最根本"]
       relations: ["systems_thinking"]
 
     - id: "systems_thinking"

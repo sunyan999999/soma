@@ -62,7 +62,7 @@ class EvolutionBenchmark:
 @dataclass
 class BenchmarkRun:
     """一次完整基准测试运行"""
-    version: str = "0.2.0"
+    version: str = "0.3.0b1"
     timestamp: float = 0.0
     memory: MemoryBenchmark = field(default_factory=MemoryBenchmark)
     wisdom: WisdomBenchmark = field(default_factory=WisdomBenchmark)
@@ -460,7 +460,7 @@ def run_full_benchmark(agent, ablation_data: Optional[Dict] = None) -> Benchmark
     evolution = run_evolution_benchmark(agent)
 
     run = BenchmarkRun(
-        version="0.2.0",
+        version="0.3.0b1",
         timestamp=time.time(),
         memory=memory,
         wisdom=wisdom,

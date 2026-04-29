@@ -40,6 +40,9 @@ class SOMA_Agent:
         self.evolver = MetaEvolver(self.engine, memory_core=self.memory,
                                    persist_dir=config.episodic_persist_dir)
 
+        # 保存最近一次构建的 prompt（供仪表盘可视化）
+        self._last_prompt: str = ""
+
     def respond(self, problem: str) -> str:
         """完整管道：拆解 → 双向激活 → 合成 → 应答"""
         import time
@@ -92,6 +95,7 @@ class SOMA_Agent:
                           "rationale": f.rationale} for f in foci],
                 "activated_memories": [self.hub.explain_activation(am) for am in activated],
                 "answer": answer,
+                "prompt": getattr(self, '_last_prompt', ''),
                 "memory_stats": self.memory.stats(),
                 "weights": self.evolver.get_weights(),
             })
@@ -153,6 +157,7 @@ class SOMA_Agent:
 2. 用日常交流的语言表达，像一位智者在自然交谈
 3. 给出综合性的解答与建议"""
 
+        self._last_prompt = prompt
         return prompt
 
     def _call_llm(self, prompt: str) -> str:

@@ -1,7 +1,8 @@
 <script setup>
-import { ref, inject, onMounted } from 'vue'
+import { ref, inject, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { api } from '../api'
+import DecompositionGraph from '../components/DecompositionGraph.vue'
 
 const { t } = useI18n()
 function lawName(id) { return t(`laws.${id}`) || id }
@@ -16,6 +17,20 @@ const evolving = ref(false)
 const logData = ref({ entries: [], total: 0 })
 const clearingLog = ref(false)
 
+// 最新拆解数据
+const latestFoci = ref([])
+const latestProblem = ref('')
+
+const lawNames = computed(() => ({
+  first_principles: t('laws.first_principles'),
+  systems_thinking: t('laws.systems_thinking'),
+  contradiction_analysis: t('laws.contradiction_analysis'),
+  pareto_principle: t('laws.pareto_principle'),
+  inversion: t('laws.inversion'),
+  analogical_reasoning: t('laws.analogical_reasoning'),
+  evolutionary_lens: t('laws.evolutionary_lens'),
+}))
+
 onMounted(async () => {
   try {
     const [w, s, l] = await Promise.all([
@@ -26,6 +41,15 @@ onMounted(async () => {
     weights.value = w
     lawStats.value = s
     logData.value = l
+  } catch {}
+
+  // 加载最新一次会话的拆解数据
+  try {
+    const sessions = await api.analyticsSessions(1, 0, '', false)
+    if (sessions.length && sessions[0].foci) {
+      latestFoci.value = sessions[0].foci
+      latestProblem.value = sessions[0].problem_preview || ''
+    }
   } catch {}
 })
 
@@ -116,6 +140,21 @@ async function clearLog() {
             />
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Latest Decomposition Tree -->
+    <div class="card" style="margin-bottom:24px;">
+      <h3 class="card-title">{{ t('framework.latestDecomposition') }}</h3>
+      <div v-if="latestFoci.length" style="margin-top:12px;">
+        <DecompositionGraph
+          :foci="latestFoci"
+          :problem="latestProblem"
+          :law-names="lawNames"
+        />
+      </div>
+      <div v-else style="text-align:center;padding:40px;color:var(--text-muted);font-size:0.85rem;">
+        {{ t('framework.noDecompositionData') }}
       </div>
     </div>
 

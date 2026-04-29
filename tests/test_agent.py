@@ -51,7 +51,7 @@ class TestSOMA_Agent:
         activated = agent.hub.activate(foci)
         prompt = agent._build_prompt("增长停滞的根本原因是什么？", foci, activated)
         # 检查 Prompt 结构
-        assert "## 思维框架" in prompt
+        assert "## 思考角度" in prompt
         assert "## 相关记忆与经验" in prompt
         assert "## 当前问题" in prompt
         assert "增长停滞的根本原因是什么？" in prompt

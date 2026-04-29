@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.3.0b1] — Unreleased
+
+### Added
+- **MMR diversity re-ranking**: ActivationHub now uses Maximal Marginal Relevance to balance relevance with content/source diversity, preventing near-duplicate memories from dominating results
+- **Hub pluggable architecture**: `ActivationHub` decomposed into 3-stage pipeline — `MemoryRetriever` (recall), `RelevanceScorer` (scoring), `MMRRanker` (re-ranking) — all replaceable via constructor injection or `pyproject.toml` entry points
+- **Entry points plugin system**: `[project.entry-points."soma.plugins"]` — external packages can register custom retriever/scorer/ranker implementations
+- **Frontend route lazy loading**: Vue Router dynamic imports reduce initial JS payload by 75% (756KB → 188KB)
+
+### Changed
+- `soma/hub.py` → facade re-export; implementation moved to `soma/hub/` sub-package
+- `hub.activate()` now applies threshold AFTER MMR re-ranking for wider candidate pool
+- Hard dedup at >88% Jaccard similarity during MMR selection
+
+### Fixed
+- Version strings unified to "0.3.0b1" across all modules
+- `benchmarksRun()` API function added to frontend
+
+---
+
 ## [0.2.0-alpha] — 2026-04-26
 
 ### Added
@@ -51,6 +70,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 变更日志
 
 格式基于 [Keep a Changelog](https://keepachangelogen/zh-CN/1.0.0/)。
+
+### [0.3.0b1] — Unreleased
+
+#### 新增
+- **MMR 多样性重排**: ActivationHub 使用最大边界相关性算法平衡关联度与内容/来源多样性，避免高度重复记忆占据全部结果
+- **Hub 可插拔架构**: `ActivationHub` 拆分为三段式管道 — `MemoryRetriever`（多路召回）、`RelevanceScorer`（相关性打分）、`MMRRanker`（多样性重排）— 均可通过构造器注入或 `pyproject.toml` entry points 替换
+- **Entry points 插件体系**: `[project.entry-points."soma.plugins"]` — 外部包可注册自定义 retriever/scorer/ranker 实现
+- **前端路由懒加载**: Vue Router 动态 import 将首屏 JS 体积压缩 75%（756KB → 188KB）
+
+#### 变更
+- `soma/hub.py` → 门面 re-export；实现迁移至 `soma/hub/` 子包
+- `hub.activate()` 阈值过滤移至 MMR 重排之后，扩大候选池
+- MMR 选择阶段 >88% Jaccard 相似度硬去重
+
+#### 修复
+- 全模块版本字符串统一为 "0.3.0b1"
+- 前端补全 `benchmarksRun()` API 函数
 
 ### [0.2.0-alpha] — 2026-04-26
 

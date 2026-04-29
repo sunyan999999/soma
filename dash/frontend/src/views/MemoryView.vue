@@ -1,7 +1,8 @@
 <script setup>
-import { ref, inject, onMounted } from 'vue'
+import { ref, inject, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { api } from '../api'
+import ActivationSankey from '../components/ActivationSankey.vue'
 
 const { t } = useI18n()
 const toast = inject('toast')
@@ -27,9 +28,32 @@ const addingSem = ref(false)
 // Tab state
 const tab = ref('search')
 
+// 激活流数据（从最新 analytics session 加载）
+const flowFoci = ref([])
+const flowMemories = ref([])
+const flowLoading = ref(false)
+
 onMounted(async () => {
   try { stats.value = await api.memoryStats() } catch {}
 })
+
+async function loadActivationFlow() {
+  if (flowFoci.value.length) return
+  flowLoading.value = true
+  try {
+    const sessions = await api.analyticsSessions(1, 0, '', false)
+    if (sessions.length) {
+      const detail = await api.analyticsSession(sessions[0].id)
+      flowFoci.value = detail.foci || []
+      flowMemories.value = (detail.activated_memories || []).map(am => ({
+        source: am.source,
+        content: am.content || '',
+        activation_score: am.activation_score || 0,
+      }))
+    }
+  } catch {}
+  flowLoading.value = false
+}
 
 async function doSearch() {
   if (!searchQuery.value.trim()) return
@@ -103,6 +127,7 @@ async function doAddSemantic() {
       <button class="btn" :class="tab === 'search' ? 'btn-primary' : 'btn-secondary'" @click="tab = 'search'">{{ t('memory.searchTab') }}</button>
       <button class="btn" :class="tab === 'add' ? 'btn-primary' : 'btn-secondary'" @click="tab = 'add'">{{ t('memory.episodicTab') }}</button>
       <button class="btn" :class="tab === 'semantic' ? 'btn-primary' : 'btn-secondary'" @click="tab = 'semantic'">{{ t('memory.semanticTab') }}</button>
+      <button class="btn" :class="tab === 'flow' ? 'btn-primary' : 'btn-secondary'" @click="tab = 'flow'; loadActivationFlow()">{{ t('memory.activationFlowTab') }}</button>
     </div>
 
     <!-- Search Tab -->
@@ -207,6 +232,25 @@ async function doAddSemantic() {
           >
             {{ addingSem ? t('memory.saving') : t('memory.saveTriple') }}
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activation Flow Tab -->
+    <div v-if="tab === 'flow'">
+      <div class="card">
+        <h3 class="card-title">{{ t('memory.activationFlowTab') }}</h3>
+        <div v-if="flowLoading" style="text-align:center;padding:40px;">
+          <span class="pulse">⏳</span>
+        </div>
+        <div v-else-if="flowFoci.length && flowMemories.length" style="margin-top:12px;">
+          <ActivationSankey
+            :foci="flowFoci"
+            :activated-memories="flowMemories"
+          />
+        </div>
+        <div v-else style="text-align:center;padding:40px;color:var(--text-muted);font-size:0.85rem;">
+          {{ t('framework.noDecompositionData') }}
         </div>
       </div>
     </div>

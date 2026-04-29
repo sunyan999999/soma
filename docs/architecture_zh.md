@@ -169,7 +169,12 @@ soma-core/
 │   ├── __main__.py          # python -m soma 快速验证
 │   ├── agent.py             # SOMA_Agent: 管道编排器
 │   ├── engine.py            # WisdomEngine: 问题拆解
-│   ├── hub.py               # ActivationHub: 双向激活调度
+│   ├── hub.py               # ActivationHub: 门面 re-export（向后兼容）
+│   ├── hub/                  # 激活调度子包（三段式管道）
+│   │   ├── _core.py          #   ActivationHub 门面编排
+│   │   ├── _retriever.py     #   MemoryRetriever: 多路召回
+│   │   ├── _scorer.py        #   RelevanceScorer: 相关性打分
+│   │   └── _ranker.py        #   MMRRanker: 多样性重排
 │   ├── evolve.py            # MetaEvolver: 反思 + 自动进化
 │   ├── embedder.py          # SOMAEmbedder: fastembed + ONNX
 │   ├── vector_store.py      # NumpyVectorIndex: FAISS 近邻搜索

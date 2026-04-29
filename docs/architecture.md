@@ -169,7 +169,12 @@ soma-core/
 │   ├── __main__.py          # python -m soma verification
 │   ├── agent.py             # SOMA_Agent: pipeline orchestrator
 │   ├── engine.py            # WisdomEngine: problem decomposition
-│   ├── hub.py               # ActivationHub: bidirectional activation
+│   ├── hub.py               # ActivationHub: facade re-export (backward compat)
+│   ├── hub/                  # Activation scheduler sub-package (3-stage pipeline)
+│   │   ├── _core.py          #   ActivationHub facade orchestration
+│   │   ├── _retriever.py     #   MemoryRetriever: multi-store recall
+│   │   ├── _scorer.py        #   RelevanceScorer: relevance scoring
+│   │   └── _ranker.py        #   MMRRanker: diversity re-ranking
 │   ├── evolve.py            # MetaEvolver: reflection + evolution
 │   ├── embedder.py          # SOMAEmbedder: fastembed + ONNX
 │   ├── vector_store.py      # NumpyVectorIndex: FAISS ANN

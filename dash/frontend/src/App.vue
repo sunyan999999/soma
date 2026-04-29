@@ -23,6 +23,7 @@ provide('toast', addToast)
 
 const navItems = computed(() => [
   { path: '/', icon: '💬', label: t('nav.chat') },
+  { path: '/reports', icon: '📋', label: t('nav.reports') },
   { path: '/benchmarks', icon: '📐', label: t('nav.benchmarks') },
   { path: '/analytics', icon: '📊', label: t('nav.analytics') },
   { path: '/memory', icon: '📚', label: t('nav.memory') },
@@ -49,7 +50,7 @@ const navItems = computed(() => [
         </button>
       </nav>
       <div style="margin-top:auto;padding:16px;color:var(--text-muted);font-size:0.75rem;">
-        v0.2.0-alpha
+        v0.3.0-beta
       </div>
     </aside>
 

@@ -2,6 +2,9 @@
 import { ref, inject, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { api } from '../api'
+import DecompositionGraph from '../components/DecompositionGraph.vue'
+import ActivationSankey from '../components/ActivationSankey.vue'
+import PromptPreview from '../components/PromptPreview.vue'
 
 const { t } = useI18n()
 function lawName(id) { return t(`laws.${id}`) || id }
@@ -11,6 +14,8 @@ const problem = ref('')
 const loading = ref(false)
 const result = ref(null)
 const activeFocusIdx = ref(0)
+const showDecompTree = ref(false)
+const showActivationFlow = ref(false)
 
 const phaseLabel = ref('')
 const phaseMessages = computed(() => [
@@ -20,10 +25,23 @@ const phaseMessages = computed(() => [
 ])
 let phaseTimer = null
 
+// 规律名映射供图表组件使用
+const lawNames = computed(() => ({
+  first_principles: t('laws.first_principles'),
+  systems_thinking: t('laws.systems_thinking'),
+  contradiction_analysis: t('laws.contradiction_analysis'),
+  pareto_principle: t('laws.pareto_principle'),
+  inversion: t('laws.inversion'),
+  analogical_reasoning: t('laws.analogical_reasoning'),
+  evolutionary_lens: t('laws.evolutionary_lens'),
+}))
+
 async function analyze() {
   if (!problem.value.trim()) return
   loading.value = true
   result.value = null
+  showDecompTree.value = false
+  showActivationFlow.value = false
   phaseLabel.value = phaseMessages.value[0]
   let idx = 0
   phaseTimer = setInterval(() => {
@@ -138,6 +156,22 @@ const hasResult = computed(() => result.value !== null)
         </div>
       </section>
 
+      <!-- 思维拆解树 -->
+      <section v-if="result.foci.length">
+        <div class="card" style="margin-top:8px;padding:10px 16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;" @click="showDecompTree = !showDecompTree">
+            <span style="font-size:0.88rem;font-weight:600;color:var(--text-secondary);">{{ showDecompTree ? '▾' : '▸' }} {{ t('chat.decompositionTree') }}</span>
+          </div>
+          <div v-if="showDecompTree" style="padding:8px 12px 12px;">
+            <DecompositionGraph
+              :foci="result.foci"
+              :problem="result.problem"
+              :law-names="lawNames"
+            />
+          </div>
+        </div>
+      </section>
+
       <!-- Activated Memories -->
       <section v-if="result.activated_memories.length">
         <div class="row row-between mb-md">
@@ -168,6 +202,26 @@ const hasResult = computed(() => result.value !== null)
             </p>
           </div>
         </div>
+      </section>
+
+      <!-- 记忆激活流 -->
+      <section v-if="result.foci.length && result.activated_memories.length">
+        <div class="card" style="margin-top:8px;padding:10px 16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;" @click="showActivationFlow = !showActivationFlow">
+            <span style="font-size:0.88rem;font-weight:600;color:var(--text-secondary);">{{ showActivationFlow ? '▾' : '▸' }} {{ t('chat.activationFlow') }}</span>
+          </div>
+          <div v-if="showActivationFlow" style="padding:8px 12px 12px;">
+            <ActivationSankey
+              :foci="result.foci"
+              :activated-memories="result.activated_memories"
+            />
+          </div>
+        </div>
+      </section>
+
+      <!-- Prompt 预览 -->
+      <section v-if="result.prompt" style="margin-top:8px;">
+        <PromptPreview :prompt="result.prompt" />
       </section>
 
       <!-- Answer -->

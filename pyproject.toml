@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "soma-core"
-version = "0.2.0a1"
+version = "0.3.0b1"
 description = "SOMA: Somatic Wisdom Architecture — Wisdom over Memory"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -56,6 +56,11 @@ Issues = "https://github.com/sunyan999999/soma/issues"
 
 [project.scripts]
 soma-quickstart = "soma.__main__:main"
+
+[project.entry-points."soma.plugins"]
+retriever = "soma.hub._retriever:MemoryRetriever"
+scorer = "soma.hub._scorer:RelevanceScorer"
+ranker = "soma.hub._ranker:MMRRanker"
 
 [tool.hatch.build.targets.wheel]
 packages = ["soma"]
