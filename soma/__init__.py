@@ -107,6 +107,7 @@ class SOMA:
         result = {
             "problem": problem,
             "answer": answer,
+            "prompt": getattr(self._agent, '_last_prompt', ''),
             "foci": [
                 {
                     "law_id": f.law_id,

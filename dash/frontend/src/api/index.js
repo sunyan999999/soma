@@ -1,8 +1,14 @@
 const BASE = '/api'
 
+// 服务器通过 HTML 注入的 API Key
+const API_KEY = window.__SOMA_API_KEY__ || ''
+
 async function request(path, options = {}) {
+  const headers = { 'Content-Type': 'application/json' }
+  if (API_KEY) headers['X-API-Key'] = API_KEY
+
   const res = await fetch(BASE + path, {
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     ...options,
   })
   if (!res.ok) {
@@ -89,6 +95,10 @@ export const api = {
   // Benchmarks
   benchmarksLatest: () => request('/benchmarks/latest'),
   benchmarksHistory: (limit = 20) => request(`/benchmarks/history?limit=${limit}`),
+  benchmarksRun: () =>
+    request('/benchmarks/run', { method: 'POST' }),
   benchmarksCompare: () => request('/benchmarks/compare'),
-  benchmarksRun: () => request('/benchmarks/run', { method: 'POST' }),
+  // Reports
+  reportsList: () => request('/reports'),
+  report: (id) => request(`/reports/${id}`),
 }

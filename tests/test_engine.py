@@ -86,10 +86,13 @@ class TestWisdomEngine:
         assert foci[0].weight >= foci[1].weight >= foci[2].weight
 
     def test_decompose_fallback(self, engine):
-        """无关键词匹配时从权重前3加权随机选取"""
+        """无关键词匹配时从全部5条规律加权随机选取"""
         foci = engine.decompose("今天天气很好")
         assert len(foci) == 1
-        assert foci[0].law_id in {"first_principles", "systems_thinking", "contradiction"}
+        assert foci[0].law_id in {
+            "first_principles", "systems_thinking", "contradiction",
+            "pareto", "inversion",
+        }
         assert "加权随机选取" in foci[0].rationale
 
     def test_decompose_keywords(self, engine):
@@ -111,6 +114,9 @@ class TestWisdomEngine:
     def test_english_problem_fallback(self, engine):
         """英文问题（中文触发词不匹配时应使用兜底策略）"""
         foci = engine.decompose("Why is the system broken?")
-        # 无中文触发词匹配，从权重前3加权随机选取
+        # 无中文触发词匹配，从全部5条规律加权随机选取
         assert len(foci) == 1
-        assert foci[0].law_id in {"first_principles", "systems_thinking", "contradiction"}
+        assert foci[0].law_id in {
+            "first_principles", "systems_thinking", "contradiction",
+            "pareto", "inversion",
+        }

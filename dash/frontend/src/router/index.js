@@ -1,18 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import ChatView from '../views/ChatView.vue'
-import MemoryView from '../views/MemoryView.vue'
-import FrameworkView from '../views/FrameworkView.vue'
-import SettingsView from '../views/SettingsView.vue'
-import AnalyticsView from '../views/AnalyticsView.vue'
-import BenchmarkView from '../views/BenchmarkView.vue'
 
 const routes = [
-  { path: '/', name: 'Chat', component: ChatView },
-  { path: '/memory', name: 'Memory', component: MemoryView },
-  { path: '/framework', name: 'Framework', component: FrameworkView },
-  { path: '/settings', name: 'Settings', component: SettingsView },
-  { path: '/analytics', name: 'Analytics', component: AnalyticsView },
-  { path: '/benchmarks', name: 'Benchmarks', component: BenchmarkView },
+  { path: '/', name: 'Chat', component: () => import('../views/ChatView.vue') },
+  { path: '/memory', name: 'Memory', component: () => import('../views/MemoryView.vue') },
+  { path: '/framework', name: 'Framework', component: () => import('../views/FrameworkView.vue') },
+  { path: '/settings', name: 'Settings', component: () => import('../views/SettingsView.vue') },
+  { path: '/analytics', name: 'Analytics', component: () => import('../views/AnalyticsView.vue') },
+  { path: '/benchmarks', name: 'Benchmarks', component: () => import('../views/BenchmarkView.vue') },
+  { path: '/reports', name: 'TestReports', component: () => import('../views/TestReportsView.vue') },
 ]
 
 export default createRouter({

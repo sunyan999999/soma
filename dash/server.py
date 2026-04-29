@@ -22,7 +22,7 @@ from soma.agent import SOMA_Agent
 from soma.analytics import AnalyticsStore
 from dash.providers import get_provider_manager
 
-app = FastAPI(title="SOMA API", version="0.2.0")
+app = FastAPI(title="SOMA API", version="0.3.0b1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -305,7 +305,7 @@ def health():
     pm = get_provider_manager()
     return {
         "status": "ok",
-        "version": "0.2.0",
+        "version": "0.3.0b1",
         "mock_mode": _use_mock(),
         "current_provider": pm.current_provider_id,
         "memory_stats": agent.memory.stats(),
@@ -408,14 +408,16 @@ def chat(req: ChatRequest):
     use_mock = _use_mock()
     provider_id = "mock"
     if use_mock:
+        # mock 模式也构建 prompt 供仪表盘可视化
+        agent._build_prompt(req.problem, foci, activated)
         answer = mock_llm_response(foci_data, memory_cards, req.problem)
     else:
         pm = get_provider_manager()
         provider = pm.get_current()
         provider_id = pm.current_provider_id
-        prompt = agent._build_prompt(req.problem, foci, activated)
+        agent._build_prompt(req.problem, foci, activated)
         try:
-            answer = call_llm(prompt, provider)
+            answer = call_llm(agent._last_prompt, provider)
         except Exception as llm_err:
             raise HTTPException(500, f"LLM调用失败 [{provider_id}]: {str(llm_err)[:300]}")
         for am in activated:
@@ -441,6 +443,7 @@ def chat(req: ChatRequest):
         "foci": foci_data,
         "activated_memories": memory_cards,
         "answer": answer,
+        "prompt": getattr(agent, '_last_prompt', ''),
         "memory_stats": agent.memory.stats(),
         "weights": agent.evolver.get_weights(),
         "provider_used": provider_id,
@@ -813,6 +816,76 @@ def benchmarks_run():
         raise HTTPException(500, f"基准测试运行失败: {str(e)[:300]}")
 
 
+# ── Test Reports ──────────────────────────────────────────────
+
+_REPORTS_DIR = Path(__file__).parent.parent / "reports"
+
+
+def _parse_report_frontmatter(text: str) -> dict:
+    """解析 markdown 文件的 YAML frontmatter"""
+    if not text.startswith("---"):
+        return {}
+    end = text.find("---", 3)
+    if end == -1:
+        return {}
+    try:
+        import yaml
+        return yaml.safe_load(text[3:end])
+    except Exception:
+        return {}
+
+
+@app.get("/api/reports")
+def list_reports():
+    """列出所有测试报告"""
+    reports = []
+    if _REPORTS_DIR.exists():
+        for f in sorted(_REPORTS_DIR.glob("*.md"), reverse=True):
+            content = f.read_text(encoding="utf-8")
+            meta = _parse_report_frontmatter(content)
+            # 提取摘要：第一个 # 标题后的第一段
+            summary = ""
+            lines = content.split("\n")
+            in_content = False
+            for line in lines:
+                if line.startswith("# ") and not in_content:
+                    in_content = True
+                    continue
+                if in_content and line.startswith("> "):
+                    summary = line[2:].strip()
+                    break
+            reports.append({
+                "id": meta.get("id", f.stem),
+                "filename": f.name,
+                "date": meta.get("date", ""),
+                "version": meta.get("version", ""),
+                "title": meta.get("title", f.stem),
+                "title_en": meta.get("title_en", ""),
+                "models": meta.get("models", []),
+                "summary": summary,
+            })
+    return {"reports": reports, "total": len(reports)}
+
+
+@app.get("/api/reports/{report_id}")
+def get_report(report_id: str):
+    """获取单篇报告完整内容 (Markdown)"""
+    if not _REPORTS_DIR.exists():
+        raise HTTPException(404, "报告目录不存在")
+
+    for f in _REPORTS_DIR.glob("*.md"):
+        content = f.read_text(encoding="utf-8")
+        meta = _parse_report_frontmatter(content)
+        if meta.get("id") == report_id:
+            return {
+                "id": report_id,
+                "filename": f.name,
+                "meta": meta,
+                "content": content,
+            }
+    raise HTTPException(404, f"报告 '{report_id}' 不存在")
+
+
 # ── SPA 路由回退 ──────────────────────────────────────────────
 
 @app.get("/{full_path:path}")
@@ -836,7 +909,7 @@ if __name__ == "__main__":
 
     pm = get_provider_manager()
     print(f"\n{'='*50}")
-    print(f"  SOMA API Server v0.2.0")
+    print(f"  SOMA API Server v0.3.0b1")
     print(f"  Mock 模式: {'✅ 开启' if _use_mock() else '❌ 关闭（使用真实模型）'}")
     if not MOCK_MODE:
         p = pm.get_current()

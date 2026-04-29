@@ -296,7 +296,7 @@ class AnalyticsStore:
         row = self._conn.execute("SELECT COUNT(*) FROM sessions").fetchone()
         return row[0] if row else 0
 
-    # ── 基准测试存储 (v0.2.0) ────────────────────────────────────
+    # ── 基准测试存储 (v0.3.0b1) ────────────────────────────────
 
     def _create_benchmark_tables(self):
         """创建基准测试专用表"""
