@@ -23,6 +23,7 @@ class SemanticStore(BaseMemoryStore):
         self._load_from_db()
 
     def _create_table(self):
+        self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute(
             """
             CREATE TABLE IF NOT EXISTS semantic_triples (
@@ -41,7 +42,47 @@ class SemanticStore(BaseMemoryStore):
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_semantic_object ON semantic_triples(object)"
         )
+        self._create_fts5()
         self._conn.commit()
+
+    def _create_fts5(self):
+        """创建 FTS5 trigram 全文索引"""
+        self._conn.execute(
+            """
+            CREATE VIRTUAL TABLE IF NOT EXISTS semantic_fts USING fts5(
+                subject,
+                predicate,
+                object,
+                content='semantic_triples',
+                content_rowid='rowid',
+                tokenize='trigram'
+            )
+            """
+        )
+        self._conn.executescript("""
+            CREATE TRIGGER IF NOT EXISTS semantic_fts_ai AFTER INSERT ON semantic_triples BEGIN
+                INSERT INTO semantic_fts(rowid, subject, predicate, object)
+                VALUES (new.rowid, new.subject, new.predicate, new.object);
+            END;
+            CREATE TRIGGER IF NOT EXISTS semantic_fts_ad AFTER DELETE ON semantic_triples BEGIN
+                INSERT INTO semantic_fts(semantic_fts, rowid, subject, predicate, object)
+                VALUES ('delete', old.rowid, old.subject, old.predicate, old.object);
+            END;
+            CREATE TRIGGER IF NOT EXISTS semantic_fts_au AFTER UPDATE ON semantic_triples BEGIN
+                INSERT INTO semantic_fts(semantic_fts, rowid, subject, predicate, object)
+                VALUES ('delete', old.rowid, old.subject, old.predicate, old.object);
+                INSERT INTO semantic_fts(rowid, subject, predicate, object)
+                VALUES (new.rowid, new.subject, new.predicate, new.object);
+            END;
+        """)
+        populated = self._conn.execute(
+            "SELECT COUNT(*) FROM semantic_fts"
+        ).fetchone()[0]
+        if populated == 0:
+            self._conn.execute(
+                "INSERT INTO semantic_fts(rowid, subject, predicate, object) "
+                "SELECT rowid, subject, predicate, object FROM semantic_triples"
+            )
 
     def _load_from_db(self):
         """启动时从 SQLite 重建 NetworkX 图"""
@@ -80,30 +121,29 @@ class SemanticStore(BaseMemoryStore):
     def query_by_keywords(
         self, keywords: List[str], top_k: int = 5
     ) -> List[MemoryUnit]:
+        if not keywords:
+            return []
+
         results: List[MemoryUnit] = []
         seen_ids: set = set()
 
-        for kw in keywords:
-            kw_lower = kw.lower()
-            for node in self.graph.nodes:
-                if kw_lower in node.lower():
-                    node_id = f"sem_node_{node}"
-                    if node_id not in seen_ids:
-                        seen_ids.add(node_id)
-                        neighbors = list(self.graph.neighbors(node))
-                        results.append(
-                            MemoryUnit(
-                                id=node_id,
-                                content=f"概念: {node}，关联概念: {', '.join(neighbors) if neighbors else '无'}",
-                                context={"node": node, "neighbors": neighbors},
-                                memory_type="semantic",
-                                importance=0.7,
-                            )
-                        )
-
-            for u, v, data in self.graph.edges(data=True):
-                pred = data.get("predicate", "")
-                if kw_lower in u.lower() or kw_lower in v.lower() or kw_lower in pred.lower():
+        # 路径1: FTS5 trigram 全文搜索（3字及以上关键词）
+        fts_keywords = [kw for kw in keywords if len(kw) >= 3]
+        if fts_keywords:
+            fts_query = " OR ".join(f'"{kw}"' for kw in fts_keywords)
+            try:
+                rows = self._conn.execute(
+                    """
+                    SELECT st.* FROM semantic_triples st
+                    INNER JOIN semantic_fts fts ON st.rowid = fts.rowid
+                    WHERE semantic_fts MATCH ?
+                    ORDER BY st.confidence DESC
+                    LIMIT ?
+                    """,
+                    (fts_query, top_k),
+                ).fetchall()
+                for row in rows:
+                    u, v, pred = row["subject"], row["object"], row["predicate"]
                     edge_id = f"sem_edge_{u}_{pred}_{v}"
                     if edge_id not in seen_ids:
                         seen_ids.add(edge_id)
@@ -115,20 +155,68 @@ class SemanticStore(BaseMemoryStore):
                                     "subject": u,
                                     "predicate": pred,
                                     "object": v,
-                                    "confidence": data.get("confidence", 1.0),
+                                    "confidence": row["confidence"],
                                 },
                                 memory_type="semantic",
                                 importance=0.7,
                             )
                         )
+            except sqlite3.OperationalError:
+                pass
 
-        return sorted(
-            results,
-            key=lambda m: sum(
-                1 for kw in keywords if kw.lower() in m.content.lower()
-            ),
-            reverse=True,
-        )[:top_k]
+        # 路径2: LIKE 兜底（短关键词，搜索节点+边）
+        like_keywords = [kw for kw in keywords if len(kw) < 3]
+        remaining = top_k - len(results)
+        if like_keywords and remaining > 0:
+            for kw in like_keywords:
+                if len(results) >= top_k:
+                    break
+                kw_lower = kw.lower()
+                # 搜索节点
+                for node in self.graph.nodes:
+                    if kw_lower in node.lower():
+                        node_id = f"sem_node_{node}"
+                        if node_id not in seen_ids:
+                            seen_ids.add(node_id)
+                            neighbors = list(self.graph.neighbors(node))
+                            results.append(
+                                MemoryUnit(
+                                    id=node_id,
+                                    content=f"概念: {node}，关联概念: {', '.join(neighbors) if neighbors else '无'}",
+                                    context={"node": node, "neighbors": neighbors},
+                                    memory_type="semantic",
+                                    importance=0.7,
+                                )
+                            )
+                        if len(results) >= top_k:
+                            break
+                # 搜索边
+                if len(results) >= top_k:
+                    break
+                for u, v, data in self.graph.edges(data=True):
+                    pred = data.get("predicate", "")
+                    if kw_lower in u.lower() or kw_lower in v.lower() or kw_lower in pred.lower():
+                        edge_id = f"sem_edge_{u}_{pred}_{v}"
+                        if edge_id not in seen_ids:
+                            seen_ids.add(edge_id)
+                            results.append(
+                                MemoryUnit(
+                                    id=edge_id,
+                                    content=f"{u} --[{pred}]--> {v}",
+                                    context={
+                                        "subject": u,
+                                        "predicate": pred,
+                                        "object": v,
+                                        "confidence": data.get("confidence", 1.0),
+                                    },
+                                    memory_type="semantic",
+                                    importance=0.7,
+                                )
+                            )
+                        if len(results) >= top_k:
+                            break
+
+        return results[:top_k]
 
     def get_neighbors(self, node: str, depth: int = 1) -> Dict[str, Any]:
         if node not in self.graph:

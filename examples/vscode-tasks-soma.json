@@ -1,0 +1,71 @@
+{
+  "version": "2.0.0",
+  "_说明": "将此文件内容合并到 .vscode/tasks.json 中，或直接复制为 .vscode/tasks.json",
+  "_脚本路径": "请根据实际 clone 位置修改 dev_memory.py 的路径",
+  "_安装": "pip install soma-wisdom",
+
+  "tasks": [
+    {
+      "label": "SOMA: 记录记忆",
+      "detail": "记录当前项目的开发经验到全局记忆库",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "c:/SOMA/soma-core/examples/dev_memory.py",
+        "save",
+        "--project", "${workspaceFolderBasename}",
+        "${input:memoryContent}"
+      ],
+      "presentation": {"echo": true, "reveal": "always", "panel": "shared"},
+      "problemMatcher": []
+    },
+    {
+      "label": "SOMA: 搜索记忆",
+      "detail": "跨项目搜索相关开发经验",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "c:/SOMA/soma-core/examples/dev_memory.py",
+        "recall",
+        "${input:searchQuery}"
+      ],
+      "presentation": {"echo": true, "reveal": "always", "panel": "dedicated"},
+      "problemMatcher": []
+    },
+    {
+      "label": "SOMA: 列出最近",
+      "detail": "列出最近 15 条开发记忆",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "c:/SOMA/soma-core/examples/dev_memory.py",
+        "list", "-n", "15"
+      ],
+      "presentation": {"echo": true, "reveal": "always", "panel": "dedicated"},
+      "problemMatcher": []
+    },
+    {
+      "label": "SOMA: 统计",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "c:/SOMA/soma-core/examples/dev_memory.py",
+        "stats"
+      ],
+      "presentation": {"echo": true, "reveal": "always", "panel": "shared"},
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "memoryContent",
+      "type": "promptString",
+      "description": "要记录的内容（关键决策/约束/经验教训）"
+    },
+    {
+      "id": "searchQuery",
+      "type": "promptString",
+      "description": "搜索关键词或描述"
+    }
+  ]
+}

@@ -7,7 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.3.0b1] — Unreleased
+## [0.3.1b1] — Unreleased
+
+### Added
+- **FTS5 全文索引**: EpisodicStore / SemanticStore / SkillStore 全部启用 FTS5 trigram 索引，3 字及以上中文关键词搜索从 LIKE 全表扫描（O(n)）降至 FTS5 MATCH（毫秒级）
+- **WAL 日志模式**: 所有 SQLite 连接启用 Write-Ahead Logging，读写不再互斥，支持并发读取
+- **自动迁移**: 存量数据库首次打开时自动创建 FTS 表并回填历史数据，零停机升级
+
+### Changed
+- `query_by_keywords()` 三库统一改为 FTS5 MATCH（长关键词）+ LIKE（短关键词兜底）双路径搜索
+- SemanticStore 关键词搜索从纯 Python 内存遍历改为 FTS5 索引查询
+
+### Fixed
+- 修复 SemanticStore LIKE 兜底路径缺少边搜索的问题（短关键词搜索谓词）
+
+## [0.3.0b1] — 2026-04-29
 
 ### Added
 - **MMR diversity re-ranking**: ActivationHub now uses Maximal Marginal Relevance to balance relevance with content/source diversity, preventing near-duplicate memories from dominating results
@@ -71,7 +85,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 格式基于 [Keep a Changelog](https://keepachangelogen/zh-CN/1.0.0/)。
 
-### [0.3.0b1] — Unreleased
+### [0.3.1b1] — Unreleased
+
+#### 新增
+- **FTS5 全文索引**: EpisodicStore / SemanticStore / SkillStore 全部启用 FTS5 trigram 索引
+- **WAL 日志模式**: 所有 SQLite 连接启用 WAL，读写不再互斥
+- **自动迁移**: 存量数据库首次打开自动创建 FTS 表并回填历史数据
+
+#### 变更
+- `query_by_keywords()` 三库统一改为 FTS5 MATCH + LIKE 兜底双路径
+- SemanticStore 关键词搜索改为 FTS5 索引查询
+
+#### 修复
+- SemanticStore LIKE 兜底路径缺少边搜索的问题
+
+### [0.3.0b1] — 2026-04-29
 
 #### 新增
 - **MMR 多样性重排**: ActivationHub 使用最大边界相关性算法平衡关联度与内容/来源多样性，避免高度重复记忆占据全部结果

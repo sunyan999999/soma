@@ -22,7 +22,7 @@ from soma.agent import SOMA_Agent
 from soma.analytics import AnalyticsStore
 from dash.providers import get_provider_manager
 
-app = FastAPI(title="SOMA API", version="0.3.0b1")
+app = FastAPI(title="SOMA API", version="0.3.1b1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -305,7 +305,7 @@ def health():
     pm = get_provider_manager()
     return {
         "status": "ok",
-        "version": "0.3.0b1",
+        "version": "0.3.1b1",
         "mock_mode": _use_mock(),
         "current_provider": pm.current_provider_id,
         "memory_stats": agent.memory.stats(),
@@ -909,7 +909,7 @@ if __name__ == "__main__":
 
     pm = get_provider_manager()
     print(f"\n{'='*50}")
-    print(f"  SOMA API Server v0.3.0b1")
+    print(f"  SOMA API Server v0.3.1b1")
     print(f"  Mock 模式: {'✅ 开启' if _use_mock() else '❌ 关闭（使用真实模型）'}")
     if not MOCK_MODE:
         p = pm.get_current()
