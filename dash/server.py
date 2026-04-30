@@ -203,7 +203,8 @@ _KNOWN_PREFIXES = (
 )
 
 def call_llm(prompt: str, provider: dict) -> str:
-    """使用 LiteLLM 调用 LLM，自动处理 custom base_url"""
+    """使用 LiteLLM 调用 LLM，含 exponential backoff 重试和自动纠错"""
+    import time
     from litellm import completion
 
     model = provider["model"]
@@ -211,13 +212,11 @@ def call_llm(prompt: str, provider: dict) -> str:
     base_url = provider["base_url"].strip() if provider.get("base_url") and provider["base_url"].strip() else None
 
     # 自动修正：有自定义 base_url 但模型名缺少 openai/ 前缀时，自动补全
-    # 否则 LiteLLM 会按模型名猜测路由，忽略 custom base_url
     if base_url and not model.startswith(_KNOWN_PREFIXES):
         print(f"[SOMA] 自动补全模型前缀: {model} → openai/{model}")
         model = f"openai/{model}"
 
-    # 自动修正 base_url：LiteLLM openai/ 模式会自动追加 /chat/completions，
-    # 如果 base_url 已经包含此路径则会导致重复。移除末尾多余路径。
+    # 自动修正 base_url：去掉末尾 /chat/completions 避免重复
     if base_url and model.startswith("openai/"):
         base_url = base_url.rstrip("/")
         if base_url.endswith("/chat/completions"):
@@ -237,22 +236,37 @@ def call_llm(prompt: str, provider: dict) -> str:
     last_error = None
     for attempt in range(3):
         try:
-            print(f"[SOMA] 正在调用 {model} ...")
+            print(f"[SOMA] 正在调用 {model} (attempt {attempt+1}/3)...")
             response = completion(**kwargs)
             return response.choices[0].message.content
         except Exception as e:
             last_error = str(e)
-            print(f"[SOMA] LLM 调用失败 (attempt {attempt+1}): {last_error[:200]}")
-            # 处理 temperature 不支持
+            err_type = type(e).__name__
+            print(f"[SOMA] LLM 调用失败 [{err_type}] (attempt {attempt+1}/3): {last_error[:200]}")
+
+            # 不可重试的错误：认证、速率限制
+            non_retryable = any(kw in last_error.lower() for kw in [
+                "invalid api key", "incorrect api key", "401", "403",
+                "rate limit", "quota", "insufficient_quota",
+            ])
+            if non_retryable:
+                print(f"[SOMA] 不可重试的错误，停止重试")
+                break
+
+            # 可恢复错误：自动纠错后重试
             if "temperature" in last_error.lower() and "temperature" in kwargs:
                 del kwargs["temperature"]
                 print(f"[SOMA] 移除 temperature 参数后重试...")
                 continue
-            # 处理 SSL 证书错误
             if "SSL" in last_error or "certificate" in last_error.lower():
                 kwargs["ssl_verify"] = False
                 continue
-            break
+
+            # 网络/超时错误：exponential backoff
+            if attempt < 2:
+                wait_sec = 2 ** attempt  # 1s, 2s
+                print(f"[SOMA] exponential backoff: 等待 {wait_sec}s 后重试...")
+                time.sleep(wait_sec)
 
     raise RuntimeError(f"LLM 调用失败: {last_error}")
 

@@ -24,6 +24,9 @@ class SemanticStore(BaseMemoryStore):
 
     def _create_table(self):
         self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA synchronous=NORMAL")
+        self._conn.execute("PRAGMA cache_size=-4000")       # 4MB 缓存（语义数据量较小）
+        self._conn.execute("PRAGMA busy_timeout=5000")
         self._conn.execute(
             """
             CREATE TABLE IF NOT EXISTS semantic_triples (

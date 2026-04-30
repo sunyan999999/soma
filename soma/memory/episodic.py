@@ -48,7 +48,13 @@ class EpisodicStore(BaseMemoryStore):
                     )
 
     def _create_table(self):
+        # WAL 模式 + 性能 PRAGMA
         self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA synchronous=NORMAL")       # WAL 下 NORMAL 足够安全
+        self._conn.execute("PRAGMA cache_size=-8000")          # 8MB 缓存
+        self._conn.execute("PRAGMA mmap_size=268435456")       # 256MB 内存映射
+        self._conn.execute("PRAGMA temp_store=MEMORY")         # 临时表存内存
+        self._conn.execute("PRAGMA busy_timeout=5000")         # 5秒忙等待
         self._conn.execute(
             """
             CREATE TABLE IF NOT EXISTS episodic_memories (

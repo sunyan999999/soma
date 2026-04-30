@@ -29,11 +29,21 @@ class SOMA_Agent:
         # 记忆核心
         self.memory = MemoryCore(config, embedder=self.embedder)
 
+        # 自适应参数：根据当前记忆总量调整 top_k / threshold
+        if config.adaptive_params:
+            from soma.config import adaptive_top_k, adaptive_recall_threshold
+            data_count = self.memory.stats().get("episodic", 0)
+            top_k = adaptive_top_k(data_count)
+            threshold = adaptive_recall_threshold(data_count)
+        else:
+            top_k = config.default_top_k
+            threshold = config.recall_threshold
+
         # 双向激活调度器
         self.hub = ActivationHub(
             self.memory,
-            top_k=config.default_top_k,
-            threshold=config.recall_threshold,
+            top_k=top_k,
+            threshold=threshold,
         )
 
         # 元认知进化器（持久化到 dashboard_data）
