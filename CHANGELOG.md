@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+---
+## [0.3.3b2] — 2026-05-01
+
+### Added
+- **五维雷达图**: BenchmarkView 新增 ECharts 雷达图，单次基准测试五维（综合/记忆/智慧/进化/伸缩性）直观展示
+- **版本对比柱状图**: 最新两个版本并肩对比，hover 查看差值，柱顶显示数值
+
+### Fixed
+- **adaptive_top_k 硬上限**: 基准测试语义召回 `max(20, total * 0.15)` → `min(max(20, total * 0.15), 50)`，大数据量（万条级）fastembed CPU 模式不再卡死，10 秒完成测试
+
+---
+
 ## [0.3.3b1] — 2026-05-01
 
 ### Added
