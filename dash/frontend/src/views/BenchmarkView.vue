@@ -2,12 +2,12 @@
 import { ref, inject, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import * as echarts from 'echarts/core'
-import { LineChart } from 'echarts/charts'
-import { TooltipComponent, LegendComponent, GridComponent } from 'echarts/components'
+import { LineChart, BarChart, RadarChart } from 'echarts/charts'
+import { TooltipComponent, LegendComponent, GridComponent, RadarComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import { api } from '../api'
 
-echarts.use([LineChart, TooltipComponent, LegendComponent, GridComponent, CanvasRenderer])
+echarts.use([LineChart, BarChart, RadarChart, TooltipComponent, LegendComponent, GridComponent, RadarComponent, CanvasRenderer])
 
 const { t, locale } = useI18n()
 const dateLocale = () => locale.value === 'zh' ? 'zh-CN' : 'en-US'
@@ -19,7 +19,11 @@ const latest = ref(null)
 const history = ref([])
 const compareData = ref(null)
 const trendChartRef = ref(null)
+const radarChartRef = ref(null)
+const compareChartRef = ref(null)
 let trendChart = null
+let radarChart = null
+let compareChart = null
 
 async function loadData() {
   loading.value = true
@@ -213,20 +217,6 @@ function renderTrendChart() {
   }, true)
 }
 
-watch([historyScores, locale], () => {
-  nextTick(() => renderTrendChart())
-}, { deep: true })
-
-onMounted(() => {
-  loadData()
-  window.addEventListener('resize', () => trendChart?.resize())
-})
-
-onUnmounted(() => {
-  trendChart?.dispose()
-  window.removeEventListener('resize', () => trendChart?.resize())
-})
-
 const competitors = computed(() => {
   if (!compareData.value?.competitors) return []
   return Object.entries(compareData.value.competitors).map(([name, data]) => ({
@@ -240,6 +230,152 @@ const competitors = computed(() => {
     weakness: data.weakness,
     somaAdvantage: data.soma_advantage,
   })).sort((a, b) => b.stars - a.stars)
+})
+
+const radarData = computed(() => {
+  if (!latest.value?.scores) return null
+  const s = latest.value.scores
+  return [
+    { name: t('benchmarks.overallScore'), max: 100, value: s.overall },
+    { name: t('benchmarks.memoryAbility'), max: 100, value: s.memory },
+    { name: t('benchmarks.wisdomReasoning'), max: 100, value: s.wisdom },
+    { name: t('benchmarks.evolutionLoop'), max: 100, value: s.evolution },
+    { name: t('benchmarks.scalability'), max: 100, value: s.scalability },
+  ]
+})
+
+const versionCompareData = computed(() => {
+  if (history.value.length < 2) return null
+  const sorted = [...history.value].sort((a, b) => b.timestamp - a.timestamp)
+  const cur = sorted[0]
+  const prev = sorted[1]
+  const dims = ['overall', 'memory', 'wisdom', 'evolution', 'scalability']
+  const dimLabels = [
+    t('benchmarks.overallScore'),
+    t('benchmarks.memoryAbility'),
+    t('benchmarks.wisdomReasoning'),
+    t('benchmarks.evolutionLoop'),
+    t('benchmarks.scalability'),
+  ]
+  return {
+    curVersion: cur.version || t('benchmarks.currentVersion'),
+    prevVersion: prev.version || t('benchmarks.previousVersion'),
+    dims,
+    dimLabels,
+    curValues: dims.map(d => cur.scores[d] || 0),
+    prevValues: dims.map(d => prev.scores[d] || 0),
+    diffs: dims.map(d => ((cur.scores[d] || 0) - (prev.scores[d] || 0)).toFixed(1)),
+  }
+})
+
+function renderRadarChart() {
+  if (!radarChartRef.value || !radarData.value) return
+  if (!radarChart) radarChart = echarts.init(radarChartRef.value)
+  radarChart.setOption({
+    tooltip: { trigger: 'item' },
+    legend: { bottom: 0, textStyle: { color: '#94a3b8', fontSize: 11 } },
+    radar: {
+      center: ['50%', '45%'],
+      radius: '65%',
+      axisName: { color: '#94a3b8', fontSize: 10 },
+      indicator: radarData.value.map(d => ({ name: d.name, max: d.max })),
+      axisLine: { lineStyle: { color: '#334155' } },
+      splitLine: { lineStyle: { color: '#1e293b' } },
+      splitArea: { areaStyle: { color: ['rgba(99,102,241,0.02)', 'rgba(99,102,241,0.04)'] } },
+    },
+    series: [{
+      type: 'radar',
+      symbol: 'circle',
+      symbolSize: 4,
+      lineStyle: { color: '#818cf8', width: 2 },
+      areaStyle: { color: 'rgba(129,140,248,0.15)' },
+      itemStyle: { color: '#818cf8' },
+      data: [{ value: radarData.value.map(d => d.value), name: t('benchmarks.currentVersion') }],
+    }],
+  }, true)
+}
+
+function renderCompareChart() {
+  if (!compareChartRef.value || !versionCompareData.value) return
+  if (!compareChart) compareChart = echarts.init(compareChartRef.value)
+  const d = versionCompareData.value
+  compareChart.setOption({
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params) => {
+        const dimIdx = params[0]?.dataIndex
+        const diff = d.diffs[dimIdx]
+        const diffStr = diff >= 0 ? '+' + diff : diff
+        return `${d.dimLabels[dimIdx]}<br/>
+          ${params[0]?.marker} ${params[0]?.seriesName}: ${params[0]?.value.toFixed(1)}<br/>
+          ${params[1]?.marker} ${params[1]?.seriesName}: ${params[1]?.value.toFixed(1)}<br/>
+          <b>${diffStr}</b>`
+      },
+    },
+    legend: {
+      bottom: 0,
+      textStyle: { color: '#94a3b8', fontSize: 11 },
+    },
+    grid: { left: 40, right: 20, top: 16, bottom: 44 },
+    xAxis: {
+      type: 'category',
+      data: d.dimLabels,
+      axisLine: { lineStyle: { color: '#334155' } },
+      axisLabel: { color: '#94a3b8', fontSize: 10, interval: 0 },
+    },
+    yAxis: {
+      type: 'value',
+      min: 0,
+      max: 100,
+      splitLine: { lineStyle: { color: '#1e293b' } },
+      axisLabel: { color: '#94a3b8', fontSize: 10 },
+    },
+    series: [
+      {
+        name: d.curVersion,
+        type: 'bar',
+        data: d.curValues,
+        itemStyle: { color: '#818cf8', borderRadius: [4, 4, 0, 0] },
+        barMaxWidth: 32,
+        label: { show: true, position: 'top', color: '#818cf8', fontSize: 10, formatter: (v) => v.value.toFixed(0) },
+      },
+      {
+        name: d.prevVersion,
+        type: 'bar',
+        data: d.prevValues,
+        itemStyle: { color: 'rgba(148,163,184,0.35)', borderRadius: [4, 4, 0, 0] },
+        barMaxWidth: 32,
+        label: { show: true, position: 'top', color: '#94a3b8', fontSize: 10, formatter: (v) => v.value.toFixed(0) },
+      },
+    ],
+  }, true)
+}
+
+watch([historyScores, radarData, versionCompareData, locale], () => {
+  nextTick(() => {
+    renderTrendChart()
+    renderRadarChart()
+    renderCompareChart()
+  })
+}, { deep: true })
+
+function resizeCharts() {
+  trendChart?.resize()
+  radarChart?.resize()
+  compareChart?.resize()
+}
+
+onMounted(() => {
+  loadData()
+  window.addEventListener('resize', resizeCharts)
+})
+
+onUnmounted(() => {
+  trendChart?.dispose()
+  radarChart?.dispose()
+  compareChart?.dispose()
+  window.removeEventListener('resize', resizeCharts)
 })
 
 function formatTime(ts) {
@@ -301,6 +437,21 @@ function formatTime(ts) {
         <h2 style="font-size:1rem;margin-bottom:16px;">{{ t('benchmarks.scoreTrend') }}</h2>
         <div ref="trendChartRef" class="trend-chart" />
       </section>
+
+      <!-- Radar + Version Compare -->
+      <div class="grid-chart-duo" v-if="latest">
+        <!-- Radar Chart -->
+        <section class="card" v-if="radarData">
+          <h2 style="font-size:1rem;margin-bottom:12px;">{{ t('benchmarks.radarChart') }}</h2>
+          <div ref="radarChartRef" class="radar-chart" />
+        </section>
+
+        <!-- Version Comparison -->
+        <section class="card" v-if="versionCompareData">
+          <h2 style="font-size:1rem;margin-bottom:12px;">{{ t('benchmarks.versionCompare') }}</h2>
+          <div ref="compareChartRef" class="compare-chart" />
+        </section>
+      </div>
 
       <!-- Four Dimensions -->
       <div class="grid-4-dim">
@@ -458,6 +609,26 @@ function formatTime(ts) {
 .trend-chart {
   width: 100%;
   height: 300px;
+}
+
+.radar-chart {
+  width: 100%;
+  height: 320px;
+}
+
+.compare-chart {
+  width: 100%;
+  height: 300px;
+}
+
+.grid-chart-duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .grid-chart-duo { grid-template-columns: 1fr; }
 }
 
 /* Compare Table */
