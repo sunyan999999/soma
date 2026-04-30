@@ -77,7 +77,7 @@ def _use_mock() -> bool:
     pm = get_provider_manager()
     return not bool(pm.get_current().get("api_key", ""))
 
-_DATA_DIR = Path(os.environ.get("SOMA_DATA_DIR", "dashboard_data"))
+_DATA_DIR = Path(os.environ.get("SOMA_DATA_DIR", "soma_data"))
 _analytics: Optional[AnalyticsStore] = None
 
 def _get_analytics() -> AnalyticsStore:

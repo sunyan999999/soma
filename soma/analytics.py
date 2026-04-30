@@ -1,5 +1,6 @@
 """SOMA 自我监控与分析存储 — 记录每次对话会话的完整上下文"""
 import json
+import os
 import sqlite3
 import time
 import uuid
@@ -13,7 +14,7 @@ class AnalyticsStore:
 
     def __init__(self, persist_dir: Optional[Path] = None):
         if persist_dir is None:
-            persist_dir = Path("dashboard_data")
+            persist_dir = Path(os.environ.get("SOMA_DATA_DIR", "soma_data"))
         persist_dir.mkdir(parents=True, exist_ok=True)
         self._db_path = persist_dir / "analytics.db"
         self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)

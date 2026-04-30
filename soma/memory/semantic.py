@@ -1,3 +1,4 @@
+import os
 import sqlite3
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -14,7 +15,7 @@ class SemanticStore(BaseMemoryStore):
     def __init__(self, persist_dir: Optional[Path] = None):
         self.graph = nx.DiGraph()
         if persist_dir is None:
-            persist_dir = Path("dashboard_data")
+            persist_dir = Path(os.environ.get("SOMA_DATA_DIR", "soma_data"))
         persist_dir.mkdir(parents=True, exist_ok=True)
         self._db_path = persist_dir / "semantic.db"
         self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
