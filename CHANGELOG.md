@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - 修复 SemanticStore LIKE 兜底路径缺少边搜索的问题（短关键词搜索谓词）
+- 修复 `/api/chat` LLM 调用失败时直接返回 500 的问题，现在自动回退到 Mock 模式
+- 修复 SQLite 并发访问异常（`increment_access`）导致整个请求崩溃的问题，数据库操作失败不再影响主流程
+- 修复版本号不一致问题，统一使用 `app.version`
 
 ## [0.3.0b1] — 2026-04-29
 
