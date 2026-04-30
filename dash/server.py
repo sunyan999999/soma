@@ -305,7 +305,7 @@ def health():
     pm = get_provider_manager()
     return {
         "status": "ok",
-        "version": "0.3.1b1",
+        "version": app.version,
         "mock_mode": _use_mock(),
         "current_provider": pm.current_provider_id,
         "memory_stats": agent.memory.stats(),
@@ -407,6 +407,7 @@ def chat(req: ChatRequest):
     # Step 3: 应答 — Mock 或动态 Provider
     use_mock = _use_mock()
     provider_id = "mock"
+    llm_error = None
     if use_mock:
         # mock 模式也构建 prompt 供仪表盘可视化
         agent._build_prompt(req.problem, foci, activated)
@@ -419,10 +420,19 @@ def chat(req: ChatRequest):
         try:
             answer = call_llm(agent._last_prompt, provider)
         except Exception as llm_err:
-            raise HTTPException(500, f"LLM调用失败 [{provider_id}]: {str(llm_err)[:300]}")
-        for am in activated:
-            if am.source == "episodic":
-                agent.memory.episodic.increment_access(am.memory.id)
+            llm_error = str(llm_err)[:300]
+            print(f"[SOMA] LLM 调用失败 [{provider_id}]，回退到 Mock 模式: {llm_error}")
+            answer = mock_llm_response(foci_data, memory_cards, req.problem)
+            # 回退时标记为 mock 模式
+            use_mock = True
+            provider_id = "mock"
+        else:
+            for am in activated:
+                if am.source == "episodic":
+                    try:
+                        agent.memory.episodic.increment_access(am.memory.id)
+                    except Exception as db_err:
+                        print(f"[SOMA] WARNING: 访问计数更新失败: {db_err}")
 
     # 写入当前 foci/activated 上下文以追踪进化统计
     agent.evolver.set_current_context(foci, activated)
@@ -447,6 +457,7 @@ def chat(req: ChatRequest):
         "memory_stats": agent.memory.stats(),
         "weights": agent.evolver.get_weights(),
         "provider_used": provider_id,
+        "llm_error": llm_error,
     }
 
     # 记录到 AnalyticsStore
@@ -513,6 +524,7 @@ async def chat_stream(req: ChatRequest):
         use_mock = _use_mock()
         provider_id = "mock" if use_mock else get_provider_manager().current_provider_id
 
+        llm_error = None
         if use_mock:
             answer = mock_llm_response(foci_data, memory_cards, req.problem)
             for i in range(0, len(answer), 80):
@@ -535,12 +547,21 @@ async def chat_stream(req: ChatRequest):
                     answer = call_llm(prompt, provider)
                     yield _sse_event("delta", {"content": answer})
                 except Exception as fallback_err:
-                    yield _sse_event("error", {"message": str(fallback_err)[:300]})
-                    return
-
-            for am in activated:
-                if am.source == "episodic":
-                    agent.memory.episodic.increment_access(am.memory.id)
+                    # 最终兜底：Mock 模式
+                    llm_error = str(fallback_err)[:300]
+                    print(f"[SOMA] SSE LLM 调用失败 [{provider_id}]，回退到 Mock 模式: {llm_error}")
+                    answer = mock_llm_response(foci_data, memory_cards, req.problem)
+                    use_mock = True
+                    provider_id = "mock"
+                    yield _sse_event("delta", {"content": answer})
+                    yield _sse_event("llm_fallback", {"message": llm_error})
+            else:
+                for am in activated:
+                    if am.source == "episodic":
+                        try:
+                            agent.memory.episodic.increment_access(am.memory.id)
+                        except Exception as db_err:
+                            print(f"[SOMA] WARNING: SSE 访问计数更新失败: {db_err}")
 
         # 进化上下文
         agent.evolver.set_current_context(foci, activated)
@@ -909,7 +930,7 @@ if __name__ == "__main__":
 
     pm = get_provider_manager()
     print(f"\n{'='*50}")
-    print(f"  SOMA API Server v0.3.1b1")
+    print(f"  SOMA API Server v{app.version}")
     print(f"  Mock 模式: {'✅ 开启' if _use_mock() else '❌ 关闭（使用真实模型）'}")
     if not MOCK_MODE:
         p = pm.get_current()
