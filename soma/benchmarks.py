@@ -285,7 +285,7 @@ class ScalabilityBenchmark:
 @dataclass
 class BenchmarkRun:
     """一次完整基准测试运行"""
-    version: str = "0.3.1b1"
+    version: str = "0.3.2b1"
     timestamp: float = 0.0
     memory: MemoryBenchmark = field(default_factory=MemoryBenchmark)
     wisdom: WisdomBenchmark = field(default_factory=WisdomBenchmark)
@@ -792,7 +792,7 @@ def calculate_scores(run: BenchmarkRun) -> Dict[str, float]:
     return calculate_scores_v2(run)
 
 
-def run_full_benchmark(agent, ablation_data: Optional[Dict] = None, version: str = "0.3.1b1") -> BenchmarkRun:
+def run_full_benchmark(agent, ablation_data: Optional[Dict] = None, version: str = "0.3.2b1") -> BenchmarkRun:
     """运行完整三维+伸缩性基准测试"""
     print("🧠 运行记忆维度基准...")
     memory = run_memory_benchmark(agent)
