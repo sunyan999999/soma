@@ -232,6 +232,7 @@ export default {
     historyCount: 'history',
     scalability: 'Scalability',
     scalabilityCap: '📐 Scalability',
+    insufficientData: 'Insufficient',
     radarChart: '🎯 5-Dim Radar',
     versionCompare: '📊 Version Compare',
     currentVersion: 'Current',

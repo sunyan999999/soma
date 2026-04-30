@@ -22,7 +22,7 @@ from soma.agent import SOMA_Agent
 from soma.analytics import AnalyticsStore
 from dash.providers import get_provider_manager
 
-app = FastAPI(title="SOMA API", version="0.3.1b1")
+app = FastAPI(title="SOMA API", version="0.3.3b2")
 
 app.add_middleware(
     CORSMiddleware,
