@@ -60,6 +60,28 @@ python -c "from soma import SOMA; s=SOMA(); s.remember('test'); r=s.query_memory
 | 关键词搜索（10万条） | ~1000ms | <10ms |
 | 并发读写 | 互斥 | 并发 |
 
+### 新增：基准测试 v2（数据量自适应评分）
+
+v0.3.0b1 基准测试固定 top_k=20、延迟阈值 50ms，在大数据量下产生"假降分"。
+v0.3.1b1 修复四项设计缺陷：
+
+1. **语义召回 top_k 自适应**：按数据量比例调整（max(20, total×0.15)）
+2. **延迟分档阈值**：<500条→30ms, 500-2000→80ms, 2000-10000→150ms, >10000→300ms
+3. **合成增益降级**：无消融数据时权重自动重分配，不直接丢 25 分
+4. **进化评质量**：最近 30 次反思成功率替代累积总次数
+
+### 新增：SQLite 性能调优
+
+所有存储启用以下 PRAGMA：
+- `synchronous=NORMAL` — WAL 模式下安全且更快
+- `cache_size=-8000` — 8MB 页面缓存（EpisodicStore）
+- `mmap_size=268435456` — 256MB 内存映射（仅 EpisodicStore）
+- `busy_timeout=5000` — 5 秒忙等待，减少 SQLITE_BUSY
+
+### 新增：自适应 top_k / recall_threshold
+
+Agent 初始化时根据当前记忆总量自动调整参数，消除小数据集"过度宽松"和大数据集"过度严格"。
+
 ---
 
 ## English
@@ -119,6 +141,27 @@ python -c "from soma import SOMA; s=SOMA(); s.remember('test'); r=s.query_memory
 | Keyword search (10K records) | ~100ms | <5ms |
 | Keyword search (100K records) | ~1000ms | <10ms |
 | Concurrent read/write | Mutex-locked | Concurrent |
+
+### New: Benchmark v2 (Data-Scale-Aware Scoring)
+
+v0.3.0b1 benchmark used fixed top_k=20 and 50ms latency threshold, causing unfair score drops at larger data scales. v0.3.1b1 fixes four design flaws:
+
+1. **Semantic recall top_k adaptive**: scales with data count (max(20, total×0.15))
+2. **Tiered latency thresholds**: <500→30ms, 500-2000→80ms, 2000-10000→150ms, >10000→300ms
+3. **Synthesis gain fallback**: weight redistribution when ablation data is absent (no more automatic 25-point loss)
+4. **Evolution quality over quantity**: recent 30-reflection success rate replaces total cumulative count
+
+### New: SQLite Performance Tuning
+
+All stores enable performance PRAGMAs:
+- `synchronous=NORMAL` — safe under WAL, faster writes
+- `cache_size=-8000` — 8MB page cache (EpisodicStore)
+- `mmap_size=268435456` — 256MB memory-mapped I/O (EpisodicStore)
+- `busy_timeout=5000` — 5-second busy wait, reduces SQLITE_BUSY errors
+
+### New: Adaptive top_k / recall_threshold
+
+Agent auto-adjusts parameters based on current memory count at init time, eliminating "too loose" at small scale and "too strict" at large scale.
 
 ---
 

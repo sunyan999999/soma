@@ -23,6 +23,9 @@ class SkillStore(BaseMemoryStore):
 
     def _create_table(self):
         self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA synchronous=NORMAL")
+        self._conn.execute("PRAGMA cache_size=-2000")       # 2MB 缓存（技能数据量最小）
+        self._conn.execute("PRAGMA busy_timeout=5000")
         self._conn.execute(
             """
             CREATE TABLE IF NOT EXISTS skills (

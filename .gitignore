@@ -73,3 +73,9 @@ benchmark_results/
 
 # Screenshots (source materials)
 ysimages/
+
+# Backup & temp
+*.bak
+_benchmark_tmp/
+dashboard_data_backup/
+reports/

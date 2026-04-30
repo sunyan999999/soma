@@ -7,16 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.3.1b1] — Unreleased
+## [0.3.1b1] — 2026-04-30
 
 ### Added
 - **FTS5 全文索引**: EpisodicStore / SemanticStore / SkillStore 全部启用 FTS5 trigram 索引，3 字及以上中文关键词搜索从 LIKE 全表扫描（O(n)）降至 FTS5 MATCH（毫秒级）
 - **WAL 日志模式**: 所有 SQLite 连接启用 Write-Ahead Logging，读写不再互斥，支持并发读取
 - **自动迁移**: 存量数据库首次打开时自动创建 FTS 表并回填历史数据，零停机升级
+- **基准测试 v2**: 数据量自适应归一化评分，分档阈值消除大数据量"假降分"；新增伸缩性维度（ScalabilityBenchmark）+ FTS5 加速比指标
+- **Alpha 收尾边界测试**: 21 个新增压力测试（大规模并发 1000+/5000+、WAL 压力、LLM 全故障、FTS5 正确性、三库联合），全部通过
+- **SOMA Go Client**: `soma-go-client/` 独立 Go 包 — REST API 客户端 + Glaude MemoryStore 适配器 + 2 个 Skill 文件 + Hook 集成
+- **技术文章**: `docs/articles/why-wisdom-framework.md`（"不只是 RAG"）
 
 ### Changed
 - `query_by_keywords()` 三库统一改为 FTS5 MATCH（长关键词）+ LIKE（短关键词兜底）双路径搜索
 - SemanticStore 关键词搜索从纯 Python 内存遍历改为 FTS5 索引查询
+- **自适应 top_k / recall_threshold**: Agent 根据记忆总量自动调整参数（3→5→8→10 / 0.05→0.02→0.01→0.005）
+- **LLM 调用 exponential backoff**: 3 次重试 + 1s/2s 退避 + 不可重试错误（401/403/quota）识别
+- **SQLite 性能 PRAGMA**: synchronous=NORMAL, cache_size=-8000, mmap_size=256MB, busy_timeout=5000
+- **语义召回率测试 top_k 自适应**: 按数据量比例调整（max(20, total×0.15)），消除大数据量下测试记忆被淹没的问题
+- **进化评分改质量导向**: 最近 30 次反思成功率替代累积总次数
+- **合成增益降级**: 缺少消融数据时权重重分配（30→42, 25→33, 20→25），不再直接丢 25 分
+- `soma/benchmarks.py` 内部重构：新增 DataScale 枚举、normalize_score/normalize_scores 自适应归一化函数
+- `soma/config.py` 新增 adaptive_top_k/adaptive_recall_threshold 辅助函数
 
 ### Fixed
 - 修复 SemanticStore LIKE 兜底路径缺少边搜索的问题（短关键词搜索谓词）
@@ -88,19 +100,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 格式基于 [Keep a Changelog](https://keepachangelogen/zh-CN/1.0.0/)。
 
-### [0.3.1b1] — Unreleased
+### [0.3.1b1] — 2026-04-30
 
 #### 新增
 - **FTS5 全文索引**: EpisodicStore / SemanticStore / SkillStore 全部启用 FTS5 trigram 索引
 - **WAL 日志模式**: 所有 SQLite 连接启用 WAL，读写不再互斥
 - **自动迁移**: 存量数据库首次打开自动创建 FTS 表并回填历史数据
+- **基准测试 v2**: 数据量自适应归一化评分，分档阈值消除大数据量假降分；新增伸缩性维度 + FTS5 加速比
+- **Alpha 收尾边界测试**: 21 个压力测试（1000+/5000+并发、WAL 压力、LLM 全故障、FTS5 正确性）
+- **SOMA Go Client**: REST API 客户端 + Glaude MemoryStore 适配器 + Skill + Hook 集成
+- **技术文章**: "不只是 RAG — 为什么 AI Agent 需要智慧框架而非知识库"
 
 #### 变更
 - `query_by_keywords()` 三库统一改为 FTS5 MATCH + LIKE 兜底双路径
 - SemanticStore 关键词搜索改为 FTS5 索引查询
+- **自适应 top_k/recall_threshold**: 按记忆总量自动调整，消大数据量淹没
+- **LLM exponential backoff**: 3 次重试 + 1s/2s 退避 + 不可重试错误识别
+- **SQLite PRAGMA 性能调优**: synchronous=NORMAL, 8MB cache, 256MB mmap
+- **语义召回测试 top_k 自适应**: 按数据量比例调整，消除大数据量测试记忆被淹没问题
+- **进化评分质量导向**: 最近 30 次反思成功率替代累积总数
+- **合成增益降级**: 无消融数据时权重自动重分配
 
 #### 修复
 - SemanticStore LIKE 兜底路径缺少边搜索的问题
+- LLM 调用失败 500 错误 → 自动回退 Mock
+- SQLite 并发异常崩溃 → 非关键操作异常隔离
+- 版本号不一致 → 统一使用 app.version
 
 ### [0.3.0b1] — 2026-04-29
 
