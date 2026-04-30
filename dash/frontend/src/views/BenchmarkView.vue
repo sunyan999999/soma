@@ -113,6 +113,7 @@ const historyScores = computed(() => {
     memory: h.scores.memory,
     wisdom: h.scores.wisdom,
     evolution: h.scores.evolution,
+    scalability: h.scores.scalability || 0,
     overall: h.scores.overall,
   })).reverse()
 })
