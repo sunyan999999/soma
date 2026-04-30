@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.3.3b1] — 2026-05-01
+
+### Added
+- **基准趋势折线图**: BenchmarkView 用 ECharts 五线折线图替换 CSS 条形图，5 条线（总分/记忆/智慧/进化/伸缩性），hover 看数值，中英文图例
+- **伸缩性维度持久化**: `benchmark_runs` 表新增 `score_scalability` + `scalability_json` 列，自动迁移兼容旧库
+- **SOMA Hook CLI 桥接**: Go 版 `cmd/soma-hook` + Shell 版 `soma-hook.sh`，实现 Glaude Hook 协议与 SOMA API 的桥梁
+- **Glaude Skills**: `soma-remember` / `soma-recall`，存入 `~/.glaude/skills/`，Glaude 启动自动加载
+- **Glaude Hook 配置**: 3 个生命周期 Hook（PostToolUse/SessionStart/Stop），自动记录工具执行结果到 SOMA
+
+### Changed
+- `AnalyticsStore.get_latest_benchmark()` / `get_benchmark_history()` 返回 scalability 分数和数据
+- POST `/api/benchmarks/run` 响应增加 scalability 维度
+- BenchmarkView 评分卡片 4→5（新增伸缩性），指标卡片 3→4（新增伸缩性指标）
+- SOMA Go Client 修正所有 API 路径（/api/remember→/api/memory/add 等）
+
+### Fixed
+- Go Client `Stats()` 调用不存在的 `/api/stats` → 修正为 `/api/memory/stats`
+
+---
+
+## [0.3.2b1] — 2026-04-30
+
+### Added
+- **基准测试 v2**: 数据量自适应归一化评分（分档阈值），新增伸缩性维度（ScalabilityBenchmark）+ FTS5 加速比指标
+- **自适应 top_k / recall_threshold**: Agent 根据记忆总量自动调整，消除大数据量"过度严格"和小数据量"过度宽松"
+- **LLM exponential backoff**: 3 次重试 + 1s/2s 退避 + 不可重试错误（401/403/quota）识别
+- **SQLite 性能 PRAGMA**: synchronous=NORMAL, cache_size=-8000, mmap_size=256MB, busy_timeout=5000
+- **Alpha 收尾边界测试**: 21 个压力测试（1000+/5000+并发、WAL 压力、LLM 全故障、FTS5 正确性）
+- **SOMA Go Client**: REST API 客户端 + Glaude MemoryStore 适配器 + Skill 文件
+
+### Changed
+- 语义召回测试 top_k 自适应：按数据量比例调整（max(20, total×0.15)）
+- 进化评分改质量导向：最近30次反思成功率替代累积总数
+- 合成增益降级：无消融数据时权重自动重分配
+- `soma/benchmarks.py` 内部重构：新增 DataScale 枚举、normalize_score/normalize_scores
+
+### Fixed
+- SemanticStore LIKE 兜底路径缺少边搜索
+- `/api/chat` LLM 失败返回 500 → 自动回退 Mock
+- SQLite 并发异常崩溃 → 非关键操作异常隔离
+- 版本号不一致 → 统一使用 app.version
+
+---
+
 ## [0.3.1b1] — 2026-04-30
 
 ### Added

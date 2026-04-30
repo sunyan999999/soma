@@ -319,18 +319,32 @@ class AnalyticsStore:
             CREATE INDEX IF NOT EXISTS idx_bench_time ON benchmark_runs(timestamp DESC);
             """
         )
+        # v0.3.1b1 迁移：新增长缩性维度列
+        for col, defn in [
+            ("score_scalability", "REAL DEFAULT 0"),
+            ("scalability_json", "TEXT DEFAULT '{}'"),
+        ]:
+            try:
+                self._conn.execute(f"ALTER TABLE benchmark_runs ADD COLUMN {col} {defn}")
+            except Exception:
+                pass  # 列已存在
         self._conn.commit()
 
     def record_benchmark(self, run) -> int:
         """存储一次基准测试运行，返回 run_id"""
         self._create_benchmark_tables()
         ts = run.timestamp if run.timestamp else time.time()
+        scal = run.scores.get("scalability", 0)
+        scal_json = json.dumps(
+            asdict(run.scalability) if hasattr(run, 'scalability') and hasattr(run.scalability, '__dataclass_fields__') else {},
+            ensure_ascii=False, default=str,
+        )
         self._conn.execute(
             """
             INSERT INTO benchmark_runs
             (version, timestamp, score_memory, score_wisdom, score_evolution, score_overall,
-             memory_json, wisdom_json, evolution_json, full_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             score_scalability, memory_json, wisdom_json, evolution_json, scalability_json, full_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 run.version, ts,
@@ -338,9 +352,11 @@ class AnalyticsStore:
                 run.scores.get("wisdom", 0),
                 run.scores.get("evolution", 0),
                 run.scores.get("overall", 0),
+                scal,
                 json.dumps(asdict(run.memory) if hasattr(run.memory, '__dataclass_fields__') else run.memory, ensure_ascii=False, default=str),
                 json.dumps(asdict(run.wisdom) if hasattr(run.wisdom, '__dataclass_fields__') else run.wisdom, ensure_ascii=False, default=str),
                 json.dumps(asdict(run.evolution) if hasattr(run.evolution, '__dataclass_fields__') else run.evolution, ensure_ascii=False, default=str),
+                scal_json,
                 json.dumps(asdict(run) if hasattr(run, '__dataclass_fields__') else run, ensure_ascii=False, default=str),
             ),
         )
@@ -355,27 +371,40 @@ class AnalyticsStore:
         ).fetchone()
         if row is None:
             return None
-        return {
+        scores = {
+            "memory": row["score_memory"],
+            "wisdom": row["score_wisdom"],
+            "evolution": row["score_evolution"],
+            "overall": row["score_overall"],
+        }
+        # 伸缩性分数（v0.3.1b1 新增列，旧数据可能为 NULL）
+        try:
+            scores["scalability"] = row["score_scalability"] or 0
+        except Exception:
+            scores["scalability"] = 0
+
+        result = {
             "id": row["id"],
             "version": row["version"],
             "timestamp": row["timestamp"],
-            "scores": {
-                "memory": row["score_memory"],
-                "wisdom": row["score_wisdom"],
-                "evolution": row["score_evolution"],
-                "overall": row["score_overall"],
-            },
+            "scores": scores,
             "memory": json.loads(row["memory_json"]),
             "wisdom": json.loads(row["wisdom_json"]),
             "evolution": json.loads(row["evolution_json"]),
         }
+        # 伸缩性维度数据（v0.3.1b1 新增列）
+        try:
+            result["scalability"] = json.loads(row["scalability_json"] or "{}")
+        except Exception:
+            result["scalability"] = {}
+        return result
 
     def get_benchmark_history(self, limit: int = 20) -> List[Dict]:
         """获取基准测试历史记录"""
         self._create_benchmark_tables()
         rows = self._conn.execute(
             "SELECT id, version, timestamp, score_memory, score_wisdom,"
-            " score_evolution, score_overall"
+            " score_evolution, score_overall, score_scalability"
             " FROM benchmark_runs ORDER BY timestamp DESC LIMIT ?",
             (limit,),
         ).fetchall()
@@ -389,6 +418,7 @@ class AnalyticsStore:
                     "wisdom": r["score_wisdom"],
                     "evolution": r["score_evolution"],
                     "overall": r["score_overall"],
+                    "scalability": r["score_scalability"] or 0,
                 },
             }
             for r in rows

@@ -846,6 +846,7 @@ def benchmarks_run():
             "memory": asdict(run.memory),
             "wisdom": asdict(run.wisdom),
             "evolution": asdict(run.evolution),
+            "scalability": asdict(run.scalability),
         }
     except Exception as e:
         raise HTTPException(500, f"基准测试运行失败: {str(e)[:300]}")

@@ -1,7 +1,13 @@
 <script setup>
-import { ref, inject, computed, onMounted } from 'vue'
+import { ref, inject, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
+import * as echarts from 'echarts/core'
+import { LineChart } from 'echarts/charts'
+import { TooltipComponent, LegendComponent, GridComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
 import { api } from '../api'
+
+echarts.use([LineChart, TooltipComponent, LegendComponent, GridComponent, CanvasRenderer])
 
 const { t, locale } = useI18n()
 const dateLocale = () => locale.value === 'zh' ? 'zh-CN' : 'en-US'
@@ -12,6 +18,8 @@ const error = ref(null)
 const latest = ref(null)
 const history = ref([])
 const compareData = ref(null)
+const trendChartRef = ref(null)
+let trendChart = null
 
 async function loadData() {
   loading.value = true
@@ -53,6 +61,7 @@ const scoreCards = computed(() => {
     { label: t('benchmarks.memoryAbility'), value: s.memory, color: 'var(--cyan)', icon: '🧠' },
     { label: t('benchmarks.wisdomReasoning'), value: s.wisdom, color: 'var(--emerald)', icon: '💡' },
     { label: t('benchmarks.evolutionLoop'), value: s.evolution, color: 'var(--amber)', icon: '🧬' },
+    { label: t('benchmarks.scalability'), value: s.scalability, color: 'var(--rose)', icon: '📐' },
   ]
 })
 
@@ -104,8 +113,118 @@ const historyScores = computed(() => {
   })).reverse()
 })
 
-const maxHistoryScore = computed(() => {
-  return Math.max(100, ...historyScores.value.map(h => h.overall))
+const scalabilityMetrics = computed(() => {
+  if (!latest.value?.scalability) return []
+  const s = latest.value.scalability
+  return [
+    { label: t('benchmarks.fts5Speedup'), value: s.fts5_speedup_vs_like ? '×' + s.fts5_speedup_vs_like.toFixed(1) : '-', target: '>5×' },
+    { label: t('benchmarks.query1k'), value: s.query_1k_ms ? s.query_1k_ms + 'ms' : '-', target: '<30ms' },
+    { label: t('benchmarks.query10k'), value: s.query_10k_ms ? s.query_10k_ms + 'ms' : '-', target: '<150ms' },
+    { label: t('benchmarks.query100k'), value: s.query_100k_ms ? s.query_100k_ms + 'ms' : '-', target: '<300ms' },
+    { label: t('benchmarks.insertThroughput'), value: s.insert_throughput_per_s ? s.insert_throughput_per_s.toFixed(0) + '/s' : '-', target: '>10/s' },
+    { label: t('benchmarks.searchThroughput'), value: s.search_throughput_per_s ? s.search_throughput_per_s.toFixed(0) + '/s' : '-', target: '>50/s' },
+  ]
+})
+
+function renderTrendChart() {
+  if (!trendChartRef.value || historyScores.value.length < 2) return
+  if (!trendChart) {
+    trendChart = echarts.init(trendChartRef.value)
+  }
+  const labels = historyScores.value.map(h => h.time)
+  const fmt = (v) => v != null ? Number(v).toFixed(1) : '0'
+  trendChart.setOption({
+    tooltip: {
+      trigger: 'axis',
+      valueFormatter: (v) => v != null ? Number(v).toFixed(1) : '-',
+    },
+    legend: {
+      bottom: 0,
+      textStyle: { color: '#94a3b8', fontSize: 11 },
+      data: [
+        t('benchmarks.overallScore'),
+        t('benchmarks.memoryAbility'),
+        t('benchmarks.wisdomReasoning'),
+        t('benchmarks.evolutionLoop'),
+        t('benchmarks.scalability'),
+      ],
+    },
+    grid: { left: 40, right: 20, top: 16, bottom: 40 },
+    xAxis: {
+      type: 'category',
+      data: labels,
+      axisLine: { lineStyle: { color: '#334155' } },
+      axisLabel: { color: '#94a3b8', fontSize: 10 },
+    },
+    yAxis: {
+      type: 'value',
+      min: 0,
+      max: 100,
+      splitLine: { lineStyle: { color: '#1e293b' } },
+      axisLabel: { color: '#94a3b8', fontSize: 10 },
+    },
+    series: [
+      {
+        name: t('benchmarks.overallScore'),
+        type: 'line',
+        data: historyScores.value.map(h => h.overall),
+        lineStyle: { color: '#818cf8', width: 2.5 },
+        itemStyle: { color: '#818cf8' },
+        symbol: 'circle',
+        symbolSize: 6,
+      },
+      {
+        name: t('benchmarks.memoryAbility'),
+        type: 'line',
+        data: historyScores.value.map(h => h.memory),
+        lineStyle: { color: '#06b6d4', width: 1.5, type: 'dashed' },
+        itemStyle: { color: '#06b6d4' },
+        symbol: 'diamond',
+        symbolSize: 5,
+      },
+      {
+        name: t('benchmarks.wisdomReasoning'),
+        type: 'line',
+        data: historyScores.value.map(h => h.wisdom),
+        lineStyle: { color: '#10b981', width: 1.5, type: 'dashed' },
+        itemStyle: { color: '#10b981' },
+        symbol: 'triangle',
+        symbolSize: 5,
+      },
+      {
+        name: t('benchmarks.evolutionLoop'),
+        type: 'line',
+        data: historyScores.value.map(h => h.evolution),
+        lineStyle: { color: '#f59e0b', width: 1.5, type: 'dashed' },
+        itemStyle: { color: '#f59e0b' },
+        symbol: 'rect',
+        symbolSize: 5,
+      },
+      {
+        name: t('benchmarks.scalability'),
+        type: 'line',
+        data: historyScores.value.map(h => h.scalability),
+        lineStyle: { color: '#f43f5e', width: 1.5, type: 'dotted' },
+        itemStyle: { color: '#f43f5e' },
+        symbol: 'arrow',
+        symbolSize: 5,
+      },
+    ],
+  }, true)
+}
+
+watch([historyScores, locale], () => {
+  nextTick(() => renderTrendChart())
+}, { deep: true })
+
+onMounted(() => {
+  loadData()
+  window.addEventListener('resize', () => trendChart?.resize())
+})
+
+onUnmounted(() => {
+  trendChart?.dispose()
+  window.removeEventListener('resize', () => trendChart?.resize())
 })
 
 const competitors = computed(() => {
@@ -128,7 +247,6 @@ function formatTime(ts) {
   return new Date(ts * 1000).toLocaleString(dateLocale())
 }
 
-onMounted(loadData)
 </script>
 
 <template>
@@ -168,7 +286,7 @@ onMounted(loadData)
 
     <div v-if="latest" class="gap-lg">
       <!-- Score Overview -->
-      <div class="grid-4">
+      <div class="grid-5">
         <div v-for="card in scoreCards" :key="card.label" class="card" style="text-align:center;">
           <div style="font-size:1.2rem;margin-bottom:4px;">{{ card.icon }}</div>
           <div :style="{ fontSize: '1.8rem', fontWeight: 700, color: card.color }">
@@ -178,40 +296,14 @@ onMounted(loadData)
         </div>
       </div>
 
-      <!-- Score History Mini Chart -->
+      <!-- Score Trend Chart -->
       <section class="card" v-if="historyScores.length > 1">
         <h2 style="font-size:1rem;margin-bottom:16px;">{{ t('benchmarks.scoreTrend') }}</h2>
-        <div class="history-chart">
-          <div class="history-bar-row" v-for="h in historyScores" :key="h.id">
-            <div class="history-bar-label">{{ h.time }}</div>
-            <div class="history-bar-track">
-              <div class="history-bar-seg" :style="{
-                width: (h.memory / maxHistoryScore * 100) + '%',
-                background: 'var(--cyan)',
-              }" :title="t('benchmarks.memoryAbility') + ': ' + h.memory" />
-              <div class="history-bar-seg" :style="{
-                width: (h.wisdom / maxHistoryScore * 100) + '%',
-                background: 'var(--emerald)',
-                marginLeft: '2px',
-              }" :title="t('benchmarks.wisdomReasoning') + ': ' + h.wisdom" />
-              <div class="history-bar-seg" :style="{
-                width: (h.evolution / maxHistoryScore * 100) + '%',
-                background: 'var(--amber)',
-                marginLeft: '2px',
-              }" :title="t('benchmarks.evolutionLoop') + ': ' + h.evolution" />
-              <span class="history-bar-overall">{{ h.overall }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="row" style="gap:16px;margin-top:8px;font-size:0.7rem;color:var(--text-muted);">
-          <span>{{ '▪ ' + t('benchmarks.memoryAbility') }}</span>
-          <span>{{ '▪ ' + t('benchmarks.wisdomReasoning') }}</span>
-          <span>{{ '▪ ' + t('benchmarks.evolutionLoop') }}</span>
-        </div>
+        <div ref="trendChartRef" class="trend-chart" />
       </section>
 
-      <!-- Three Dimensions -->
-      <div class="grid-3-dim">
+      <!-- Four Dimensions -->
+      <div class="grid-4-dim">
         <!-- Memory -->
         <section class="card">
           <h2 style="font-size:1rem;margin-bottom:12px;">{{ t('benchmarks.memoryCap') }}</h2>
@@ -241,6 +333,18 @@ onMounted(loadData)
           <h2 style="font-size:1rem;margin-bottom:12px;">{{ t('benchmarks.evolutionCap') }}</h2>
           <div class="metric-list">
             <div v-for="m in evolutionMetrics" :key="m.label" class="metric-row">
+              <span class="metric-label">{{ m.label }}</span>
+              <span class="metric-value">{{ m.value }}</span>
+              <span class="metric-target">{{ m.target }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Scalability -->
+        <section class="card">
+          <h2 style="font-size:1rem;margin-bottom:12px;">{{ t('benchmarks.scalabilityCap') }}</h2>
+          <div class="metric-list">
+            <div v-for="m in scalabilityMetrics" :key="m.label" class="metric-row">
               <span class="metric-label">{{ m.label }}</span>
               <span class="metric-value">{{ m.value }}</span>
               <span class="metric-target">{{ m.target }}</span>
@@ -295,19 +399,26 @@ onMounted(loadData)
 </template>
 
 <style scoped>
-.grid-4 {
+.grid-5 {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+.grid-4-dim {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
 }
-.grid-3-dim {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+@media (max-width: 1200px) {
+  .grid-5 { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 1024px) {
-  .grid-4 { grid-template-columns: repeat(2, 1fr); }
-  .grid-3-dim { grid-template-columns: 1fr; }
+  .grid-5 { grid-template-columns: repeat(2, 1fr); }
+  .grid-4-dim { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+  .grid-5 { grid-template-columns: 1fr; }
+  .grid-4-dim { grid-template-columns: 1fr; }
 }
 
 .metric-list {
@@ -344,49 +455,9 @@ onMounted(loadData)
   text-align: right;
 }
 
-/* History Chart */
-.history-chart {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.history-bar-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.history-bar-label {
-  width: 60px;
-  min-width: 60px;
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  text-align: right;
-}
-
-.history-bar-track {
-  flex: 1;
-  height: 18px;
-  background: rgba(255,255,255,0.04);
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  padding: 0 4px;
-  position: relative;
-}
-
-.history-bar-seg {
-  height: 10px;
-  border-radius: 3px;
-}
-
-.history-bar-overall {
-  position: absolute;
-  right: 10px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: var(--text-primary);
+.trend-chart {
+  width: 100%;
+  height: 300px;
 }
 
 /* Compare Table */
