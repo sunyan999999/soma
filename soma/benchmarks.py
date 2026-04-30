@@ -285,7 +285,7 @@ class ScalabilityBenchmark:
 @dataclass
 class BenchmarkRun:
     """一次完整基准测试运行"""
-    version: str = "0.3.3b1"
+    version: str = "0.3.3b2"
     timestamp: float = 0.0
     memory: MemoryBenchmark = field(default_factory=MemoryBenchmark)
     wisdom: WisdomBenchmark = field(default_factory=WisdomBenchmark)
