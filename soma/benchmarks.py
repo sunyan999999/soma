@@ -421,9 +421,10 @@ def run_memory_benchmark(agent) -> MemoryBenchmark:
     # 关键修复：top_k 按数据总量自适应。
     # 10 条测试记忆在 100 条 DB 中占 10%，在 1700 条 DB 中仅占 0.6%。
     # 固定 top_k=20 对大数据量不公平——就像在 1700 页书中翻 20 页找 10 页标记纸。
-    # 修复：top_k = max(20, total * 0.15)，确保至少覆盖 15% 的数据空间。
+    # 修复：top_k = min(max(20, total * 0.15), 50)，按数据量自适应但有硬上限。
+    # large datasets (e.g. 10k+) on CPU fastembed hit 0.15 ratio bottleneck, cap at 50.
     total_before = agent.memory.stats().get("episodic", 0)
-    adaptive_top_k = max(20, int((total_before + len(SEMANTIC_RECALL_PAIRS)) * 0.15))
+    adaptive_top_k = min(max(20, int((total_before + len(SEMANTIC_RECALL_PAIRS)) * 0.15)), 50)
     details["semantic_recall_top_k"] = adaptive_top_k
     details["semantic_recall_total_memories"] = total_before
 
