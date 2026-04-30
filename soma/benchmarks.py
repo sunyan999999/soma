@@ -205,19 +205,27 @@ def normalize_scores(
         1,
     )
 
-    # 伸缩性分
-    scalability_score = 0.0
-    if raw_scores.get("scalability_ratio"):
+    # 伸缩性分 — 数据量 < 500 时外推不可靠，标记为 N/A
+    scalability_score = -1.0
+    scalability_has_data = raw_scores.get("scalability_ratio", 0) and raw_scores["scalability_ratio"] > 0
+
+    if scalability_has_data:
         scalability_score = normalize_score(
             raw_scores["scalability_ratio"], data_count, "scalability"
         )
+        weight_overall = (0.30, 0.30, 0.25, 0.15)
+    else:
+        weight_overall = (0.35, 0.35, 0.30, 0)
 
     return {
         "memory": memory,
         "wisdom": wisdom,
         "evolution": evolution,
         "scalability": scalability_score,
-        "overall": round(memory * 0.30 + wisdom * 0.30 + evolution * 0.25 + scalability_score * 0.15, 1),
+        "overall": round(
+            memory * weight_overall[0] + wisdom * weight_overall[1]
+            + evolution * weight_overall[2] + scalability_score * weight_overall[3], 1
+        ),
         "data_scale": raw_scores.get("data_scale_name", "unknown"),
         "data_count": data_count,
     }
@@ -694,19 +702,16 @@ def run_scalability_benchmark(agent) -> ScalabilityBenchmark:
         q_latencies.append((time.perf_counter() - t0) * 1000)
     bm.query_1k_ms = round(sorted(q_latencies)[len(q_latencies) // 2], 2)
 
-    # 10K 容量延迟外推（FTS5 O(log N) 特性）
-    if current_count > 0:
+    # 10K/100K 容量延迟外推（仅数据量 ≥500 时进行，小数据量不外推）
+    if current_count >= 500:
         log_current = math.log2(current_count + 1)
         log_10k = math.log2(10001)
         bm.query_10k_ms = round(bm.query_1k_ms * (log_10k / log_current), 2)
-    else:
-        bm.query_10k_ms = bm.query_1k_ms * 2.0
 
-    # 100K 外推
-    if current_count > 0:
         log_100k = math.log2(100001)
         bm.query_100k_ms = round(bm.query_1k_ms * (log_100k / math.log2(current_count + 1)), 2)
     else:
+        bm.query_10k_ms = -1.0  # 数据不足，无法外推
         bm.query_100k_ms = -1.0
 
     # 2. FTS5 加速比（如果有足够数据）
@@ -780,7 +785,7 @@ def calculate_scores_v2(run: BenchmarkRun) -> Dict[str, float]:
             "recent_success_rate": run.evolution.details.get("recent_success_rate", 0),
             "scalability_ratio": (
                 run.scalability.query_10k_ms / run.scalability.query_1k_ms
-                if run.scalability.query_1k_ms > 0 else 1.0
+                if run.scalability.query_1k_ms > 0 and run.scalability.query_10k_ms > 0 else 0
             ),
             "data_scale_name": _friendly_scale_name(data_count),
         },

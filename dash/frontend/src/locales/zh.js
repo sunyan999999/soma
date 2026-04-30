@@ -232,6 +232,7 @@ export default {
     historyCount: '历史记录',
     scalability: '伸缩性',
     scalabilityCap: '📐 伸缩性',
+    insufficientData: '数据不足',
     radarChart: '🎯 五维雷达',
     versionCompare: '📊 版本对比',
     currentVersion: '当前版本',

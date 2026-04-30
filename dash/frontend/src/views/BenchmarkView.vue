@@ -65,7 +65,7 @@ const scoreCards = computed(() => {
     { label: t('benchmarks.memoryAbility'), value: s.memory, color: 'var(--cyan)', icon: '🧠' },
     { label: t('benchmarks.wisdomReasoning'), value: s.wisdom, color: 'var(--emerald)', icon: '💡' },
     { label: t('benchmarks.evolutionLoop'), value: s.evolution, color: 'var(--amber)', icon: '🧬' },
-    { label: t('benchmarks.scalability'), value: s.scalability, color: 'var(--rose)', icon: '📐' },
+    { label: t('benchmarks.scalability'), value: s.scalability < 0 ? t('benchmarks.insufficientData') : s.scalability, color: 'var(--rose)', icon: '📐' },
   ]
 })
 
