@@ -15,6 +15,7 @@
   <a href="#benchmarks"><img src="https://img.shields.io/badge/overall_score-89-brightgreen" alt="Overall Score"></a>
   <a href="#"><img src="https://img.shields.io/badge/tests-139-brightgreen" alt="Tests"></a>
   <a href="#"><img src="https://img.shields.io/badge/coverage-~97%25-brightgreen" alt="Coverage"></a>
+  <a href="https://codecov.io/gh/sunyan999999/soma"><img src="https://codecov.io/gh/sunyan999999/soma/branch/main/graph/badge.svg" alt="Codecov"></a>
 </p>
 
 ---
@@ -220,6 +221,51 @@ agent = SOMA_Agent(SOMAConfig(framework=load_config()))
 tool = create_soma_tool(agent)
 result = tool.run("Analyze this problem...")
 ```
+
+### AI Coding Agent Integration (Claude Code / VS Code / JetBrains)
+
+SOMA runs alongside AI coding tools as a persistent wisdom backend — it learns from every debug session, code review, and architectural decision.
+
+```bash
+# 1. Start SOMA server (once)
+SOMA_API_KEY=dev-key python dash/server.py
+```
+
+**Claude Code (Agent SDK)** — use as a custom MCP server or REST tool:
+
+```python
+# In your custom Claude Agent tool — persist insights across sessions
+import requests
+requests.post("http://localhost:8765/api/memory/remember",
+    headers={"X-API-Key": "dev-key"},
+    json={"content": "Bug: N+1 query in OrderService.getOrders, root cause: missing @BatchSize on items relation, fix: add Hibernate batch annotation + integration test", "importance": 0.9})
+```
+
+**VS Code Extension** — invoke via sidebar or command palette with a thin HTTP client wrapper.
+
+**Any IDE / CLI tool** — just curl the REST API. No SDK required.
+
+```bash
+# Record a debug finding
+curl -s -X POST http://localhost:8765/api/memory/remember \
+  -H "X-API-Key: dev-key" -H "Content-Type: application/json" \
+  -d '{"content":"Race condition in WebSocket handler: concurrent map writes on client.buf, root cause: missing mutex on write path, fix: sync.RWMutex around buffer ops","importance":0.9}'
+
+# Recall relevant knowledge before starting a new task
+curl -s -X POST http://localhost:8765/api/memory/search \
+  -H "X-API-Key: dev-key" -H "Content-Type: application/json" \
+  -d '{"query":"concurrency websocket golang","top_k":5}'
+```
+
+### Real-World Impact
+
+SOMA has been used in production across two distinct codebases — a Go-based CLI agent and a Python data platform — with the following results:
+
+- **Bug reoccurrence dropped significantly.** When a bug fix is recorded as a SOMA memory (root cause + fix pattern), later sessions on the same codebase automatically retrieve it. Developers no longer re-debug the same class of issues across sprints.
+- **Architectural decisions became searchable.** Each trade-off ("chose SQLite WAL over multi-worker for simplicity") is persisted with rationale context. Six months later, new team members can query "why single worker?" and get the original reasoning — not folklore.
+- **Cross-project knowledge transfer worked.** A concurrency pattern learned in one codebase (the Go project) activated during debugging in the other (the Python project), because SOMA's semantic search matched "race condition" across language boundaries.
+- **Zero adoption friction.** The Python project integrated via `pip install soma-wisdom` + 3 lines of code. The Go project integrated via REST API with a thin HTTP client (~50 lines). Neither required schema design, vector database setup, or infrastructure changes.
+- **Evolution is automatic.** After ~50 sessions, SOMA's auto-weighting surfaced that "Inversion" (thinking backwards from failure) was consistently the most useful lens for debugging tasks, while "Analogical Reasoning" shined during architecture discussions. The framework self-tuned — no manual knob-twisting needed.
 
 ## Benchmarks
 

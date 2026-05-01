@@ -311,6 +311,13 @@ class ProviderUpdateRequest(BaseModel):
     base_url: Optional[str] = None
 
 
+class ReflectRequest(BaseModel):
+    """反馈闭环：用户对某次分析的评价"""
+    session_id: str
+    outcome: str = Field(description="success / failure / helpful / misleading")
+    note: Optional[str] = Field(default=None, description="用户补充说明")
+
+
 # ── Health ───────────────────────────────────────────────────
 
 @app.get("/api/health")
@@ -324,6 +331,146 @@ def health():
         "current_provider": pm.current_provider_id,
         "memory_stats": agent.memory.stats(),
     }
+
+
+# ── Community Stats (GitHub + PyPI) ────────────────────────────
+
+import urllib.request
+import urllib.error
+from functools import lru_cache
+
+_COMMUNITY_CACHE = {}
+_CACHE_TTL = 3600  # 1小时缓存
+
+# GitHub Traffic API 需要认证 Token
+_GITHUB_TOKEN = os.environ.get("SOMA_GITHUB_TOKEN", "")
+
+
+def _http_get_json(url: str, auth_token: str = "") -> Optional[dict]:
+    """带超时的 HTTP GET JSON，可选 Bearer 认证"""
+    try:
+        headers = {"User-Agent": "SOMA/0.3"}
+        if auth_token:
+            headers["Authorization"] = f"Bearer {auth_token}"
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            raw = resp.read().decode("utf-8")
+            return _json.loads(raw)
+    except Exception:
+        return None
+
+
+def _http_get_github_traffic(repo: str, metric: str) -> dict:
+    """获取 GitHub Traffic API 数据（clones / views），返回 {count, uniques}"""
+    url = f"https://api.github.com/repos/{repo}/traffic/{metric}"
+    data = _http_get_json(url, auth_token=_GITHUB_TOKEN)
+    if data:
+        return {"count": data.get("count", 0), "uniques": data.get("uniques", 0)}
+    return {"count": 0, "uniques": 0}
+
+
+def _http_get_contributor_count(repo: str) -> int:
+    """通过 GitHub API 获取贡献者总数（解析 Link 头）"""
+    url = f"https://api.github.com/repos/{repo}/contributors?per_page=1&anon=true"
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "SOMA/0.3"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            link_header = resp.headers.get("Link", "")
+            raw = resp.read().decode("utf-8")
+        # Link 头格式: <url?page=2>; rel="next", <url?page=N>; rel="last"
+        if 'rel="last"' in link_header:
+            import re
+            match = re.search(r'[?&]page=(\d+)', link_header.split('rel="last"')[0])
+            if match:
+                return int(match.group(1))
+        # 只有一页或无法解析时，用响应体长度
+        data = _json.loads(raw)
+        return len(data) if isinstance(data, list) else 0
+    except Exception:
+        return 0
+
+
+@app.get("/api/stats/community")
+def community_stats():
+    """获取 GitHub + PyPI 社区统计数据（1小时缓存）"""
+    now = time.time()
+    cached = _COMMUNITY_CACHE.get("community")
+    if cached and now - cached["_ts"] < _CACHE_TTL:
+        return cached
+
+    result = {"_ts": now, "github": {}, "pypi": {}}
+
+    # GitHub
+    gh = _http_get_json("https://api.github.com/repos/sunyan999999/soma")
+    if gh:
+        contributors = _http_get_contributor_count("sunyan999999/soma")
+        clones = _http_get_github_traffic("sunyan999999/soma", "clones")
+        views = _http_get_github_traffic("sunyan999999/soma", "views")
+        result["github"] = {
+            "stars": gh.get("stargazers_count", 0),
+            "forks": gh.get("forks_count", 0),
+            "open_issues": gh.get("open_issues_count", 0),
+            "watchers": gh.get("watchers_count", 0),
+            "contributors": contributors,
+            "clones_count": clones.get("count", 0),
+            "clones_uniques": clones.get("uniques", 0),
+            "views_count": views.get("count", 0),
+            "views_uniques": views.get("uniques", 0),
+            "updated_at": gh.get("updated_at", ""),
+        }
+
+    # PyPI
+    pypi = _http_get_json("https://pypi.org/pypi/soma-wisdom/json")
+    if pypi:
+        info = pypi.get("info", {})
+        result["pypi"] = {
+            "version": info.get("version", ""),
+            "license": info.get("license", ""),
+            "requires_python": info.get("requires_python", ""),
+        }
+
+    # PyPI 下载量（pypistats.org 公开 API）
+    pypi_stats = _http_get_json("https://pypistats.org/api/packages/soma-wisdom/overall")
+    if pypi_stats:
+        downloads = 0
+        for entry in pypi_stats.get("data", []):
+            if entry.get("category") == "with_mirrors":
+                downloads = max(downloads, entry.get("downloads", 0))
+        result["pypi"]["total_downloads"] = downloads
+
+    _COMMUNITY_CACHE["community"] = result
+    return result
+
+
+@app.get("/api/stats/competitors")
+def competitor_stats():
+    """获取竞品 GitHub 星数（1小时缓存）"""
+    now = time.time()
+    cached = _COMMUNITY_CACHE.get("competitors")
+    if cached and now - cached["_ts"] < _CACHE_TTL:
+        return cached
+
+    repos = {
+        "soma": "sunyan999999/soma",
+        "mem0": "mem0ai/mem0",
+        "letta": "letta-ai/letta",
+        "zep": "getzep/zep",
+        "chromadb": "chroma-core/chroma",
+    }
+
+    result = {"_ts": now, "stars": {}}
+    for key, repo in repos.items():
+        data = _http_get_json(f"https://api.github.com/repos/{repo}")
+        if data:
+            result["stars"][key] = {
+                "repo": repo,
+                "stars": data.get("stargazers_count", 0),
+                "forks": data.get("forks_count", 0),
+                "open_issues": data.get("open_issues_count", 0),
+            }
+
+    _COMMUNITY_CACHE["competitors"] = result
+    return result
 
 
 # ── Config / Provider ────────────────────────────────────────
@@ -385,10 +532,33 @@ def config_update_provider(req: ProviderUpdateRequest):
 
 # ── Chat ─────────────────────────────────────────────────────
 
+# ── /soma 深度分析路由 ───────────────────────────────────────
+
+_SOMA_TRIGGERS = [
+    "/soma", "/深度", "/deep",
+    "深层归因", "第一性原理", "系统思维", "矛盾分析",
+    "智慧框架", "体悟", "元认知", "本质",
+]
+
+
+def _detect_deep_mode(problem: str) -> bool:
+    """检测问题是否需要深度分析模式"""
+    lowered = problem.lower().strip()
+    return any(t.lower() in lowered for t in _SOMA_TRIGGERS)
+
+
 @app.post("/api/chat")
 def chat(req: ChatRequest):
     t0 = time.time()
     agent = get_agent()
+
+    # /soma 路由：检测深度分析意图，调整参数
+    deep_mode = _detect_deep_mode(req.problem)
+    if deep_mode:
+        orig_top_k = agent.hub.top_k
+        orig_threshold = agent.hub.threshold
+        agent.hub.top_k = max(agent.hub.top_k, 8)           # 加深记忆召回
+        agent.hub.threshold = min(agent.hub.threshold, 0.005)  # 降低阈值
 
     # Step 1: 拆解
     foci = agent.decompose(req.problem)
@@ -405,6 +575,12 @@ def chat(req: ChatRequest):
 
     # Step 2: 激活
     activated = agent.hub.activate(foci)
+
+    # 恢复深度模式参数
+    if deep_mode:
+        agent.hub.top_k = orig_top_k
+        agent.hub.threshold = orig_threshold
+
     memory_cards = [
         {
             "id": am.memory.id,
@@ -464,6 +640,7 @@ def chat(req: ChatRequest):
     response_data = {
         "problem": req.problem,
         "mock_mode": use_mock,
+        "deep_mode": deep_mode,
         "foci": foci_data,
         "activated_memories": memory_cards,
         "answer": answer,
@@ -718,6 +895,41 @@ def framework_clear_log():
     return {"status": "cleared"}
 
 
+@app.post("/api/reflect")
+def reflect(req: ReflectRequest):
+    """反馈闭环 — 用户对分析结果的评价写入进化器"""
+    agent = get_agent()
+    outcome = req.outcome.strip().lower()
+
+    # 规范化 outcome
+    if outcome in ("helpful", "useful", "good"):
+        normalized = "success"
+    elif outcome in ("misleading", "wrong", "bad"):
+        normalized = "failure"
+    else:
+        normalized = outcome
+
+    agent.evolver.reflect(req.session_id, normalized)
+
+    # 立即检查是否需要进化
+    log = agent.evolver.get_log()
+    if len(log) > 0 and len(log) % 10 == 0:
+        changes = agent.evolver.evolve()
+        return {
+            "status": "recorded",
+            "outcome": normalized,
+            "evolution_triggered": True,
+            "changes": changes,
+            "weights": agent.evolver.get_weights(),
+        }
+
+    return {
+        "status": "recorded",
+        "outcome": normalized,
+        "note_saved": req.note is not None,
+    }
+
+
 class DiscoverLawsRequest(BaseModel):
     llm_model: Optional[str] = None
 
@@ -944,8 +1156,10 @@ if __name__ == "__main__":
     import uvicorn
 
     pm = get_provider_manager()
+    is_prod = os.environ.get("SOMA_PROD", "").lower() in ("1", "true", "yes")
     print(f"\n{'='*50}")
     print(f"  SOMA API Server v{app.version}")
+    print(f"  运行模式: {'🚀 生产' if is_prod else '🔧 开发 (reload)'}")
     print(f"  Mock 模式: {'✅ 开启' if _use_mock() else '❌ 关闭（使用真实模型）'}")
     if not MOCK_MODE:
         p = pm.get_current()
@@ -953,4 +1167,24 @@ if __name__ == "__main__":
         print(f"  API Base: {p['base_url'] or '默认'}")
         print(f"  API Key:  {'已配置' if p['api_key'] else '❌ 未配置'}")
     print(f"{'='*50}\n")
-    uvicorn.run("dash.server:app", host="0.0.0.0", port=8765, reload=True)
+
+    if is_prod:
+        uvicorn.run(
+            "dash.server:app",
+            host="0.0.0.0",
+            port=8765,
+            reload=False,
+            workers=1,                     # SQLite WAL 单 worker 避免锁冲突
+            timeout_keep_alive=30,         # 空闲连接 30s 关闭
+            limit_concurrency=20,          # 最大并发连接数
+            limit_max_requests=500,        # 每个 worker 处理 500 请求后重启（防内存泄漏）
+            log_level="warning",
+        )
+    else:
+        uvicorn.run(
+            "dash.server:app",
+            host="0.0.0.0",
+            port=8765,
+            reload=True,
+            reload_dirs=[str(Path(__file__).parent)],
+        )

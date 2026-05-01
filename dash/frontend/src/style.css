@@ -121,6 +121,39 @@ body::before {
 
 .nav-icon { font-size: 1.2rem; width: 24px; text-align: center; }
 
+/* ── Sidebar Community Stats ──────────────────────────────── */
+.sidebar-stats {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.stats-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  font-size: 0.8rem;
+}
+.stat-icon { width: 20px; text-align: center; font-size: 0.85rem; }
+.stat-val {
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 42px;
+}
+.stat-label {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
 .main-content {
   flex: 1;
   padding: 32px 40px;

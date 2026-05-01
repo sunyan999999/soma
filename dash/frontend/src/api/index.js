@@ -21,6 +21,10 @@ async function request(path, options = {}) {
 export const api = {
   health: () => request('/health'),
 
+  community: () => request('/stats/community'),
+
+  competitorStats: () => request('/stats/competitors'),
+
   chat: (problem) =>
     request('/chat', {
       method: 'POST',

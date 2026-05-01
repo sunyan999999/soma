@@ -48,9 +48,15 @@ jobs:
         run: |
           python -c "import soma; print('soma import OK')"
 
-      - name: Run tests
+      - name: Run tests with coverage
         run: |
-          pytest -v --tb=long --timeout=60 -ra
+          pytest -v --tb=long --timeout=60 -ra --cov=soma --cov-report=xml --cov-report=term
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: coverage.xml
+          fail_ci_if_error: false
 
   build:
     runs-on: ubuntu-latest

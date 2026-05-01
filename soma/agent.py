@@ -1,5 +1,9 @@
 from typing import Any, Dict, List, Optional
 
+import hashlib
+import time
+from functools import lru_cache
+
 from litellm import completion
 
 from soma.base import ActivatedMemory, Focus
@@ -50,18 +54,21 @@ class SOMA_Agent:
         self.evolver = MetaEvolver(self.engine, memory_core=self.memory,
                                    persist_dir=config.episodic_persist_dir)
 
+        # LLM 短时缓存（避免相同 prompt 重复调用）
+        self._llm_cache: Dict[str, tuple] = {}
+
         # 保存最近一次构建的 prompt（供仪表盘可视化）
         self._last_prompt: str = ""
 
-    def respond(self, problem: str) -> str:
+    def respond(self, problem: str, user_id: str = "") -> str:
         """完整管道：拆解 → 双向激活 → 合成 → 应答"""
         import time
 
         # Step 1: 问题拆解
         foci = self.engine.decompose(problem)
 
-        # Step 2: 双向激活记忆
-        activated = self.hub.activate(foci)
+        # Step 2: 双向激活记忆（带用户隔离）
+        activated = self.hub.activate(foci, user_id=user_id)
 
         # Step 3: 合成 Prompt
         prompt = self._build_prompt(problem, foci, activated)
@@ -171,22 +178,58 @@ class SOMA_Agent:
         return prompt
 
     def _call_llm(self, prompt: str) -> str:
-        """通过 LiteLLM 统一接口调用大模型"""
-        response = completion(
-            model=self.config.llm_model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
-        )
-        return response.choices[0].message.content
+        """通过 LiteLLM 统一接口调用大模型，带指数退避重试 + 短时缓存"""
+        # 短时缓存：相同 prompt 10分钟内不重复调用
+        cache_key = hashlib.sha256(prompt.encode()).hexdigest()
+        cached = self._llm_cache.get(cache_key)
+        if cached:
+            ts, answer = cached
+            if time.time() - ts < 600:  # 10分钟TTL
+                return answer
+
+        max_retries = 3
+        base_delay = 1.0
+        last_error = None
+
+        for attempt in range(max_retries):
+            try:
+                response = completion(
+                    model=self.config.llm_model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.7,
+                    timeout=60,
+                )
+                answer = response.choices[0].message.content
+                # 缓存结果
+                self._llm_cache[cache_key] = (time.time(), answer)
+                # 限制缓存大小
+                if len(self._llm_cache) > 50:
+                    oldest = min(self._llm_cache, key=lambda k: self._llm_cache[k][0])
+                    del self._llm_cache[oldest]
+                return answer
+            except Exception as e:
+                last_error = e
+                if attempt < max_retries - 1:
+                    delay = base_delay * (2 ** attempt)
+                    time.sleep(delay)
+                else:
+                    raise RuntimeError(
+                        f"LLM 调用失败（已重试{max_retries}次）: {last_error}"
+                    ) from last_error
+
+        raise RuntimeError(f"LLM 调用失败: {last_error}")
 
     def remember(
         self,
         content: str,
         context: Optional[Dict[str, Any]] = None,
         importance: float = 0.5,
+        user_id: str = "",
+        session_id: str = "",
     ) -> str:
         """存储情节记忆"""
-        return self.memory.remember(content, context, importance)
+        return self.memory.remember(content, context, importance,
+                                    user_id=user_id, session_id=session_id)
 
     def remember_semantic(
         self,
@@ -194,11 +237,13 @@ class SOMA_Agent:
         predicate: str,
         object_: str,
         confidence: float = 1.0,
+        namespace: str = "",
     ) -> None:
         """存储语义三元组"""
-        self.memory.remember_semantic(subject, predicate, object_, confidence)
+        self.memory.remember_semantic(subject, predicate, object_, confidence,
+                                      namespace=namespace)
 
-    def query_memory(self, query: str, top_k: int = 5) -> List[Dict]:
+    def query_memory(self, query: str, top_k: int = 5, user_id: str = "") -> List[Dict]:
         """直接查询记忆（绕过框架拆解）"""
         from soma.engine import _extract_keywords
 
@@ -213,7 +258,7 @@ class SOMA_Agent:
         original_top_k = self.hub.top_k
         self.hub.top_k = top_k
         try:
-            activated = self.hub.activate([focus])
+            activated = self.hub.activate([focus], user_id=user_id)
         finally:
             self.hub.top_k = original_top_k
         return [self.hub.explain_activation(am) for am in activated]

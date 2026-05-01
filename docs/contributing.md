@@ -38,8 +38,8 @@ Open a GitHub Issue with:
 ## Development Setup
 
 ```bash
-git clone https://github.com/sunyan999999/soma.git
-cd soma
+git clone https://github.com/soma-project/soma-core.git
+cd soma-core
 pip install -e ".[dev]"
 ```
 
@@ -137,8 +137,8 @@ By contributing, you agree that your contributions will be licensed under the Ap
 ## 开发环境配置
 
 ```bash
-git clone https://github.com/sunyan999999/soma.git
-cd soma
+git clone https://github.com/soma-project/soma-core.git
+cd soma-core
 pip install -e ".[dev]"
 ```
 

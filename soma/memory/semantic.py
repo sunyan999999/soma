@@ -27,7 +27,7 @@ class SemanticStore(BaseMemoryStore):
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA synchronous=NORMAL")
         self._conn.execute("PRAGMA cache_size=-4000")       # 4MB 缓存（语义数据量较小）
-        self._conn.execute("PRAGMA busy_timeout=5000")
+        self._conn.execute("PRAGMA busy_timeout=15000")
         self._conn.execute(
             """
             CREATE TABLE IF NOT EXISTS semantic_triples (
@@ -36,7 +36,8 @@ class SemanticStore(BaseMemoryStore):
                 predicate TEXT NOT NULL,
                 object TEXT NOT NULL,
                 confidence REAL DEFAULT 1.0,
-                created_at REAL NOT NULL
+                created_at REAL NOT NULL,
+                namespace TEXT NOT NULL DEFAULT ''
             )
             """
         )
@@ -46,6 +47,15 @@ class SemanticStore(BaseMemoryStore):
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_semantic_object ON semantic_triples(object)"
         )
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_semantic_namespace ON semantic_triples(namespace)"
+        )
+        try:
+            self._conn.execute(
+                "ALTER TABLE semantic_triples ADD COLUMN namespace TEXT NOT NULL DEFAULT ''"
+            )
+        except sqlite3.OperationalError:
+            pass
         self._create_fts5()
         self._conn.commit()
 
@@ -104,7 +114,9 @@ class SemanticStore(BaseMemoryStore):
             )
 
     def add_triple(
-        self, subject: str, predicate: str, object_: str, confidence: float = 1.0
+        self, subject: str, predicate: str, object_: str,
+        confidence: float = 1.0,
+        namespace: str = "",
     ) -> None:
         """添加三元组并持久化到 SQLite"""
         import time
@@ -115,37 +127,46 @@ class SemanticStore(BaseMemoryStore):
         )
         self._conn.execute(
             """
-            INSERT INTO semantic_triples (subject, predicate, object, confidence, created_at)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO semantic_triples (subject, predicate, object, confidence, created_at, namespace)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (subject, predicate, object_, confidence, time.time()),
+            (subject, predicate, object_, confidence, time.time(), namespace),
         )
         self._conn.commit()
 
     def query_by_keywords(
-        self, keywords: List[str], top_k: int = 5
+        self, keywords: List[str], top_k: int = 5,
+        namespace: str = "",
     ) -> List[MemoryUnit]:
         if not keywords:
             return []
 
         results: List[MemoryUnit] = []
         seen_ids: set = set()
+        ns_clause = "AND st.namespace = ?" if namespace else ""
+        max_age_days = 30.0
+        import time
+        min_ts = time.time() - max_age_days * 86400.0
 
         # 路径1: FTS5 trigram 全文搜索（3字及以上关键词）
         fts_keywords = [kw for kw in keywords if len(kw) >= 3]
         if fts_keywords:
             fts_query = " OR ".join(f'"{kw}"' for kw in fts_keywords)
             try:
-                rows = self._conn.execute(
-                    """
+                params = [fts_query]
+                sql = f"""
                     SELECT st.* FROM semantic_triples st
                     INNER JOIN semantic_fts fts ON st.rowid = fts.rowid
                     WHERE semantic_fts MATCH ?
+                    AND st.created_at >= ? {ns_clause}
                     ORDER BY st.confidence DESC
                     LIMIT ?
-                    """,
-                    (fts_query, top_k),
-                ).fetchall()
+                """
+                params.extend([min_ts])
+                if namespace:
+                    params.append(namespace)
+                params.append(top_k)
+                rows = self._conn.execute(sql, params).fetchall()
                 for row in rows:
                     u, v, pred = row["subject"], row["object"], row["predicate"]
                     edge_id = f"sem_edge_{u}_{pred}_{v}"
@@ -176,9 +197,12 @@ class SemanticStore(BaseMemoryStore):
                 if len(results) >= top_k:
                     break
                 kw_lower = kw.lower()
-                # 搜索节点
+                # 搜索节点（仅当无 namespace 或节点匹配时）
                 for node in self.graph.nodes:
                     if kw_lower in node.lower():
+                        # namespace 过滤：节点需要与 namespace 相关
+                        if namespace and namespace not in node:
+                            continue
                         node_id = f"sem_node_{node}"
                         if node_id not in seen_ids:
                             seen_ids.add(node_id)

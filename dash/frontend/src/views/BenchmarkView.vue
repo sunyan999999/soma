@@ -18,6 +18,7 @@ const error = ref(null)
 const latest = ref(null)
 const history = ref([])
 const compareData = ref(null)
+const somaStars = ref(null)
 const trendChartRef = ref(null)
 const radarChartRef = ref(null)
 const compareChartRef = ref(null)
@@ -29,13 +30,34 @@ async function loadData() {
   loading.value = true
   error.value = null
   try {
-    const [l, h, c] = await Promise.all([
+    const [l, h, c, stars] = await Promise.all([
       api.benchmarksLatest().catch(() => null),
       api.benchmarksHistory(),
       api.benchmarksCompare().catch(() => null),
+      api.competitorStats().catch(() => null),
     ])
     latest.value = l
     history.value = h || []
+    // 合并实时星数到竞品数据
+    if (c && stars?.stars) {
+      const starMap = stars.stars
+      // SOMA 自身星数
+      if (starMap.soma?.stars != null) somaStars.value = starMap.soma.stars
+      for (const [name, data] of Object.entries(c.competitors)) {
+        const key = name.toLowerCase().split(' ')[0].split('(')[0]
+        // 映射: "Mem0"→mem0, "Letta (MemGPT)"→letta, "Zep"→zep, "原生 RAG (ChromaDB)"→chromadb
+        let mapped = ''
+        if (key.includes('mem0')) mapped = 'mem0'
+        else if (key.includes('letta') || key.includes('memgpt')) mapped = 'letta'
+        else if (key.includes('zep')) mapped = 'zep'
+        else if (key.includes('原生') || key.includes('chroma')) mapped = 'chromadb'
+        const match = starMap[mapped]
+        if (match?.stars) {
+          data.stars = match.stars
+          data._live_stars = true
+        }
+      }
+    }
     compareData.value = c
   } catch (e) {
     error.value = e.message
@@ -523,7 +545,7 @@ function formatTime(ts) {
             <tbody>
               <tr class="soma-row">
                 <td><strong>SOMA</strong></td>
-                <td>-</td>
+                <td>{{ somaStars != null ? (somaStars >= 1000 ? (somaStars / 1000).toFixed(1) + 'K' : somaStars) : '...' }}</td>
                 <td>{{ latest.memory ? (latest.memory.semantic_recall_rate * 100).toFixed(0) + '%' : '-' }}</td>
                 <td>{{ latest.memory ? latest.memory.avg_query_latency_ms + 'ms' : '-' }}</td>
                 <td>{{ latest.memory ? (latest.memory.dedup_ratio * 100).toFixed(0) + '%' : '-' }}</td>

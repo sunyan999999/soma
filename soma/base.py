@@ -1,7 +1,11 @@
+import math
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+
+# 近因衰减半衰期（天）：7天后权重衰减至 50%，14天后 25%，30天后 <5%
+_RECENCY_HALF_LIFE_DAYS = 7.0
 
 
 @dataclass
@@ -15,12 +19,22 @@ class MemoryUnit:
     context: Dict[str, Any] = field(default_factory=dict)
     memory_type: str = "episodic"
     id: str = field(default_factory=lambda: uuid.uuid4().hex)
+    user_id: str = ""
+    session_id: str = ""
 
     def relevance_potential(self) -> float:
-        """关联潜力 = 近因衰减 × 重要性 × 使用频次因子"""
+        """关联潜力 = 指数近因衰减 × 重要性 × 使用频次因子
+
+        衰减曲线: exp(-days/7)，半衰期 7 天。
+        - 当天 (0d): 1.00
+        - 3天后: 0.65
+        - 7天后: 0.37
+        - 14天后: 0.14
+        - 30天后: 0.014 (<2% — 基本被抑制)
+        """
         now = datetime.now(timezone.utc).timestamp()
-        days = (now - self.timestamp) / 86400.0
-        recency = 1.0 / (1.0 + max(days, 0))
+        days = max(now - self.timestamp, 0) / 86400.0
+        recency = math.exp(-days / _RECENCY_HALF_LIFE_DAYS)
         return recency * self.importance * (1.0 + 0.1 * self.access_count)
 
 

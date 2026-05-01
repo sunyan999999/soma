@@ -72,10 +72,10 @@ class SOMA:
         self._agent = SOMA_Agent(self._config)
         self._session_count = 0
 
-    def respond(self, problem: str) -> str:
+    def respond(self, problem: str, user_id: str = "") -> str:
         """完整智者管道：拆解→激活→合成→反思→进化检测"""
         try:
-            answer = self._agent.respond(problem)
+            answer = self._agent.respond(problem, user_id=user_id)
         except Exception:
             answer = self._mock_respond(problem)
         self._session_count += 1
@@ -84,10 +84,10 @@ class SOMA:
             self._agent.evolver.evolve()
         return answer
 
-    def chat(self, problem: str) -> dict:
+    def chat(self, problem: str, user_id: str = "") -> dict:
         """完整对话接口，返回结构化结果（供 API / Agent 使用）"""
         foci = self._agent.decompose(problem)
-        activated = self._agent.hub.activate(foci)
+        activated = self._agent.hub.activate(foci, user_id=user_id)
 
         try:
             answer = self._agent._call_llm(
@@ -146,17 +146,21 @@ class SOMA:
         return "\n".join(parts)
 
     def remember(
-        self, content: str, context: dict = None, importance: float = 0.5
+        self, content: str, context: dict = None, importance: float = 0.5,
+        user_id: str = "", session_id: str = "",
     ) -> str:
-        return self._agent.remember(content, context, importance)
+        return self._agent.remember(content, context, importance,
+                                    user_id=user_id, session_id=session_id)
 
     def remember_semantic(
-        self, subject: str, predicate: str, object_: str, confidence: float = 1.0
+        self, subject: str, predicate: str, object_: str, confidence: float = 1.0,
+        namespace: str = "",
     ) -> None:
-        self._agent.remember_semantic(subject, predicate, object_, confidence)
+        self._agent.remember_semantic(subject, predicate, object_, confidence,
+                                      namespace=namespace)
 
-    def query_memory(self, query: str, top_k: int = 5) -> list:
-        return self._agent.query_memory(query, top_k)
+    def query_memory(self, query: str, top_k: int = 5, user_id: str = "") -> list:
+        return self._agent.query_memory(query, top_k, user_id=user_id)
 
     def decompose(self, problem: str) -> list:
         return self._agent.decompose(problem)

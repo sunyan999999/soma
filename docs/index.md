@@ -15,8 +15,8 @@ Welcome to the SOMA documentation. SOMA (Somatic Wisdom Architecture) is a light
 
 ## Contributing
 
-- **[Contributing Guide](../CONTRIBUTING.md)** — How to contribute
-- **[Changelog](../CHANGELOG.md)** — Version history
+- **[Contributing Guide](contributing.md)** — How to contribute
+- **[Changelog](changelog.md)** — Version history
 
 ## Papers
 
@@ -42,8 +42,8 @@ Welcome to the SOMA documentation. SOMA (Somatic Wisdom Architecture) is a light
 
 ## 贡献
 
-- **[贡献指南](../CONTRIBUTING.md)** — 如何贡献
-- **[变更日志](../CHANGELOG.md)** — 版本历史
+- **[贡献指南](contributing.md)** — 如何贡献
+- **[变更日志](changelog.md)** — 版本历史
 
 ## 论文
 

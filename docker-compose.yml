@@ -1,0 +1,35 @@
+# SOMA + Dashboard 一键部署
+# 启动: docker compose up -d
+# 查看: http://localhost:8765
+
+version: "3.9"
+
+services:
+  soma:
+    build: .
+    image: soma-wisdom:latest
+    container_name: soma
+    restart: unless-stopped
+    ports:
+      - "8765:8765"
+    volumes:
+      # 持久化记忆数据
+      - soma_data:/app/soma_data
+    environment:
+      - SOMA_PROD=1
+      - SOMA_MOCK=0
+      - SOMA_API_KEY=${SOMA_API_KEY:-}
+      # LLM 配置（可选 — 不设则使用 Mock 模式）
+      - SOMA_LLM_MODEL=${SOMA_LLM_MODEL:-}
+      - SOMA_LLM_API_KEY=${SOMA_LLM_API_KEY:-}
+      - SOMA_LLM_BASE_URL=${SOMA_LLM_BASE_URL:-}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8765/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  soma_data:
+    driver: local

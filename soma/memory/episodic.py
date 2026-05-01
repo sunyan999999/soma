@@ -54,7 +54,7 @@ class EpisodicStore(BaseMemoryStore):
         self._conn.execute("PRAGMA cache_size=-8000")          # 8MB 缓存
         self._conn.execute("PRAGMA mmap_size=268435456")       # 256MB 内存映射
         self._conn.execute("PRAGMA temp_store=MEMORY")         # 临时表存内存
-        self._conn.execute("PRAGMA busy_timeout=5000")         # 5秒忙等待
+        self._conn.execute("PRAGMA busy_timeout=15000")        # 15秒忙等待（Windows并发场景）
         self._conn.execute(
             """
             CREATE TABLE IF NOT EXISTS episodic_memories (
@@ -65,22 +65,32 @@ class EpisodicStore(BaseMemoryStore):
                 importance REAL DEFAULT 0.5,
                 access_count INTEGER DEFAULT 0,
                 context_json TEXT DEFAULT '{}',
-                memory_type TEXT DEFAULT 'episodic'
+                memory_type TEXT DEFAULT 'episodic',
+                user_id TEXT NOT NULL DEFAULT '',
+                session_id TEXT NOT NULL DEFAULT ''
             )
             """
         )
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_timestamp ON episodic_memories(timestamp DESC)"
         )
-        # 为旧数据库补齐 content_hash 列（必须在 CREATE INDEX 之前）
-        try:
-            self._conn.execute(
-                "ALTER TABLE episodic_memories ADD COLUMN content_hash TEXT NOT NULL DEFAULT ''"
-            )
-        except sqlite3.OperationalError:
-            pass  # 列已存在
+        # 向后兼容迁移：补齐可能缺失的列
+        for col, col_def in [
+            ("content_hash", "TEXT NOT NULL DEFAULT ''"),
+            ("user_id", "TEXT NOT NULL DEFAULT ''"),
+            ("session_id", "TEXT NOT NULL DEFAULT ''"),
+        ]:
+            try:
+                self._conn.execute(
+                    f"ALTER TABLE episodic_memories ADD COLUMN {col} {col_def}"
+                )
+            except sqlite3.OperationalError:
+                pass  # 列已存在
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_content_hash ON episodic_memories(content_hash)"
+        )
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_episodic_user ON episodic_memories(user_id)"
         )
         self._create_fts5()
         self._conn.commit()
@@ -133,13 +143,15 @@ class EpisodicStore(BaseMemoryStore):
         content: str,
         context: Optional[Dict[str, Any]] = None,
         importance: float = 0.5,
+        user_id: str = "",
+        session_id: str = "",
     ) -> str:
         content_hash = self._compute_hash(content)
 
-        # 去重检查：完全相同的内容不重复插入
+        # 去重检查：同用户 + 同内容不重复插入
         existing = self._conn.execute(
-            "SELECT id FROM episodic_memories WHERE content_hash = ? LIMIT 1",
-            (content_hash,),
+            "SELECT id FROM episodic_memories WHERE user_id = ? AND content_hash = ? LIMIT 1",
+            (user_id, content_hash),
         ).fetchone()
         if existing:
             return existing["id"]
@@ -150,10 +162,10 @@ class EpisodicStore(BaseMemoryStore):
 
         self._conn.execute(
             """
-            INSERT INTO episodic_memories (id, content, content_hash, timestamp, importance, context_json)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO episodic_memories (id, content, content_hash, timestamp, importance, context_json, user_id, session_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (memory_id, content, content_hash, now, importance, context_json),
+            (memory_id, content, content_hash, now, importance, context_json, user_id, session_id),
         )
         self._conn.commit()
 
@@ -167,7 +179,11 @@ class EpisodicStore(BaseMemoryStore):
 
         return memory_id
 
-    def query_by_keywords(self, keywords: List[str], top_k: int = 5) -> List[MemoryUnit]:
+    def query_by_keywords(
+        self, keywords: List[str], top_k: int = 5,
+        user_id: str = "",
+        max_age_days: float = 30.0,
+    ) -> List[MemoryUnit]:
         if not keywords:
             return []
 
@@ -178,18 +194,30 @@ class EpisodicStore(BaseMemoryStore):
         seen_ids = set()
         memories = []
 
+        # 用户过滤子句
+        user_clause = "AND em.user_id = ?" if user_id else ""
+        # 时间窗口：30天内记忆（防止远古记忆污染回复）
+        import math
+        min_ts = datetime.now(timezone.utc).timestamp() - max_age_days * 86400.0
+
         # 路径1: FTS5 trigram 全文搜索（3字及以上，毫秒级）
         if fts_keywords:
             fts_query = " OR ".join(f'"{kw}"' for kw in fts_keywords)
             try:
-                sql = """
+                params = [fts_query]
+                sql = f"""
                     SELECT em.* FROM episodic_memories em
                     INNER JOIN episodic_fts fts ON em.rowid = fts.rowid
                     WHERE episodic_fts MATCH ?
+                    AND em.timestamp >= ? {user_clause}
                     ORDER BY em.timestamp DESC, em.importance DESC
                     LIMIT ?
                 """
-                rows = self._conn.execute(sql, (fts_query, top_k)).fetchall()
+                params.extend([min_ts])
+                if user_id:
+                    params.append(user_id)
+                params.append(top_k)
+                rows = self._conn.execute(sql, params).fetchall()
                 for r in rows:
                     mem = self._row_to_memory(r)
                     if mem.id not in seen_ids:
@@ -201,8 +229,11 @@ class EpisodicStore(BaseMemoryStore):
         # 路径2: LIKE 兜底（短关键词 1-2 字）
         remaining = top_k - len(memories)
         if like_keywords and remaining > 0:
-            conditions = []
-            params = []
+            conditions = ["timestamp >= ?"]
+            params = [min_ts]
+            if user_id:
+                conditions.append("user_id = ?")
+                params.append(user_id)
             if seen_ids:
                 placeholders = ",".join("?" * len(seen_ids))
                 conditions.append(f"id NOT IN ({placeholders})")
@@ -230,14 +261,22 @@ class EpisodicStore(BaseMemoryStore):
 
         # 路径3: 纯 LIKE 兜底（FTS 失败时的完整回退）
         if not memories and not fts_keywords:
-            return self._like_fallback(keywords, top_k)
+            return self._like_fallback(keywords, top_k, user_id=user_id, max_age_days=max_age_days)
 
         return memories
 
-    def _like_fallback(self, keywords: List[str], top_k: int = 5) -> List[MemoryUnit]:
-        """纯 LIKE 搜索兜底（保留用于边缘情况）"""
-        conditions = []
-        params = []
+    def _like_fallback(
+        self, keywords: List[str], top_k: int = 5,
+        user_id: str = "",
+        max_age_days: float = 30.0,
+    ) -> List[MemoryUnit]:
+        """纯 LIKE 搜索兜底"""
+        conditions = ["timestamp >= ?"]
+        min_ts = datetime.now(timezone.utc).timestamp() - max_age_days * 86400.0
+        params = [min_ts]
+        if user_id:
+            conditions.append("user_id = ?")
+            params.append(user_id)
         for kw in keywords:
             pattern = f"%{kw}%"
             conditions.append("(content LIKE ? OR context_json LIKE ?)")
@@ -253,21 +292,33 @@ class EpisodicStore(BaseMemoryStore):
         return [self._row_to_memory(r) for r in rows]
 
     def query_by_vector(
-        self, query_vec, top_k: int = 5
+        self, query_vec, top_k: int = 5, user_id: str = "",
     ) -> List[MemoryUnit]:
-        """向量语义搜索"""
+        """向量语义搜索（可选用 user_id 隔离 + 时间窗口过滤）"""
         if self._vector_index is None:
-            return self.query_by_keywords([], top_k)  # 返回空
+            return []
 
+        # 过取候选，后续在后处理中过滤
+        fetch_k = top_k * 3 if user_id else top_k
         results = self._vector_index.similarity_search(
-            self._conn, query_vec, top_k
+            self._conn, query_vec, fetch_k
         )
         memories = []
+        min_ts = datetime.now(timezone.utc).timestamp() - 30.0 * 86400.0
         for mid, score in results:
             mem = self.get(mid)
-            if mem is not None:
-                mem.context["_vector_score"] = score
-                memories.append(mem)
+            if mem is None:
+                continue
+            # user_id 过滤
+            if user_id and mem.user_id and mem.user_id != user_id:
+                continue
+            # 时间窗口过滤：排除30天外的远古记忆
+            if mem.timestamp < min_ts:
+                continue
+            mem.context["_vector_score"] = score
+            memories.append(mem)
+            if len(memories) >= top_k:
+                break
         return memories
 
     def rebuild_vectors(self, batch_size: int = 100) -> int:
@@ -323,6 +374,8 @@ class EpisodicStore(BaseMemoryStore):
             access_count=row["access_count"],
             context=json.loads(row["context_json"]),
             memory_type=mem_type,
+            user_id=row["user_id"] if "user_id" in row.keys() else "",
+            session_id=row["session_id"] if "session_id" in row.keys() else "",
         )
 
     @property

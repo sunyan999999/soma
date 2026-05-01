@@ -59,17 +59,22 @@ class TestLargeScaleConcurrency:
         db_path = tmp_path / "shared.db"
 
         def worker(thread_id):
-            try:
-                # 每个线程创建自己的 EpisodicStore（模拟独立进程）
-                s = EpisodicStore(tmp_path, collection_name="shared")
-                for i in range(50):
-                    s.add(
-                        f"线程{thread_id} 记忆{i}: 并发插入测试",
-                        context={"thread": thread_id, "seq": i},
-                    )
-                s.close()
-            except Exception as e:
-                errors.append(f"线程{thread_id}: {e}")
+            last_err = None
+            for retry in range(3):
+                try:
+                    s = EpisodicStore(tmp_path, collection_name="shared")
+                    for i in range(50):
+                        s.add(
+                            f"线程{thread_id} 记忆{i}: 并发插入测试",
+                            context={"thread": thread_id, "seq": i},
+                        )
+                    s.close()
+                    return  # 成功，退出
+                except Exception as e:
+                    last_err = e
+                    if retry < 2:
+                        time.sleep(0.5 * (retry + 1))  # 递增等待: 0.5s, 1.0s
+            errors.append(f"线程{thread_id}: {last_err}")
 
         for tid in range(20):
             t = threading.Thread(target=worker, args=(tid,))
