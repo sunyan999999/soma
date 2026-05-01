@@ -1,0 +1,1985 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="SOMA — 智慧超越记忆，为AI Agent构建的框架优先式认知架构">
+      
+      
+      
+      
+        <link rel="prev" href="../contributing/">
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>变更日志 - SOMA</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#changelog" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href=".." title="SOMA" class="md-header__button md-logo" aria-label="SOMA" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SOMA
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              变更日志
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/sunyan999999/soma" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="SOMA" class="md-nav__button md-logo" aria-label="SOMA" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    SOMA
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/sunyan999999/soma" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速开始
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../philosophy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    核心理念
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构手册
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API 参考
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api_stability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API 稳定性
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/customization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    自定义指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    贡献指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    变更日志
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    变更日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#040-unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.4.0] — Unreleased
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.4.0] — Unreleased">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#033b2-2026-05-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.3.3b2] — 2026-05-01
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.3.3b2] — 2026-05-01">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#033b1-2026-05-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.3.3b1] — 2026-05-01
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.3.3b1] — 2026-05-01">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#032b1-2026-04-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.3.2b1] — 2026-04-30
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.3.2b1] — 2026-04-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#031b1-2026-04-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.3.1b1] — 2026-04-30
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.3.1b1] — 2026-04-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#030b1-2026-04-29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.3.0b1] — 2026-04-29
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.3.0b1] — 2026-04-29">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#020-alpha-2026-04-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.2.0-alpha] — 2026-04-26
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.2.0-alpha] — 2026-04-26">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#010-2025-05" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.1.0] — 2025-05
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.1.0] — 2025-05">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        变更日志
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="变更日志">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#031b1-2026-04-30_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.3.1b1] — 2026-04-30
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.3.1b1] — 2026-04-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        新增
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        变更
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        修复
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#030b1-2026-04-29_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.3.0b1] — 2026-04-29
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.3.0b1] — 2026-04-29">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        新增
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        变更
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        修复
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#020-alpha-2026-04-26_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.2.0-alpha] — 2026-04-26
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.2.0-alpha] — 2026-04-26">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        新增
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        变更
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        修复
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#010-2025-05_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.1.0] — 2025-05
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.1.0] — 2025-05">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        新增
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#040-unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.4.0] — Unreleased
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.4.0] — Unreleased">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#033b2-2026-05-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.3.3b2] — 2026-05-01
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.3.3b2] — 2026-05-01">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#033b1-2026-05-01" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.3.3b1] — 2026-05-01
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.3.3b1] — 2026-05-01">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#032b1-2026-04-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.3.2b1] — 2026-04-30
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.3.2b1] — 2026-04-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#031b1-2026-04-30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.3.1b1] — 2026-04-30
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.3.1b1] — 2026-04-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#030b1-2026-04-29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.3.0b1] — 2026-04-29
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.3.0b1] — 2026-04-29">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#020-alpha-2026-04-26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.2.0-alpha] — 2026-04-26
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.2.0-alpha] — 2026-04-26">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixed_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fixed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#010-2025-05" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.1.0] — 2025-05
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.1.0] — 2025-05">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Added
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        变更日志
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="变更日志">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#031b1-2026-04-30_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.3.1b1] — 2026-04-30
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.3.1b1] — 2026-04-30">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        新增
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        变更
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        修复
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#030b1-2026-04-29_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.3.0b1] — 2026-04-29
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.3.0b1] — 2026-04-29">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        新增
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        变更
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        修复
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#020-alpha-2026-04-26_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.2.0-alpha] — 2026-04-26
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.2.0-alpha] — 2026-04-26">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        新增
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        变更
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        修复
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#010-2025-05_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [0.1.0] — 2025-05
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.1.0] — 2025-05">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        新增
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="changelog">Changelog<a class="headerlink" href="#changelog" title="Permanent link">&para;</a></h1>
+<p>All notable changes to SOMA will be documented in this file.</p>
+<p>The format is based on <a href="https://keepachangelog.com/en/1.0.0/">Keep a Changelog</a>,
+and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
+<hr />
+<hr />
+<h2 id="040-unreleased">[0.4.0] — Unreleased<a class="headerlink" href="#040-unreleased" title="Permanent link">&para;</a></h2>
+<h3 id="added">Added<a class="headerlink" href="#added" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>API 稳定性承诺</strong>: <code>API_STABILITY.md</code> 明确冻结 SOMA 门面类的 13 个公共方法、3 个数据模型、2 个工厂函数，承诺主版本号变更前不破坏向后兼容</li>
+<li><strong>社区统计 sidebar</strong>: 导航栏自动获取 GitHub Stars/Forks/Watchers/Contributors + 14日 Clones/Visitors 流量 + PyPI 下载量，1 小时缓存自动刷新</li>
+<li><strong>竞品 GitHub 星数实时获取</strong>: BenchmarkView 竞品对比表格自动填充 live star count</li>
+</ul>
+<hr />
+<h2 id="033b2-2026-05-01">[0.3.3b2] — 2026-05-01<a class="headerlink" href="#033b2-2026-05-01" title="Permanent link">&para;</a></h2>
+<h3 id="added_1">Added<a class="headerlink" href="#added_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>五维雷达图</strong>: BenchmarkView 新增 ECharts 雷达图，单次基准测试五维（综合/记忆/智慧/进化/伸缩性）直观展示</li>
+<li><strong>版本对比柱状图</strong>: 最新两个版本并肩对比，hover 查看差值，柱顶显示数值</li>
+<li><strong>标准测试数据集 (30题)</strong>: <code>soma/test_dataset.json</code>，三大类各10题（跨域推理/深层归因/经验借鉴），附参考解法和记忆标签，benchmark 引擎自动加载</li>
+<li><strong>离线批量注入脚本</strong>: <code>scripts/migrate_to_soma.py</code>，支持 JSON/CSV/Markdown 三种格式，自动段落拆分和三元组抽取</li>
+<li><strong>uvicorn 生产模式</strong>: 环境变量 <code>SOMA_PROD=1</code> 切换生产配置（单 worker、并发限制20、keepalive 30s、500请求自动重启）</li>
+<li><strong>开发者集成指南</strong>: README 新增 Claude Code / VS Code / REST API 集成示例，含真实项目收益数据</li>
+</ul>
+<h3 id="fixed">Fixed<a class="headerlink" href="#fixed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>adaptive_top_k 硬上限</strong>: 基准测试语义召回 <code>max(20, total * 0.15)</code> → <code>min(max(20, total * 0.15), 50)</code>，大数据量（万条级）fastembed CPU 模式不再卡死，10 秒完成测试</li>
+<li><strong>伸缩性评分假满分</strong>: 小数据集(&lt;500条)禁用对数外推，标记为"数据不足"并重分配权重，不再显示100分</li>
+<li><strong>数据目录统一</strong>: 4个模块（analytics/evolve/semantic/server）默认数据目录统一为 <code>soma_data/</code>，消除 dashboard 找不到 benchmark 历史的问题</li>
+<li><strong>BenchmarkView 空白页</strong>: 修复 Vue computed 声明顺序导致 JS TDZ ReferenceError，watch/lifecycle 移至 script 末尾</li>
+</ul>
+<hr />
+<h2 id="033b1-2026-05-01">[0.3.3b1] — 2026-05-01<a class="headerlink" href="#033b1-2026-05-01" title="Permanent link">&para;</a></h2>
+<h3 id="added_2">Added<a class="headerlink" href="#added_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>基准趋势折线图</strong>: BenchmarkView 用 ECharts 五线折线图替换 CSS 条形图，5 条线（总分/记忆/智慧/进化/伸缩性），hover 看数值，中英文图例</li>
+<li><strong>伸缩性维度持久化</strong>: <code>benchmark_runs</code> 表新增 <code>score_scalability</code> + <code>scalability_json</code> 列，自动迁移兼容旧库</li>
+<li><strong>SOMA Hook CLI 桥接</strong>: Go 版 <code>cmd/soma-hook</code> + Shell 版 <code>soma-hook.sh</code>，实现 Glaude Hook 协议与 SOMA API 的桥梁</li>
+<li><strong>Glaude Skills</strong>: <code>soma-remember</code> / <code>soma-recall</code>，存入 <code>~/.glaude/skills/</code>，Glaude 启动自动加载</li>
+<li><strong>Glaude Hook 配置</strong>: 3 个生命周期 Hook（PostToolUse/SessionStart/Stop），自动记录工具执行结果到 SOMA</li>
+</ul>
+<h3 id="changed">Changed<a class="headerlink" href="#changed" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>AnalyticsStore.get_latest_benchmark()</code> / <code>get_benchmark_history()</code> 返回 scalability 分数和数据</li>
+<li>POST <code>/api/benchmarks/run</code> 响应增加 scalability 维度</li>
+<li>BenchmarkView 评分卡片 4→5（新增伸缩性），指标卡片 3→4（新增伸缩性指标）</li>
+<li>SOMA Go Client 修正所有 API 路径（/api/remember→/api/memory/add 等）</li>
+</ul>
+<h3 id="fixed_1">Fixed<a class="headerlink" href="#fixed_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Go Client <code>Stats()</code> 调用不存在的 <code>/api/stats</code> → 修正为 <code>/api/memory/stats</code></li>
+</ul>
+<hr />
+<h2 id="032b1-2026-04-30">[0.3.2b1] — 2026-04-30<a class="headerlink" href="#032b1-2026-04-30" title="Permanent link">&para;</a></h2>
+<h3 id="added_3">Added<a class="headerlink" href="#added_3" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>基准测试 v2</strong>: 数据量自适应归一化评分（分档阈值），新增伸缩性维度（ScalabilityBenchmark）+ FTS5 加速比指标</li>
+<li><strong>自适应 top_k / recall_threshold</strong>: Agent 根据记忆总量自动调整，消除大数据量"过度严格"和小数据量"过度宽松"</li>
+<li><strong>LLM exponential backoff</strong>: 3 次重试 + 1s/2s 退避 + 不可重试错误（401/403/quota）识别</li>
+<li><strong>SQLite 性能 PRAGMA</strong>: synchronous=NORMAL, cache_size=-8000, mmap_size=256MB, busy_timeout=5000</li>
+<li><strong>Alpha 收尾边界测试</strong>: 21 个压力测试（1000+/5000+并发、WAL 压力、LLM 全故障、FTS5 正确性）</li>
+<li><strong>SOMA Go Client</strong>: REST API 客户端 + Glaude MemoryStore 适配器 + Skill 文件</li>
+</ul>
+<h3 id="changed_1">Changed<a class="headerlink" href="#changed_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>语义召回测试 top_k 自适应：按数据量比例调整（max(20, total×0.15)）</li>
+<li>进化评分改质量导向：最近30次反思成功率替代累积总数</li>
+<li>合成增益降级：无消融数据时权重自动重分配</li>
+<li><code>soma/benchmarks.py</code> 内部重构：新增 DataScale 枚举、normalize_score/normalize_scores</li>
+</ul>
+<h3 id="fixed_2">Fixed<a class="headerlink" href="#fixed_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li>SemanticStore LIKE 兜底路径缺少边搜索</li>
+<li><code>/api/chat</code> LLM 失败返回 500 → 自动回退 Mock</li>
+<li>SQLite 并发异常崩溃 → 非关键操作异常隔离</li>
+<li>版本号不一致 → 统一使用 app.version</li>
+</ul>
+<hr />
+<h2 id="031b1-2026-04-30">[0.3.1b1] — 2026-04-30<a class="headerlink" href="#031b1-2026-04-30" title="Permanent link">&para;</a></h2>
+<h3 id="added_4">Added<a class="headerlink" href="#added_4" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>FTS5 全文索引</strong>: EpisodicStore / SemanticStore / SkillStore 全部启用 FTS5 trigram 索引，3 字及以上中文关键词搜索从 LIKE 全表扫描（O(n)）降至 FTS5 MATCH（毫秒级）</li>
+<li><strong>WAL 日志模式</strong>: 所有 SQLite 连接启用 Write-Ahead Logging，读写不再互斥，支持并发读取</li>
+<li><strong>自动迁移</strong>: 存量数据库首次打开时自动创建 FTS 表并回填历史数据，零停机升级</li>
+<li><strong>基准测试 v2</strong>: 数据量自适应归一化评分，分档阈值消除大数据量"假降分"；新增伸缩性维度（ScalabilityBenchmark）+ FTS5 加速比指标</li>
+<li><strong>Alpha 收尾边界测试</strong>: 21 个新增压力测试（大规模并发 1000+/5000+、WAL 压力、LLM 全故障、FTS5 正确性、三库联合），全部通过</li>
+<li><strong>SOMA Go Client</strong>: <code>soma-go-client/</code> 独立 Go 包 — REST API 客户端 + Glaude MemoryStore 适配器 + 2 个 Skill 文件 + Hook 集成</li>
+<li><strong>技术文章</strong>: <code>docs/articles/why-wisdom-framework.md</code>（"不只是 RAG"）</li>
+</ul>
+<h3 id="changed_2">Changed<a class="headerlink" href="#changed_2" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>query_by_keywords()</code> 三库统一改为 FTS5 MATCH（长关键词）+ LIKE（短关键词兜底）双路径搜索</li>
+<li>SemanticStore 关键词搜索从纯 Python 内存遍历改为 FTS5 索引查询</li>
+<li><strong>自适应 top_k / recall_threshold</strong>: Agent 根据记忆总量自动调整参数（3→5→8→10 / 0.05→0.02→0.01→0.005）</li>
+<li><strong>LLM 调用 exponential backoff</strong>: 3 次重试 + 1s/2s 退避 + 不可重试错误（401/403/quota）识别</li>
+<li><strong>SQLite 性能 PRAGMA</strong>: synchronous=NORMAL, cache_size=-8000, mmap_size=256MB, busy_timeout=5000</li>
+<li><strong>语义召回率测试 top_k 自适应</strong>: 按数据量比例调整（max(20, total×0.15)），消除大数据量下测试记忆被淹没的问题</li>
+<li><strong>进化评分改质量导向</strong>: 最近 30 次反思成功率替代累积总次数</li>
+<li><strong>合成增益降级</strong>: 缺少消融数据时权重重分配（30→42, 25→33, 20→25），不再直接丢 25 分</li>
+<li><code>soma/benchmarks.py</code> 内部重构：新增 DataScale 枚举、normalize_score/normalize_scores 自适应归一化函数</li>
+<li><code>soma/config.py</code> 新增 adaptive_top_k/adaptive_recall_threshold 辅助函数</li>
+</ul>
+<h3 id="fixed_3">Fixed<a class="headerlink" href="#fixed_3" title="Permanent link">&para;</a></h3>
+<ul>
+<li>修复 SemanticStore LIKE 兜底路径缺少边搜索的问题（短关键词搜索谓词）</li>
+<li>修复 <code>/api/chat</code> LLM 调用失败时直接返回 500 的问题，现在自动回退到 Mock 模式</li>
+<li>修复 SQLite 并发访问异常（<code>increment_access</code>）导致整个请求崩溃的问题，数据库操作失败不再影响主流程</li>
+<li>修复版本号不一致问题，统一使用 <code>app.version</code></li>
+</ul>
+<h2 id="030b1-2026-04-29">[0.3.0b1] — 2026-04-29<a class="headerlink" href="#030b1-2026-04-29" title="Permanent link">&para;</a></h2>
+<h3 id="added_5">Added<a class="headerlink" href="#added_5" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>MMR diversity re-ranking</strong>: ActivationHub now uses Maximal Marginal Relevance to balance relevance with content/source diversity, preventing near-duplicate memories from dominating results</li>
+<li><strong>Hub pluggable architecture</strong>: <code>ActivationHub</code> decomposed into 3-stage pipeline — <code>MemoryRetriever</code> (recall), <code>RelevanceScorer</code> (scoring), <code>MMRRanker</code> (re-ranking) — all replaceable via constructor injection or <code>pyproject.toml</code> entry points</li>
+<li><strong>Entry points plugin system</strong>: <code>[project.entry-points."soma.plugins"]</code> — external packages can register custom retriever/scorer/ranker implementations</li>
+<li><strong>Frontend route lazy loading</strong>: Vue Router dynamic imports reduce initial JS payload by 75% (756KB → 188KB)</li>
+</ul>
+<h3 id="changed_3">Changed<a class="headerlink" href="#changed_3" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>soma/hub.py</code> → facade re-export; implementation moved to <code>soma/hub/</code> sub-package</li>
+<li><code>hub.activate()</code> now applies threshold AFTER MMR re-ranking for wider candidate pool</li>
+<li>Hard dedup at &gt;88% Jaccard similarity during MMR selection</li>
+</ul>
+<h3 id="fixed_4">Fixed<a class="headerlink" href="#fixed_4" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Version strings unified to "0.3.0b1" across all modules</li>
+<li><code>benchmarksRun()</code> API function added to frontend</li>
+</ul>
+<hr />
+<h2 id="020-alpha-2026-04-26">[0.2.0-alpha] — 2026-04-26<a class="headerlink" href="#020-alpha-2026-04-26" title="Permanent link">&para;</a></h2>
+<h3 id="added_6">Added<a class="headerlink" href="#added_6" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Semantic Search</strong>: ONNX-powered vector embeddings (fastembed) with FAISS ANN search, replacing pure keyword matching</li>
+<li><strong>Bidirectional Activation</strong>: Weighted Reciprocal Rank Fusion (semantic ×2 + keyword ×1) for memory retrieval</li>
+<li><strong>WisdomEngine v2</strong>: jieba Chinese tokenization with stopword filtering and expanded trigger sets</li>
+<li><strong>MetaEvolver</strong>: Full evolution loop — auto-adjust law weights every 10 sessions (±2%), skill solidification</li>
+<li><strong>Memory Dedup</strong>: SHA256 content-hash based deduplication for episodic memories</li>
+<li><strong>Dashboard</strong>: Vue 3 + Vite frontend with 6 views (Chat, Framework, Memory, Analytics, Benchmark, Settings)</li>
+<li><strong>REST API</strong>: FastAPI server with SSE streaming, API key auth, multi-provider LLM management</li>
+<li><strong>3D Benchmark Engine</strong>: Memory / Wisdom / Evolution dimensions with competitor comparison data</li>
+<li><strong>AnalyticsStore</strong>: SQLite-based session tracking with full context recording</li>
+<li><strong>LangChain Tool</strong>: <code>create_soma_tool()</code> for LangChain agent integration</li>
+<li><strong>CLI Quickstart</strong>: <code>python -m soma</code> for one-command verification</li>
+<li><strong>CI/CD</strong>: GitHub Actions pipeline (ruff + mypy + pytest + build + benchmark) on Python 3.10/3.11/3.12</li>
+</ul>
+<h3 id="changed_4">Changed<a class="headerlink" href="#changed_4" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Vector store: ChromaDB → SQLite + FAISS (zero-dependency deployment)</li>
+<li>Embedding: OpenAI API → ONNX fastembed (CPU inference, offline capable)</li>
+<li>Keyword engine: simple split → jieba + stopword + punctuation filtering</li>
+<li>Wisdom law triggers expanded (5 → 12 items per law on average)</li>
+</ul>
+<h3 id="fixed_5">Fixed<a class="headerlink" href="#fixed_5" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Memory recall threshold tuning for better precision/recall balance</li>
+<li>Edge case: empty memory store graceful degradation</li>
+<li>Dedup race condition on concurrent inserts</li>
+</ul>
+<hr />
+<h2 id="010-2025-05">[0.1.0] — 2025-05<a class="headerlink" href="#010-2025-05" title="Permanent link">&para;</a></h2>
+<h3 id="added_7">Added<a class="headerlink" href="#added_7" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>WisdomEngine</strong>: Hardcoded 5-law wisdom framework with keyword trigger matching</li>
+<li><strong>MemoryCore</strong>: ChromaDB episodic storage + NetworkX semantic graph</li>
+<li><strong>ActivationHub</strong>: Keyword-match memory recall with simple relevance sorting</li>
+<li><strong>SOMA_Agent</strong>: End-to-end <code>respond()</code> pipeline (decompose → recall → template synthesis)</li>
+<li><strong>Unit tests</strong>: Core module test coverage</li>
+<li><strong>wisdom_laws.yaml</strong>: Initial framework configuration</li>
+</ul>
+<hr />
+<h2 id="_1">变更日志<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<p>格式基于 <a href="https://keepachangelogen/zh-CN/1.0.0/">Keep a Changelog</a>。</p>
+<h3 id="031b1-2026-04-30_1">[0.3.1b1] — 2026-04-30<a class="headerlink" href="#031b1-2026-04-30_1" title="Permanent link">&para;</a></h3>
+<h4 id="_2">新增<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>FTS5 全文索引</strong>: EpisodicStore / SemanticStore / SkillStore 全部启用 FTS5 trigram 索引</li>
+<li><strong>WAL 日志模式</strong>: 所有 SQLite 连接启用 WAL，读写不再互斥</li>
+<li><strong>自动迁移</strong>: 存量数据库首次打开自动创建 FTS 表并回填历史数据</li>
+<li><strong>基准测试 v2</strong>: 数据量自适应归一化评分，分档阈值消除大数据量假降分；新增伸缩性维度 + FTS5 加速比</li>
+<li><strong>Alpha 收尾边界测试</strong>: 21 个压力测试（1000+/5000+并发、WAL 压力、LLM 全故障、FTS5 正确性）</li>
+<li><strong>SOMA Go Client</strong>: REST API 客户端 + Glaude MemoryStore 适配器 + Skill + Hook 集成</li>
+<li><strong>技术文章</strong>: "不只是 RAG — 为什么 AI Agent 需要智慧框架而非知识库"</li>
+</ul>
+<h4 id="_3">变更<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>query_by_keywords()</code> 三库统一改为 FTS5 MATCH + LIKE 兜底双路径</li>
+<li>SemanticStore 关键词搜索改为 FTS5 索引查询</li>
+<li><strong>自适应 top_k/recall_threshold</strong>: 按记忆总量自动调整，消大数据量淹没</li>
+<li><strong>LLM exponential backoff</strong>: 3 次重试 + 1s/2s 退避 + 不可重试错误识别</li>
+<li><strong>SQLite PRAGMA 性能调优</strong>: synchronous=NORMAL, 8MB cache, 256MB mmap</li>
+<li><strong>语义召回测试 top_k 自适应</strong>: 按数据量比例调整，消除大数据量测试记忆被淹没问题</li>
+<li><strong>进化评分质量导向</strong>: 最近 30 次反思成功率替代累积总数</li>
+<li><strong>合成增益降级</strong>: 无消融数据时权重自动重分配</li>
+</ul>
+<h4 id="_4">修复<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h4>
+<ul>
+<li>SemanticStore LIKE 兜底路径缺少边搜索的问题</li>
+<li>LLM 调用失败 500 错误 → 自动回退 Mock</li>
+<li>SQLite 并发异常崩溃 → 非关键操作异常隔离</li>
+<li>版本号不一致 → 统一使用 app.version</li>
+</ul>
+<h3 id="030b1-2026-04-29_1">[0.3.0b1] — 2026-04-29<a class="headerlink" href="#030b1-2026-04-29_1" title="Permanent link">&para;</a></h3>
+<h4 id="_5">新增<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>MMR 多样性重排</strong>: ActivationHub 使用最大边界相关性算法平衡关联度与内容/来源多样性，避免高度重复记忆占据全部结果</li>
+<li><strong>Hub 可插拔架构</strong>: <code>ActivationHub</code> 拆分为三段式管道 — <code>MemoryRetriever</code>（多路召回）、<code>RelevanceScorer</code>（相关性打分）、<code>MMRRanker</code>（多样性重排）— 均可通过构造器注入或 <code>pyproject.toml</code> entry points 替换</li>
+<li><strong>Entry points 插件体系</strong>: <code>[project.entry-points."soma.plugins"]</code> — 外部包可注册自定义 retriever/scorer/ranker 实现</li>
+<li><strong>前端路由懒加载</strong>: Vue Router 动态 import 将首屏 JS 体积压缩 75%（756KB → 188KB）</li>
+</ul>
+<h4 id="_6">变更<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h4>
+<ul>
+<li><code>soma/hub.py</code> → 门面 re-export；实现迁移至 <code>soma/hub/</code> 子包</li>
+<li><code>hub.activate()</code> 阈值过滤移至 MMR 重排之后，扩大候选池</li>
+<li>MMR 选择阶段 &gt;88% Jaccard 相似度硬去重</li>
+</ul>
+<h4 id="_7">修复<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h4>
+<ul>
+<li>全模块版本字符串统一为 "0.3.0b1"</li>
+<li>前端补全 <code>benchmarksRun()</code> API 函数</li>
+</ul>
+<h3 id="020-alpha-2026-04-26_1">[0.2.0-alpha] — 2026-04-26<a class="headerlink" href="#020-alpha-2026-04-26_1" title="Permanent link">&para;</a></h3>
+<h4 id="_8">新增<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h4>
+<ul>
+<li><strong>语义搜索</strong>: ONNX 向量嵌入 (fastembed) + FAISS 近邻搜索，替代纯关键词匹配</li>
+<li><strong>双向激活</strong>: 加权倒数排序融合（语义×2 + 关键词×1）记忆检索</li>
+<li><strong>WisdomEngine v2</strong>: jieba 中文分词 + 停用词过滤 + 扩展触发词集</li>
+<li><strong>MetaEvolver</strong>: 完整进化闭环 — 每10次会话自动调权(±2%)、技能固化</li>
+<li><strong>记忆去重</strong>: 基于 SHA256 内容哈希的情节记忆去重</li>
+<li><strong>Dashboard</strong>: Vue 3 + Vite 前端（6 个视图）</li>
+<li><strong>REST API</strong>: FastAPI 服务 + SSE 流式 + API Key 认证 + 多模型管理</li>
+<li><strong>3D 基准引擎</strong>: 记忆/智慧/进化三维评测 + 竞品对比数据</li>
+<li><strong>AnalyticsStore</strong>: SQLite 会话追踪与完整上下文记录</li>
+<li><strong>LangChain 工具</strong>: <code>create_soma_tool()</code> 集成</li>
+<li><strong>CLI 快速入口</strong>: <code>python -m soma</code> 一键验证</li>
+<li><strong>CI/CD</strong>: GitHub Actions (ruff + mypy + pytest + build + benchmark)，支持 Python 3.10/3.11/3.12</li>
+</ul>
+<h4 id="_9">变更<a class="headerlink" href="#_9" title="Permanent link">&para;</a></h4>
+<ul>
+<li>向量存储: ChromaDB → SQLite + FAISS</li>
+<li>嵌入模型: OpenAI API → ONNX fastembed</li>
+<li>关键词引擎: 简单分割 → jieba + 停用词 + 标点过滤</li>
+<li>规律触发词扩充（平均 5 → 12 个）</li>
+</ul>
+<h4 id="_10">修复<a class="headerlink" href="#_10" title="Permanent link">&para;</a></h4>
+<ul>
+<li>记忆召回阈值微调，提升精确率/召回率平衡</li>
+<li>空记忆库的优雅降级</li>
+<li>并发写入的去重竞态</li>
+</ul>
+<h3 id="010-2025-05_1">[0.1.0] — 2025-05<a class="headerlink" href="#010-2025-05_1" title="Permanent link">&para;</a></h3>
+<h4 id="_11">新增<a class="headerlink" href="#_11" title="Permanent link">&para;</a></h4>
+<ul>
+<li>WisdomEngine: 5条硬编码规律 + 关键词触发匹配</li>
+<li>MemoryCore: ChromaDB 情节存储 + NetworkX 语义图谱</li>
+<li>ActivationHub: 关键词匹配召回 + 简单关联排序</li>
+<li>SOMA_Agent: 端到端 respond() 管道（拆解→召回→模板合成）</li>
+<li>单元测试覆盖核心模块</li>
+<li>wisdom_laws.yaml 初始框架配置</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.expand", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

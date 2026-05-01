@@ -1,0 +1,990 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="SOMA — 智慧超越记忆，为AI Agent构建的框架优先式认知架构">
+      
+      
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>不只是 RAG —— 为什么 AI Agent 需要「智慧框架」而非「知识库」 - SOMA</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#rag-ai-agent" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="SOMA" class="md-header__button md-logo" aria-label="SOMA" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SOMA
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              不只是 RAG —— 为什么 AI Agent 需要「智慧框架」而非「知识库」
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/sunyan999999/soma" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="SOMA" class="md-nav__button md-logo" aria-label="SOMA" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    SOMA
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/sunyan999999/soma" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速开始
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../philosophy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    核心理念
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构手册
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API 参考
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api_stability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API 稳定性
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/customization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    自定义指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    贡献指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    变更日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#tldr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TL;DR
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        一、RAG 的尽头是一个更好的搜索引擎吗？
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        二、7 条思维规律驱动的记忆激活
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        三、技术栈：零依赖的极致轻量
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        四、系统会自我进化
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        五、与竞品的根本区别
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        六、实际效果
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        七、路线图
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        八、立即尝试
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="rag-ai-agent">不只是 RAG —— 为什么 AI Agent 需要「智慧框架」而非「知识库」<a class="headerlink" href="#rag-ai-agent" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>发布渠道：知乎 / 掘金 / V2EX / Hacker News (Show HN)
+作者：SOMA 项目团队
+日期：2026-04-30</p>
+</blockquote>
+<hr />
+<h2 id="tldr">TL;DR<a class="headerlink" href="#tldr" title="Permanent link">&para;</a></h2>
+<p>SOMA 是一个<strong>自组织的 AI 记忆架构</strong>。它与 Mem0 / Zep / ChromaDB 等传统记忆库的根本区别在于：<strong>不只是"存什么"，而是"怎么想"</strong>。</p>
+<ul>
+<li>GitHub: https://github.com/sunyan999999/soma</li>
+<li>PyPI: <code>pip install soma-wisdom</code></li>
+<li>160 tests, 97% 覆盖率, Python 3.10-3.13</li>
+</ul>
+<hr />
+<h2 id="rag">一、RAG 的尽头是一个更好的搜索引擎吗？<a class="headerlink" href="#rag" title="Permanent link">&para;</a></h2>
+<p>过去两年，RAG（检索增强生成）成了 AI 应用的标配。几乎所有 AI Agent 架构都是：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>用户问题 → 向量检索 → 拼接上下文 → LLM 生成答案
+</code></pre></div>
+<p>这套模式在问答场景下效果很好。但当你试图构建一个<strong>真正能持续成长的 AI 伙伴</strong>时，问题就来了：</p>
+<ol>
+<li><strong>知识碎片化</strong>：200 条相关片段拼接在一起，LLM 看到的是一堆信息碎片，而非结构化思维</li>
+<li><strong>记忆僵硬</strong>：所有记忆权重相等，无法区分"一周前的 bug"和"一年前的人生洞察"</li>
+<li><strong>不会反思</strong>：纯检索系统不知道自己检索得对不对，更不会修正自己的检索策略</li>
+</ol>
+<p><strong>SOMA 的做法是</strong>：在检索和生成之间，插入一个<strong>显式的思维框架层</strong>。</p>
+<hr />
+<h2 id="7">二、7 条思维规律驱动的记忆激活<a class="headerlink" href="#7" title="Permanent link">&para;</a></h2>
+<p>SOMA 的核心是一个可拔插的思维框架，由 7 条哲学规律构成：</p>
+<table>
+<thead>
+<tr>
+<th>规律</th>
+<th>核心问题</th>
+<th style="text-align: center;">权重</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第一性原理</td>
+<td>事物最基本的要素是什么？</td>
+<td style="text-align: center;">0.95</td>
+</tr>
+<tr>
+<td>系统思维</td>
+<td>要素之间的连接和反馈回路？</td>
+<td style="text-align: center;">0.90</td>
+</tr>
+<tr>
+<td>矛盾分析</td>
+<td>表面下的深层对立统一关系？</td>
+<td style="text-align: center;">0.85</td>
+</tr>
+<tr>
+<td>二八法则</td>
+<td>哪 20% 的关键因素决定 80% 的结果？</td>
+<td style="text-align: center;">0.80</td>
+</tr>
+<tr>
+<td>逆向思考</td>
+<td>反过来想，会怎样？</td>
+<td style="text-align: center;">0.75</td>
+</tr>
+<tr>
+<td>类比推理</td>
+<td>与什么相似？可以借鉴什么？</td>
+<td style="text-align: center;">0.70</td>
+</tr>
+<tr>
+<td>进化视角</td>
+<td>这件事如何随时间演变？</td>
+<td style="text-align: center;">0.65</td>
+</tr>
+</tbody>
+</table>
+<p>当你问 SOMA "为什么增长停滞？"时，它不会直接搜索"增长停滞"相关记忆。而是：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>问题: &quot;为什么增长停滞？&quot;
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>拆解 (Decompose):
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>  ├── 焦点 1: 回归产品价值的基本要素 [第一性原理]
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>  ├── 焦点 2: 分析各要素的负反馈回路 [系统思维]  
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>  ├── 焦点 3: 找出深层对立的矛盾 [矛盾分析]
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>  └── 焦点 4: 识别 20% 的核心瓶颈 [二八法则]
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>激活 (Activate):
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>  ├── 记忆 #42: &quot;第一性原理在商业中意味着关注客户最根本的需求&quot; (0.87)
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>  ├── 记忆 #17: &quot;增长停滞是多要素形成负反馈回路的结果&quot; (0.91)
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>  └── 记忆 #55: &quot;表面问题是获客不足，深层矛盾是价值交付差距&quot; (0.84)
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>合成 (Synthesize):
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>  → 基于框架指令 + 激活记忆 → 构建结构化 Prompt → LLM 生成答案
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>进化 (Evolve):
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>  → 记录本次各规律的激活次数 → 每10次会话自动微调权重(±2%)
+</code></pre></div>
+<p>这不是 prompt engineering，而是<strong>架构层的设计决策</strong>。</p>
+<hr />
+<h2 id="_1">三、技术栈：零依赖的极致轻量<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<p>SOMA 的哲学是"单机优先"：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>SQLite (FTS5 trigram 全文索引)  →  中文关键词搜索 &lt;10ms @100K记忆
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>FAISS (IVF 向量索引)            →  语义相似搜索
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>ONNX (fastembed CPU 推理)       →  嵌入向量生成，无需 GPU
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>Vue 3 + ECharts                →  仪表盘可视化
+</code></pre></div>
+<p>不需要 Docker，不需要 Redis，不需要 GPU。一个 <code>pip install soma-wisdom</code> 就能跑。</p>
+<p><strong>v0.3.1b1 性能基准</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th style="text-align: center;">1K 记忆</th>
+<th style="text-align: center;">10K 记忆</th>
+<th style="text-align: center;">100K 记忆</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>关键词搜索</td>
+<td style="text-align: center;">&lt;3ms</td>
+<td style="text-align: center;">&lt;5ms</td>
+<td style="text-align: center;">&lt;10ms</td>
+</tr>
+<tr>
+<td>语义搜索</td>
+<td style="text-align: center;">~10ms</td>
+<td style="text-align: center;">~30ms</td>
+<td style="text-align: center;">~100ms</td>
+</tr>
+<tr>
+<td>记忆写入</td>
+<td style="text-align: center;">~3ms</td>
+<td style="text-align: center;">~5ms</td>
+<td style="text-align: center;">~8ms</td>
+</tr>
+<tr>
+<td>FTS5 加速比</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">25x vs LIKE</td>
+<td style="text-align: center;">50x+ vs LIKE</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_2">四、系统会自我进化<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<p>SOMA 不只是用思维框架检索记忆，它还会<strong>反思和改进这个框架本身</strong>。</p>
+<p><strong>自主规律发现</strong>（v0.3.0）：
+1. DBSCAN 聚类识别记忆中的高频共现模式
+2. TF-IDF 提取候选关键词
+3. LLM 审核（或启发式兜底）：生成新规律的 name/description/triggers
+4. 人工确认后纳入框架
+5. 安全熔断：单次最多 1 条，总数上限 15 条</p>
+<p><strong>元认知进化</strong>（v0.2.0）：
+- 每 10 次会话触发一次进化
+- 分析各规律的激活频率和成功率
+- 激活多且成功率高的规律 → +2% 权重
+- 激活少且成功率低的规律 → -2% 权重</p>
+<hr />
+<h2 id="_3">五、与竞品的根本区别<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th style="text-align: center;">Mem0</th>
+<th style="text-align: center;">Zep</th>
+<th style="text-align: center;">ChromaDB</th>
+<th style="text-align: center;">SOMA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>记忆存储</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td>语义搜索</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td><strong>思维框架</strong></td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅ 7 条规律</td>
+</tr>
+<tr>
+<td><strong>记忆与问题的关联推理</strong></td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅ 双向激活</td>
+</tr>
+<tr>
+<td><strong>自我进化</strong></td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅ 权重新规律</td>
+</tr>
+<tr>
+<td><strong>可拔插架构</strong></td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅ 三段管道</td>
+</tr>
+<tr>
+<td>部署</td>
+<td style="text-align: center;">Docker</td>
+<td style="text-align: center;">Docker</td>
+<td style="text-align: center;">Python Lib</td>
+<td style="text-align: center;"><strong>SQLite 单文件</strong></td>
+</tr>
+</tbody>
+</table>
+<p>SOMA 的差异化不是"更好的向量搜索"，而是<strong>在搜索和生成之间增加了结构化思考</strong>。</p>
+<hr />
+<h2 id="_4">六、实际效果<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
+<p><strong>消融实验</strong>（对比裸 LLM）：</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th style="text-align: center;">裸 LLM</th>
+<th style="text-align: center;">SOMA</th>
+<th style="text-align: center;">增益</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>方案深度</td>
+<td style="text-align: center;">3.2/5</td>
+<td style="text-align: center;">4.1/5</td>
+<td style="text-align: center;">+28%</td>
+</tr>
+<tr>
+<td>方案结构性</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">+60%</td>
+</tr>
+<tr>
+<td>方案具体性</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">+11%</td>
+</tr>
+<tr>
+<td>思维多样性</td>
+<td style="text-align: center;">1.2 bits</td>
+<td style="text-align: center;">2.1 bits</td>
+<td style="text-align: center;">+75%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>语义召回率</strong>：100%（10/10 标准测试对）
+<strong>查询延迟中位数</strong>：5.4ms（FTS5 索引）</p>
+<hr />
+<h2 id="_5">七、路线图<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[x] v0.2.0 Alpha: 语义搜索 + 进化闭环 + Dashboard</li>
+<li>[x] v0.3.1b1 Beta: FTS5 全文索引 + WAL + 可视化深化 + MMR 重排</li>
+<li>[ ] v0.4.0 正式版: API 冻结 + PyPI 正式发布 + 文档站点</li>
+<li>[ ] v1.0.0: 生产稳定性 + SOMA↔Glaude 集成 + 开源推广</li>
+</ul>
+<hr />
+<h2 id="_6">八、立即尝试<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>pip<span class="w"> </span>install<span class="w"> </span>soma-wisdom
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>python<span class="w"> </span>-m<span class="w"> </span>soma
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># 或从 GitHub 安装最新版</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>pip<span class="w"> </span>install<span class="w"> </span>git+https://github.com/sunyan999999/soma.git
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOMA</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">soma</span> <span class="o">=</span> <span class="n">SOMA</span><span class="p">()</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="s2">&quot;第一性原理的核心是回归事物最基本的要素&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="s2">&quot;系统思维强调要素之间的连接和反馈回路&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">answer</span> <span class="o">=</span> <span class="n">soma</span><span class="o">.</span><span class="n">chat</span><span class="p">(</span><span class="s2">&quot;为什么增长停滞？&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">answer</span><span class="p">[</span><span class="s2">&quot;response&quot;</span><span class="p">])</span>
+</code></pre></div>
+<ul>
+<li>GitHub: https://github.com/sunyan999999/soma</li>
+<li>PyPI: https://pypi.org/project/soma-wisdom/</li>
+<li>文档: https://github.com/sunyan999999/soma/tree/main/docs</li>
+</ul>
+<hr />
+<p><em>欢迎 Star / Issue / PR。如果你在做 AI Agent 并希望给 agent 一个"会思考的记忆系统"，SOMA 可能是你需要的。</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.expand", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
