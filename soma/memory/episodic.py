@@ -182,7 +182,7 @@ class EpisodicStore(BaseMemoryStore):
     def query_by_keywords(
         self, keywords: List[str], top_k: int = 5,
         user_id: str = "",
-        max_age_days: float = 30.0,
+        max_age_days: Optional[float] = None,
     ) -> List[MemoryUnit]:
         if not keywords:
             return []
@@ -196,9 +196,14 @@ class EpisodicStore(BaseMemoryStore):
 
         # 用户过滤子句
         user_clause = "AND em.user_id = ?" if user_id else ""
-        # 时间窗口：30天内记忆（防止远古记忆污染回复）
-        import math
-        min_ts = datetime.now(timezone.utc).timestamp() - max_age_days * 86400.0
+        # 时间窗口：仅当 max_age_days 显式传入时启用
+        time_clause = ""
+        time_params = []
+        if max_age_days is not None:
+            import math
+            min_ts = datetime.now(timezone.utc).timestamp() - max_age_days * 86400.0
+            time_clause = "AND em.timestamp >= ?"
+            time_params = [min_ts]
 
         # 路径1: FTS5 trigram 全文搜索（3字及以上，毫秒级）
         if fts_keywords:
@@ -206,16 +211,15 @@ class EpisodicStore(BaseMemoryStore):
                 '"' + kw.replace('"', '""') + '"' for kw in fts_keywords
             )
             try:
-                params = [fts_query]
+                params = [fts_query] + time_params
                 sql = f"""
                     SELECT em.* FROM episodic_memories em
                     INNER JOIN episodic_fts fts ON em.rowid = fts.rowid
                     WHERE episodic_fts MATCH ?
-                    AND em.timestamp >= ? {user_clause}
+                    {time_clause} {user_clause}
                     ORDER BY em.timestamp DESC, em.importance DESC
                     LIMIT ?
                 """
-                params.extend([min_ts])
                 if user_id:
                     params.append(user_id)
                 params.append(top_k)
@@ -231,8 +235,8 @@ class EpisodicStore(BaseMemoryStore):
         # 路径2: LIKE 兜底（短关键词 1-2 字）
         remaining = top_k - len(memories)
         if like_keywords and remaining > 0:
-            conditions = ["timestamp >= ?"]
-            params = [min_ts]
+            conditions = [] if max_age_days is None else ["timestamp >= ?"]
+            params = [] if max_age_days is None else time_params.copy()
             if user_id:
                 conditions.append("user_id = ?")
                 params.append(user_id)
@@ -270,12 +274,14 @@ class EpisodicStore(BaseMemoryStore):
     def _like_fallback(
         self, keywords: List[str], top_k: int = 5,
         user_id: str = "",
-        max_age_days: float = 30.0,
+        max_age_days: Optional[float] = None,
     ) -> List[MemoryUnit]:
         """纯 LIKE 搜索兜底"""
-        conditions = ["timestamp >= ?"]
-        min_ts = datetime.now(timezone.utc).timestamp() - max_age_days * 86400.0
-        params = [min_ts]
+        conditions = [] if max_age_days is None else ["timestamp >= ?"]
+        params = []
+        if max_age_days is not None:
+            min_ts = datetime.now(timezone.utc).timestamp() - max_age_days * 86400.0
+            params.append(min_ts)
         if user_id:
             conditions.append("user_id = ?")
             params.append(user_id)
@@ -295,7 +301,7 @@ class EpisodicStore(BaseMemoryStore):
 
     def query_by_vector(
         self, query_vec, top_k: int = 5, user_id: str = "",
-        max_age_days: float = 30.0,
+        max_age_days: Optional[float] = None,
     ) -> List[MemoryUnit]:
         """向量语义搜索（可选用 user_id 隔离 + 时间窗口过滤）"""
         if self._vector_index is None:
@@ -307,7 +313,9 @@ class EpisodicStore(BaseMemoryStore):
             self._conn, query_vec, fetch_k
         )
         memories = []
-        min_ts = datetime.now(timezone.utc).timestamp() - max_age_days * 86400.0
+        min_ts = None
+        if max_age_days is not None:
+            min_ts = datetime.now(timezone.utc).timestamp() - max_age_days * 86400.0
         for mid, score in results:
             mem = self.get(mid)
             if mem is None:
@@ -315,8 +323,8 @@ class EpisodicStore(BaseMemoryStore):
             # user_id 过滤
             if user_id and mem.user_id and mem.user_id != user_id:
                 continue
-            # 时间窗口过滤：排除30天外的远古记忆
-            if mem.timestamp < min_ts:
+            # 时间窗口过滤：仅当显式传入 max_age_days 时启用
+            if min_ts is not None and mem.timestamp < min_ts:
                 continue
             mem.context["_vector_score"] = score
             memories.append(mem)

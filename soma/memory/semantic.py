@@ -137,6 +137,7 @@ class SemanticStore(BaseMemoryStore):
     def query_by_keywords(
         self, keywords: List[str], top_k: int = 5,
         namespace: str = "",
+        max_age_days: Optional[float] = None,
     ) -> List[MemoryUnit]:
         if not keywords:
             return []
@@ -144,9 +145,13 @@ class SemanticStore(BaseMemoryStore):
         results: List[MemoryUnit] = []
         seen_ids: set = set()
         ns_clause = "AND st.namespace = ?" if namespace else ""
-        max_age_days = 30.0
-        import time
-        min_ts = time.time() - max_age_days * 86400.0
+        time_clause = ""
+        time_params = []
+        if max_age_days is not None:
+            import time
+            min_ts = time.time() - max_age_days * 86400.0
+            time_clause = "AND st.created_at >= ?"
+            time_params = [min_ts]
 
         # 路径1: FTS5 trigram 全文搜索（3字及以上关键词）
         fts_keywords = [kw for kw in keywords if len(kw) >= 3]
@@ -155,16 +160,15 @@ class SemanticStore(BaseMemoryStore):
                 '"' + kw.replace('"', '""') + '"' for kw in fts_keywords
             )
             try:
-                params = [fts_query]
+                params = [fts_query] + time_params
                 sql = f"""
                     SELECT st.* FROM semantic_triples st
                     INNER JOIN semantic_fts fts ON st.rowid = fts.rowid
                     WHERE semantic_fts MATCH ?
-                    AND st.created_at >= ? {ns_clause}
+                    {time_clause} {ns_clause}
                     ORDER BY st.confidence DESC
                     LIMIT ?
                 """
-                params.extend([min_ts])
                 if namespace:
                     params.append(namespace)
                 params.append(top_k)
@@ -191,12 +195,12 @@ class SemanticStore(BaseMemoryStore):
             except sqlite3.OperationalError:
                 pass
 
-        # 路径2: LIKE 兜底（短关键词，SQLite 查询确保 namespace/时间窗口过滤正确）
+        # 路径2: LIKE 兜底（短关键词，SQLite 查询确保 namespace 过滤正确）
         like_keywords = [kw for kw in keywords if len(kw) < 3]
         remaining = top_k - len(results)
         if like_keywords and remaining > 0:
-            conditions = ["st.created_at >= ?"]
-            params: list = [min_ts]
+            conditions = [] if max_age_days is None else ["st.created_at >= ?"]
+            params: list = [] if max_age_days is None else time_params.copy()
             if namespace:
                 conditions.append("st.namespace = ?")
                 params.append(namespace)
