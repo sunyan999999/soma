@@ -113,12 +113,21 @@ class SkillStore(BaseMemoryStore):
         self._conn.commit()
         return skill_id
 
+    @staticmethod
+    def _escape_fts5(kw: str) -> str:
+        """转义 FTS5 双引号，防止语法损坏"""
+        return kw.replace('"', '""')
+
     def query_by_keywords(
         self, keywords: List[str], top_k: int = 3,
         user_id: str = "",
+        max_age_days: float = 90.0,
     ) -> List[MemoryUnit]:
         if not keywords:
             return []
+
+        import math
+        min_ts = datetime.now(timezone.utc).timestamp() - max_age_days * 86400.0
 
         # FTS5 trigram 全文搜索（3字及以上）+ LIKE 兜底
         fts_keywords = [kw for kw in keywords if len(kw) >= 3]
@@ -127,13 +136,16 @@ class SkillStore(BaseMemoryStore):
         user_clause = "AND s.user_id = ?" if user_id else ""
 
         if fts_keywords:
-            fts_query = " OR ".join(f'"{kw}"' for kw in fts_keywords)
+            fts_query = " OR ".join(
+                f'"{self._escape_fts5(kw)}"' for kw in fts_keywords
+            )
             try:
-                params = [fts_query]
+                params = [fts_query, min_ts]
                 sql = f"""
                     SELECT s.* FROM skills s
                     INNER JOIN skills_fts fts ON s.rowid = fts.rowid
                     WHERE skills_fts MATCH ?
+                    AND s.created_at >= ?
                     {user_clause}
                     ORDER BY s.created_at DESC
                     LIMIT ?
@@ -163,8 +175,8 @@ class SkillStore(BaseMemoryStore):
         remaining = top_k - len(memories)
         like_keywords = [kw for kw in keywords if len(kw) < 3]
         if like_keywords and remaining > 0:
-            conditions = []
-            params = []
+            conditions = ["created_at >= ?"]
+            params = [min_ts]
             if user_id:
                 conditions.append("user_id = ?")
                 params.append(user_id)

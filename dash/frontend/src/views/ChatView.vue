@@ -6,6 +6,27 @@ import DecompositionGraph from '../components/DecompositionGraph.vue'
 import ActivationSankey from '../components/ActivationSankey.vue'
 import PromptPreview from '../components/PromptPreview.vue'
 
+/**
+ * 安全渲染 LLM 输出：先转义 HTML 实体防 XSS，再转换 Markdown 为 HTML
+ */
+function sanitizeAndRender(text) {
+  if (!text) return ''
+  // 1. 转义所有 HTML 特殊字符（防止 LLM 输出中的 <script> 等被执行）
+  let safe = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+  // 2. Markdown → HTML（安全地应用于已转义的文本）
+  return safe
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^- (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+    .replace(/\n/g, '<br>')
+}
+
 const { t } = useI18n()
 function lawName(id) { return t(`laws.${id}`) || id }
 const toast = inject('toast')
@@ -227,14 +248,7 @@ const hasResult = computed(() => result.value !== null)
       <!-- Answer -->
       <section>
         <h2 style="font-size:1.1rem;margin-bottom:12px;">{{ t('chat.answer') }}</h2>
-        <div class="card answer-content" v-html="result.answer
-          .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-          .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-          .replace(/^- (.+)$/gm, '<li>$1</li>')
-          .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-          .replace(/\n/g, '<br>')
-        " />
+        <div class="card answer-content" v-html="sanitizeAndRender(result.answer)" />
       </section>
 
       <!-- System Status Sidebar -->

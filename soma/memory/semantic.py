@@ -151,7 +151,9 @@ class SemanticStore(BaseMemoryStore):
         # 路径1: FTS5 trigram 全文搜索（3字及以上关键词）
         fts_keywords = [kw for kw in keywords if len(kw) >= 3]
         if fts_keywords:
-            fts_query = " OR ".join(f'"{kw}"' for kw in fts_keywords)
+            fts_query = " OR ".join(
+                '"' + kw.replace('"', '""') + '"' for kw in fts_keywords
+            )
             try:
                 params = [fts_query]
                 sql = f"""
@@ -189,60 +191,56 @@ class SemanticStore(BaseMemoryStore):
             except sqlite3.OperationalError:
                 pass
 
-        # 路径2: LIKE 兜底（短关键词，搜索节点+边）
+        # 路径2: LIKE 兜底（短关键词，SQLite 查询确保 namespace/时间窗口过滤正确）
         like_keywords = [kw for kw in keywords if len(kw) < 3]
         remaining = top_k - len(results)
         if like_keywords and remaining > 0:
+            conditions = ["st.created_at >= ?"]
+            params: list = [min_ts]
+            if namespace:
+                conditions.append("st.namespace = ?")
+                params.append(namespace)
+            if seen_ids:
+                # 用 rowid 构造唯一 ID 去重: sem_edge_{subject}_{predicate}_{object}
+                # 排除已由 FTS 路径返回的边
+                pass  # seen_ids 基于 edge_id 字符串，SQL 不易直接排除，改为后处理
+            kw_conds = []
             for kw in like_keywords:
-                if len(results) >= top_k:
-                    break
-                kw_lower = kw.lower()
-                # 搜索节点（仅当无 namespace 或节点匹配时）
-                for node in self.graph.nodes:
-                    if kw_lower in node.lower():
-                        # namespace 过滤：节点需要与 namespace 相关
-                        if namespace and namespace not in node:
-                            continue
-                        node_id = f"sem_node_{node}"
-                        if node_id not in seen_ids:
-                            seen_ids.add(node_id)
-                            neighbors = list(self.graph.neighbors(node))
-                            results.append(
-                                MemoryUnit(
-                                    id=node_id,
-                                    content=f"概念: {node}，关联概念: {', '.join(neighbors) if neighbors else '无'}",
-                                    context={"node": node, "neighbors": neighbors},
-                                    memory_type="semantic",
-                                    importance=0.7,
-                                )
-                            )
-                        if len(results) >= top_k:
-                            break
-                # 搜索边
-                if len(results) >= top_k:
-                    break
-                for u, v, data in self.graph.edges(data=True):
-                    pred = data.get("predicate", "")
-                    if kw_lower in u.lower() or kw_lower in v.lower() or kw_lower in pred.lower():
-                        edge_id = f"sem_edge_{u}_{pred}_{v}"
-                        if edge_id not in seen_ids:
-                            seen_ids.add(edge_id)
-                            results.append(
-                                MemoryUnit(
-                                    id=edge_id,
-                                    content=f"{u} --[{pred}]--> {v}",
-                                    context={
-                                        "subject": u,
-                                        "predicate": pred,
-                                        "object": v,
-                                        "confidence": data.get("confidence", 1.0),
-                                    },
-                                    memory_type="semantic",
-                                    importance=0.7,
-                                )
-                            )
-                        if len(results) >= top_k:
-                            break
+                pattern = f"%{kw}%"
+                kw_conds.append(
+                    "(st.subject LIKE ? OR st.predicate LIKE ? OR st.object LIKE ?)"
+                )
+                params.extend([pattern, pattern, pattern])
+            conditions.append("(" + " OR ".join(kw_conds) + ")")
+            sql = f"""
+                SELECT st.* FROM semantic_triples st
+                WHERE {' AND '.join(conditions)}
+                ORDER BY st.confidence DESC
+                LIMIT ?
+            """
+            params.append(remaining * 2)  # 过取以弥补后处理去重
+            rows = self._conn.execute(sql, params).fetchall()
+            for row in rows:
+                u, v, pred = row["subject"], row["object"], row["predicate"]
+                edge_id = f"sem_edge_{u}_{pred}_{v}"
+                if edge_id not in seen_ids:
+                    seen_ids.add(edge_id)
+                    results.append(
+                        MemoryUnit(
+                            id=edge_id,
+                            content=f"{u} --[{pred}]--> {v}",
+                            context={
+                                "subject": u,
+                                "predicate": pred,
+                                "object": v,
+                                "confidence": row["confidence"],
+                            },
+                            memory_type="semantic",
+                            importance=0.7,
+                        )
+                    )
+                    if len(results) >= top_k:
+                        break
 
         return results[:top_k]
 
