@@ -121,13 +121,23 @@ class SkillStore(BaseMemoryStore):
     def query_by_keywords(
         self, keywords: List[str], top_k: int = 3,
         user_id: str = "",
-        max_age_days: float = 90.0,
+        max_age_days: Optional[float] = None,
     ) -> List[MemoryUnit]:
+        """按关键词搜索技能。
+
+        max_age_days 默认 None 表示不过滤时间（技能是永久积累的思维模式）。
+        传入具体数值可启用时间窗口过滤。
+        """
         if not keywords:
             return []
 
-        import math
-        min_ts = datetime.now(timezone.utc).timestamp() - max_age_days * 86400.0
+        time_clause = ""
+        time_params = []
+        if max_age_days is not None:
+            import math
+            min_ts = datetime.now(timezone.utc).timestamp() - max_age_days * 86400.0
+            time_clause = "AND s.created_at >= ?"
+            time_params = [min_ts]
 
         # FTS5 trigram 全文搜索（3字及以上）+ LIKE 兜底
         fts_keywords = [kw for kw in keywords if len(kw) >= 3]
@@ -140,12 +150,12 @@ class SkillStore(BaseMemoryStore):
                 f'"{self._escape_fts5(kw)}"' for kw in fts_keywords
             )
             try:
-                params = [fts_query, min_ts]
+                params = [fts_query] + time_params
                 sql = f"""
                     SELECT s.* FROM skills s
                     INNER JOIN skills_fts fts ON s.rowid = fts.rowid
                     WHERE skills_fts MATCH ?
-                    AND s.created_at >= ?
+                    {time_clause}
                     {user_clause}
                     ORDER BY s.created_at DESC
                     LIMIT ?
@@ -175,8 +185,8 @@ class SkillStore(BaseMemoryStore):
         remaining = top_k - len(memories)
         like_keywords = [kw for kw in keywords if len(kw) < 3]
         if like_keywords and remaining > 0:
-            conditions = ["created_at >= ?"]
-            params = [min_ts]
+            conditions = [] if max_age_days is None else ["created_at >= ?"]
+            params = [] if max_age_days is None else time_params.copy()
             if user_id:
                 conditions.append("user_id = ?")
                 params.append(user_id)
