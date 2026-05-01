@@ -1,7 +1,40 @@
 const BASE = '/api'
 
-// 服务器通过 HTML 注入的 API Key
-const API_KEY = window.__SOMA_API_KEY__ || ''
+// API Key 存储在 sessionStorage 中，由应用启动时通过 /api/auth/status 检测后提示输入
+let API_KEY = sessionStorage.getItem('soma_api_key') || ''
+
+/**
+ * 初始化认证：检测是否需要 API Key，如需要则提示用户输入
+ * 返回 true 表示已认证或无需认证，false 表示需要认证但用户未提供
+ */
+export async function initAuth() {
+  try {
+    const res = await fetch(BASE + '/auth/status')
+    const data = await res.json()
+    if (!data.auth_required) return true
+
+    // 已有有效 key，直接返回
+    if (API_KEY) return true
+
+    // 弹出输入框
+    API_KEY = prompt('此仪表盘已启用 API Key 认证，请输入 Key：') || ''
+    if (API_KEY) {
+      sessionStorage.setItem('soma_api_key', API_KEY)
+      return true
+    }
+    return false
+  } catch {
+    return true // 网络错误时放行，由后续请求报错
+  }
+}
+
+/**
+ * 更新 API Key（用户手动设置）
+ */
+export function setApiKey(key) {
+  API_KEY = key
+  sessionStorage.setItem('soma_api_key', key)
+}
 
 async function request(path, options = {}) {
   const headers = { 'Content-Type': 'application/json' }

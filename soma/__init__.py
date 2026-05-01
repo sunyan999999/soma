@@ -1,5 +1,7 @@
+import logging
 import os
 import time
+import traceback
 from pathlib import Path
 
 from soma.config import SOMAConfig, load_config
@@ -27,6 +29,8 @@ __all__ = [
     "Focus",
     "ActivatedMemory",
 ]
+
+_log = logging.getLogger("soma")
 
 
 class SOMA:
@@ -77,6 +81,10 @@ class SOMA:
         try:
             answer = self._agent.respond(problem, user_id=user_id)
         except Exception:
+            _log.error(
+                "SOMA.respond() LLM调用失败，回退到mock响应:\n%s",
+                traceback.format_exc(),
+            )
             answer = self._mock_respond(problem)
         self._session_count += 1
         self._agent.reflect(f"soma_{self._session_count}", "success")
@@ -94,6 +102,10 @@ class SOMA:
                 self._agent._build_prompt(problem, foci, activated)
             )
         except Exception:
+            _log.error(
+                "SOMA.chat() LLM调用失败，回退到mock响应:\n%s",
+                traceback.format_exc(),
+            )
             answer = self._mock_respond(problem, foci, activated)
 
         for am in activated:

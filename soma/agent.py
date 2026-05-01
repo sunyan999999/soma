@@ -74,7 +74,7 @@ class SOMA_Agent:
         prompt = self._build_prompt(problem, foci, activated)
 
         # Step 4: 调用 LLM
-        answer = self._call_llm(prompt)
+        answer = self._call_llm(prompt, user_id)
 
         # Step 5: 更新访问计数
         for am in activated:
@@ -177,10 +177,10 @@ class SOMA_Agent:
         self._last_prompt = prompt
         return prompt
 
-    def _call_llm(self, prompt: str) -> str:
+    def _call_llm(self, prompt: str, user_id: str = "") -> str:
         """通过 LiteLLM 统一接口调用大模型，带指数退避重试 + 短时缓存"""
-        # 短时缓存：相同 prompt 10分钟内不重复调用
-        cache_key = hashlib.sha256(prompt.encode()).hexdigest()
+        # 短时缓存：同用户 + 同 prompt 10分钟内不重复调用
+        cache_key = hashlib.sha256((user_id + "::" + prompt).encode()).hexdigest()
         cached = self._llm_cache.get(cache_key)
         if cached:
             ts, answer = cached

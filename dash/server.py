@@ -22,20 +22,25 @@ from soma.agent import SOMA_Agent
 from soma.analytics import AnalyticsStore
 from dash.providers import get_provider_manager
 
-app = FastAPI(title="SOMA API", version="0.3.3b2")
+app = FastAPI(title="SOMA API", version="0.4.0")
+
+_CORS_ORIGINS = os.environ.get(
+    "SOMA_CORS_ORIGINS",
+    "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173",
+).split(",")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_CORS_ORIGINS,
+    allow_methods=["GET", "POST", "DELETE"],
+    allow_headers=["Content-Type", "X-API-Key"],
 )
 
 # ── API Key 认证中间件 ──────────────────────────────────────────
 
 _SOMA_API_KEY = os.environ.get("SOMA_API_KEY", "").strip()
 _AUTH_ENABLED = bool(_SOMA_API_KEY)
-_AUTH_WHITELIST = {"/api/health", "/docs", "/openapi.json", "/redoc"}
+_AUTH_WHITELIST = {"/api/health", "/api/auth/status", "/docs", "/openapi.json", "/redoc"}
 
 
 @app.middleware("http")
@@ -331,6 +336,12 @@ def health():
         "current_provider": pm.current_provider_id,
         "memory_stats": agent.memory.stats(),
     }
+
+
+@app.get("/api/auth/status")
+def auth_status():
+    """返回认证状态，前端据此判断是否需要提示用户输入 API Key"""
+    return {"auth_required": _AUTH_ENABLED}
 
 
 # ── Community Stats (GitHub + PyPI) ────────────────────────────
@@ -1142,10 +1153,8 @@ async def spa_fallback(full_path: str):
     index_html = FRONTEND_DIR / "index.html"
     if index_html.exists():
         html = index_html.read_text(encoding="utf-8")
-        # 注入 API Key（若启用认证），供前端自动配置
-        if _AUTH_ENABLED:
-            inject = f'<script>window.__SOMA_API_KEY__ = "{_SOMA_API_KEY}";</script>'
-            html = html.replace("</head>", inject + "\n</head>")
+        # 不注入 API Key 到 HTML（安全：页面源码可见）。
+        # 前端通过 /api/auth/status 检测认证状态后提示用户输入。
         return HTMLResponse(html)
     raise HTTPException(404, "Frontend not built. Run `npm run build` in dash/frontend.")
 

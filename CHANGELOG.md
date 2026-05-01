@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ---
-## [0.4.0] — 2026-05-01
+## [0.4.0] — 2026-05-02
 
 ### Added
 - **API 稳定性承诺**: `API_STABILITY.md` 明确冻结 SOMA 门面类的 13 个公共方法、3 个数据模型、2 个工厂函数，承诺主版本号变更前不破坏向后兼容
@@ -19,12 +19,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **社区治理文件**: CODE_OF_CONDUCT.md、CONTRIBUTING.md 中英双语，GitHub 链接修正
 - **Awesome List 提交**: 4 个 awesome list PR（e2b-dev/awesome-ai-agents、Shubhamsaboo/awesome-llm-apps、vinta/awesome-python、ikaijua/Awesome-AITools）
 - **覆盖率 CI 集成**: CI 工作流添加 pytest-cov 覆盖率收集 + Codecov 上传，README 添加 Codecov badge
-- **记忆数据隔离**: episodic/semantic/skill 三库均支持 `user_id`/`namespace`/`session_id` 维度隔离，全 API 链路（SOMA → Agent → Hub → Retriever → MemoryCore → Store）透传，零数据泄漏
+- **记忆数据隔离**: episodic/semantic/skill 三库均支持 `user_id`/`namespace`/`session_id` 维度隔离，全 API 链路（SOMA → Agent → Hub → Retriever → MemoryCore → Store）透传
 - **时间衰减修复**: 近因衰减公式从 `1/(1+days)` 改为 `exp(-days/7)` 指数衰减（半衰期7天）；召回增加30天时间窗口过滤；RRF 融合施加时间惩罚因子
+- **数据隔离测试**: 新增 `test_isolation.py`（10个用例）覆盖三库 user_id/namespace 隔离 + 去重 + LIKE兜底路径
+- **时间窗口测试**: 新增 `test_time_window.py`（11个用例）覆盖三库 max_age_days 过滤 + 边界值 + 自定义参数
 
 ### Fixed
 - **时间错乱**: 记忆检索不会再将7天前的事件以相近权重混入今日回复（30天外记忆权重<2%）
 - **数据泄漏**: 所有记忆存储/查询均支持 user_id 级别的命名空间隔离，杜绝跨用户数据污染
+- **`_like_fallback` 隔离失效**: episodic.py LIKE 兜底路径 OR 连接改为 AND，修复 user_id 过滤条件被绕过
+- **语义图 namespace 过滤失效**: semantic.py LIKE 路径从内存图遍历改为 SQLite 查询，同时修复 namespace 缺漏和子串误判
+- **LLM 缓存跨用户泄漏**: agent.py 缓存键加入 user_id，防止同内容查询命中其他用户的缓存响应
+- **API Key 前端泄漏**: 移除 SOMA_API_KEY 的 HTML 注入，改为 `/api/auth/status` + sessionStorage
+- **XSS 风险**: ChatView LLM 输出先转义 HTML 实体再 Markdown 渲染，防止 `<script>` 注入
+- **CORS 过于宽松**: `allow_origins=["*"]` 改为可配置的 localhost 白名单（环境变量 SOMA_CORS_ORIGINS）
+- **FTS 双引号未转义**: 三库 FTS5 查询关键词中的 `"` 正确转义为 `""`，防止语法损坏
+- **skill.py 缺时间窗口**: 添加默认 90 天时间窗口过滤
+- **异常静默吞没**: `__init__.py` 的 `except Exception` 添加 `logging.error` 记录完整 traceback
 
 ---
 ## [0.3.3b2] — 2026-05-01

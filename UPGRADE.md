@@ -62,6 +62,24 @@ pip install --upgrade soma-wisdom
 pip install --upgrade git+https://github.com/sunyan999999/soma.git
 ```
 
+### 安全加固（0.4.0 生产审查）
+
+0.4.0 经全面安全审查后修复了以下问题：
+
+| 问题 | 修复 |
+|------|------|
+| LIKE 兜底路径 user_id 隔离失效 | OR 条件改为 AND，保证过滤条件不被绕过 |
+| 语义图 namespace 过滤缺漏 | LIKE 路径改为 SQLite 查询，确保 namespace 和时间窗口生效 |
+| LLM 短时缓存跨用户泄漏 | 缓存键加入 user_id |
+| API Key 前端 HTML 注入 | 移除注入，改为 `/api/auth/status` + sessionStorage |
+| v-html XSS 风险 | LLM 输出先转义 HTML 实体再 Markdown 渲染 |
+| CORS 过于宽松 | 从 `*` 改为 localhost 白名单（SOMA_CORS_ORIGINS 环境变量可配） |
+| FTS 双引号未转义 | 关键词中 `"` 转义为 `""`，防止 FTS5 语法损坏 |
+| skill.py 缺时间窗口 | 添加默认 90 天时间窗口 |
+| 异常静默吞没 | 添加 logging.error 记录完整 traceback |
+
+仪表盘新增安全端点 `GET /api/auth/status` 供前端检测认证状态。
+
 ### 验证升级
 
 ```python

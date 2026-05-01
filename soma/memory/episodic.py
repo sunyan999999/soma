@@ -202,7 +202,9 @@ class EpisodicStore(BaseMemoryStore):
 
         # 路径1: FTS5 trigram 全文搜索（3字及以上，毫秒级）
         if fts_keywords:
-            fts_query = " OR ".join(f'"{kw}"' for kw in fts_keywords)
+            fts_query = " OR ".join(
+                '"' + kw.replace('"', '""') + '"' for kw in fts_keywords
+            )
             try:
                 params = [fts_query]
                 sql = f"""
@@ -283,7 +285,7 @@ class EpisodicStore(BaseMemoryStore):
             params.extend([pattern, pattern])
         sql = f"""
             SELECT * FROM episodic_memories
-            WHERE {' OR '.join(conditions)}
+            WHERE {' AND '.join(conditions)}
             ORDER BY timestamp DESC, importance DESC
             LIMIT ?
         """
@@ -293,6 +295,7 @@ class EpisodicStore(BaseMemoryStore):
 
     def query_by_vector(
         self, query_vec, top_k: int = 5, user_id: str = "",
+        max_age_days: float = 30.0,
     ) -> List[MemoryUnit]:
         """向量语义搜索（可选用 user_id 隔离 + 时间窗口过滤）"""
         if self._vector_index is None:
@@ -304,7 +307,7 @@ class EpisodicStore(BaseMemoryStore):
             self._conn, query_vec, fetch_k
         )
         memories = []
-        min_ts = datetime.now(timezone.utc).timestamp() - 30.0 * 86400.0
+        min_ts = datetime.now(timezone.utc).timestamp() - max_age_days * 86400.0
         for mid, score in results:
             mem = self.get(mid)
             if mem is None:
