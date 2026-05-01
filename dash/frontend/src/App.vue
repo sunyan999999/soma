@@ -1,12 +1,30 @@
 <script setup>
-import { ref, provide, computed } from 'vue'
+import { ref, provide, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
+import { api } from './api/index.js'
 
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
+
+const somaVersion = ref('...')
+const communityStats = ref(null)
+
+onMounted(async () => {
+  try {
+    const h = await api.health()
+    somaVersion.value = h.version || 'unknown'
+  } catch {
+    somaVersion.value = 'unknown'
+  }
+  try {
+    communityStats.value = await api.community()
+  } catch {
+    communityStats.value = null
+  }
+})
 
 const toasts = ref([])
 let toastId = 0
@@ -20,6 +38,13 @@ function addToast(message, type = 'info') {
 }
 
 provide('toast', addToast)
+
+function formatDownloads(n) {
+  if (!n && n !== 0) return '...'
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K'
+  return n.toLocaleString()
+}
 
 const navItems = computed(() => [
   { path: '/', icon: '💬', label: t('nav.chat') },
@@ -49,8 +74,58 @@ const navItems = computed(() => [
           {{ item.label }}
         </button>
       </nav>
+      <!-- 社区统计 -->
+      <div v-if="communityStats?.github" class="sidebar-stats">
+        <div class="stats-title">📡 Community</div>
+        <div class="stat-row">
+          <span class="stat-icon">⭐</span>
+          <span class="stat-val">{{ communityStats.github.stars?.toLocaleString() || '...' }}</span>
+          <span class="stat-label">Stars</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-icon">🔀</span>
+          <span class="stat-val">{{ communityStats.github.forks?.toLocaleString() || '...' }}</span>
+          <span class="stat-label">Forks</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-icon">👁️</span>
+          <span class="stat-val">{{ communityStats.github.watchers?.toLocaleString() || '...' }}</span>
+          <span class="stat-label">Watchers</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-icon">👥</span>
+          <span class="stat-val">{{ communityStats.github.contributors?.toLocaleString() || '...' }}</span>
+          <span class="stat-label">Contributors</span>
+        </div>
+        <div class="stats-title" style="margin-top:12px;">📈 Traffic (14d)</div>
+        <div class="stat-row">
+          <span class="stat-icon">📥</span>
+          <span class="stat-val">{{ formatDownloads(communityStats.github.clones_count) }}</span>
+          <span class="stat-label">Clones</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-icon">🔄</span>
+          <span class="stat-val">{{ formatDownloads(communityStats.github.clones_uniques) }}</span>
+          <span class="stat-label">Unique cloners</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-icon">👀</span>
+          <span class="stat-val">{{ formatDownloads(communityStats.github.views_count) }}</span>
+          <span class="stat-label">Visitors</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-icon">🆕</span>
+          <span class="stat-val">{{ formatDownloads(communityStats.github.views_uniques) }}</span>
+          <span class="stat-label">Unique visitors</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-icon">📦</span>
+          <span class="stat-val">{{ formatDownloads(communityStats.pypi?.total_downloads) }}</span>
+          <span class="stat-label">PyPI</span>
+        </div>
+      </div>
       <div style="margin-top:auto;padding:16px;color:var(--text-muted);font-size:0.75rem;">
-        v0.3.0-beta
+        v{{ somaVersion }}
       </div>
     </aside>
 

@@ -1,0 +1,246 @@
+{
+  "version": "1.0",
+  "description": "SOMA 标准测试数据集 — 30条跨域思维题，用于基准测试中评估思维拆解覆盖率、记忆激活精准度和推理深度",
+  "questions": [
+    {
+      "id": "cross_01",
+      "category": "跨域推理",
+      "problem": "生物进化论中的'自然选择'原理，对企业组织变革有什么启示？",
+      "reference_approach": "从进化视角切入，分析变异(创新试错)→选择(市场淘汰)→保留(制度化)的映射关系，同时用系统思维考察组织生态位",
+      "expected_laws": ["evolutionary_lens", "systems_thinking"],
+      "memory_tags": ["进化论", "组织变革", "自然选择", "企业进化", "适应性"]
+    },
+    {
+      "id": "cross_02",
+      "category": "跨域推理",
+      "problem": "热力学第二定律（熵增）能用来解释为什么大公司会变得越来越官僚吗？",
+      "reference_approach": "用类比推理将熵增映射到组织复杂度，用矛盾分析法分析秩序与效率的张力，用第一性原理回归'组织为何存在'",
+      "expected_laws": ["analogical_reasoning", "contradiction_analysis", "first_principles"],
+      "memory_tags": ["熵增", "热力学", "官僚化", "组织熵", "大公司病"]
+    },
+    {
+      "id": "cross_03",
+      "category": "跨域推理",
+      "problem": "围棋中的'弃子争先'策略，在产品设计中如何应用？",
+      "reference_approach": "用类比推理将围棋策略映射到产品决策，用帕累托原理识别应'弃'的低价值功能，用逆向思考考虑如果不弃会怎样",
+      "expected_laws": ["analogical_reasoning", "pareto_principle", "inversion"],
+      "memory_tags": ["围棋", "弃子", "产品设计", "MVP", "功能取舍", "战略放弃"]
+    },
+    {
+      "id": "cross_04",
+      "category": "跨域推理",
+      "problem": "免疫系统的'分布式防御'机制，对互联网安全架构有什么启发？",
+      "reference_approach": "用类比推理提取免疫系统核心特征(无中心节点、模式识别、自适应学习)，用系统思维评估安全架构的整体鲁棒性",
+      "expected_laws": ["analogical_reasoning", "systems_thinking"],
+      "memory_tags": ["免疫系统", "安全架构", "分布式", "零信任", "纵深防御", "自适应"]
+    },
+    {
+      "id": "cross_05",
+      "category": "跨域推理",
+      "problem": "音乐中的'对位法'（多条独立旋律线同时进行）能用来改进团队协作模式吗？",
+      "reference_approach": "用类比推理将对位法的独立性和和谐性映射到团队协作，用矛盾分析法处理个体自主与整体协调的张力",
+      "expected_laws": ["analogical_reasoning", "contradiction_analysis"],
+      "memory_tags": ["对位法", "音乐", "团队协作", "自主性", "协同", "多线程"]
+    },
+    {
+      "id": "cross_06",
+      "category": "跨域推理",
+      "problem": "森林生态系统中'林下更新'（大树遮荫下小树缓慢成长）对人才培养有什么启示？",
+      "reference_approach": "用进化视角理解人才成长的长期性和非线性，用矛盾分析法权衡保护与放手，用逆向思考审视'拔苗助长'式培养的后果",
+      "expected_laws": ["evolutionary_lens", "contradiction_analysis", "inversion"],
+      "memory_tags": ["生态系统", "林下更新", "人才培养", "导师制", "成长曲线", "保护与放手"]
+    },
+    {
+      "id": "cross_07",
+      "category": "跨域推理",
+      "problem": "编程中的'解耦'思想，能否用来优化公司的部门结构？",
+      "reference_approach": "用第一性原理追问部门间依赖的本质，用系统思维分析信息流，用逆向思考研究过度解耦可能导致的问题",
+      "expected_laws": ["first_principles", "systems_thinking", "inversion"],
+      "memory_tags": ["解耦", "软件架构", "组织架构", "部门墙", "接口", "信息流"]
+    },
+    {
+      "id": "cross_08",
+      "category": "跨域推理",
+      "problem": "桥梁工程中的'冗余设计'理念，应如何平衡地应用到创业公司的风险管理中？",
+      "reference_approach": "用类比推理建立桥梁冗余与商业冗余的对应关系，用帕累托原理找到20%的冗余覆盖80%的风险，用矛盾分析法权衡成本与安全",
+      "expected_laws": ["analogical_reasoning", "pareto_principle", "contradiction_analysis"],
+      "memory_tags": ["冗余设计", "桥梁工程", "风险管理", "创业", "安全边际", "成本收益"]
+    },
+    {
+      "id": "cross_09",
+      "category": "跨域推理",
+      "problem": "语言学中'萨丕尔-沃尔夫假说'（语言影响思维方式）对公司内部沟通语言的设计有何指导意义？",
+      "reference_approach": "用类比推理建立语言-思维-组织文化的因果链，用第一性原理审视组织需要什么样的集体认知，用系统思维考察沟通语言对整个组织的影响回路",
+      "expected_laws": ["analogical_reasoning", "first_principles", "systems_thinking"],
+      "memory_tags": ["萨丕尔-沃尔夫假说", "语言学", "组织文化", "内部沟通", "话语体系", "认知框架"]
+    },
+    {
+      "id": "cross_10",
+      "category": "跨域推理",
+      "problem": "军事战略中'集中优势兵力'原则，在资源有限的创业环境中如何变通应用？",
+      "reference_approach": "用类比推理将军事原则映射到商业竞争，用帕累托原理识别最值得集中的'战场'，用矛盾分析法权衡聚焦与多元化",
+      "expected_laws": ["analogical_reasoning", "pareto_principle", "contradiction_analysis"],
+      "memory_tags": ["军事战略", "聚焦", "创业资源", "利基市场", "集中兵力", "差异化"]
+    },
+    {
+      "id": "attribution_01",
+      "category": "深层归因",
+      "problem": "为什么很多公司战略清晰、方向正确，但执行力始终跟不上？",
+      "reference_approach": "用矛盾分析法拆解'战略vs执行'的表层矛盾，用系统思维找出从战略到执行传导链中的断裂点，用第一性原理追问'什么是执行力的本质'",
+      "expected_laws": ["contradiction_analysis", "systems_thinking", "first_principles"],
+      "memory_tags": ["战略", "执行力", "传导机制", "激励", "信息不对称", "目标分解"]
+    },
+    {
+      "id": "attribution_02",
+      "category": "深层归因",
+      "problem": "一个产品的用户增长突然停滞，表面原因是市场饱和，深层原因可能是什么？",
+      "reference_approach": "用第一性原理追问增长的底层驱动因素，用系统思维建立增长回路图找断裂点，用逆向思考分析'如果不增长会怎样'反推根因",
+      "expected_laws": ["first_principles", "systems_thinking", "inversion"],
+      "memory_tags": ["增长停滞", "产品生命周期", "网络效应", "用户留存", "增长飞轮", "市场饱和"]
+    },
+    {
+      "id": "attribution_03",
+      "category": "深层归因",
+      "problem": "一个技术方案在理论上完美但在实践中反复失败，如何系统性地寻找根因？",
+      "reference_approach": "用矛盾分析法找理论与实践之间的假设差异，用第一性原理逐层检验每个前提，用逆向思考从失败现象反向推导链条",
+      "expected_laws": ["contradiction_analysis", "first_principles", "inversion"],
+      "memory_tags": ["理论vs实践", "根因分析", "假设验证", "实施障碍", "5why", "前提批判"]
+    },
+    {
+      "id": "attribution_04",
+      "category": "深层归因",
+      "problem": "一个行业共识是'XX趋势不可逆'，但三年前同样的专家判断却完全错了。是什么导致了系统性误判？",
+      "reference_approach": "用进化视角分析趋势预测本身的演化规律，用矛盾分析法剖析共识形成过程中的群体思维，用逆向思考如果反向会怎样",
+      "expected_laws": ["evolutionary_lens", "contradiction_analysis", "inversion"],
+      "memory_tags": ["趋势预测", "专家误判", "群体思维", "共识陷阱", "反身性", "黑天鹅"]
+    },
+    {
+      "id": "attribution_05",
+      "category": "深层归因",
+      "problem": "一个团队在人数增加后效率反而下降了，经典解释是'沟通开销O(N²)'，但还有哪些更深层的原因？",
+      "reference_approach": "用第一性原理分析团队效率的本质构成，用系统思维建立规模与效率的反馈回路，用矛盾分析法考察个体效率与集体效率的冲突",
+      "expected_laws": ["first_principles", "systems_thinking", "contradiction_analysis"],
+      "memory_tags": ["团队规模", "边际效率", "沟通成本", "布鲁克斯定律", "社会惰化", "协调成本"]
+    },
+    {
+      "id": "attribution_06",
+      "category": "深层归因",
+      "problem": "为什么'知道'和'做到'之间存在巨大的鸿沟？仅用'意志力不足'解释显然不够。",
+      "reference_approach": "用第一性原理追问从认知到行动的转化机制，用矛盾分析法考察理性自我与感性自我的内部冲突，用系统思维建立知-行转化的环境依赖模型",
+      "expected_laws": ["first_principles", "contradiction_analysis", "systems_thinking"],
+      "memory_tags": ["知行合一", "执行力", "行为改变", "习惯形成", "激励设计", "环境设计"]
+    },
+    {
+      "id": "attribution_07",
+      "category": "深层归因",
+      "problem": "一个公司的核心价值观和实际行为之间的偏离越来越大，这种'文化漂移'的根本原因是什么？",
+      "reference_approach": "用进化视角看组织文化的自然演变过程，用矛盾分析法分析宣称价值观与激励机制的冲突，用系统思维建立文化维护的正负反馈回路",
+      "expected_laws": ["evolutionary_lens", "contradiction_analysis", "systems_thinking"],
+      "memory_tags": ["企业文化", "价值观", "言行不一", "激励机制", "文化漂移", "创始人心智"]
+    },
+    {
+      "id": "attribution_08",
+      "category": "深层归因",
+      "problem": "为什么很多创新在大公司内部被'扼杀'，但同样的想法在创业公司却取得了成功？",
+      "reference_approach": "用矛盾分析法分析大公司内部的'创新者困境'，用进化视角看创新在组织生态中的选择压力，用第一性原理追问创新的必要条件",
+      "expected_laws": ["contradiction_analysis", "evolutionary_lens", "first_principles"],
+      "memory_tags": ["创新者困境", "大公司病", "颠覆式创新", "组织惯性", "资源配置", "克里斯滕森"]
+    },
+    {
+      "id": "attribution_09",
+      "category": "深层归因",
+      "problem": "一个教育体系培养了大量的'考试高手'，却在真实世界解决问题时表现平平。教育系统的本质缺陷在哪里？",
+      "reference_approach": "用第一性原理追问教育的根本目的(能力vs分数)，用矛盾分析法处理标准化评估与个性发展的矛盾，用系统思维分析教育系统与社会需求的结构性错配",
+      "expected_laws": ["first_principles", "contradiction_analysis", "systems_thinking"],
+      "memory_tags": ["教育", "应试", "能力培养", "评价体系", "标准化", "真实问题解决"]
+    },
+    {
+      "id": "attribution_10",
+      "category": "深层归因",
+      "problem": "一个产品明明用户体验更好、价格更低，为什么还是打不过有网络效应的竞品？",
+      "reference_approach": "用第一性原理分析价值创造的真正驱动力(产品vs网络)，用系统思维建立网络效应的正反馈模型，用逆向思考分析如果用户集体迁移需要什么条件",
+      "expected_laws": ["first_principles", "systems_thinking", "inversion"],
+      "memory_tags": ["网络效应", "用户迁移", "锁定效应", "临界质量", "双边市场", "路径依赖"]
+    },
+    {
+      "id": "experience_01",
+      "category": "经验借鉴",
+      "problem": "从丰田生产系统(TPS)的'安灯绳'（任何工人可以拉停整条产线）机制中，我们能学到什么关于团队授权的经验？",
+      "reference_approach": "提取TPS安灯绳的核心原则(即时反馈、全员质量责任、停止即改善)，映射到知识工作团队中建立类似'安全停止'机制的方法",
+      "expected_laws": ["analogical_reasoning", "systems_thinking"],
+      "memory_tags": ["丰田", "安灯绳", "授权", "质量", "即时反馈", "精益", "心理安全"]
+    },
+    {
+      "id": "experience_02",
+      "category": "经验借鉴",
+      "problem": "Netflix的'自由与责任'文化在什么条件下有效？如果你的团队缺乏顶尖人才，如何调整？",
+      "reference_approach": "用第一性原理分析Netflix文化的前提假设(高密度人才)，用矛盾分析法在人才密度不足条件下的自由vs管控平衡，用进化视角看文化的渐进演化路径",
+      "expected_laws": ["first_principles", "contradiction_analysis", "evolutionary_lens"],
+      "memory_tags": ["Netflix", "企业文化", "自由与责任", "人才密度", "制度设计", "文化适配"]
+    },
+    {
+      "id": "experience_03",
+      "category": "经验借鉴",
+      "problem": "亚马逊的'六页纸备忘录'取代PPT的做法已经流传多年，为什么大多数公司仍然学不会？学不会的深层障碍是什么？",
+      "reference_approach": "用第一性原理分析'六页纸'有效的前提(深度阅读习惯、逻辑严谨性)，用矛盾分析法考察形式模仿与精神内化的矛盾，用逆向思考：学了但学不像比不学更糟吗",
+      "expected_laws": ["first_principles", "contradiction_analysis", "inversion"],
+      "memory_tags": ["亚马逊", "六页纸", "会议文化", "写作思维", "组织习惯", "最佳实践移植"]
+    },
+    {
+      "id": "experience_04",
+      "category": "经验借鉴",
+      "problem": "华为的'让听得见炮声的人决策'在实践中面临哪些挑战？如何避免变成'各自为战'？",
+      "reference_approach": "用矛盾分析法处理决策权下放与全局最优的张力，用系统思维设计决策边界和信息共享机制，用帕累托原理区分哪些决策应该下放",
+      "expected_laws": ["contradiction_analysis", "systems_thinking", "pareto_principle"],
+      "memory_tags": ["华为", "授权", "决策权", "一线决策", "全局最优", "协调机制"]
+    },
+    {
+      "id": "experience_05",
+      "category": "经验借鉴",
+      "problem": "桥水基金的'极端透明'原则在实际推行中会遭遇什么人性阻力？如何循序渐进地引入？",
+      "reference_approach": "用矛盾分析法处理透明与心理安全的张力，用进化视角设计渐进透明的演化路径，用第一性原理追问'透明的目的是什么'（不是透明本身）",
+      "expected_laws": ["contradiction_analysis", "evolutionary_lens", "first_principles"],
+      "memory_tags": ["桥水", "极端透明", "达利欧", "心理安全", "组织变革", "渐进推行"]
+    },
+    {
+      "id": "experience_06",
+      "category": "经验借鉴",
+      "problem": "从诺基亚的衰落中，除了'没有跟上智能手机时代'这个表面原因，能提炼出什么关于组织感知能力的教训？",
+      "reference_approach": "用系统思维分析诺基亚的信号过滤机制(中层报喜不报忧)，用进化视角看组织对外部变化的感知延迟，用矛盾分析法考察现有客户需求vs未来趋势的资源冲突",
+      "expected_laws": ["systems_thinking", "evolutionary_lens", "contradiction_analysis"],
+      "memory_tags": ["诺基亚", "衰落", "组织感知", "信号过滤", "柯达时刻", "颠覆盲区"]
+    },
+    {
+      "id": "experience_07",
+      "category": "经验借鉴",
+      "problem": "迪士尼的'表演文化'（员工是'演员'而非'雇员'）能否移植到B2B企业？关键适配点是什么？",
+      "reference_approach": "用第一性原理剥离'表演文化'的表层(角色扮演)和本质(身份认同驱动的行为规范)，用类比推理映射到B2B场景，用矛盾分析法处理表演性与真实性的张力",
+      "expected_laws": ["first_principles", "analogical_reasoning", "contradiction_analysis"],
+      "memory_tags": ["迪士尼", "服务设计", "员工体验", "身份认同", "B2B", "文化移植"]
+    },
+    {
+      "id": "experience_08",
+      "category": "经验借鉴",
+      "problem": "GitHub的'异步沟通'（默认文字、默认公开、默认异步）模式在传统企业推行时会遇到什么结构化阻碍？",
+      "reference_approach": "用系统思维分析传统企业信息流(层级汇报、口头指令)与异步模式的冲突点，用矛盾分析法处理同步习惯与异步效率的矛盾，用进化视角设计三阶段过渡方案",
+      "expected_laws": ["systems_thinking", "contradiction_analysis", "evolutionary_lens"],
+      "memory_tags": ["GitHub", "异步沟通", "远程办公", "信息透明", "传统企业转型", "沟通模式"]
+    },
+    {
+      "id": "experience_09",
+      "category": "经验借鉴",
+      "problem": "从SpaceX的'第一性原理设计'（重新推导火箭应该多少钱）中，可以提炼出什么样的产品定价策略？",
+      "reference_approach": "用第一性原理回归成本结构的物理本质(而不是对标竞品)，用逆向思考挑战行业中'理所当然'的价格锚点，用帕累托原理找到占成本80%的20%组件进行重构",
+      "expected_laws": ["first_principles", "inversion", "pareto_principle"],
+      "memory_tags": ["SpaceX", "马斯克", "成本重构", "定价策略", "价值工程", "颠覆定价"]
+    },
+    {
+      "id": "experience_10",
+      "category": "经验借鉴",
+      "problem": "任天堂'枯萎技术'理念（用成熟廉价技术做创新体验）与硅谷'追逐新技术'的主流思维形成鲜明对比。这种策略在AI时代还有效吗？",
+      "reference_approach": "用矛盾分析法处理技术先进性与用户体验的关系，用进化视角看技术成熟度与创新空间的反向关系，用第一性原理追问'技术到底为谁服务'",
+      "expected_laws": ["contradiction_analysis", "evolutionary_lens", "first_principles"],
+      "memory_tags": ["任天堂", "枯萎技术", "蓝海战略", "成熟技术", "创新", "用户体验", "AI时代"]
+    }
+  ]
+}

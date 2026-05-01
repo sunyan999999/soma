@@ -30,7 +30,7 @@ class ActivationHub:
         self.scorer = scorer or RelevanceScorer()
         self.ranker = ranker or MMRRanker(mmr_lambda)
 
-    def activate(self, foci: List[Focus]) -> List[ActivatedMemory]:
+    def activate(self, foci: List[Focus], user_id: str = "") -> List[ActivatedMemory]:
         """
         双向激活：对每个 Focus 查询 MemoryCore，全局合并排序。
 
@@ -43,7 +43,7 @@ class ActivationHub:
         candidates: Dict[str, list] = {}
 
         for focus in foci:
-            results = self.retriever.retrieve(focus, top_k=self.top_k * 2)
+            results = self.retriever.retrieve(focus, top_k=self.top_k * 2, user_id=user_id)
 
             for am in results:
                 mid = am.memory.id

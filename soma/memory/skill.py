@@ -25,7 +25,7 @@ class SkillStore(BaseMemoryStore):
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA synchronous=NORMAL")
         self._conn.execute("PRAGMA cache_size=-2000")       # 2MB 缓存（技能数据量最小）
-        self._conn.execute("PRAGMA busy_timeout=5000")
+        self._conn.execute("PRAGMA busy_timeout=15000")
         self._conn.execute(
             """
             CREATE TABLE IF NOT EXISTS skills (
@@ -33,13 +33,23 @@ class SkillStore(BaseMemoryStore):
                 name TEXT NOT NULL,
                 pattern TEXT NOT NULL,
                 context_json TEXT DEFAULT '{}',
-                created_at REAL NOT NULL
+                created_at REAL NOT NULL,
+                user_id TEXT NOT NULL DEFAULT ''
             )
             """
         )
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_skill_created ON skills(created_at DESC)"
         )
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_skill_user ON skills(user_id)"
+        )
+        try:
+            self._conn.execute(
+                "ALTER TABLE skills ADD COLUMN user_id TEXT NOT NULL DEFAULT ''"
+            )
+        except sqlite3.OperationalError:
+            pass
         self._create_fts5()
         self._conn.commit()
 
@@ -87,6 +97,7 @@ class SkillStore(BaseMemoryStore):
         name: str,
         pattern: str,
         context: Optional[Dict[str, Any]] = None,
+        user_id: str = "",
     ) -> str:
         skill_id = uuid.uuid4().hex
         now = datetime.now(timezone.utc).timestamp()
@@ -94,16 +105,17 @@ class SkillStore(BaseMemoryStore):
 
         self._conn.execute(
             """
-            INSERT INTO skills (id, name, pattern, context_json, created_at)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO skills (id, name, pattern, context_json, created_at, user_id)
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (skill_id, name, pattern, context_json, now),
+            (skill_id, name, pattern, context_json, now, user_id),
         )
         self._conn.commit()
         return skill_id
 
     def query_by_keywords(
-        self, keywords: List[str], top_k: int = 3
+        self, keywords: List[str], top_k: int = 3,
+        user_id: str = "",
     ) -> List[MemoryUnit]:
         if not keywords:
             return []
@@ -112,18 +124,24 @@ class SkillStore(BaseMemoryStore):
         fts_keywords = [kw for kw in keywords if len(kw) >= 3]
         memories: List[MemoryUnit] = []
         seen_ids: set = set()
+        user_clause = "AND s.user_id = ?" if user_id else ""
 
         if fts_keywords:
             fts_query = " OR ".join(f'"{kw}"' for kw in fts_keywords)
             try:
-                sql = """
+                params = [fts_query]
+                sql = f"""
                     SELECT s.* FROM skills s
                     INNER JOIN skills_fts fts ON s.rowid = fts.rowid
                     WHERE skills_fts MATCH ?
+                    {user_clause}
                     ORDER BY s.created_at DESC
                     LIMIT ?
                 """
-                rows = self._conn.execute(sql, (fts_query, top_k)).fetchall()
+                if user_id:
+                    params.append(user_id)
+                params.append(top_k)
+                rows = self._conn.execute(sql, params).fetchall()
                 for row in rows:
                     mid = row["id"]
                     if mid not in seen_ids:
@@ -147,6 +165,9 @@ class SkillStore(BaseMemoryStore):
         if like_keywords and remaining > 0:
             conditions = []
             params = []
+            if user_id:
+                conditions.append("user_id = ?")
+                params.append(user_id)
             if seen_ids:
                 placeholders = ",".join("?" * len(seen_ids))
                 conditions.append(f"id NOT IN ({placeholders})")

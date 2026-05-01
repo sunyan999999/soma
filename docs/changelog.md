@@ -8,23 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ---
-## [0.4.0] — 2026-05-01
+## [0.4.0] — Unreleased
 
 ### Added
 - **API 稳定性承诺**: `API_STABILITY.md` 明确冻结 SOMA 门面类的 13 个公共方法、3 个数据模型、2 个工厂函数，承诺主版本号变更前不破坏向后兼容
 - **社区统计 sidebar**: 导航栏自动获取 GitHub Stars/Forks/Watchers/Contributors + 14日 Clones/Visitors 流量 + PyPI 下载量，1 小时缓存自动刷新
 - **竞品 GitHub 星数实时获取**: BenchmarkView 竞品对比表格自动填充 live star count
-- **MkDocs 文档站点**: MkDocs Material + mkdocstrings 自动 API 文档生成，GitHub Actions 自动部署到 GitHub Pages
-- **Docker 部署**: Dockerfile + docker-compose.yml + .dockerignore，一键 `docker compose up -d` 部署
-- **社区治理文件**: CODE_OF_CONDUCT.md、CONTRIBUTING.md 中英双语，GitHub 链接修正
-- **Awesome List 提交**: 4 个 awesome list PR（e2b-dev/awesome-ai-agents、Shubhamsaboo/awesome-llm-apps、vinta/awesome-python、ikaijua/Awesome-AITools）
-- **覆盖率 CI 集成**: CI 工作流添加 pytest-cov 覆盖率收集 + Codecov 上传，README 添加 Codecov badge
-- **记忆数据隔离**: episodic/semantic/skill 三库均支持 `user_id`/`namespace`/`session_id` 维度隔离，全 API 链路（SOMA → Agent → Hub → Retriever → MemoryCore → Store）透传，零数据泄漏
-- **时间衰减修复**: 近因衰减公式从 `1/(1+days)` 改为 `exp(-days/7)` 指数衰减（半衰期7天）；召回增加30天时间窗口过滤；RRF 融合施加时间惩罚因子
-
-### Fixed
-- **时间错乱**: 记忆检索不会再将7天前的事件以相近权重混入今日回复（30天外记忆权重<2%）
-- **数据泄漏**: 所有记忆存储/查询均支持 user_id 级别的命名空间隔离，杜绝跨用户数据污染
 
 ---
 ## [0.3.3b2] — 2026-05-01

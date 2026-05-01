@@ -105,6 +105,6 @@ class WisdomEngine(BaseFrameworkEngine):
                 )
             )
 
-        # 按 weight + 随机抖动排序，避免同权规律永远同一顺序
-        foci.sort(key=lambda f: f.weight + random.uniform(-0.03, 0.03), reverse=True)
+        # 按 weight + 微小抖动排序，仅打破同权重平局
+        foci.sort(key=lambda f: f.weight + random.uniform(-0.005, 0.005), reverse=True)
         return foci

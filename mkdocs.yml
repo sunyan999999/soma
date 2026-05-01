@@ -1,15 +1,16 @@
 site_name: SOMA
-site_description: SOMA — Somatic Wisdom Architecture Documentation
-repo_url: https://github.com/soma-project/soma-core
+site_description: SOMA — 智慧超越记忆，为AI Agent构建的框架优先式认知架构
+repo_url: https://github.com/sunyan999999/soma
 edit_uri: edit/main/docs/
 
 theme:
   name: material
-  language: en
+  language: zh
   features:
     - navigation.sections
     - navigation.expand
     - search.highlight
+    - content.code.copy
   palette:
     - scheme: default
       primary: indigo
@@ -25,21 +26,22 @@ theme:
         name: Light mode
 
 nav:
-  - Home: index.md
-  - Quick Start: quickstart.md
-  - Philosophy: philosophy.md
-  - Architecture: architecture.md
-  - API Reference: api/index.md
-  - Customization: guides/customization.md
-  - Contributing: ../CONTRIBUTING.md
-  - Changelog: ../CHANGELOG.md
+  - 首页: index.md
+  - 快速开始: quickstart.md
+  - 核心理念: philosophy.md
+  - 架构手册: architecture.md
+  - API 参考: api/index.md
+  - API 稳定性: api_stability.md
+  - 自定义指南: guides/customization.md
+  - 贡献指南: contributing.md
+  - 变更日志: changelog.md
 
 plugins:
   - search
   - mkdocstrings:
       handlers:
         python:
-          paths: [../soma]
+          paths: [.]
           options:
             show_source: true
             show_root_heading: true
@@ -48,11 +50,7 @@ plugins:
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.superfences
   - admonition
   - footnotes
   - toc:

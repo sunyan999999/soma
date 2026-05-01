@@ -74,6 +74,9 @@ benchmark_results/
 # Screenshots (source materials)
 ysimages/
 
+# MkDocs build output
+site/
+
 # Backup & temp
 *.bak
 _benchmark_tmp/

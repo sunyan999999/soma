@@ -171,24 +171,49 @@ def normalize_scores(
         1,
     )
 
-    # 智慧分 — 合成增益缺失消融数据时权重重分配
+    # 智慧分 — 7维指标综合
     wis = raw_scores
     has_ablation = raw_scores.get("has_ablation_data", False)
 
+    # 拆解覆盖率（已从30题数据集计算）
+    coverage = (wis.get("decomposition_coverage", 0) or 0)
+    # 规律召回率：实际触发 ∩ 预期规律
+    law_recall = (wis.get("law_recall", 0) or 0)
+    # 思维多样性熵值
+    diversity = (wis.get("thinking_diversity_entropy", 0) or 0)
+    # 记忆精准度：激活tag与预期tag的Jaccard
+    mem_precision = (wis.get("memory_precision", 0) or 0)
+    # 记忆关联度得分
+    relevance = (wis.get("memory_relevance_score", 0) or 0)
+    # 跨域激活率
+    cross_domain = (wis.get("cross_domain_activation_rate", 0) or 0)
+    # 效率分：拆解+激活延迟越低越好（<100ms满分）
+    avg_time = (wis.get("avg_decompose_time_ms", 0) or 0) + (wis.get("avg_activate_time_ms", 0) or 0)
+    efficiency = max(0, 1.0 - avg_time / 200) if avg_time > 0 else 0.5
+
     if has_ablation:
+        synthesis = min((wis.get("synthesis_gain_depth_pct", 0) or 0) / 10, 1.0)
         wisdom = round(
-            (wis.get("decomposition_coverage", 0) or 0) * 30 +
-            (wis.get("thinking_diversity_entropy", 0) or 0) * 25 +
-            min((wis.get("synthesis_gain_depth_pct", 0) or 0) / 10, 1.0) * 25 +
-            (wis.get("memory_relevance_score", 0) or 0) * 20,
+            coverage * 20 +
+            law_recall * 15 +
+            diversity * 15 +
+            mem_precision * 10 +
+            relevance * 10 +
+            cross_domain * 10 +
+            efficiency * 10 +
+            synthesis * 10,
             1,
         )
     else:
-        # 无消融数据时，合成增益的 25 分权重按比例分配给其他维度
+        # 无消融数据时，合成增益10分按比例分配
         wisdom = round(
-            (wis.get("decomposition_coverage", 0) or 0) * 42 +    # 30 → 42
-            (wis.get("thinking_diversity_entropy", 0) or 0) * 33 +  # 25 → 33
-            (wis.get("memory_relevance_score", 0) or 0) * 25,       # 20 → 25
+            coverage * 22 +
+            law_recall * 18 +
+            diversity * 18 +
+            mem_precision * 12 +
+            relevance * 10 +
+            cross_domain * 10 +
+            efficiency * 10,
             1,
         )
 
@@ -252,14 +277,19 @@ class MemoryBenchmark:
 @dataclass
 class WisdomBenchmark:
     """智慧推理维度基准"""
-    decomposition_coverage: float = 0.0      # 拆解覆盖率 (10类问题命中率)
-    decomposition_precision: float = 0.0     # 拆解精准度 (人工标注待定)
+    decomposition_coverage: float = 0.0      # 拆解覆盖率 (总题数命中率)
+    decomposition_precision: float = 0.0     # 拆解精准度 (预期规律命中比例)
+    law_recall: float = 0.0                  # 规律召回率 (expected_laws 的覆盖率)
+    memory_precision: float = 0.0            # 记忆精准度 (激活tag与预期tag的Jaccard)
     memory_relevance_score: float = 0.0      # 记忆-问题关联度评分
     synthesis_gain_depth_pct: float = 0.0    # 合成深度增益% (vs 裸LLM)
     synthesis_gain_structure_pct: float = 0.0  # 合成结构增益%
     synthesis_gain_specificity_pct: float = 0.0  # 合成具体性增益%
     thinking_diversity_entropy: float = 0.0  # 思维多样性熵值
     thinking_diversity_gini: float = 0.0     # 思维多样性基尼系数
+    cross_domain_activation_rate: float = 0.0  # 跨域激活率 (跨域记忆占比)
+    avg_decompose_time_ms: float = 0.0       # 单题平均拆解耗时
+    avg_activate_time_ms: float = 0.0        # 单题平均激活耗时
     law_usage_distribution: Dict[str, int] = field(default_factory=dict)
     details: Dict[str, Any] = field(default_factory=dict)
 
@@ -543,8 +573,27 @@ def run_memory_benchmark(agent) -> MemoryBenchmark:
     return bm
 
 
+def _load_test_dataset() -> List[Dict[str, Any]]:
+    """加载标准测试数据集（30题）"""
+    import importlib.resources
+    try:
+        # Python 3.9+
+        raw = importlib.resources.files("soma").joinpath("test_dataset.json").read_text(encoding="utf-8")
+    except Exception:
+        # 回退：直接读文件
+        import json as _json
+        ds_path = Path(__file__).parent / "test_dataset.json"
+        if ds_path.exists():
+            raw = ds_path.read_text(encoding="utf-8")
+        else:
+            return []
+    import json as _json
+    data = _json.loads(raw)
+    return data.get("questions", [])
+
+
 def run_wisdom_benchmark(agent, ablation_data: Optional[Dict] = None) -> WisdomBenchmark:
-    """运行智慧推理维度基准测试"""
+    """运行智慧推理维度基准测试 — 使用标准30题数据集"""
     bm = WisdomBenchmark()
     details = {}
 
@@ -554,42 +603,54 @@ def run_wisdom_benchmark(agent, ablation_data: Optional[Dict] = None) -> WisdomB
         "pareto_principle", "inversion", "analogical_reasoning", "evolutionary_lens",
     ]
 
-    # 1. 拆解覆盖率 — 10 类问题各测试一次
-    coverage_questions = [
-        ("第一性原理", "什么是事物最基本的构成要素？"),
-        ("系统思维", "如何分析一个复杂的生态系统？"),
-        ("矛盾分析", "技术进步与就业之间的矛盾如何演化？"),
-        ("决策分析", "公司面临两个重要选择时如何做决策？"),
-        ("逆向思考", "为什么好的产品也会失败？"),
-        ("类比推理", "人体和企业有什么相似之处？"),
-        ("进化视角", "行业格局如何随时间演变？"),
-        ("逻辑推理", "如何评估一个三段论的正确性？"),
-        ("综合问题", "电动汽车是否真的更环保？"),
-        ("元认知", "如何提高自己的思考质量？"),
-    ]
+    # 加载标准测试数据集
+    test_questions = _load_test_dataset()
+    if not test_questions:
+        # 回退：内置精简版10题
+        test_questions = [
+            {"id": f"fallback_{i}", "category": "综合", "problem": q, "expected_laws": [], "memory_tags": []}
+            for i, (_, q) in enumerate([
+                ("第一性原理", "什么是事物最基本的构成要素？"),
+                ("系统思维", "如何分析一个复杂的生态系统？"),
+                ("矛盾分析", "技术进步与就业之间的矛盾如何演化？"),
+                ("决策分析", "公司面临两个重要选择时如何做决策？"),
+                ("逆向思考", "为什么好的产品也会失败？"),
+                ("类比推理", "人体和企业有什么相似之处？"),
+                ("进化视角", "行业格局如何随时间演变？"),
+                ("逻辑推理", "如何评估一个三段论的正确性？"),
+                ("综合问题", "电动汽车是否真的更环保？"),
+                ("元认知", "如何提高自己的思考质量？"),
+            ])
+        ]
+    details["dataset_size"] = len(test_questions)
 
+    # 1. 拆解覆盖率 — 30题全量测试
     law_hits = Counter()
     total_laws_triggered = 0
-    for qtype, question in coverage_questions:
-        foci = agent.decompose(question)
+    covered = 0
+    category_hits: Dict[str, int] = Counter()
+    law_by_category: Dict[str, Counter] = {}
+
+    for q in test_questions:
+        foci = agent.decompose(q["problem"])
+        cat = q.get("category", "综合")
+        category_hits[cat] += 1
+        if cat not in law_by_category:
+            law_by_category[cat] = Counter()
         for f in foci:
             law_hits[f.law_id] += 1
+            law_by_category[cat][f.law_id] += 1
         total_laws_triggered += len(foci)
-
-    bm.decomposition_coverage = len([q for q, _ in coverage_questions if any(
-        agent.decompose(q2) for q2, _ in [(q, "")]  # 简化
-    )]) / len(coverage_questions)
-    # 实际计算：10题中至少命中1条规律的题目数
-    covered = 0
-    for qtype, question in coverage_questions:
-        foci = agent.decompose(question)
         if len(foci) > 0:
             covered += 1
-    bm.decomposition_coverage = covered / len(coverage_questions)
 
+    bm.decomposition_coverage = covered / len(test_questions)
     bm.law_usage_distribution = dict(law_hits)
+    details["covered"] = covered
+    details["total_questions"] = len(test_questions)
     details["law_hits"] = dict(law_hits)
     details["total_triggers"] = total_laws_triggered
+    details["category_hits"] = dict(category_hits)
 
     # 2. 思维多样性 — 熵值 + 基尼系数
     total = sum(law_hits.values())
@@ -618,14 +679,71 @@ def run_wisdom_benchmark(agent, ablation_data: Optional[Dict] = None) -> WisdomB
             bm.synthesis_gain_structure_pct = 60.0  # 从消融实验硬数据
             bm.synthesis_gain_specificity_pct = 11.0
 
-    # 4. 记忆-问题关联度 (激活分数均值)
+    # 4. 记忆-问题关联度 + 新评估指标 — 取前15题控制耗时
     scores = []
-    for _, question in coverage_questions[:5]:
-        foci = agent.decompose(question)
+    cross_domain_total = 0
+    cross_domain_hits = 0
+    tag_intersections = 0
+    tag_unions = 0
+    law_hit_total = 0
+    law_expected_total = 0
+    decompose_times = []
+    activate_times = []
+
+    for q in test_questions[:15]:
+        # 计时：拆解
+        t0 = time.time()
+        foci = agent.decompose(q["problem"])
+        decompose_times.append((time.time() - t0) * 1000)
+
+        # 计时：激活
+        t1 = time.time()
         activated = agent.hub.activate(foci)
+        activate_times.append((time.time() - t1) * 1000)
+
         for am in activated:
             scores.append(am.activation_score)
+            src = am.source if hasattr(am, 'source') else ""
+            if "semantic" not in src.lower():
+                cross_domain_total += 1
+
+        # 规律精准度：实际触发的规律 ∩ 预期规律
+        expected = set(q.get("expected_laws", []))
+        actual = set(f.law_id for f in foci)
+        law_hit_total += len(actual)
+        law_expected_total += len(expected)
+        if expected:
+            bm.decomposition_precision += len(actual & expected) / len(expected)
+
+        # 记忆标签精准度：激活内容的tags ∩ 预期tags
+        expected_tags = set(q.get("memory_tags", []))
+        if expected_tags:
+            activated_tags = set()
+            for am in activated:
+                content = am.memory.content if hasattr(am.memory, 'content') else str(am.memory)
+                for tag in expected_tags:
+                    if tag.lower() in content.lower():
+                        activated_tags.add(tag)
+            tag_intersections += len(activated_tags & expected_tags)
+            tag_unions += len(activated_tags | expected_tags) if (activated_tags | expected_tags) else 1
+
+    # 汇总
+    n_q = len(test_questions[:15])
     bm.memory_relevance_score = round(sum(scores) / len(scores), 4) if scores else 0
+    bm.cross_domain_activation_rate = round(cross_domain_total / len(scores), 3) if scores else 0
+    bm.decomposition_precision = round(bm.decomposition_precision / max(1, n_q), 4)
+    bm.law_recall = round(law_hit_total / max(1, law_expected_total), 4) if law_expected_total > 0 else 0
+    bm.memory_precision = round(tag_intersections / max(1, tag_unions), 4) if tag_unions > 0 else 0
+    bm.avg_decompose_time_ms = round(sum(decompose_times) / len(decompose_times), 1) if decompose_times else 0
+    bm.avg_activate_time_ms = round(sum(activate_times) / len(activate_times), 1) if activate_times else 0
+
+    details["law_recall"] = bm.law_recall
+    details["memory_precision"] = bm.memory_precision
+    details["cross_domain_activation_rate"] = bm.cross_domain_activation_rate
+    details["avg_decompose_time_ms"] = bm.avg_decompose_time_ms
+    details["avg_activate_time_ms"] = bm.avg_activate_time_ms
+    details["tag_intersections"] = tag_intersections
+    details["tag_unions"] = tag_unions
 
     bm.details = details
     return bm
@@ -774,9 +892,14 @@ def calculate_scores_v2(run: BenchmarkRun) -> Dict[str, float]:
             "dedup_ratio": run.memory.dedup_ratio,
             "cross_session_persistence": run.memory.cross_session_persistence,
             "decomposition_coverage": run.wisdom.decomposition_coverage,
+            "law_recall": run.wisdom.law_recall,
             "thinking_diversity_entropy": run.wisdom.thinking_diversity_entropy,
-            "synthesis_gain_depth_pct": run.wisdom.synthesis_gain_depth_pct,
+            "memory_precision": run.wisdom.memory_precision,
             "memory_relevance_score": run.wisdom.memory_relevance_score,
+            "cross_domain_activation_rate": run.wisdom.cross_domain_activation_rate,
+            "avg_decompose_time_ms": run.wisdom.avg_decompose_time_ms,
+            "avg_activate_time_ms": run.wisdom.avg_activate_time_ms,
+            "synthesis_gain_depth_pct": run.wisdom.synthesis_gain_depth_pct,
             "has_ablation_data": run.wisdom.synthesis_gain_depth_pct > 0,  # 有增益数据=有消融数据
             "total_reflections": run.evolution.total_reflections,
             "laws_with_enough_samples": run.evolution.laws_with_enough_samples,
