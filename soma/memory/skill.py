@@ -41,15 +41,16 @@ class SkillStore(BaseMemoryStore):
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_skill_created ON skills(created_at DESC)"
         )
-        self._conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_skill_user ON skills(user_id)"
-        )
+        # 先迁移列，再创建索引（旧数据库可能无 user_id 列）
         try:
             self._conn.execute(
                 "ALTER TABLE skills ADD COLUMN user_id TEXT NOT NULL DEFAULT ''"
             )
         except sqlite3.OperationalError:
             pass
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_skill_user ON skills(user_id)"
+        )
         self._create_fts5()
         self._conn.commit()
 
@@ -99,6 +100,14 @@ class SkillStore(BaseMemoryStore):
         context: Optional[Dict[str, Any]] = None,
         user_id: str = "",
     ) -> str:
+        # 去重检查：同用户 + 同名称 + 同模式不重复插入
+        existing = self._conn.execute(
+            "SELECT id FROM skills WHERE user_id = ? AND name = ? AND pattern = ? LIMIT 1",
+            (user_id, name, pattern),
+        ).fetchone()
+        if existing:
+            return existing["id"]
+
         skill_id = uuid.uuid4().hex
         now = datetime.now(timezone.utc).timestamp()
         context_json = json.dumps(context or {}, ensure_ascii=False)

@@ -77,8 +77,28 @@ pip install --upgrade git+https://github.com/sunyan999999/soma.git
 | FTS 双引号未转义 | 关键词中 `"` 转义为 `""`，防止 FTS5 语法损坏 |
 | skill.py 缺时间窗口 | 添加默认 90 天时间窗口 |
 | 异常静默吞没 | 添加 logging.error 记录完整 traceback |
+| 数据库迁移顺序错误 | ALTER TABLE 移到 CREATE INDEX 之前，旧库首次启动不再崩溃 |
+| 三元组/技能去重缺失 | add_triple / add_skill 添加去重检查，同 namespace/user 不重复插入 |
+| access_count 未持久化 | respond/chat 路径调用 increment_access，访问计数跨会话保留 |
+| Dash DevSidecar 代理拦截 | _http_get_json 绕过系统代理 + SSL 证书回退 |
+| Dash 认证流程断裂 | App.vue 调用 initAuth()，修复「请设置 X-API-Key」错误 |
+| SOMA_API_KEY 未设置 | 启动时自动生成随机密钥 + localhost 跳过认证 |
 
 仪表盘新增安全端点 `GET /api/auth/status` 供前端检测认证状态。
+
+### Pre-commit 验证脚本
+
+提交前运行 `python scripts/verify_before_commit.py` 自动执行 5 步 15 项检查：
+
+| 步骤 | 检查内容 |
+|------|----------|
+| 1. 全量单元测试 | 196 项 pytest |
+| 2. 数据隔离端到端 | 三库跨用户交叉查询 |
+| 3. 时间窗口行为 | opt-in 过滤 + 边界值 |
+| 4. LLM 缓存隔离 | user_id 缓存键唯一性 |
+| 5. 数据库迁移兼容 | 旧库 → 新代码自动迁移 |
+
+全部通过退出码 0，否则退出码 1。
 
 ### 验证升级
 

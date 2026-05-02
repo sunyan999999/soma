@@ -47,15 +47,16 @@ class SemanticStore(BaseMemoryStore):
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_semantic_object ON semantic_triples(object)"
         )
-        self._conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_semantic_namespace ON semantic_triples(namespace)"
-        )
+        # 先迁移列，再创建索引（旧数据库可能无 namespace 列）
         try:
             self._conn.execute(
                 "ALTER TABLE semantic_triples ADD COLUMN namespace TEXT NOT NULL DEFAULT ''"
             )
         except sqlite3.OperationalError:
             pass
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_semantic_namespace ON semantic_triples(namespace)"
+        )
         self._create_fts5()
         self._conn.commit()
 
@@ -118,8 +119,18 @@ class SemanticStore(BaseMemoryStore):
         confidence: float = 1.0,
         namespace: str = "",
     ) -> None:
-        """添加三元组并持久化到 SQLite"""
+        """添加三元组并持久化到 SQLite（同 namespace 内去重）"""
         import time
+
+        # 去重检查：同 namespace 内相同的 (subject, predicate, object) 不重复插入
+        existing = self._conn.execute(
+            "SELECT rowid FROM semantic_triples WHERE subject = ? AND predicate = ? "
+            "AND object = ? AND namespace = ? LIMIT 1",
+            (subject, predicate, object_, namespace),
+        ).fetchone()
+        if existing:
+            return
+
         self.graph.add_node(subject, type="concept")
         self.graph.add_node(object_, type="concept")
         self.graph.add_edge(
