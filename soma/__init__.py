@@ -99,7 +99,8 @@ class SOMA:
 
         try:
             answer = self._agent._call_llm(
-                self._agent._build_prompt(problem, foci, activated)
+                self._agent._build_prompt(problem, foci, activated),
+                user_id,
             )
         except Exception:
             _log.error(
@@ -110,6 +111,8 @@ class SOMA:
 
         for am in activated:
             am.memory.access_count += 1
+            if am.source == "episodic":
+                self._agent.memory.episodic.increment_access(am.memory.id)
         self._agent.evolver.set_current_context(foci, activated)
         self._session_count += 1
         self._agent.reflect(f"soma_{self._session_count}", "success")

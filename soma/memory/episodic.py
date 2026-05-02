@@ -200,7 +200,6 @@ class EpisodicStore(BaseMemoryStore):
         time_clause = ""
         time_params = []
         if max_age_days is not None:
-            import math
             min_ts = datetime.now(timezone.utc).timestamp() - max_age_days * 86400.0
             time_clause = "AND em.timestamp >= ?"
             time_params = [min_ts]

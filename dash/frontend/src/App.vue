@@ -3,7 +3,7 @@ import { ref, provide, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import LanguageSwitcher from './components/LanguageSwitcher.vue'
-import { api } from './api/index.js'
+import { api, initAuth } from './api/index.js'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -13,6 +13,8 @@ const somaVersion = ref('...')
 const communityStats = ref(null)
 
 onMounted(async () => {
+  // 先初始化认证：检查是否需要 API Key 并提示用户输入
+  await initAuth()
   try {
     const h = await api.health()
     somaVersion.value = h.version || 'unknown'
@@ -75,54 +77,58 @@ const navItems = computed(() => [
         </button>
       </nav>
       <!-- 社区统计 -->
-      <div v-if="communityStats?.github" class="sidebar-stats">
+      <div v-if="communityStats?.github || communityStats?.pypi" class="sidebar-stats">
         <div class="stats-title">📡 Community</div>
-        <div class="stat-row">
-          <span class="stat-icon">⭐</span>
-          <span class="stat-val">{{ communityStats.github.stars?.toLocaleString() || '...' }}</span>
-          <span class="stat-label">Stars</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-icon">🔀</span>
-          <span class="stat-val">{{ communityStats.github.forks?.toLocaleString() || '...' }}</span>
-          <span class="stat-label">Forks</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-icon">👁️</span>
-          <span class="stat-val">{{ communityStats.github.watchers?.toLocaleString() || '...' }}</span>
-          <span class="stat-label">Watchers</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-icon">👥</span>
-          <span class="stat-val">{{ communityStats.github.contributors?.toLocaleString() || '...' }}</span>
-          <span class="stat-label">Contributors</span>
-        </div>
-        <div class="stats-title" style="margin-top:12px;">📈 Traffic (14d)</div>
-        <div class="stat-row">
-          <span class="stat-icon">📥</span>
-          <span class="stat-val">{{ formatDownloads(communityStats.github.clones_count) }}</span>
-          <span class="stat-label">Clones</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-icon">🔄</span>
-          <span class="stat-val">{{ formatDownloads(communityStats.github.clones_uniques) }}</span>
-          <span class="stat-label">Unique cloners</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-icon">👀</span>
-          <span class="stat-val">{{ formatDownloads(communityStats.github.views_count) }}</span>
-          <span class="stat-label">Visitors</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-icon">🆕</span>
-          <span class="stat-val">{{ formatDownloads(communityStats.github.views_uniques) }}</span>
-          <span class="stat-label">Unique visitors</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-icon">📦</span>
-          <span class="stat-val">{{ formatDownloads(communityStats.pypi?.total_downloads) }}</span>
-          <span class="stat-label">PyPI</span>
-        </div>
+        <!-- GitHub 基础数据 -->
+        <template v-if="communityStats?.github">
+          <div class="stat-row">
+            <span class="stat-icon">⭐</span>
+            <span class="stat-val">{{ communityStats.github.stars?.toLocaleString() || '...' }}</span>
+            <span class="stat-label">Stars</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-icon">🔀</span>
+            <span class="stat-val">{{ communityStats.github.forks?.toLocaleString() || '...' }}</span>
+            <span class="stat-label">Forks</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-icon">👁️</span>
+            <span class="stat-val">{{ communityStats.github.watchers?.toLocaleString() || '...' }}</span>
+            <span class="stat-label">Watchers</span>
+          </div>
+          <!-- Traffic 需要 SOMA_GITHUB_TOKEN，无 Token 时不显示 -->
+          <template v-if="communityStats.github.clones_count !== undefined">
+            <div class="stats-title" style="margin-top:12px;">📈 Traffic (14d)</div>
+            <div class="stat-row">
+              <span class="stat-icon">📥</span>
+              <span class="stat-val">{{ formatDownloads(communityStats.github.clones_count) }}</span>
+              <span class="stat-label">Clones</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-icon">🔄</span>
+              <span class="stat-val">{{ formatDownloads(communityStats.github.clones_uniques) }}</span>
+              <span class="stat-label">Unique cloners</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-icon">👀</span>
+              <span class="stat-val">{{ formatDownloads(communityStats.github.views_count) }}</span>
+              <span class="stat-label">Visitors</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-icon">🆕</span>
+              <span class="stat-val">{{ formatDownloads(communityStats.github.views_uniques) }}</span>
+              <span class="stat-label">Unique visitors</span>
+            </div>
+          </template>
+        </template>
+        <!-- PyPI -->
+        <template v-if="communityStats?.pypi">
+          <div class="stat-row">
+            <span class="stat-icon">📦</span>
+            <span class="stat-val">{{ formatDownloads(communityStats.pypi.total_downloads) }}</span>
+            <span class="stat-label">PyPI Downloads</span>
+          </div>
+        </template>
       </div>
       <div style="margin-top:auto;padding:16px;color:var(--text-muted);font-size:0.75rem;">
         v{{ somaVersion }}

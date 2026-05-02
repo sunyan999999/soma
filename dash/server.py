@@ -39,15 +39,21 @@ app.add_middleware(
 # ── API Key 认证中间件 ──────────────────────────────────────────
 
 _SOMA_API_KEY = os.environ.get("SOMA_API_KEY", "").strip()
+if not _SOMA_API_KEY:
+    import secrets
+    _SOMA_API_KEY = secrets.token_hex(16)
+    print(f"\n{'='*60}\n  SOMA_API_KEY 未设置，已自动生成：\n  {_SOMA_API_KEY}\n{'='*60}\n", flush=True)
 _AUTH_ENABLED = bool(_SOMA_API_KEY)
-_AUTH_WHITELIST = {"/api/health", "/api/auth/status", "/docs", "/openapi.json", "/redoc"}
+_AUTH_WHITELIST = {"/api/health", "/api/auth/status", "/api/stats/community", "/docs", "/openapi.json", "/redoc"}
 
 
 @app.middleware("http")
 async def api_key_middleware(request: Request, call_next):
-    """验证 X-API-Key 请求头（若启用认证）"""
+    """验证 X-API-Key 请求头（若启用认证）。localhost/127.0.0.1 自动放行。"""
     path = request.url.path
-    if _AUTH_ENABLED and path.startswith("/api/") and path not in _AUTH_WHITELIST:
+    host = request.url.hostname or ""
+    is_local = host in ("127.0.0.1", "localhost", "::1")
+    if _AUTH_ENABLED and not is_local and path.startswith("/api/") and path not in _AUTH_WHITELIST:
         api_key = request.headers.get("X-API-Key", "")
         if api_key != _SOMA_API_KEY:
             return _json_response(
@@ -358,16 +364,31 @@ _GITHUB_TOKEN = os.environ.get("SOMA_GITHUB_TOKEN", "")
 
 
 def _http_get_json(url: str, auth_token: str = "") -> Optional[dict]:
-    """带超时的 HTTP GET JSON，可选 Bearer 认证"""
+    """带超时的 HTTP GET JSON，可选 Bearer 认证。
+
+    自动绕过系统代理（DevSidecar 等代理会篡改 HTTPS 导致 500），
+    SSL 证书问题自动回退到不验证模式。
+    """
+    import ssl
+
+    headers = {"User-Agent": "SOMA/0.4"}
+    if auth_token:
+        headers["Authorization"] = f"Bearer {auth_token}"
+    req = urllib.request.Request(url, headers=headers)
+
+    # 绕过系统代理（DevSidecar 等会拦截 GitHub API 并返回 500）
+    proxy_handler = urllib.request.ProxyHandler({})
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    opener = urllib.request.build_opener(proxy_handler)
+
     try:
-        headers = {"User-Agent": "SOMA/0.3"}
-        if auth_token:
-            headers["Authorization"] = f"Bearer {auth_token}"
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with opener.open(req, timeout=10) as resp:
             raw = resp.read().decode("utf-8")
             return _json.loads(raw)
-    except Exception:
+    except Exception as e:
+        print(f"[SOMA] HTTP GET {url[:60]} 失败: {e}", flush=True)
         return None
 
 
@@ -384,7 +405,10 @@ def _http_get_contributor_count(repo: str) -> int:
     """通过 GitHub API 获取贡献者总数（解析 Link 头）"""
     url = f"https://api.github.com/repos/{repo}/contributors?per_page=1&anon=true"
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "SOMA/0.3"})
+        headers = {"User-Agent": "SOMA/0.4"}
+        if _GITHUB_TOKEN:
+            headers["Authorization"] = f"Bearer {_GITHUB_TOKEN}"
+        req = urllib.request.Request(url, headers=headers)
         with urllib.request.urlopen(req, timeout=5) as resp:
             link_header = resp.headers.get("Link", "")
             raw = resp.read().decode("utf-8")
@@ -409,26 +433,31 @@ def community_stats():
     if cached and now - cached["_ts"] < _CACHE_TTL:
         return cached
 
-    result = {"_ts": now, "github": {}, "pypi": {}}
+    result = {"_ts": now, "github": None, "pypi": None}
 
-    # GitHub
-    gh = _http_get_json("https://api.github.com/repos/sunyan999999/soma")
+    # GitHub — 基本仓库信息（公开，传 Token 可提升限流至 5000次/小时）
+    gh = _http_get_json(
+        "https://api.github.com/repos/sunyan999999/soma",
+        auth_token=_GITHUB_TOKEN,
+    )
     if gh:
-        contributors = _http_get_contributor_count("sunyan999999/soma")
-        clones = _http_get_github_traffic("sunyan999999/soma", "clones")
-        views = _http_get_github_traffic("sunyan999999/soma", "views")
-        result["github"] = {
+        github_data = {
             "stars": gh.get("stargazers_count", 0),
             "forks": gh.get("forks_count", 0),
             "open_issues": gh.get("open_issues_count", 0),
             "watchers": gh.get("watchers_count", 0),
-            "contributors": contributors,
-            "clones_count": clones.get("count", 0),
-            "clones_uniques": clones.get("uniques", 0),
-            "views_count": views.get("count", 0),
-            "views_uniques": views.get("uniques", 0),
             "updated_at": gh.get("updated_at", ""),
         }
+        # Traffic API 需要认证 Token，无 Token 时跳过不影响基础数据显示
+        if _GITHUB_TOKEN:
+            github_data["contributors"] = _http_get_contributor_count("sunyan999999/soma")
+            clones = _http_get_github_traffic("sunyan999999/soma", "clones")
+            views = _http_get_github_traffic("sunyan999999/soma", "views")
+            github_data["clones_count"] = clones.get("count", 0)
+            github_data["clones_uniques"] = clones.get("uniques", 0)
+            github_data["views_count"] = views.get("count", 0)
+            github_data["views_uniques"] = views.get("uniques", 0)
+        result["github"] = github_data
 
     # PyPI
     pypi = _http_get_json("https://pypi.org/pypi/soma-wisdom/json")
@@ -447,9 +476,12 @@ def community_stats():
         for entry in pypi_stats.get("data", []):
             if entry.get("category") == "with_mirrors":
                 downloads = max(downloads, entry.get("downloads", 0))
-        result["pypi"]["total_downloads"] = downloads
+        if result["pypi"]:
+            result["pypi"]["total_downloads"] = downloads
 
-    _COMMUNITY_CACHE["community"] = result
+    # 仅缓存有效数据，空数据不缓存以允许重试
+    if result["github"] or result["pypi"]:
+        _COMMUNITY_CACHE["community"] = result
     return result
 
 

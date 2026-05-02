@@ -8,6 +8,11 @@ let API_KEY = sessionStorage.getItem('soma_api_key') || ''
  * 返回 true 表示已认证或无需认证，false 表示需要认证但用户未提供
  */
 export async function initAuth() {
+  // localhost 自动放行（服务端跳过认证）
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return true
+  }
+
   try {
     const res = await fetch(BASE + '/auth/status')
     const data = await res.json()
@@ -17,7 +22,7 @@ export async function initAuth() {
     if (API_KEY) return true
 
     // 弹出输入框
-    API_KEY = prompt('此仪表盘已启用 API Key 认证，请输入 Key：') || ''
+    API_KEY = prompt('此仪表盘已启用 API Key 认证，请输入 Key：\n（请联系管理员获取）') || ''
     if (API_KEY) {
       sessionStorage.setItem('soma_api_key', API_KEY)
       return true

@@ -76,9 +76,11 @@ class SOMA_Agent:
         # Step 4: 调用 LLM
         answer = self._call_llm(prompt, user_id)
 
-        # Step 5: 更新访问计数
+        # Step 5: 更新访问计数（Python 对象 + 数据库持久化）
         for am in activated:
             am.memory.access_count += 1
+            if am.source == "episodic":
+                self.memory.episodic.increment_access(am.memory.id)
 
         # Step 6: 写入进化器上下文
         self.evolver.set_current_context(foci, activated)

@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **时间衰减修复**: 近因衰减公式从 `1/(1+days)` 改为 `exp(-days/7)` 指数衰减（半衰期7天）；召回增加30天时间窗口过滤；RRF 融合施加时间惩罚因子
 - **数据隔离测试**: 新增 `test_isolation.py`（10个用例）覆盖三库 user_id/namespace 隔离 + 去重 + LIKE兜底路径
 - **时间窗口测试**: 新增 `test_time_window.py`（11个用例）覆盖三库 max_age_days 过滤 + 边界值 + 自定义参数
+- **审计修复回归测试**: 新增 `test_audit_fixes.py`（13个用例）覆盖 LLM 缓存隔离 / access_count 持久化 / 三元组去重 / 技能去重 / 数据库迁移兼容
+- **Pre-commit 验证脚本**: 新增 `scripts/verify_before_commit.py`（5步 15项检查）包含全量测试 + 数据隔离端到端 + 时间窗口 + 缓存隔离 + 迁移兼容性，退出码 0=通过
 
 ### Fixed
 - **时间错乱**: 记忆检索不会再将7天前的事件以相近权重混入今日回复（30天外记忆权重<2%）
@@ -36,6 +38,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **FTS 双引号未转义**: 三库 FTS5 查询关键词中的 `"` 正确转义为 `""`，防止语法损坏
 - **skill.py 缺时间窗口**: 添加默认 90 天时间窗口过滤
 - **异常静默吞没**: `__init__.py` 的 `except Exception` 添加 `logging.error` 记录完整 traceback
+- **Dash DevSidecar 代理拦截**: `_http_get_json()` 绕过系统代理 + SSL 证书回退，修复 GitHub API 返回 500 错误
+- **Dash 认证流程断裂**: App.vue `onMounted` 中调用 `initAuth()`，修复「请设置 X-API-Key」错误
+- **API Key 自动生成**: 未设置 `SOMA_API_KEY` 时自动生成随机密钥 (`secrets.token_hex(16)`) 并打印控制台、localhost 自动跳过认证
+- **三元组/技能去重缺失**: semantic `add_triple()` 和 skill `add_skill()` 添加去重检查，同 namespace/user_id 内相同内容不重复插入
+- **access_count 未持久化**: `respond()` 和 `chat()` 路径调用 `increment_access()`，访问计数正确写入 SQLite 并跨会话保留
+- **数据库迁移顺序**: ALTER TABLE 添加列移到 CREATE INDEX 之前，修复旧数据库首次启动崩溃
 
 ---
 ## [0.3.3b2] — 2026-05-01
