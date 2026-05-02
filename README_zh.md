@@ -8,11 +8,10 @@
 <p align="center">
   <a href="https://github.com/sunyan999999/soma"><img src="https://img.shields.io/github/stars/sunyan999999/soma?style=social" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-0.3.1b1-orange" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-0.4.1-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/python-3.10%2B-green" alt="Python"></a>
   <a href="#基准测试"><img src="https://img.shields.io/badge/语义召回-100%25-brightgreen" alt="语义召回率"></a>
-  <a href="#基准测试"><img src="https://img.shields.io/badge/查询延迟-5.4ms-brightgreen" alt="延迟"></a>
-  <a href="#基准测试"><img src="https://img.shields.io/badge/综合评分-89-brightgreen" alt="综合评分"></a>
+  <a href="#基准测试"><img src="https://img.shields.io/badge/综合评分-80-brightgreen" alt="综合评分"></a>
   <a href="#"><img src="https://img.shields.io/badge/测试-139-brightgreen" alt="测试"></a>
   <a href="#"><img src="https://img.shields.io/badge/覆盖率-~97%25-brightgreen" alt="覆盖率"></a>
 </p>
@@ -26,7 +25,7 @@
 📖 **[English README](README.md)** | **[文档](docs/)** | **[贡献指南](CONTRIBUTING.md)** | **[变更日志](CHANGELOG.md)**
 
 <p align="center">
-  <img src="docs/images/demo-pipeline.gif" alt="SOMA Pipeline Demo" width="720">
+  <img src="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/demo-pipeline.gif" alt="SOMA Pipeline Demo" width="720">
 </p>
 
 ## ⚡ 五分钟接入
@@ -75,23 +74,40 @@ print(answer)
 
 ## 仪表盘界面
 
-SOMA 自带 Vue 3 仪表盘（支持中英文切换）。启动 API 服务后打开 `http://localhost:8765`：
+## 截图展示
+
+<p align="center">
+  <strong>🧠 智者对话</strong> &nbsp;·&nbsp; <strong>📊 五维基准</strong> &nbsp;·&nbsp; <strong>💻 IDE 集成</strong> &nbsp;·&nbsp; <strong>🔌 REST API</strong>
+</p>
+
+<table>
+<tr>
+<td width="50%"><a href="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/screenshot-chat.jpeg"><img src="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/screenshot-chat.jpeg" alt="SOMA 智者对话 — ChatView" width="100%"></a></td>
+<td width="50%"><a href="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/screenshot-benchmark.jpeg"><img src="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/screenshot-benchmark.jpeg" alt="SOMA 五维基准 — BenchmarkView" width="100%"></a></td>
+</tr>
+<tr>
+<td align="center"><b>智者对话</b> — 7条规律分解问题，双向记忆激活，LLM 流式响应</td>
+<td align="center"><b>五维基准雷达图</b> — 记忆/智慧/进化/伸缩/综合，竞品实时对比</td>
+</tr>
+<tr>
+<td width="50%"><a href="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/screenshot-ide.jpeg"><img src="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/screenshot-ide.jpeg" alt="SOMA IDE 集成 — Claude Code" width="100%"></a></td>
+<td width="50%"><a href="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/screenshot-api.jpeg"><img src="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/screenshot-api.jpeg" alt="SOMA REST API — 接口文档" width="100%"></a></td>
+</tr>
+<tr>
+<td align="center"><b>IDE 集成</b> — Claude Code / VS Code 一键接入，记忆自动持久化</td>
+<td align="center"><b>REST API</b> — FastAPI + SSE 流式，多模型管理，API Key 认证</td>
+</tr>
+</table>
+
+## 仪表盘
+
+启动 API 服务后打开 `http://localhost:8765`：
 
 ```bash
 SOMA_API_KEY=test python dash/server.py
 ```
 
-| 智慧对话 | 思维框架 | 记忆资粮 |
-|:---:|:---:|:---:|
-| [![智慧对话](docs/images/screenshot-chat.png)](docs/images/screenshot-chat.png) | [![思维框架](docs/images/screenshot-framework.png)](docs/images/screenshot-framework.png) | [![记忆资粮](docs/images/screenshot-memory.png)](docs/images/screenshot-memory.png) |
-| **智者深度对话** — 拆解→激活→合成 | **7 条思维规律** — 实时权重，手动/自动调权 | **记忆库** — 语义搜索，双向激活 |
-
-| 分析看板 | 基准测试 | 设置 |
-|:---:|:---:|:---:|
-| [![分析看板](docs/images/screenshot-analytics.png)](docs/images/screenshot-analytics.png) | [![基准测试](docs/images/screenshot-benchmarks.png)](docs/images/screenshot-benchmarks.png) | [![设置](docs/images/screenshot-settings.png)](docs/images/screenshot-settings.png) |
-| **使用分析** — 会话历史、权重演变、维度趋势 | **三维基准** — 记忆/智慧/进化评分 + 竞品对比 | **LLM 配置** — 多提供商、API Key、模型选择 |
-
-> 🇬🇧 [英文版界面](docs/images/screenshot-chat-en.png)
+Vue 3 仪表盘，支持中英文切换，6 个视图：智慧对话 · 思维框架 · 记忆资粮 · 分析看板 · 基准测试 · 设置。
 
 ## 安装
 

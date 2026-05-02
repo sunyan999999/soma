@@ -8,11 +8,10 @@
 <p align="center">
   <a href="https://github.com/sunyan999999/soma"><img src="https://img.shields.io/github/stars/sunyan999999/soma?style=social" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-0.4.0-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-0.4.1-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/python-3.10%2B-green" alt="Python"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/semantic_recall-100%25-brightgreen" alt="Semantic Recall"></a>
-  <a href="#benchmarks"><img src="https://img.shields.io/badge/query_latency-5.4ms-brightgreen" alt="Latency"></a>
-  <a href="#benchmarks"><img src="https://img.shields.io/badge/overall_score-89-brightgreen" alt="Overall Score"></a>
+  <a href="#benchmarks"><img src="https://img.shields.io/badge/overall_score-80-brightgreen" alt="Overall Score"></a>
   <a href="#"><img src="https://img.shields.io/badge/tests-139-brightgreen" alt="Tests"></a>
   <a href="#"><img src="https://img.shields.io/badge/coverage-~97%25-brightgreen" alt="Coverage"></a>
   <a href="https://codecov.io/gh/sunyan999999/soma"><img src="https://codecov.io/gh/sunyan999999/soma/branch/main/graph/badge.svg" alt="Codecov"></a>
@@ -27,7 +26,7 @@
 📖 **[中文文档](README_zh.md)** | **[Documentation](docs/)** | **[Contributing](CONTRIBUTING.md)** | **[Changelog](CHANGELOG.md)**
 
 <p align="center">
-  <img src="docs/images/demo-pipeline.gif" alt="SOMA Pipeline Demo" width="720">
+  <img src="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/demo-pipeline.gif" alt="SOMA Pipeline Demo" width="720">
 </p>
 
 ## ⚡ Five-Minute Integration
@@ -74,25 +73,40 @@ Four-Step Wisdom Pipeline:
   Problem → Decompose → Activate → Synthesize → Evolve
 ```
 
+## Screenshots
+
+<p align="center">
+  <strong>🧠 Wisdom Chat</strong> &nbsp;·&nbsp; <strong>📊 5D Benchmark</strong> &nbsp;·&nbsp; <strong>💻 IDE Integration</strong> &nbsp;·&nbsp; <strong>🔌 REST API</strong>
+</p>
+
+<table>
+<tr>
+<td width="50%"><a href="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/screenshot-chat.jpeg"><img src="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/screenshot-chat.jpeg" alt="SOMA ChatView — 智者对话" width="100%"></a></td>
+<td width="50%"><a href="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/screenshot-benchmark.jpeg"><img src="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/screenshot-benchmark.jpeg" alt="SOMA BenchmarkView — 五维基准雷达图" width="100%"></a></td>
+</tr>
+<tr>
+<td align="center"><b>Wisdom Chat</b> — 7条规律分解问题，双向记忆激活，LLM流式响应</td>
+<td align="center"><b>5D Benchmark</b> — 记忆/智慧/进化/伸缩/综合，竞品实时对比</td>
+</tr>
+<tr>
+<td width="50%"><a href="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/screenshot-ide.jpeg"><img src="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/screenshot-ide.jpeg" alt="SOMA IDE Integration — Claude Code 集成" width="100%"></a></td>
+<td width="50%"><a href="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/screenshot-api.jpeg"><img src="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/screenshot-api.jpeg" alt="SOMA REST API — 完整接口文档" width="100%"></a></td>
+</tr>
+<tr>
+<td align="center"><b>IDE Integration</b> — Claude Code / VS Code 一键接入，记忆自动持久化</td>
+<td align="center"><b>REST API</b> — FastAPI + SSE 流式，多模型管理，API Key 认证</td>
+</tr>
+</table>
+
 ## Dashboard
 
-SOMA ships with a Vue 3 dashboard (i18n: English / Chinese). Start the API server and open `http://localhost:8765`:
+Start the API server and open `http://localhost:8765`:
 
 ```bash
 SOMA_API_KEY=test python dash/server.py
 ```
 
-| Chat | Framework | Memory |
-|:---:|:---:|:---:|
-| [![Chat](docs/images/screenshot-chat.png)](docs/images/screenshot-chat.png) | [![Framework](docs/images/screenshot-framework.png)](docs/images/screenshot-framework.png) | [![Memory](docs/images/screenshot-memory.png)](docs/images/screenshot-memory.png) |
-| **Wisdom-driven conversation** — decompose → activate → synthesize | **7 thinking laws** — live weights, manual & auto adjustment | **Memory bank** — semantic search, bidirectional activation |
-
-| Analytics | Benchmarks | Settings |
-|:---:|:---:|:---:|
-| [![Analytics](docs/images/screenshot-analytics.png)](docs/images/screenshot-analytics.png) | [![Benchmarks](docs/images/screenshot-benchmarks.png)](docs/images/screenshot-benchmarks.png) | [![Settings](docs/images/screenshot-settings.png)](docs/images/screenshot-settings.png) |
-| **Usage analytics** — session history, weight evolution, dimension trends | **3D benchmarks** — memory, wisdom, evolution scores + competitor compare | **LLM config** — multi-provider, API key, model selector |
-
-> 🇬🇧 [English UI](docs/images/screenshot-chat-en.png)
+Vue 3 dashboard with i18n (English / 中文), 6 views: Chat · Framework · Memory · Analytics · Benchmark · Settings.
 
 ## Installation
 

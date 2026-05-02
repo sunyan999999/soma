@@ -88,7 +88,10 @@ def _use_mock() -> bool:
     pm = get_provider_manager()
     return not bool(pm.get_current().get("api_key", ""))
 
-_DATA_DIR = Path(os.environ.get("SOMA_DATA_DIR", "soma_data"))
+_DATA_DIR = Path(os.environ.get(
+    "SOMA_DATA_DIR",
+    str(Path(__file__).resolve().parent.parent / "soma_data")
+))
 _analytics: Optional[AnalyticsStore] = None
 
 def _get_analytics() -> AnalyticsStore:
@@ -354,6 +357,7 @@ def auth_status():
 
 import urllib.request
 import urllib.error
+import ssl
 from functools import lru_cache
 
 _COMMUNITY_CACHE = {}
@@ -369,8 +373,6 @@ def _http_get_json(url: str, auth_token: str = "") -> Optional[dict]:
     自动绕过系统代理（DevSidecar 等代理会篡改 HTTPS 导致 500），
     SSL 证书问题自动回退到不验证模式。
     """
-    import ssl
-
     headers = {"User-Agent": "SOMA/0.4"}
     if auth_token:
         headers["Authorization"] = f"Bearer {auth_token}"
@@ -409,7 +411,13 @@ def _http_get_contributor_count(repo: str) -> int:
         if _GITHUB_TOKEN:
             headers["Authorization"] = f"Bearer {_GITHUB_TOKEN}"
         req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        # 绕过系统代理（DevSidecar）+ SSL 回退，与 _http_get_json 一致
+        proxy_handler = urllib.request.ProxyHandler({})
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        opener = urllib.request.build_opener(proxy_handler)
+        with opener.open(req, timeout=10) as resp:
             link_header = resp.headers.get("Link", "")
             raw = resp.read().decode("utf-8")
         # Link 头格式: <url?page=2>; rel="next", <url?page=N>; rel="last"
