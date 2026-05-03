@@ -1,3 +1,4 @@
+import logging
 import os
 import sqlite3
 from pathlib import Path
@@ -7,6 +8,8 @@ import networkx as nx
 
 from soma.abc import BaseMemoryStore
 from soma.base import MemoryUnit
+
+_log = logging.getLogger("soma.memory.semantic")
 
 
 class SemanticStore(BaseMemoryStore):
@@ -204,7 +207,7 @@ class SemanticStore(BaseMemoryStore):
                             )
                         )
             except sqlite3.OperationalError:
-                pass
+                _log.info("语义 FTS5 搜索语法错误，降级到 LIKE 搜索")
 
         # 路径2: LIKE 兜底（短关键词，SQLite 查询确保 namespace 过滤正确）
         like_keywords = [kw for kw in keywords if len(kw) < 3]

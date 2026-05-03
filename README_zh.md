@@ -12,7 +12,7 @@
   <a href="#"><img src="https://img.shields.io/badge/python-3.10%2B-green" alt="Python"></a>
   <a href="#基准测试"><img src="https://img.shields.io/badge/语义召回-100%25-brightgreen" alt="语义召回率"></a>
   <a href="#基准测试"><img src="https://img.shields.io/badge/综合评分-80-brightgreen" alt="综合评分"></a>
-  <a href="#"><img src="https://img.shields.io/badge/测试-139-brightgreen" alt="测试"></a>
+  <a href="#"><img src="https://img.shields.io/badge/测试-196-brightgreen" alt="测试"></a>
   <a href="#"><img src="https://img.shields.io/badge/覆盖率-~97%25-brightgreen" alt="覆盖率"></a>
 </p>
 
@@ -279,7 +279,7 @@ git clone https://github.com/soma-project/soma-core.git
 cd soma-core
 pip install -e ".[dev]"
 
-pytest -v --cov=soma --cov-report=term    # 139 测试，~97% 覆盖率
+pytest -v --cov=soma --cov-report=term    # 196 测试，~97% 覆盖率
 
 python -m soma                              # 快速验证
 
@@ -318,7 +318,7 @@ soma-core/
 │   ├── providers.py       # LLM 提供商管理
 │   └── frontend/          # Vue 3 仪表盘界面（中英文切换）
 ├── docs/                  # 文档（中英双语）
-├── tests/                 # 139 测试，~97% 覆盖率
+├── tests/                 # 196 测试，~97% 覆盖率
 ├── examples/              # 使用示例
 └── pyproject.toml         # 构建配置
 ```

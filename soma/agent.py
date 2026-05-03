@@ -269,6 +269,17 @@ class SOMA_Agent:
         """暴露思维拆解结果（供可视化和调试）"""
         return self.engine.decompose(problem)
 
+    def close(self) -> None:
+        """关闭所有子组件连接（memory + evolver）"""
+        self.memory.close()
+        self.evolver.close()
+
+    def __enter__(self) -> "SOMA_Agent":
+        return self
+
+    def __exit__(self, *args) -> None:
+        self.close()
+
     def reflect(self, task_id: str, outcome: str) -> None:
         """元认知反思"""
         self.evolver.reflect(task_id, outcome)

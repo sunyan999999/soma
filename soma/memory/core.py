@@ -173,6 +173,18 @@ class MemoryCore:
 
         return activated
 
+    def close(self) -> None:
+        """关闭所有子存储的连接"""
+        self.episodic.close()
+        self.semantic.close()
+        self.skill.close()
+
+    def __enter__(self) -> "MemoryCore":
+        return self
+
+    def __exit__(self, *args) -> None:
+        self.close()
+
     def stats(self) -> Dict[str, int]:
         return {
             "episodic": self.episodic.count(),

@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 # 近因衰减半衰期（天）：7天后权重衰减至 50%，14天后 25%，30天后 <5%
+# 与记忆查询的默认30天时间窗口配合 —— 半衰期针对"短期相关性"，时间窗口负责硬截断
 _RECENCY_HALF_LIFE_DAYS = 7.0
 
 

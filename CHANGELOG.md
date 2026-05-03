@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **时间窗口测试**: 新增 `test_time_window.py`（11个用例）覆盖三库 max_age_days 过滤 + 边界值 + 自定义参数
 - **审计修复回归测试**: 新增 `test_audit_fixes.py`（13个用例）覆盖 LLM 缓存隔离 / access_count 持久化 / 三元组去重 / 技能去重 / 数据库迁移兼容
 - **Pre-commit 验证脚本**: 新增 `scripts/verify_before_commit.py`（5步 15项检查）包含全量测试 + 数据隔离端到端 + 时间窗口 + 缓存隔离 + 迁移兼容性，退出码 0=通过
+- **资源管理 close()**: MemoryCore / SOMA_Agent / SOMA 三层添加 `close()` 方法和 context manager 支持（`__enter__`/`__exit__`），SQLite 连接可显式释放
+- **日志补齐**: 嵌入向量生成失败 → `logging.warning`；三库 FTS5 降级 LIKE → `logging.info`，生产环境可观测
+- **配置清理**: `episodic_persist_dir` 默认值从 `chroma_data` 改为 `soma_data`；`base.py` 增加 `_RECENCY_HALF_LIFE_DAYS` 与时间窗口关系的注释
+- **输入验证加固**: `ChatRequest.problem` 添加 `max_length=10000`；`ProviderUpdateRequest.base_url` 改为 `HttpUrl` 类型；`ReflectRequest.outcome` 改为 `Literal` 枚举
 
 ### Fixed
 - **时间错乱**: 记忆检索不会再将7天前的事件以相近权重混入今日回复（30天外记忆权重<2%）

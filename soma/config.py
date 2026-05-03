@@ -28,7 +28,7 @@ class SOMAConfig(BaseModel):
     """SOMA 顶层配置"""
 
     framework_path: Optional[Path] = None
-    episodic_persist_dir: Path = Path("chroma_data")
+    episodic_persist_dir: Path = Path("soma_data")
     llm_model: str = "deepseek-chat"
     default_top_k: int = 5
     recall_threshold: float = 0.3

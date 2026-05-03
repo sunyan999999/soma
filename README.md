@@ -12,7 +12,7 @@
   <a href="#"><img src="https://img.shields.io/badge/python-3.10%2B-green" alt="Python"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/semantic_recall-100%25-brightgreen" alt="Semantic Recall"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/overall_score-80-brightgreen" alt="Overall Score"></a>
-  <a href="#"><img src="https://img.shields.io/badge/tests-139-brightgreen" alt="Tests"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-196-brightgreen" alt="Tests"></a>
   <a href="#"><img src="https://img.shields.io/badge/coverage-~97%25-brightgreen" alt="Coverage"></a>
   <a href="https://codecov.io/gh/sunyan999999/soma"><img src="https://codecov.io/gh/sunyan999999/soma/branch/main/graph/badge.svg" alt="Codecov"></a>
 </p>
@@ -323,7 +323,7 @@ git clone https://github.com/soma-project/soma-core.git
 cd soma-core
 pip install -e ".[dev]"
 
-pytest -v --cov=soma --cov-report=term    # 139 tests, ~97% coverage
+pytest -v --cov=soma --cov-report=term    # 196 tests, ~97% coverage
 
 python -m soma                              # quickstart verification
 
@@ -362,7 +362,7 @@ soma-core/
 │   ├── providers.py       # LLM provider manager
 │   └── frontend/          # Vue 3 dashboard UI (i18n: EN/ZH)
 ├── docs/                  # Documentation (EN + ZH bilingual)
-├── tests/                 # 139 tests, ~97% coverage
+├── tests/                 # 196 tests, ~97% coverage
 ├── examples/              # Usage examples
 └── pyproject.toml         # Build config
 ```

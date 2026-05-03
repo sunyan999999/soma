@@ -210,6 +210,16 @@ class SOMA:
             candidate, embedder=self._agent.embedder,
         )
 
+    def close(self) -> None:
+        """关闭底层 agent 及所有子组件连接"""
+        self._agent.close()
+
+    def __enter__(self) -> "SOMA":
+        return self
+
+    def __exit__(self, *args) -> None:
+        self.close()
+
     @property
     def stats(self) -> dict:
         return self._agent.memory.stats()

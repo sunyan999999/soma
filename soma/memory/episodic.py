@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 import sqlite3
 import uuid
 from datetime import datetime, timezone
@@ -8,6 +9,8 @@ from typing import Any, Dict, List, Optional
 
 from soma.abc import BaseMemoryStore
 from soma.base import MemoryUnit
+
+_log = logging.getLogger("soma.memory.episodic")
 
 
 class EpisodicStore(BaseMemoryStore):
@@ -175,7 +178,7 @@ class EpisodicStore(BaseMemoryStore):
                 vec = self._embedder.encode(content)
                 self._vector_index.store_vector(self._conn, memory_id, vec)
             except Exception:
-                pass  # 嵌入失败不阻塞记忆存储
+                _log.warning("嵌入向量生成失败，memory_id=%s，记忆已存储但无法语义搜索", memory_id)
 
         return memory_id
 
@@ -229,7 +232,7 @@ class EpisodicStore(BaseMemoryStore):
                         seen_ids.add(mem.id)
                         memories.append(mem)
             except sqlite3.OperationalError:
-                pass  # FTS 语法错误时退回到 LIKE
+                _log.info("FTS5 搜索语法错误，降级到 LIKE 搜索")
 
         # 路径2: LIKE 兜底（短关键词 1-2 字）
         remaining = top_k - len(memories)

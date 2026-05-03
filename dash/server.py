@@ -9,13 +9,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator, Literal, Optional
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl
 
 from soma.config import SOMAConfig, load_config
 from soma.agent import SOMA_Agent
@@ -288,7 +288,7 @@ def call_llm(prompt: str, provider: dict) -> str:
 # ── Request Models ────────────────────────────────────────────
 
 class ChatRequest(BaseModel):
-    problem: str
+    problem: str = Field(max_length=10000)
 
 
 class MemoryAddRequest(BaseModel):
@@ -322,13 +322,15 @@ class ProviderUpdateRequest(BaseModel):
     provider_id: str
     api_key: Optional[str] = None
     model: Optional[str] = None
-    base_url: Optional[str] = None
+    base_url: Optional[HttpUrl] = None
 
 
 class ReflectRequest(BaseModel):
     """反馈闭环：用户对某次分析的评价"""
     session_id: str
-    outcome: str = Field(description="success / failure / helpful / misleading")
+    outcome: Literal["success", "failure", "helpful", "misleading"] = Field(
+        description="success / failure / helpful / misleading"
+    )
     note: Optional[str] = Field(default=None, description="用户补充说明")
 
 

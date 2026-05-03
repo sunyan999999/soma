@@ -1,4 +1,5 @@
 import json
+import logging
 import sqlite3
 import uuid
 from datetime import datetime, timezone
@@ -7,6 +8,8 @@ from typing import Any, Dict, List, Optional
 
 from soma.abc import BaseMemoryStore
 from soma.base import MemoryUnit
+
+_log = logging.getLogger("soma.memory.skill")
 
 
 class SkillStore(BaseMemoryStore):
@@ -188,7 +191,7 @@ class SkillStore(BaseMemoryStore):
                             )
                         )
             except sqlite3.OperationalError:
-                pass
+                _log.info("技能 FTS5 搜索语法错误，降级到 LIKE 搜索")
 
         # LIKE 兜底（短关键词 1-2 字）
         remaining = top_k - len(memories)
