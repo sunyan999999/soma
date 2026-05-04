@@ -78,6 +78,7 @@ class SOMA:
 
     def respond(self, problem: str, user_id: str = "") -> str:
         """完整智者管道：拆解→激活→合成→反思→进化检测"""
+        mock_fallback = False
         try:
             answer = self._agent.respond(problem, user_id=user_id)
         except Exception:
@@ -86,16 +87,40 @@ class SOMA:
                 traceback.format_exc(),
             )
             answer = self._mock_respond(problem)
+            mock_fallback = True
         self._session_count += 1
-        self._agent.reflect(f"soma_{self._session_count}", "success")
+        outcome = "failure" if mock_fallback else "success"
+        self._agent.reflect(f"soma_{self._session_count}", outcome)
         if self._session_count > 0 and self._session_count % 10 == 0:
             self._agent.evolver.evolve()
         return answer
 
     def chat(self, problem: str, user_id: str = "") -> dict:
         """完整对话接口，返回结构化结果（供 API / Agent 使用）"""
+        complexity = self._agent._assess_complexity(problem)
         foci = self._agent.decompose(problem)
-        activated = self._agent.hub.activate(foci, user_id=user_id)
+        if complexity == 1 and len(foci) > 2:
+            foci = foci[:2]
+
+        original_top_k = self._agent.hub.top_k
+        if complexity == 3:
+            self._agent.hub.top_k = min(original_top_k * 2, 15)
+        elif complexity == 1:
+            self._agent.hub.top_k = max(original_top_k // 2, 2)
+        try:
+            activated = self._agent.hub.activate(foci, user_id=user_id)
+        finally:
+            self._agent.hub.top_k = original_top_k
+
+        # 确认偏误检测
+        if complexity >= 2:
+            self._agent._last_anti_memories = self._agent.hub.anti_confirmation_search(
+                foci, user_id=user_id,
+            )
+        else:
+            self._agent._last_anti_memories = []
+
+        mock_fallback = False
 
         try:
             answer = self._agent._call_llm(
@@ -108,6 +133,7 @@ class SOMA:
                 traceback.format_exc(),
             )
             answer = self._mock_respond(problem, foci, activated)
+            mock_fallback = True
 
         for am in activated:
             am.memory.access_count += 1
@@ -115,7 +141,8 @@ class SOMA:
                 self._agent.memory.episodic.increment_access(am.memory.id)
         self._agent.evolver.set_current_context(foci, activated)
         self._session_count += 1
-        self._agent.reflect(f"soma_{self._session_count}", "success")
+        outcome = "failure" if mock_fallback else "success"
+        self._agent.reflect(f"soma_{self._session_count}", outcome)
         if self._session_count > 0 and self._session_count % 10 == 0:
             self._agent.evolver.evolve()
 

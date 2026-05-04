@@ -180,8 +180,47 @@ class MetaEvolver:
     # ── 自动进化 ────────────────────────────────────────────
 
     def evolve(self) -> List[Dict[str, Any]]:
-        changes = []
+        changes: List[Dict[str, Any]] = []
 
+        # ── 阶段0: 偏差检测与纠正 ─────────────────────────────
+        total_uses = sum(
+            (s["successes"] + s["failures"]) for s in self._law_stats.values()
+        )
+        if total_uses >= 20:
+            for law_id, stats in self._law_stats.items():
+                usage = stats["successes"] + stats["failures"]
+                usage_rate = usage / total_uses if total_uses > 0 else 0
+
+                for law in self.engine.laws:
+                    if law.id != law_id:
+                        continue
+                    old = law.weight
+
+                    if usage_rate > 0.40 and old > 0.20:
+                        # 过度使用 → 降权
+                        law.weight = round(max(0.1, old - 0.05), 4)
+                        changes.append({
+                            "law_id": law_id,
+                            "old_weight": round(old, 4),
+                            "new_weight": round(law.weight, 4),
+                            "reason": "偏差纠正：使用频率过高",
+                            "usage_rate": round(usage_rate, 3),
+                        })
+                    elif usage_rate < 0.03 and stats["total"] >= 3:
+                        rate = stats["successes"] / stats["total"] if stats["total"] > 0 else 0
+                        if rate > 0.6 and old < 0.90:
+                            # 很少使用但效果好的规律 → 提权
+                            law.weight = round(min(0.95, old + 0.03), 4)
+                            changes.append({
+                                "law_id": law_id,
+                                "old_weight": round(old, 4),
+                                "new_weight": round(law.weight, 4),
+                                "reason": "偏差纠正：优质规律使用不足",
+                                "usage_rate": round(usage_rate, 3),
+                            })
+                    break
+
+        # ── 阶段1: 成功率驱动的自动调权 ──────────────────────
         for law_id, stats in list(self._law_stats.items()):
             total = stats["successes"] + stats["failures"]
             if total < 3:
@@ -192,10 +231,11 @@ class MetaEvolver:
             for law in self.engine.laws:
                 if law.id == law_id:
                     old = law.weight
+                    step = self._calc_step(total)
                     if rate > 0.7:
-                        law.weight = min(1.0, old + 0.02)
+                        law.weight = min(1.0, old + step)
                     elif rate < 0.3:
-                        law.weight = max(0.0, old - 0.02)
+                        law.weight = max(0.0, old - step)
 
                     if law.weight != old:
                         changes.append({
@@ -220,9 +260,16 @@ class MetaEvolver:
             self.engine.laws.sort(key=lambda law: law.weight, reverse=True)
             self._save_weights()
 
-        the_changes: List[Dict[str, Any]] = changes
         solidified = self._solidify_skills()
-        return the_changes + solidified
+        return changes + solidified
+
+    def _calc_step(self, total_samples: int) -> float:
+        """基于样本量动态计算权重调整步长"""
+        if total_samples >= 15:
+            return 0.03
+        elif total_samples >= 5:
+            return 0.02
+        return 0.01
 
     def discover_laws(self, embedder=None, llm_model: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """尝试从高关联记忆中发现新规律。

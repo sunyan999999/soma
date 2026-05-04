@@ -36,6 +36,10 @@ class SOMAConfig(BaseModel):
     # 自适应参数开关（v0.3.2+）
     adaptive_params: bool = True  # 根据数据量自动调整 top_k/threshold
 
+    # LLM 调用缓存（v0.5.0+）
+    llm_cache_ttl: int = 600  # 缓存有效期（秒），默认10分钟
+    llm_cache_max_size: int = 50  # 最大缓存条目数
+
     # 嵌入模型配置（Alpha 新增）
     embedding_model_name: str = "BAAI/bge-small-zh-v1.5"
     use_vector_search: bool = True

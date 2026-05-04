@@ -21,14 +21,14 @@ class SOMA_Agent:
     def __init__(self, config: SOMAConfig):
         self.config = config
 
-        # 加载思维框架
-        framework = config.framework or load_config(config.framework_path)
-        self.engine = WisdomEngine(framework)
-
-        # 嵌入器（Alpha 新增）
+        # 嵌入器（需在引擎之前创建，供语义匹配兜底使用）
         self.embedder = None
         if config.use_vector_search:
             self.embedder = SOMAEmbedder(config)
+
+        # 加载思维框架
+        framework = config.framework or load_config(config.framework_path)
+        self.engine = WisdomEngine(framework, embedder=self.embedder)
 
         # 记忆核心
         self.memory = MemoryCore(config, embedder=self.embedder)
@@ -59,16 +59,40 @@ class SOMA_Agent:
 
         # 保存最近一次构建的 prompt（供仪表盘可视化）
         self._last_prompt: str = ""
+        # 保存最近一次反视角搜索结果（供 _build_prompt 使用）
+        self._last_anti_memories: List[ActivatedMemory] = []
 
     def respond(self, problem: str, user_id: str = "") -> str:
         """完整管道：拆解 → 双向激活 → 合成 → 应答"""
         import time
 
+        # Step 0: 评估问题复杂度
+        complexity = self._assess_complexity(problem)
+
         # Step 1: 问题拆解
         foci = self.engine.decompose(problem)
+        # L3复杂问题多取foci，L1简单问题精简
+        if complexity == 3:
+            pass  # 保留全部
+        elif complexity == 1 and len(foci) > 2:
+            foci = foci[:2]
 
-        # Step 2: 双向激活记忆（带用户隔离）
-        activated = self.hub.activate(foci, user_id=user_id)
+        # Step 2: 双向激活记忆（复杂度自适应 top_k）
+        original_top_k = self.hub.top_k
+        if complexity == 3:
+            self.hub.top_k = min(original_top_k * 2, 15)
+        elif complexity == 1:
+            self.hub.top_k = max(original_top_k // 2, 2)
+        try:
+            activated = self.hub.activate(foci, user_id=user_id)
+        finally:
+            self.hub.top_k = original_top_k
+
+        # Step 2.5: 确认偏误检测 — L2/L3 问题检索反视角证据
+        if complexity >= 2:
+            self._last_anti_memories = self.hub.anti_confirmation_search(foci, user_id=user_id)
+        else:
+            self._last_anti_memories = []
 
         # Step 3: 合成 Prompt
         prompt = self._build_prompt(problem, foci, activated)
@@ -89,6 +113,22 @@ class SOMA_Agent:
         self.record_session(problem, answer, foci, activated)
 
         return answer
+
+    @staticmethod
+    def _assess_complexity(problem: str) -> int:
+        """评估问题复杂度：1=简单 2=中等 3=复杂"""
+        score = 1
+        # 长度因子
+        if len(problem) > 100:
+            score += 1
+        # 深度词因子
+        depth_words = [
+            "为什么", "如何", "深层", "根本", "系统", "矛盾",
+            "机制", "权衡", "复杂", "瓶颈", "困境", "根源",
+        ]
+        if any(w in problem for w in depth_words):
+            score += 1
+        return min(score, 3)
 
     def record_session(
         self, problem: str, answer: str,
@@ -154,6 +194,22 @@ class SOMA_Agent:
         else:
             memory_text = "（暂无直接相关的参考信息）"
 
+        # 反面视角 — 确认偏误检测结果
+        anti_text = ""
+        anti_memories = getattr(self, '_last_anti_memories', [])
+        if anti_memories:
+            anti_parts = []
+            for i, am in enumerate(anti_memories):
+                anti_parts.append(
+                    f"**[反面参考 {i+1}]** (关联度: {am.activation_score:.3f})\n"
+                    f"{am.memory.content}"
+                )
+            anti_text = (
+                "\n## 反面视角与潜在矛盾\n"
+                "以下是一些可能与你当前思考方向相反或存在矛盾的信息，请审慎对待：\n\n"
+                + "\n\n".join(anti_parts)
+            )
+
         prompt = f"""你是一位**智者**，善于从多个角度深入思考问题。
 
 ## 思考角度
@@ -165,7 +221,7 @@ class SOMA_Agent:
 以下是你过往积累的相关记忆片段和知识：
 
 {memory_text}
-
+{anti_text}
 ## 当前问题
 {problem}
 
@@ -181,12 +237,13 @@ class SOMA_Agent:
 
     def _call_llm(self, prompt: str, user_id: str = "") -> str:
         """通过 LiteLLM 统一接口调用大模型，带指数退避重试 + 短时缓存"""
-        # 短时缓存：同用户 + 同 prompt 10分钟内不重复调用
+        # 短时缓存：同用户 + 同 prompt 可配置 TTL 内不重复调用
+        ttl = self.config.llm_cache_ttl
         cache_key = hashlib.sha256((user_id + "::" + prompt).encode()).hexdigest()
         cached = self._llm_cache.get(cache_key)
         if cached:
             ts, answer = cached
-            if time.time() - ts < 600:  # 10分钟TTL
+            if time.time() - ts < ttl:
                 return answer
 
         max_retries = 3
@@ -205,7 +262,8 @@ class SOMA_Agent:
                 # 缓存结果
                 self._llm_cache[cache_key] = (time.time(), answer)
                 # 限制缓存大小
-                if len(self._llm_cache) > 50:
+                max_cache = self.config.llm_cache_max_size
+                if len(self._llm_cache) > max_cache:
                     oldest = min(self._llm_cache, key=lambda k: self._llm_cache[k][0])
                     del self._llm_cache[oldest]
                 return answer

@@ -7,7 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.0] — 2026-05-04
+
+### 思维框架深化 — 从"平铺列表"到"推理网络"
+
+v0.5.0 的核心主题是激活已有的 `relations` 字段，让 7 条思维规律从独立触发升级为协同推理网络。
+同时引入认知偏差检测、确认偏误防御、问题复杂度自适应等机制，让 SOMA 的思考更接近真正的"智者"。
+
+### Added
+
+- **规律链推理 (Law Chaining)**: `WisdomEngine.decompose()` 新增阶段2——当规律A的关键词命中问题时，其 `relations` 中的关联规律B获得权重加成（部分命中 ×0.50，纯链式 ×0.35）。利用 `wisdom_laws.yaml` 中已定义但从未使用的 `relations` 字段。
+- **规律组合模板**: `decompose()` 新增阶段2.5——当一对规律同时被直接触发时，生成第三个"合成视角"Focus（权重 = 两规律均值 ×1.1）。预定义 6 组组合：根因系统分析、动态张力分析、辩证反思、要素优先级排序、系统演进洞察、跨域本质映射。
+- **认知偏差检测与纠正**: `MetaEvolver.evolve()` 新增阶段0——当某规律使用频率 >40% 时自动降权 0.05（防止思维固化）；当某规律使用频率 <3% 但成功率 >60% 时自动提权 0.03（发掘被忽视的优质规律）。
+- **确认偏误检测**: `ActivationHub` 新增 `anti_confirmation_search()` 方法——为每个 Focus 用否定词（"不是""反对""反面"）构造反视角查询，检索可能矛盾的记忆证据。L2/L3 复杂度问题自动启用，反视角记忆注入 Prompt。
+- **可用性启发式修正**: `RelevanceScorer.compute_score()` 新增认知修正——当记忆 `access_count > 20` 且 `importance < 0.5` 时，激活分数 ×0.7。防止"容易想起的记忆就是重要记忆"的认知偏差。
+- **问题复杂度自动评级**: `SOMA_Agent._assess_complexity()` 根据问题长度和深度词（"为什么/如何/深层/根本/矛盾/机制"等12个）将问题分为 L1/L2/L3。L1 精简 foci 至 2 个、降低 top_k；L3 保留全部 foci、翻倍 top_k（上限 15）。
+- **向量语义匹配兜底**: `WisdomEngine._semantic_match()` — 当关键词完全无匹配时，用 ONNX 嵌入向量计算问题与各规律的余弦相似度（阈值 0.35），替代纯随机选取。`WisdomEngine` 现在可选接收 `embedder` 参数。
+- **动态权重调整步长**: `MetaEvolver._calc_step()` 根据样本量自适应——≥15 样本 → 0.03，≥5 样本 → 0.02，<5 样本 → 0.01。替代原先固定 ±0.02 步长。
+- **LLM 缓存可配置**: `SOMAConfig` 新增 `llm_cache_ttl`（默认 600s）和 `llm_cache_max_size`（默认 50），替代 `_call_llm()` 中的魔法数字。
+- **动态语境排序**: `decompose()` 的 Focus 排序策略改为 `weight × (1 + 关键词命中密度 × 0.3)`，让更贴合问题语境的规律排在前列。
+- **反馈闭环修复**: `SOMA.respond()` 和 `SOMA.chat()` 现在正确区分 LLM 成功调用与 mock 回退，`outcome` 不再无条件标记为 "success"。
+
+### Changed
+
+- `WisdomEngine.__init__()` 新增可选 `embedder` 参数（向后兼容）
+- `SOMA_Agent.__init__()` 将 embedder 创建移至引擎初始化之前
+- `SOMA.chat()` 现在与 `respond()` 共享复杂度评估、top_k 自适应和确认偏误检测
+- `_build_prompt()` 的 Prompt 模板新增"反面视角与潜在矛盾"段落
+
 ---
+
+## [0.4.2] — 2026-05-04
 ## [0.4.0] — 2026-05-02
 
 ### Added

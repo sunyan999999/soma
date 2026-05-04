@@ -71,6 +71,48 @@ class ActivationHub:
             mmr_pool, self.top_k, self.threshold, self.mmr_lambda,
         )
 
+    def anti_confirmation_search(
+        self, foci: List[Focus], user_id: str = "",
+    ) -> List[ActivatedMemory]:
+        """确认偏误检测：为每个聚焦点构造反视角查询，检索反对证据。
+
+        对每个 Focus，用否定词构造反查询（如"不是""反对""反面"），
+        从记忆库中检索可能矛盾的记忆片段。
+        返回反对视角的记忆列表，供 Prompt 合成时注入。
+        """
+        from soma.base import Focus as F
+
+        negation_words = ["不是", "反对", "反面", "并非", "错误"]
+        anti_memories: Dict[str, ActivatedMemory] = {}
+
+        for focus in foci:
+            anti_keywords = focus.keywords[:3] if focus.keywords else []
+            if not anti_keywords:
+                continue
+            for neg in negation_words[:3]:
+                anti_dimension = f"反对视角：{neg} {' '.join(anti_keywords)}"
+                anti_focus = F(
+                    law_id=f"{focus.law_id}_anti",
+                    dimension=anti_dimension,
+                    keywords=[neg] + anti_keywords,
+                    weight=focus.weight * 0.5,
+                    rationale=f"确认偏误检测（源于: {focus.law_id}）",
+                )
+                for am in self.retriever.retrieve(
+                    anti_focus, top_k=2, user_id=user_id,
+                ):
+                    mid = am.memory.id
+                    if mid not in anti_memories:
+                        am.activation_score = am.memory.relevance_potential() * 0.6
+                        am.match_rationale = f"反视角检索（查询: {anti_dimension[:60]}）"
+                        anti_memories[mid] = am
+
+        sorted_anti = sorted(
+            anti_memories.values(),
+            key=lambda am: am.activation_score, reverse=True,
+        )
+        return sorted_anti[:self.top_k]
+
     def explain_activation(self, activated: ActivatedMemory) -> Dict:
         """返回激活记忆的详细解释信息"""
         mem = activated.memory

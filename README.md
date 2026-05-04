@@ -8,7 +8,7 @@
 <p align="center">
   <a href="https://github.com/sunyan999999/soma"><img src="https://img.shields.io/github/stars/sunyan999999/soma?style=social" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-0.4.2-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-0.5.0-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/python-3.10%2B-green" alt="Python"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/semantic_recall-100%25-brightgreen" alt="Semantic Recall"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/overall_score-80-brightgreen" alt="Overall Score"></a>
@@ -19,7 +19,7 @@
 
 ---
 
-**SOMA** is a lightweight, pluggable cognitive framework that gives AI agents the ability to *think*, not just retrieve. It organizes memory around an explicit **wisdom framework** — seven thinking laws from first-principles reasoning to contradiction analysis. The result: agents that decompose problems systematically, activate relevant knowledge bidirectionally, and evolve their own reasoning over time.
+**SOMA** is a lightweight, pluggable cognitive framework that gives AI agents the ability to *think*, not just retrieve. It organizes memory around an explicit **wisdom framework** — seven thinking laws that form a reasoning network, not a flat list. Laws chain through relations, combine into synthesized perspectives, and self-correct against cognitive bias. The result: agents that decompose problems systematically, activate relevant knowledge bidirectionally, and evolve their own reasoning over time.
 
 > **Not "make AI remember more." Make AI *understand deeper*.**
 
@@ -56,21 +56,26 @@ No API key required for mock mode. Set `llm="deepseek-chat"` (or any LiteLLM mod
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    SOMA Agent                            │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐  │
-│  │ WisdomEngine  │→│ActivationHub │→│  MemoryCore   │  │
-│  │ (decompose)  │  │  (activate)  │  │  (retrieve)   │  │
-│  └──────────────┘  └──────────────┘  └──────────────┘  │
-│         │                │                  │           │
-│         ▼                ▼                  ▼           │
-│  ┌──────────────────────────────────────────────────┐   │
-│  │         MetaEvolver (reflect → evolve)            │   │
-│  └──────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                         SOMA Agent (v0.5)                         │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
+│  │ WisdomEngine  │→│ActivationHub │→│     MemoryCore        │  │
+│  │ · 关键词匹配  │  │ · 双向激活   │  │ · episodic/semantic   │  │
+│  │ · 规律链传播  │  │ · 反视角检索 │  │ · skill/sqlite+vector │  │
+│  │ · 组合模板    │  │ · 可用性修正 │  │ · 加权RRF+时间衰减    │  │
+│  │ · 语义兜底    │  └──────────────┘  └──────────────────────┘  │
+│  │ · 语境排序    │         │                  │                  │
+│  └──────────────┘         ▼                  ▼                  │
+│         │         ┌──────────────────────────────────────────┐   │
+│         ▼         │          MetaEvolver                     │   │
+│  ┌──────────┐     │ · 偏差检测 → 自动调权 → 技能固化          │   │
+│  │复杂度评估 │     │ · 动态步长 · 反思追踪 · 规律发现         │   │
+│  └──────────┘     └──────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────┘
 
-Four-Step Wisdom Pipeline:
-  Problem → Decompose → Activate → Synthesize → Evolve
+Ten-Stage Wisdom Pipeline:
+  Assess → Decompose → Chain → Combine → Semantic-fallback
+         → Context-sort → Activate → Anti-bias → Synthesize → Evolve
 ```
 
 ## Screenshots
@@ -139,6 +144,8 @@ soma-quickstart         # or use the CLI entry point
 
 Customize in `wisdom_laws.yaml` (bundled in the package — always available).
 
+**New in v0.5**: Laws are no longer a flat list — they form a **reasoning network**. When a law triggers, its `relations` propagate activation to related laws (×0.35–0.50 bonus). When two laws fire together, synthesized perspectives emerge (e.g., "First Principles × Systems Thinking → Root-Cause System Analysis").
+
 ### 2. Bidirectional Activation — Hybrid RRF
 
 Memories are matched through **weighted Reciprocal Rank Fusion**:
@@ -150,8 +157,9 @@ Both directions compete and complement, producing true relevance scores.
 ### 3. Meta-Evolution — Self-Optimization
 
 SOMA tracks success/failure of each thinking law across sessions. Every 10 sessions, `evolve()` automatically:
-- Adjusts law weights: +2% for successful laws, -2% for underperforming ones
-- Solidifies successful (law, domain, outcome) patterns into skills
+- **Bias detection**: laws used >40% of the time get penalized (-0.05) to prevent thinking ruts; underused high-success laws get boosted (+0.03)
+- **Dynamic step sizing**: adjustment magnitude scales with sample count (0.01 → 0.02 → 0.03), replacing fixed ±0.02
+- **Skill solidification**: successful (law, domain, outcome) patterns become permanent skills after 3+ occurrences
 
 ### 4. Memory Types
 
