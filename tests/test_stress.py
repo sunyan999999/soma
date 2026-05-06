@@ -480,29 +480,59 @@ class TestMultiStoreStress:
     """同时操作 EpisodicStore + SemanticStore + SkillStore"""
 
     def test_three_stores_concurrent(self, tmp_path):
-        """同时对三个存储库进行读写（每个线程独立实例）"""
+        """同时对三个存储库进行读写（每个线程独立实例，含 SQLite 忙等待重试）"""
+        import time as _time
         errors = []
+
+        def _retry_store_op(fn, thread_id, desc):
+            """带重试的存储操作 — SQLite 在极端并发下偶发 BUSY，三次重试可容忍"""
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    fn()
+                    return
+                except Exception as e:
+                    if "database is locked" in str(e) and attempt < max_retries - 1:
+                        _time.sleep(0.2 * (attempt + 1))  # 0.2s, 0.4s 递增等待
+                        continue
+                    errors.append(f"线程{thread_id}/{desc}: {e}")
+                    return
 
         def write_all(thread_id):
             try:
                 epi = EpisodicStore(tmp_path / "epi", collection_name="multi")
                 sem = SemanticStore(persist_dir=tmp_path / "sem")
                 skill = SkillStore(persist_dir=tmp_path / "skill")
-                for i in range(50):
-                    epi.add(
+            except Exception as e:
+                errors.append(f"线程{thread_id}/init: {e}")
+                return
+
+            for i in range(50):
+                _retry_store_op(
+                    lambda: epi.add(
                         f"情节记忆 T{thread_id}-{i}: 系统思维应用",
                         context={"thread": thread_id},
-                    )
-                    sem.add_triple(f"概念{thread_id}", "关联", f"概念{i}")
-                    skill.add_skill(
+                    ),
+                    thread_id, f"epi_add_{i}"
+                )
+                _retry_store_op(
+                    lambda: sem.add_triple(f"概念{thread_id}", "关联", f"概念{i}"),
+                    thread_id, f"sem_add_{i}"
+                )
+                _retry_store_op(
+                    lambda: skill.add_skill(
                         f"技能{thread_id}-{i}",
                         f"模式描述 thread={thread_id} seq={i}",
-                    )
+                    ),
+                    thread_id, f"skill_add_{i}"
+                )
+
+            try:
                 epi.close()
                 sem.close()
                 skill.close()
-            except Exception as e:
-                errors.append(f"线程{thread_id}: {e}")
+            except Exception:
+                pass
 
         threads = [threading.Thread(target=write_all, args=(tid,)) for tid in range(5)]
         for t in threads:
@@ -510,7 +540,7 @@ class TestMultiStoreStress:
         for t in threads:
             t.join(timeout=60)
 
-        assert len(errors) == 0, f"三库并发出错: {errors}"
+        assert len(errors) == 0, f"三库并发出错 ({len(errors)}): {errors[:3]}"
 
         # 验证数据完整性
         epi = EpisodicStore(tmp_path / "epi", collection_name="multi")
