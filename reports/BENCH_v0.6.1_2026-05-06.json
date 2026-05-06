@@ -1,0 +1,347 @@
+{
+  "version": "0.6.1",
+  "runs": 5,
+  "timestamp": 1778054237.1683471,
+  "data_scale": "small",
+  "total_duration_s": 13.1,
+  "scores": {
+    "memory": {
+      "mean": 96.78,
+      "std": 0.15,
+      "ci95": [
+        96.65,
+        96.91
+      ],
+      "cv_pct": 0.15,
+      "stability": "stable",
+      "range": [
+        96.6,
+        97.0
+      ],
+      "values": [
+        96.8,
+        96.8,
+        96.6,
+        97.0,
+        96.7
+      ]
+    },
+    "wisdom": {
+      "mean": 76.04,
+      "std": 0.05,
+      "ci95": [
+        75.99,
+        76.09
+      ],
+      "cv_pct": 0.07,
+      "stability": "stable",
+      "range": [
+        76.0,
+        76.1
+      ],
+      "values": [
+        76.0,
+        76.0,
+        76.0,
+        76.1,
+        76.1
+      ]
+    },
+    "evolution": {
+      "mean": 17.5,
+      "std": 0.0,
+      "ci95": [
+        17.5,
+        17.5
+      ],
+      "cv_pct": 0.0,
+      "stability": "stable",
+      "range": [
+        17.5,
+        17.5
+      ],
+      "values": [
+        17.5,
+        17.5,
+        17.5,
+        17.5,
+        17.5
+      ]
+    },
+    "scalability": {
+      "mean": -1.0,
+      "std": 0.0,
+      "ci95": [
+        -1.0,
+        -1.0
+      ],
+      "cv_pct": -0.0,
+      "stability": "stable",
+      "range": [
+        -1.0,
+        -1.0
+      ],
+      "values": [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ]
+    },
+    "overall": {
+      "mean": 65.72,
+      "std": 0.04,
+      "ci95": [
+        65.68,
+        65.76
+      ],
+      "cv_pct": 0.07,
+      "stability": "stable",
+      "range": [
+        65.7,
+        65.8
+      ],
+      "values": [
+        65.7,
+        65.7,
+        65.7,
+        65.8,
+        65.7
+      ]
+    },
+    "data_count": {
+      "mean": 20.0,
+      "std": 0.0,
+      "ci95": [
+        20.0,
+        20.0
+      ],
+      "cv_pct": 0.0,
+      "stability": "stable",
+      "range": [
+        20.0,
+        20.0
+      ],
+      "values": [
+        20.0,
+        20.0,
+        20.0,
+        20.0,
+        20.0
+      ]
+    }
+  },
+  "detail_scores": {
+    "memory/semantic_recall_rate": {
+      "mean": 1.0,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "memory/avg_insert_latency_ms": {
+      "mean": 4.47,
+      "std": 0.16,
+      "cv_pct": 3.58,
+      "stability": "acceptable"
+    },
+    "memory/avg_query_latency_ms": {
+      "mean": 3.86,
+      "std": 0.17,
+      "cv_pct": 4.3,
+      "stability": "acceptable"
+    },
+    "memory/capacity_1k_latency_ms": {
+      "mean": 4.62,
+      "std": 0.15,
+      "cv_pct": 3.24,
+      "stability": "acceptable"
+    },
+    "memory/capacity_10k_latency_ms": {
+      "mean": 9.24,
+      "std": 0.3,
+      "cv_pct": 3.24,
+      "stability": "acceptable"
+    },
+    "memory/dedup_ratio": {
+      "mean": 1.0,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "memory/total_memories": {
+      "mean": 20.0,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "wisdom/decomposition_coverage": {
+      "mean": 1.0,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "wisdom/decomposition_precision": {
+      "mean": 0.51,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "wisdom/law_recall": {
+      "mean": 1.02,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "wisdom/memory_precision": {
+      "mean": 0.0,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "wisdom/memory_relevance_score": {
+      "mean": 0.29,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "wisdom/synthesis_gain_depth_pct": {
+      "mean": 0.0,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "wisdom/synthesis_gain_structure_pct": {
+      "mean": 0.0,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "wisdom/synthesis_gain_specificity_pct": {
+      "mean": 0.0,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "wisdom/thinking_diversity_entropy": {
+      "mean": 0.83,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "wisdom/thinking_diversity_gini": {
+      "mean": 0.44,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "wisdom/cross_domain_activation_rate": {
+      "mean": 1.0,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "wisdom/avg_decompose_time_ms": {
+      "mean": 13.3,
+      "std": 0.37,
+      "cv_pct": 2.76,
+      "stability": "stable"
+    },
+    "wisdom/avg_activate_time_ms": {
+      "mean": 30.84,
+      "std": 0.68,
+      "cv_pct": 2.19,
+      "stability": "stable"
+    },
+    "evolution/total_reflections": {
+      "mean": 0.0,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "evolution/laws_with_enough_samples": {
+      "mean": 0.0,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "evolution/avg_success_rate": {
+      "mean": 0.0,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "evolution/weight_delta_total": {
+      "mean": 0.0,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "evolution/skills_solidified": {
+      "mean": 0.0,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "evolution/evolution_rounds": {
+      "mean": 0.0,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "scalability/query_1k_ms": {
+      "mean": 4.74,
+      "std": 0.2,
+      "cv_pct": 4.17,
+      "stability": "acceptable"
+    },
+    "scalability/query_10k_ms": {
+      "mean": -1.0,
+      "std": 0.0,
+      "cv_pct": -0.0,
+      "stability": "stable"
+    },
+    "scalability/query_100k_ms": {
+      "mean": -1.0,
+      "std": 0.0,
+      "cv_pct": -0.0,
+      "stability": "stable"
+    },
+    "scalability/fts5_speedup_vs_like": {
+      "mean": 0.0,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "scalability/insert_throughput_per_s": {
+      "mean": 289.88,
+      "std": 8.29,
+      "cv_pct": 2.86,
+      "stability": "stable"
+    },
+    "scalability/search_throughput_per_s": {
+      "mean": 211.44,
+      "std": 8.57,
+      "cv_pct": 4.05,
+      "stability": "acceptable"
+    },
+    "scalability/data_count_at_test": {
+      "mean": 20.0,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "evolution/recent_success_rate": {
+      "mean": 0.5,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    },
+    "evolution/recent_reflection_count": {
+      "mean": 0.0,
+      "std": 0.0,
+      "cv_pct": 0.0,
+      "stability": "stable"
+    }
+  }
+}

@@ -1,5 +1,151 @@
 # 升级指南
 
+## 0.6.0 → 0.6.1
+
+### 破坏性变更
+
+**无。** 纯修复版本，所有 API 不变。
+
+### 新增：客观测试体系
+
+v0.6.1 建立了四支柱客观测试评估体系，任何开发者可一键复现：
+
+```bash
+# 多轮统计基准 (5轮, 独立数据库)
+python -m soma.benchmarks --full --runs 5 --output reports/
+
+# 活体竞品实测 (需 chromadb)
+python scripts/live_benchmark.py --full --output reports/
+```
+
+- **统计驱动**: 均值±标准差, 95%置信区间, CV%变异系数, 稳定性评级
+- **活体竞品**: 真实库实测 (非 mock), 同数据同查询, 诚实标记不可用系统
+- **CI 自动化**: PR 轻量测试, Release 全量 + 活体对比, 结果自动附加
+- **Docker 标准化**: `Dockerfile.bench` 固定环境, 消除"我的机器上能跑"问题
+
+### 重要修复
+
+#### SSE 流式端点会话记录补全
+
+0.6.0 中 `/api/chat/stream` 端点未调用 `AnalyticsStore.record_session()`，导致所有 SSE 流式请求不进入仪表盘分析面板。0.6.1 在 "done" 事件后添加会话记录，包含问题、完整答案、foci、激活记忆、响应耗时、记忆统计和权重。
+
+#### 向量维度修正
+
+`BAAI/bge-small-zh-v1.5` 实际输出 **512 维**向量，不是 384 维。`config.py` 中 `vector_dim` 已恢复为 `512`。如果之前因维度错误导致数据库损坏，0.6.1 启动时会自动检测并重建向量索引。
+
+#### FTS5 搜索代码整合
+
+`episodic.py` 和 `skill.py` 的 `query_by_keywords()` 现在共用 `soma/memory/search_utils.py` 中的 `fts5_keyword_search()`，消除约 80 行重复代码。
+
+### 安装
+
+```bash
+pip install --upgrade soma-wisdom
+```
+
+### 验证升级
+
+```python
+from soma import SOMA
+
+soma = SOMA()
+result = soma.chat("测试会话记录")
+# 检查 dash 仪表盘中分析面板是否出现新会话
+print("升级成功: v0.6.1")
+```
+
+---
+
+## 0.5.x → 0.6.0
+
+### 破坏性变更
+
+**无。** 所有新增参数均带默认值，现有代码无需修改即可正常运行。
+
+### 重要新增
+
+#### 结构化推理引擎
+
+v0.6.0 在 LLM 调用前增加了 SOMA 自己的推理步骤。`respond()` 管道新增两个阶段：
+
+| 阶段 | 位置 | 说明 |
+|------|------|------|
+| Step 2.6 | LLM调用前 | 构建结构化推理框架（模板+假设+证据对照） |
+| Step 4.5 | LLM调用后 | 自动抽取因果关系三元组 |
+
+推理框架结果存储在 `agent._last_reasoning` 中，可通过 `soma.chat()` 的 `reasoning` 字段获取：
+
+```python
+result = soma.chat("如何分析增长瓶颈？")
+for block in result["reasoning"]:
+    print(f"{block['dimension']}: {block['hypothesis']}")
+```
+
+#### 因果抽取
+
+默认关闭。开启方式：
+
+```python
+from soma import SOMA
+import soma.config
+
+soma = SOMA()
+soma._agent.config.causal_extraction = True
+soma._agent.config.causal_extraction_complexity = 2  # L2以上问题触发
+```
+
+从 LLM 回答中自动提取"主语|谓语|宾语"三元组，以 confidence=0.4 存入语义记忆。仅 L3（默认）或指定复杂度以上问题触发，失败不影响主流程。
+
+#### 触发词自动扩展
+
+每次成功会话后，问题中与规律共现的关键词被追踪。同一词跨 5 次不同会话共现后自动提升为正式触发词，无需手动编辑 YAML。
+
+调用 `soma.evolve()` 时自动执行提升和模板挖掘：
+
+```python
+changes = soma.evolve()
+# 返回包含 "trigger_promoted" 和 "thought_template" 类型的变更列表
+```
+
+#### 推理模板体系
+
+| 模板层 | 数量 | 说明 |
+|--------|------|------|
+| `_REASONING_TEMPLATES` | 7 | 每条规律3个引导问题 |
+| `_HYPOTHESIS_TEMPLATES` | 7 | 每条规律1个可检验假设 |
+| `_COMBO_REASONING` | 6 | 双规律联动专属框架 |
+
+### 数据库变更
+
+**自动执行，无需手动干预。** 首次启动时自动创建 `candidate_triggers` 和 `focus_patterns` 两张新表。
+
+### 安装
+
+```bash
+pip install --upgrade soma-wisdom
+```
+
+或从 GitHub 直接安装：
+
+```bash
+pip install --upgrade git+https://github.com/sunyan999999/soma.git
+```
+
+### 验证升级
+
+```python
+from soma import SOMA
+
+soma = SOMA()
+# 检查推理引擎是否正常
+result = soma.chat("什么是系统思维？")
+assert "reasoning" in result
+assert len(result["reasoning"]) >= 1
+print("v0.6.0 升级成功")
+```
+
+---
+
 ## 0.3.x → 0.4.0
 
 ### 破坏性变更

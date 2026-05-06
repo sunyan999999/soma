@@ -8,13 +8,13 @@
 <p align="center">
   <a href="https://github.com/sunyan999999/soma"><img src="https://img.shields.io/github/stars/sunyan999999/soma?style=social" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-0.5.0-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-0.6.1-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/python-3.10%2B-green" alt="Python"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/semantic_recall-100%25-brightgreen" alt="Semantic Recall"></a>
-  <a href="#benchmarks"><img src="https://img.shields.io/badge/overall_score-80-brightgreen" alt="Overall Score"></a>
-  <a href="#"><img src="https://img.shields.io/badge/tests-196-brightgreen" alt="Tests"></a>
-  <a href="#"><img src="https://img.shields.io/badge/coverage-~97%25-brightgreen" alt="Coverage"></a>
-  <a href="https://codecov.io/gh/sunyan999999/soma"><img src="https://codecov.io/gh/sunyan999999/soma/branch/main/graph/badge.svg" alt="Codecov"></a>
+  <a href="#benchmarks"><img src="https://img.shields.io/badge/overall_score-65.7%2F100-blue" alt="Overall Score"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-223%2F223-brightgreen" alt="Tests"></a>
+  <a href="reports/"><img src="https://img.shields.io/badge/test_report-v0.6.1-success" alt="Test Report"></a>
+  <a href="#"><img src="https://img.shields.io/badge/stability-CV%3D0.07%25-brightgreen" alt="Stability"></a>
 </p>
 
 ---
@@ -23,7 +23,7 @@
 
 > **Not "make AI remember more." Make AI *understand deeper*.**
 
-📖 **[中文文档](README_zh.md)** | **[Documentation](docs/)** | **[Contributing](CONTRIBUTING.md)** | **[Changelog](CHANGELOG.md)**
+📖 **[中文文档](README_zh.md)** | **[Documentation](docs/)** | **[Test Reports](reports/)** | **[Changelog](CHANGELOG.md)** | **[Contributing](CONTRIBUTING.md)**
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/demo-pipeline.gif" alt="SOMA Pipeline Demo" width="720">
@@ -56,26 +56,34 @@ No API key required for mock mode. Set `llm="deepseek-chat"` (or any LiteLLM mod
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                         SOMA Agent (v0.5)                         │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │ WisdomEngine  │→│ActivationHub │→│     MemoryCore        │  │
-│  │ · 关键词匹配  │  │ · 双向激活   │  │ · episodic/semantic   │  │
-│  │ · 规律链传播  │  │ · 反视角检索 │  │ · skill/sqlite+vector │  │
-│  │ · 组合模板    │  │ · 可用性修正 │  │ · 加权RRF+时间衰减    │  │
-│  │ · 语义兜底    │  └──────────────┘  └──────────────────────┘  │
-│  │ · 语境排序    │         │                  │                  │
-│  └──────────────┘         ▼                  ▼                  │
-│         │         ┌──────────────────────────────────────────┐   │
-│         ▼         │          MetaEvolver                     │   │
-│  ┌──────────┐     │ · 偏差检测 → 自动调权 → 技能固化          │   │
-│  │复杂度评估 │     │ · 动态步长 · 反思追踪 · 规律发现         │   │
-│  └──────────┘     └──────────────────────────────────────────┘   │
-└──────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│                           SOMA Agent (v0.6)                                │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐            │
+│  │ WisdomEngine  │→│ActivationHub │→│     MemoryCore        │            │
+│  │ · 关键词匹配  │  │ · 双向激活   │  │ · episodic/semantic   │            │
+│  │ · 规律链传播  │  │ · 反视角检索 │  │ · skill/sqlite+vector │            │
+│  │ · 组合模板    │  │ · 可用性修正 │  │ · 加权RRF+时间衰减    │            │
+│  │ · 语义兜底    │  └──────────────┘  └──────────────────────┘            │
+│  │ · 语境排序    │         │                  │                          │
+│  └──────────────┘         ▼                  ▼                          │
+│         │         ┌──────────────────────────────────────────────────┐   │
+│         ▼         │               MetaEvolver                        │   │
+│  ┌──────────┐     │ · 偏差检测 → 自动调权 → 技能固化                  │   │
+│  │复杂度评估 │     │ · 触发词扩展 · 思维模板挖掘 · 动态步长            │   │
+│  └──────────┘     └──────────────────────────────────────────────────┘   │
+│         │                                                                 │
+│         ▼                                                                 │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │  v0.6 Reasoning Engine              │  v0.6 Causal Extraction     │   │
+│  │  · 17 reasoning templates           │  · Auto-extract triples     │   │
+│  │  · Hypothesis + evidence matrix     │  · Lightweight LLM (~200tk) │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
+└──────────────────────────────────────────────────────────────────────────┘
 
-Ten-Stage Wisdom Pipeline:
+Twelve-Stage Wisdom Pipeline:
   Assess → Decompose → Chain → Combine → Semantic-fallback
-         → Context-sort → Activate → Anti-bias → Synthesize → Evolve
+         → Context-sort → Activate → Anti-bias → Reason
+         → Synthesize → Causal-extract → Evolve
 ```
 
 ## Screenshots
@@ -291,38 +299,39 @@ SOMA has been used in production across two distinct codebases — a Go-based CL
 
 ## Benchmarks
 
-SOMA v0.2.0-alpha on commodity CPU (2026-04-26):
+SOMA v0.6.1 — 5-round independent benchmark (2026-05-06):
 
-| Metric | Score | Notes |
-|--------|:-----:|-------|
-| **Semantic Recall** | **100%** | 10/10 paraphrased queries correctly recalled |
-| **Query Latency** | **5.4ms** | ONNX-accelerated (fastembed), 17× faster than v0.1.0 |
-| **Insert Latency** | 0.1ms | With SHA256 dedup + vector encoding |
-| **Dedup Rate** | 100% | Content-hash based deduplication |
-| **Decomposition Coverage** | 100% | 10/10 question types correctly decomposed |
-| **Thinking Diversity** | 0.596 | Entropy across 7 thinking laws |
-| **Synthesis Gain** | +45% | Answer depth vs. bare LLM baseline |
+### Statistical Rigor (N=5, isolated databases)
 
-### Overall Scores
+| Metric | Mean ± Std | 95% CI | CV% | Stability |
+|--------|:---:|:---:|:---:|:---:|
+| **Overall** | **65.72 ± 0.04** | [65.68, 65.76] | 0.07% | ● Stable |
+| **Memory** | **96.78 ± 0.15** | [96.65, 96.91] | 0.15% | ● Stable |
+| **Wisdom** | **76.04 ± 0.05** | [75.99, 76.09] | 0.07% | ● Stable |
+| **Query Latency (1K)** | 4.62 ± 0.15ms | [4.48, 4.76] | 3.24% | ◐ Acceptable |
 
-| Dimension | Score | Weight |
-|-----------|:-----:|:------:|
-| **Memory** | **97** | 35% |
-| **Wisdom** | **85** | 35% |
-| **Evolution** | **86** | 30% |
-| **Overall** | **89** | — |
+### Live Competitor Benchmark (Measured, not simulated)
 
-### Competitive Landscape
-
-| System | Semantic Recall | Query Latency | Dedup | Reasoning | Evolution |
+| System | Recall@5 | Query P50 | Dedup | Reasoning | Evolution |
 |--------|:---:|:---:|:---:|:---:|:---:|
-| **SOMA** | **100%** | **5.4ms** | **✓** | **Framework-based** | **✓** |
-| Mem0 | 92% | 15ms | ✓ | — | — |
-| MemPalace | 96% | 8ms | ✓ | — | — |
-| Letta (MemGPT) | 88% | 20ms | ✓ | — | — |
-| Zep | 90% | 30ms | ✓ | — | — |
+| **SOMA** | **30.0%** 🔴 | 10.10ms 🔴 | **✓** | **✓** | **✓** |
+| ChromaDB | 2.5% 🔴 | 1.22ms 🔴 | ✗ | ✗ | ✗ |
+| Mem0 | ⚫ | ⚫ | ✓ | ✗ | ✗ |
+| Zep | ⚫ | ⚫ | ✓ | ✗ | ✗ |
 
-SOMA is the only system that combines memory storage, a reasoning framework, and evolutionary self-optimization.
+> 🔴 = live measured  |  ⚫ = unavailable (API key / server required)  
+> ChromaDB recall is low because it lacks built-in embeddings — SOMA's ONNX model works out of the box.  
+> SOMA is the only system with a reasoning framework and evolutionary self-optimization.
+
+Full reports: [`reports/TEST_REPORT_v0.6.1.md`](reports/TEST_REPORT_v0.6.1.md) | [`reports/LIVE_BENCH_2026-05-06.md`](reports/LIVE_BENCH_2026-05-06.md)
+
+### Reproducibility
+
+```bash
+pip install soma-wisdom chromadb
+python -m soma.benchmarks --full --runs 5 --output reports/    # statistical benchmark
+python scripts/live_benchmark.py --full --output reports/       # live competitor test
+```
 
 ## Development
 

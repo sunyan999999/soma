@@ -22,7 +22,7 @@ from soma.agent import SOMA_Agent
 from soma.analytics import AnalyticsStore
 from dash.providers import get_provider_manager
 
-app = FastAPI(title="SOMA API", version="0.4.0")
+app = FastAPI(title="SOMA API", version="0.6.1")
 
 _CORS_ORIGINS = os.environ.get(
     "SOMA_CORS_ORIGINS",
@@ -475,17 +475,23 @@ def community_stats():
         info = pypi.get("info", {})
         result["pypi"] = {
             "version": info.get("version", ""),
-            "license": info.get("license", ""),
+            "license": (info.get("license", "") or "").split("\n")[0].strip(),
             "requires_python": info.get("requires_python", ""),
         }
 
     # PyPI 下载量（pypistats.org 公开 API）
     pypi_stats = _http_get_json("https://pypistats.org/api/packages/soma-wisdom/overall")
     if pypi_stats:
-        downloads = 0
-        for entry in pypi_stats.get("data", []):
-            if entry.get("category") == "with_mirrors":
-                downloads = max(downloads, entry.get("downloads", 0))
+        downloads = sum(
+            entry.get("downloads", 0)
+            for entry in pypi_stats.get("data", [])
+            if entry.get("category") == "with_mirrors"
+        )
+        # 若 overall API 返回空，回退到 recent API
+        if downloads == 0:
+            pypi_recent = _http_get_json("https://pypistats.org/api/packages/soma-wisdom/recent")
+            if pypi_recent:
+                downloads = pypi_recent.get("data", {}).get("last_month", 0)
         if result["pypi"]:
             result["pypi"]["total_downloads"] = downloads
 
@@ -733,6 +739,7 @@ async def chat_stream(req: ChatRequest):
     async def event_generator() -> AsyncGenerator[str, None]:
         t0 = time.time()
         agent = get_agent()
+        answer = ""  # 累积流式答案，用于会话记录
 
         # Phase 1: 拆解
         foci = agent.decompose(req.problem)
@@ -781,9 +788,10 @@ async def chat_stream(req: ChatRequest):
             prompt = agent._build_prompt(req.problem, foci, activated)
             provider_id = pm.current_provider_id
             try:
-                # 流式 LLM，逐 token 产出 delta 事件
-                async for token_chunk in _token_stream(prompt, provider):
-                    yield token_chunk
+                # 流式 LLM，逐 token 产出 delta 事件并累积答案
+                async for token in _token_stream(prompt, provider):
+                    answer += token
+                    yield _sse_event("delta", {"content": token})
                     await asyncio.sleep(0)
             except Exception as llm_err:
                 # 回退到非流式
@@ -819,13 +827,34 @@ async def chat_stream(req: ChatRequest):
 
         # Phase 4: 完成
         response_time = (time.time() - t0) * 1000
+        final_stats = agent.memory.stats()
+        final_weights = agent.evolver.get_weights()
         yield _sse_event("done", {
             "provider_used": provider_id,
             "mock_mode": use_mock,
             "response_time_ms": round(response_time, 1),
-            "memory_stats": agent.memory.stats(),
-            "weights": agent.evolver.get_weights(),
+            "memory_stats": final_stats,
+            "weights": final_weights,
         })
+
+        # 记录到 AnalyticsStore
+        try:
+            analytics = _get_analytics()
+            analytics.record_session({
+                "id": f"session_{int(t0)}",
+                "problem": req.problem,
+                "mock_mode": use_mock,
+                "provider_used": provider_id,
+                "response_time_ms": round(response_time, 1),
+                "foci": foci_data,
+                "activated_memories": memory_cards,
+                "answer": answer,
+                "memory_stats": final_stats,
+                "weights": final_weights,
+            })
+        except Exception:
+            import logging
+            logging.getLogger("soma.dash").warning("SSE 会话记录失败", exc_info=True)
 
     return StreamingResponse(
         event_generator(),
@@ -846,7 +875,7 @@ def _sse_event(event: str, data: dict) -> str:
 
 
 async def _token_stream(prompt: str, provider: dict) -> AsyncGenerator[str, None]:
-    """流式调用 LLM，逐 token 产出 SSE delta 事件"""
+    """流式调用 LLM，逐 token 产出原始文本内容（由调用方包装为 SSE 事件）"""
     from litellm import acompletion
 
     model = provider["model"]
@@ -880,7 +909,7 @@ async def _token_stream(prompt: str, provider: dict) -> AsyncGenerator[str, None
     async for chunk in response:
         delta = chunk.choices[0].delta
         if delta.content:
-            yield _sse_event("delta", {"content": delta.content})
+            yield delta.content
 
 @app.get("/api/memory/stats")
 def memory_stats():
@@ -1103,7 +1132,7 @@ def benchmarks_run():
             import json as _json
             with open(ablation_path, "r", encoding="utf-8") as f:
                 ablation_data = _json.load(f)
-        run = run_full_benchmark(agent, ablation_data)
+        run = run_full_benchmark(agent, ablation_data, version=app.version)
         run_id = _get_analytics().record_benchmark(run)
         return {
             "run_id": run_id,

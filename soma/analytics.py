@@ -320,6 +320,16 @@ class AnalyticsStore:
             CREATE INDEX IF NOT EXISTS idx_bench_time ON benchmark_runs(timestamp DESC);
             """
         )
+        # v0.6.1 迁移：新增多轮基准测试列
+        for col, defn in [
+            ("runs_count", "INTEGER DEFAULT 1"),
+            ("multi_run_stats_json", "TEXT DEFAULT '{}'"),
+        ]:
+            try:
+                self._conn.execute(f"ALTER TABLE benchmark_runs ADD COLUMN {col} {defn}")
+            except Exception:
+                pass  # 列已存在
+
         # v0.3.1b1 迁移：新增长缩性维度列
         for col, defn in [
             ("score_scalability", "REAL DEFAULT 0"),
@@ -439,6 +449,85 @@ class AnalyticsStore:
             "last_updated": latest["timestamp"] if latest else None,
         }
         return result
+
+    # ── 多轮基准测试存储 (v0.6.1+) ───────────────────────────
+
+    def record_multi_benchmark(self, multi_result) -> int:
+        """存储多轮基准测试结果，返回 run_id
+
+        将 MultiRunResult 的统计摘要存入 benchmark_runs 表。
+        单轮分数取均值，统计指标和原始值存入 multi_run_stats_json。
+        """
+        self._create_benchmark_tables()
+        ts = multi_result.timestamp if multi_result.timestamp else time.time()
+
+        scores_dict = {}
+        for key in ["overall", "memory", "wisdom", "evolution", "scalability"]:
+            if key in multi_result.scores:
+                scores_dict[key] = multi_result.scores[key].mean
+
+        multi_json = json.dumps(
+            {
+                "runs": multi_result.runs,
+                "total_duration_s": multi_result.total_duration_s,
+                "data_scale": multi_result.data_scale,
+                "scores": {
+                    k: {
+                        "mean": s.mean, "std": s.std,
+                        "ci95": [s.ci95_low, s.ci95_high],
+                        "cv_pct": s.cv_pct, "stability": s.stability,
+                        "values": s.values,
+                    }
+                    for k, s in multi_result.scores.items()
+                },
+            },
+            ensure_ascii=False,
+        )
+
+        self._conn.execute(
+            """
+            INSERT INTO benchmark_runs
+            (version, timestamp, score_memory, score_wisdom, score_evolution, score_overall,
+             score_scalability, runs_count, multi_run_stats_json,
+             memory_json, wisdom_json, evolution_json, scalability_json, full_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '{}', '{}', '{}', '{}', '{}')
+            """,
+            (
+                multi_result.version, ts,
+                scores_dict.get("memory", 0),
+                scores_dict.get("wisdom", 0),
+                scores_dict.get("evolution", 0),
+                scores_dict.get("overall", 0),
+                scores_dict.get("scalability", 0),
+                multi_result.runs,
+                multi_json,
+            ),
+        )
+        self._conn.commit()
+        return self._conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+    def get_latest_multi_benchmark(self) -> Optional[Dict]:
+        """获取最近一次多轮基准测试的统计结果"""
+        self._create_benchmark_tables()
+        row = self._conn.execute(
+            "SELECT * FROM benchmark_runs WHERE runs_count > 1 OR multi_run_stats_json != '{}' ORDER BY timestamp DESC LIMIT 1"
+        ).fetchone()
+        if row is None:
+            return None
+        return {
+            "id": row["id"],
+            "version": row["version"],
+            "runs": row["runs_count"],
+            "timestamp": row["timestamp"],
+            "scores": {
+                "memory": row["score_memory"],
+                "wisdom": row["score_wisdom"],
+                "evolution": row["score_evolution"],
+                "scalability": row["score_scalability"],
+                "overall": row["score_overall"],
+            },
+            "multi_run_stats": json.loads(row["multi_run_stats_json"] or "{}"),
+        }
 
     def close(self):
         self._conn.close()

@@ -1,0 +1,36 @@
+# SOMA 标准化基准测试环境
+# 用法:
+#   docker build -f Dockerfile.bench -t soma-bench .
+#   docker run --rm soma-bench --full --runs 5
+#   docker run --rm soma-bench --live  # 活体竞品测试
+
+FROM python:3.11-slim
+
+LABEL org.opencontainers.image.title="SOMA Benchmark"
+LABEL org.opencontainers.image.description="可复现的 SOMA 基准测试环境"
+LABEL org.opencontainers.image.source="https://github.com/sunyan999999/soma"
+
+# 固定依赖版本，消除环境差异
+ENV CHROMADB_VERSION=1.5.9
+ENV ONNXRUNTIME_VERSION=1.23.0
+
+RUN pip install --no-cache-dir \
+    chromadb==${CHROMADB_VERSION} \
+    onnxruntime==${ONNXRUNTIME_VERSION} \
+    numpy \
+    scipy \
+    jieba \
+    sentence-transformers
+
+# 安装 SOMA
+COPY . /soma
+WORKDIR /soma
+RUN pip install --no-cache-dir -e .
+
+# 预下载 ONNX 模型（避免首次运行延迟）
+RUN python -c "from soma.config import load_config; c = load_config(); print(f'SOMA ready, vector_dim={c.vector_dim}')"
+
+VOLUME ["/soma/reports"]
+
+ENTRYPOINT ["python", "-m", "soma.benchmarks"]
+CMD ["--full", "--runs", "5", "--output", "reports/"]

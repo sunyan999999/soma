@@ -7,6 +7,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.6.1] — 2026-05-06
+
+### 工程质量 + 客观测试体系
+
+v0.6.1 包含两部分工作：(1) 修复 0.6.0 在生产环境暴露的三个工程问题；(2) 建立四支柱客观测试评估体系，支撑对外可信展示。
+
+### Added
+
+- **多轮统计基准测试 (`MultiRunBenchmark`)**: 支持 N 轮独立运行（`--runs N`），每轮独立数据库。输出均值±标准差、95%置信区间、变异系数(CV%)、稳定性评级。CLI: `python -m soma.benchmarks --full --runs 5 --output reports/`。
+- **活体竞品基准测试**: `scripts/live_benchmark.py` — 使用真实库（ChromaDB）、同数据同查询实测竞品性能。输出 Recall@5/10、MRR、P50/P95 延迟、能力矩阵对比。所有数据标注"实测"或"不可用"，不使用 mock 数据。
+- **竞品适配器重写 (`competitors.py`)**: 移除所有 Dict mock 回退逻辑。适配器不可用时标记 `available=False` 并说明原因。ChromaDB 适配器使用真实客户端。
+- **标准化公开数据集扩展**: `test_dataset.json` v1.1 从 30 题扩展到 50 题（新增战略决策、创新设计两个领域），新增 `difficulty` 字段（1-3）。
+- **大规模检索数据集**: `benchmark_data/retrieval_1k.json` — 1000 条中文段落 + 50 个标注查询，覆盖 20 个领域，固定种子(42)可复现生成。
+- **统计存储扩展 (`analytics.py`)**: `benchmark_runs` 表新增 `runs_count` 和 `multi_run_stats_json` 列。新增 `record_multi_benchmark()` 和 `get_latest_multi_benchmark()` 方法。
+- **CI 基准测试工作流**: `.github/workflows/benchmark.yml` — PR 时轻量测试(N=1)，Release 时全量测试(N=5)+活体竞品对比，结果自动附加到 Release。
+- **Docker 标准化环境**: `Dockerfile.bench` — 固定 Python/依赖版本，消除环境差异。`docker run soma-bench --full --runs 5`。
+
+### Fixed
+
+- **SSE 流式端点会话记录补全**: `/api/chat/stream` 新增 `analytics.record_session()` 调用，在 "done" 事件后持久化会话数据（问题、答案、foci、激活记忆、响应耗时、记忆统计、权重）。修复前所有 SSE 流式请求不进入 AnalyticsStore，导致仪表盘分析面板缺少会话历史。
+- **向量维度修复**: `config.py` 中 `vector_dim` 恢复为 512。BAAI/bge-small-zh-v1.5 模型实际输出 512 维向量，此前被错误改为 384 导致 `could not broadcast input array from shape (512,) into shape (384,)` 运行时异常。
+- **`_token_stream` 重构**: 改为产出原始文本内容（而非预格式化 SSE 字符串），由流式端点包装 SSE 事件同时累积完整答案文本，确保会话记录包含完整回答。
+
+### Changed
+
+- **FTS5 搜索工具共用化**: 新增 `soma/memory/search_utils.py` 提供 `fts5_keyword_search()` 公共函数，支持双路径搜索（FTS5 trigram + LIKE 降级）。`episodic.py` 和 `skill.py` 的 `query_by_keywords()` 均委托至此。减少约 80 行重复代码。
+- **`skill.py` 查询精简**: `query_by_keywords()` 从约 100 行缩减至约 25 行委托调用，移除独立的 `_escape_fts5` 静态方法。
+- **异常日志增强**: SSE 会话记录失败时通过 `logging.getLogger("soma.dash").warning()` 输出完整 traceback，替换原先静默 `except Exception: pass`。
+
+### Security
+
+- **会话记录完整性**: SSE 流式端点现在与非流式端点行为一致，所有会话数据进入 AnalyticsStore 供仪表盘分析。
+
+---
+
+## [0.6.0] — 2026-05-04
+
+### 推理引擎 — 从"提供角度"到"执行推理"
+
+v0.6.0 的核心突破是在 LLM 调用之前插入 SOMA 自己的推理步骤。不再把问题直接丢给 LLM，而是先用模板将问题拆解为结构化推理任务——每条思维规律对应专属引导问题和可检验假设，并自动收集支持/反对证据对照。同时引入触发词自动扩展和思维模板挖掘，让 SOMA 的思维框架随使用自我生长。
+
+### Added
+
+- **结构化推理框架 (Pre-LLM Reasoning)**: `SOMA_Agent` 新增 `_REASONING_TEMPLATES`（7个）、`_HYPOTHESIS_TEMPLATES`（7个）、`_COMBO_REASONING`（6个）三层模板字典。`_execute_reasoning()` 在 LLM 调用前为每个 Focus 匹配专属推理模板、生成假设、收集正反证据，构建结构化推理框架注入 Prompt。
+- **假设检验框架**: 每条规律对应一个含 `{problem}` 占位符的可检验假设模板（如第一性原理→"忽略所有现有方案，从基本要素重新构建会得到___"），LLM 需结合证据给出检验结论。
+- **组合模板优先匹配**: `_match_template()` 对 combo_ 前缀的 law_id 优先匹配 `_COMBO_REASONING` 再回退 `_REASONING_TEMPLATES`，确保组合规律获得专属分析维度（如"根因系统分析""动态张力分析"等）。
+- **Foci 上限控制**: L3 复杂度超过 7 个 foci 时按权重降序取前 7，防止 Prompt 过长。
+- **触发词自动扩展**: `MetaEvolver.track_triggers()` 追踪问题关键词与成功规律的共现关系，同一词跨 5 次不同会话共现后 `_promote_triggers()` 自动提升为正式触发词。跳过 combo_ 和 _anti 规律防止污染。
+- **思维模板挖掘**: `MetaEvolver.track_focus_pattern()` 记录"问题领域→规律组合"映射，同一 (domain, law_ids) 模式出现 5 次后 `_mine_thought_templates()` 固化为可复用思维模板。
+- **因果关系自动抽取**: `SOMA_Agent._extract_causal_relations()` 在 L3 复杂问题回答后，用轻量 prompt（约 200 tokens）从 LLM 回答中提取"主语|谓语|宾语"三元组，以 confidence=0.4 存入语义记忆。失败不影响主流程。
+- **反视角证据对照**: `_execute_reasoning()` 在收集支持证据的同时收集 `anti_confirmation_search()` 返回的反视角证据（L2/L3 问题），在 Prompt 中以"支持/反对证据对照"呈现。
+- **推理框架可观察**: `_last_reasoning`、`_last_anti_memories`、`_last_prompt` 三个实例变量保存最近一次推理过程，供仪表盘和外部调试读取。
+- **因果抽取配置**: `SOMAConfig` 新增 `causal_extraction: bool = False` 和 `causal_extraction_complexity: int = 3` 两个配置项，管控因果抽取的开关和触发阈值。
+- **SQLite 持久化扩展**: `evolver.db` 新增 `candidate_triggers` 和 `focus_patterns` 两张表，触发词候选和思维模板模式跨会话持久化。
+
+### Changed
+
+- `SOMA_Agent._build_prompt()` 重构为"推理框架 + 假设检验 + 证据对照 + 反视角"四段结构
+- `SOMA_Agent.respond()` 管道新增 Step 2.6（推理框架构建）和 Step 4.5（因果抽取）
+- `MetaEvolver.set_current_context()` 新增 `problem` 参数，供触发词追踪使用
+- `MetaEvolver.reflect()` 中 v0.6.0 追踪（触发词+思维模式）仅在成功时执行
+- `MetaEvolver.clear_log()` 新增 v0.6.0 表的清理（candidate_triggers / focus_patterns）
+- `SOMA.chat()` 返回字典新增 `reasoning` 键，供调用方获取推理框架结果
+
+### Fixed
+
+- `_promote_triggers()` 增加 `law_found` 标记——仅当对应规律存在时才删除候选词记录，避免候选词永存无法清理
+- `_mine_thought_templates()` 不再删除已挖掘的 `focus_patterns` 记录，保留数据供后续分析
+- `_match_template()` 支持前缀/双向子串匹配，确保 combo_ 模板不会因命名变体而遗漏
+
+---
+
 ## [0.5.0] — 2026-05-04
 
 ### 思维框架深化 — 从"平铺列表"到"推理网络"

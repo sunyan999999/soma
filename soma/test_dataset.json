@@ -1,6 +1,6 @@
 {
-  "version": "1.0",
-  "description": "SOMA 标准测试数据集 — 30条跨域思维题，用于基准测试中评估思维拆解覆盖率、记忆激活精准度和推理深度",
+  "version": "1.1",
+  "description": "SOMA 标准测试数据集 — 50条跨域思维题（v1.1新增战略决策+创新设计各10题），用于基准测试中评估思维拆解覆盖率、记忆激活精准度和推理深度",
   "questions": [
     {
       "id": "cross_01",
@@ -240,7 +240,188 @@
       "problem": "任天堂'枯萎技术'理念（用成熟廉价技术做创新体验）与硅谷'追逐新技术'的主流思维形成鲜明对比。这种策略在AI时代还有效吗？",
       "reference_approach": "用矛盾分析法处理技术先进性与用户体验的关系，用进化视角看技术成熟度与创新空间的反向关系，用第一性原理追问'技术到底为谁服务'",
       "expected_laws": ["contradiction_analysis", "evolutionary_lens", "first_principles"],
-      "memory_tags": ["任天堂", "枯萎技术", "蓝海战略", "成熟技术", "创新", "用户体验", "AI时代"]
+      "memory_tags": ["任天堂", "枯萎技术", "蓝海战略", "成熟技术", "创新", "用户体验", "AI时代"],
+      "difficulty": 3
+    },
+    {
+      "id": "strategy_01",
+      "category": "战略决策",
+      "problem": "柯达发明了数码相机却死于数码时代，这种'创新者窘境'的根本原因是什么？现代企业如何避免？",
+      "reference_approach": "用矛盾分析法拆解现有业务与颠覆性创新的冲突，用第一性原理追问'用户到底需要什么'，用进化视角看技术S曲线的不可逆性",
+      "expected_laws": ["contradiction_analysis", "first_principles", "evolutionary_lens"],
+      "memory_tags": ["柯达", "创新者窘境", "颠覆性创新", "路径依赖", "技术S曲线", "组织惯性"],
+      "difficulty": 2
+    },
+    {
+      "id": "strategy_02",
+      "category": "战略决策",
+      "problem": "在高度不确定的市场中，应该'先发制人'还是'后发先至'？请给出决策框架。",
+      "reference_approach": "用帕累托原理识别20%关键变量，用逆向思考分别推演两种策略的最坏后果，用系统思维评估生态准备度",
+      "expected_laws": ["pareto_principle", "inversion", "systems_thinking"],
+      "memory_tags": ["先发优势", "后发优势", "不确定性决策", "市场时机", "博弈论", "风险权衡"],
+      "difficulty": 2
+    },
+    {
+      "id": "strategy_03",
+      "category": "战略决策",
+      "problem": "如果公司核心业务增速连续3年放缓，但新兴业务仍在亏损，CEO应该继续投入还是收缩聚焦？",
+      "reference_approach": "用第一性原理回归'公司存在的价值'，用进化视角评估双S曲线转换窗口，用矛盾分析法处理短期生存与长期发展的张力",
+      "expected_laws": ["first_principles", "evolutionary_lens", "contradiction_analysis"],
+      "memory_tags": ["增长瓶颈", "第二曲线", "资源分配", "战略收缩", "业务组合", "转型时机"],
+      "difficulty": 3
+    },
+    {
+      "id": "strategy_04",
+      "category": "战略决策",
+      "problem": "免费模式（羊毛出在猪身上）在B2B市场几乎从不奏效，为什么？B2B与B2C的定价逻辑有何本质差异？",
+      "reference_approach": "用第一性原理分析B2B和B2C的购买决策价值链差异，用类比推理比较双边市场的必要条件",
+      "expected_laws": ["first_principles", "analogical_reasoning"],
+      "memory_tags": ["免费模式", "B2B", "B2C", "定价策略", "双边市场", "决策链", "价值锚定"],
+      "difficulty": 2
+    },
+    {
+      "id": "strategy_05",
+      "category": "战略决策",
+      "problem": "如果竞争对手在核心指标上全面超越你，但你的用户留存率仍然更高，这意味着什么？你应该如何制定反制策略？",
+      "reference_approach": "用帕累托原理识别留存率背后的20%关键体验，用逆向思考分析'全面追赶'的策略陷阱，用系统思维构建体验护城河",
+      "expected_laws": ["pareto_principle", "inversion", "systems_thinking"],
+      "memory_tags": ["竞争劣势", "用户留存", "体验护城河", "不对称竞争", "大卫与歌利亚", "反制策略"],
+      "difficulty": 2
+    },
+    {
+      "id": "strategy_06",
+      "category": "战略决策",
+      "problem": "公司内部有两个团队同时做同一个产品方向，一个进展快但质量差，一个质量好但慢很多。作为决策者你如何选择？",
+      "reference_approach": "用矛盾分析法拆解速度与质量的辩证关系，用进化视角考虑市场窗口期，用第一性原理追问'什么是现在最关键的'",
+      "expected_laws": ["contradiction_analysis", "evolutionary_lens", "first_principles"],
+      "memory_tags": ["资源冲突", "速度vs质量", "内部竞争", "赛马机制", "决策框架", "权衡取舍"],
+      "difficulty": 2
+    },
+    {
+      "id": "strategy_07",
+      "category": "战略决策",
+      "problem": "一个市场占有率第一的产品，用户满意度却最低。这个矛盾说明了什么？应该怎么办？",
+      "reference_approach": "用第一性原理区分'市场地位'与'用户价值'，用矛盾分析法处理规模壁垒与体验缺陷的共存，用逆向思考推演'如果不管会怎样'",
+      "expected_laws": ["first_principles", "contradiction_analysis", "inversion"],
+      "memory_tags": ["市场占有率", "用户满意度", "虚假繁荣", "体验债", "指标悖论", "规模陷阱"],
+      "difficulty": 1
+    },
+    {
+      "id": "strategy_08",
+      "category": "战略决策",
+      "problem": "当行业老大和行业老二同时打价格战时，老三的最佳策略是什么？",
+      "reference_approach": "用系统思维分析价格战对行业生态链的影响，用帕累托原理识别老三的差异化优势，用类比推理借鉴军事中的'侧翼战'原则",
+      "expected_laws": ["systems_thinking", "pareto_principle", "analogical_reasoning"],
+      "memory_tags": ["价格战", "行业第三", "差异化战略", "侧翼战", "波特五力", "竞争定位"],
+      "difficulty": 1
+    },
+    {
+      "id": "strategy_09",
+      "category": "战略决策",
+      "problem": "AI时代的'数据网络效应'与传统互联网的'用户网络效应'有什么不同？对企业战略意味着什么？",
+      "reference_approach": "用第一性原理区分两种网络效应的底层机制，用类比推理对照分析，用进化视角看AI能力提升对数据壁垒的削弱趋势",
+      "expected_laws": ["first_principles", "analogical_reasoning", "evolutionary_lens"],
+      "memory_tags": ["网络效应", "数据飞轮", "AI", "护城河", "先发优势", "战略壁垒"],
+      "difficulty": 2
+    },
+    {
+      "id": "strategy_10",
+      "category": "战略决策",
+      "problem": "一家盈利稳定的上市公司突然宣布全面转型一个全新赛道，股价腰斩。应该如何评估这个决策？",
+      "reference_approach": "用第一性原理剥离'短期股价反应'和'长期战略逻辑'，用逆向思考构建'转型失败'的悲观叙事并验证，用进化视角判断赛道切换的必要性",
+      "expected_laws": ["first_principles", "inversion", "evolutionary_lens"],
+      "memory_tags": ["战略转型", "股价", "市场反应", "长期主义", "变革管理", "风险沟通"],
+      "difficulty": 3
+    },
+    {
+      "id": "design_01",
+      "category": "创新设计",
+      "problem": "如何设计一个让用户'上瘾'但不是通过操纵心理弱点的产品机制？",
+      "reference_approach": "用矛盾分析法区分'健康习惯'与'操纵成瘾'，用第一性原理追问'什么对用户真正有价值'，用逆向思考设计防沉迷机制",
+      "expected_laws": ["contradiction_analysis", "first_principles", "inversion"],
+      "memory_tags": ["成瘾设计", "用户体验", "习惯形成", "暗模式", "数字健康", "产品伦理"],
+      "difficulty": 2
+    },
+    {
+      "id": "design_02",
+      "category": "创新设计",
+      "problem": "为什么大多数'大而全'的产品最终都不如'少而精'的产品成功？产品边界的决策原则是什么？",
+      "reference_approach": "用帕累托原理识别核心功能的80%价值，用第一性原理定义'产品存在的理由'，用矛盾分析法处理广度与深度的张力",
+      "expected_laws": ["pareto_principle", "first_principles", "contradiction_analysis"],
+      "memory_tags": ["产品边界", "功能蔓延", "极简主义", "少即是多", "核心价值", "取舍"],
+      "difficulty": 1
+    },
+    {
+      "id": "design_03",
+      "category": "创新设计",
+      "problem": "如何为一个'不需要被设计'的流程做创新？例如：用户已经很习惯现有的糟糕体验，没有抱怨并不代表满意。",
+      "reference_approach": "用逆向思考从'用户的沉默'中挖掘'被接受的痛苦'，用第一性原理重构'理想体验'，用类比推理从完全不同的行业借鉴灵感",
+      "expected_laws": ["inversion", "first_principles", "analogical_reasoning"],
+      "memory_tags": ["隐性需求", "用户沉默", "体验重构", "乔布斯", "不需要市场调研", "颠覆性体验"],
+      "difficulty": 3
+    },
+    {
+      "id": "design_04",
+      "category": "创新设计",
+      "problem": "在AI可以生成无限设计方案的今天，人类设计师的不可替代价值是什么？",
+      "reference_approach": "用第一性原理区分'生成'与'设计'的本质差异，用矛盾分析法审视AI效率与人类审美判断的关系，用进化视角看设计角色的历史演变",
+      "expected_laws": ["first_principles", "contradiction_analysis", "evolutionary_lens"],
+      "memory_tags": ["AI设计", "人类价值", "审美判断", "意义建构", "设计哲学", "人机协作"],
+      "difficulty": 2
+    },
+    {
+      "id": "design_05",
+      "category": "创新设计",
+      "problem": "为什么一些'反直觉'的设计（如Snapchat的消失消息、Clubhouse的语音直播）反而引爆了用户需求？",
+      "reference_approach": "用逆向思考从'设计的反面'寻找机会，用第一性原理追问'用户的深层心理需求'，用类比推理链接表面无关的用户行为",
+      "expected_laws": ["inversion", "first_principles", "analogical_reasoning"],
+      "memory_tags": ["反直觉设计", "消失性", "稀缺性", "心理需求", "Snapchat", "行为心理学"],
+      "difficulty": 2
+    },
+    {
+      "id": "design_06",
+      "category": "创新设计",
+      "problem": "IoT产品（智能家居）长期以来面临'买了不用'或'用了几天就吃灰'的困境。根本原因是什么？如何设计破解？",
+      "reference_approach": "用第一性原理追问'用户每天的生活流是什么'而非'技术能做什么'，用系统思维分析家居环境的复杂交互，用帕累托原理识别真正高频场景",
+      "expected_laws": ["first_principles", "systems_thinking", "pareto_principle"],
+      "memory_tags": ["智能家居", "用户激活", "持续使用", "场景设计", "习惯融入", "技术落地"],
+      "difficulty": 2
+    },
+    {
+      "id": "design_07",
+      "category": "创新设计",
+      "problem": "如何为「弱势群体」（如老年人、残障人士）设计产品，同时让产品对主流用户也更好用？",
+      "reference_approach": "用逆向思考从能力受限的极端场景倒推通用设计原则，用类比推理从无障碍设计创新中提取普适价值（如OXO削皮器源于关节炎用户）",
+      "expected_laws": ["inversion", "analogical_reasoning"],
+      "memory_tags": ["无障碍设计", "包容性设计", "边缘用户", "通用设计", "银发经济", "极端场景"],
+      "difficulty": 2
+    },
+    {
+      "id": "design_08",
+      "category": "创新设计",
+      "problem": "设计一个'零学习成本'的企业管理软件，似乎是不可能的。但有什么方法可以无限逼近这个目标？",
+      "reference_approach": "用第一性原理拆解'学习成本'的构成（认知负荷/记忆负担/操作摩擦），用帕累托原理识别80%用户只用20%功能的事实，用类比推理借鉴消费级产品的渐进引导模式",
+      "expected_laws": ["first_principles", "pareto_principle", "analogical_reasoning"],
+      "memory_tags": ["企业软件", "学习成本", "渐进引导", "直觉操作", "消费化", "零培训"],
+      "difficulty": 3
+    },
+    {
+      "id": "design_09",
+      "category": "创新设计",
+      "problem": "设计思维（Design Thinking）的五步流程在AI时代需要如何演进？AI可以替代其中的哪些步骤？",
+      "reference_approach": "用进化视角看设计方法论的历史适应性，用矛盾分析法处理AI自动化与人类同理心的关系，用第一性原理区分'可计算化'和'不可计算化'的设计活动",
+      "expected_laws": ["evolutionary_lens", "contradiction_analysis", "first_principles"],
+      "memory_tags": ["设计思维", "AI辅助", "方法论演进", "同理心", "原型快速化", "设计自动化"],
+      "difficulty": 2
+    },
+    {
+      "id": "design_10",
+      "category": "创新设计",
+      "problem": "如果一个产品'太好用了'导致用户用完即走，从商业角度这算是成功还是失败？如何平衡体验与商业？",
+      "reference_approach": "用矛盾分析法处理用户体验与商业目标的内在张力，用系统思维构建'用户价值→商业回报'的正向循环而非零和博弈，用第一性原理追问'商业模式的本质'",
+      "expected_laws": ["contradiction_analysis", "systems_thinking", "first_principles"],
+      "memory_tags": ["用完即走", "用户体验", "商业变现", "注意力经济", "价值交换", "张小龙"],
+      "difficulty": 2
     }
   ]
 }

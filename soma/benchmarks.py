@@ -323,7 +323,7 @@ class ScalabilityBenchmark:
 @dataclass
 class BenchmarkRun:
     """一次完整基准测试运行"""
-    version: str = "0.3.3b2"
+    version: str = "0.6.1"
     timestamp: float = 0.0
     memory: MemoryBenchmark = field(default_factory=MemoryBenchmark)
     wisdom: WisdomBenchmark = field(default_factory=WisdomBenchmark)
@@ -921,8 +921,14 @@ def calculate_scores(run: BenchmarkRun) -> Dict[str, float]:
     return calculate_scores_v2(run)
 
 
-def run_full_benchmark(agent, ablation_data: Optional[Dict] = None, version: str = "0.3.3b1") -> BenchmarkRun:
+def run_full_benchmark(agent, ablation_data: Optional[Dict] = None, version: str = "") -> BenchmarkRun:
     """运行完整三维+伸缩性基准测试"""
+    if not version:
+        try:
+            from importlib.metadata import version as pkg_version
+            version = pkg_version("soma-wisdom")
+        except Exception:
+            version = "0.6.1"
     print("🧠 运行记忆维度基准...")
     memory = run_memory_benchmark(agent)
 
@@ -947,3 +953,328 @@ def run_full_benchmark(agent, ablation_data: Optional[Dict] = None, version: str
     )
     run.scores = calculate_scores_v2(run)
     return run
+
+
+# ═══════════════════════════════════════════════════════════════
+# 多轮统计基准测试 (v0.6.1+)
+# ═══════════════════════════════════════════════════════════════
+
+@dataclass
+class RunStatistics:
+    """单维度统计指标"""
+    mean: float
+    std: float
+    ci95_low: float
+    ci95_high: float
+    cv_pct: float           # 变异系数 % — 越低越稳定
+    min_val: float
+    max_val: float
+    values: List[float] = field(default_factory=list)
+
+    @property
+    def stability(self) -> str:
+        """稳定性评级"""
+        if self.cv_pct <= 3:
+            return "stable"
+        elif self.cv_pct <= 10:
+            return "acceptable"
+        return "unstable"
+
+
+@dataclass
+class MultiRunResult:
+    """多轮基准测试结果"""
+    version: str
+    runs: int
+    timestamp: float
+    scores: Dict[str, RunStatistics]           # 综合指标 (overall, memory, wisdom, evolution, scalability)
+    detail_scores: Dict[str, RunStatistics]     # 细分指标 (semantic_recall, query_latency_ms, 等)
+    raw_runs: List[BenchmarkRun] = field(default_factory=list)
+    data_scale: str = "small"
+    total_duration_s: float = 0.0
+
+
+def compute_statistics(name: str, values: List[float]) -> RunStatistics:
+    """计算单维度统计指标"""
+    arr = np.array(values)
+    n = len(arr)
+    mean = float(np.mean(arr))
+    std = float(np.std(arr, ddof=1)) if n > 1 else 0.0
+    # 95% 置信区间 (t-distribution approximation)
+    ci_half = 1.96 * std / math.sqrt(n) if n > 1 and std > 0 else 0.0
+    cv = (std / mean * 100) if mean != 0 else 0.0
+    return RunStatistics(
+        mean=round(mean, 2),
+        std=round(std, 2),
+        ci95_low=round(mean - ci_half, 2),
+        ci95_high=round(mean + ci_half, 2),
+        cv_pct=round(cv, 2),
+        min_val=round(float(np.min(arr)), 2),
+        max_val=round(float(np.max(arr)), 2),
+        values=[round(v, 2) for v in values],
+    )
+
+
+def run_multi_benchmark(
+    agent_factory,
+    runs: int = 5,
+    version: str = "",
+    ablation_data: Optional[Dict] = None,
+) -> MultiRunResult:
+    """多轮独立基准测试 — 每轮新建 agent，隔离数据库
+
+    Args:
+        agent_factory: 无参可调用对象，每次调用返回新的 agent 实例
+        runs: 运行轮数 (默认 5)
+        version: 版本号
+        ablation_data: 消融实验数据 (可选)
+    """
+    if not version:
+        try:
+            from importlib.metadata import version as pkg_version
+            version = pkg_version("soma-wisdom")
+        except Exception:
+            version = "0.6.1"
+
+    t0 = time.time()
+    raw_runs: List[BenchmarkRun] = []
+    all_scores: Dict[str, List[float]] = {}
+    all_details: Dict[str, List[float]] = {}
+
+    for i in range(runs):
+        print(f"\n{'='*50}")
+        print(f"  第 {i+1}/{runs} 轮基准测试")
+        print(f"{'='*50}")
+        agent = agent_factory()
+        try:
+            run = run_full_benchmark(agent, ablation_data=ablation_data, version=version)
+            raw_runs.append(run)
+
+            # 收集综合评分（仅数值型）
+            for key, val in run.scores.items():
+                if isinstance(val, (int, float)) and not isinstance(val, bool):
+                    all_scores.setdefault(key, []).append(float(val))
+
+            # 收集细分指标（仅纯数值字段，跳过嵌套结构）
+            for bench_name, bench_obj in [
+                ("memory", run.memory),
+                ("wisdom", run.wisdom),
+                ("evolution", run.evolution),
+                ("scalability", run.scalability),
+            ]:
+                bench_dict = asdict(bench_obj)
+                for key, val in bench_dict.items():
+                    if isinstance(val, (int, float)) and not isinstance(val, bool):
+                        detail_key = f"{bench_name}/{key}"
+                        all_details.setdefault(detail_key, []).append(float(val))
+            # 收集 evolution details 中的数值子字段
+            evo_details = asdict(run.evolution).get("details", {})
+            if isinstance(evo_details, dict):
+                for key, val in evo_details.items():
+                    if isinstance(val, (int, float)) and not isinstance(val, bool):
+                        detail_key = f"evolution/{key}"
+                        all_details.setdefault(detail_key, []).append(float(val))
+        finally:
+            try:
+                agent.close()
+            except Exception:
+                pass
+
+    # 计算统计指标
+    score_stats = {}
+    for key, values in all_scores.items():
+        score_stats[key] = compute_statistics(key, values)
+
+    detail_stats = {}
+    for key, values in all_details.items():
+        detail_stats[key] = compute_statistics(key, values)
+
+    duration = time.time() - t0
+    data_scale = raw_runs[0].data_scale if raw_runs else "small"
+
+    return MultiRunResult(
+        version=version,
+        runs=len(raw_runs),
+        timestamp=time.time(),
+        scores=score_stats,
+        detail_scores=detail_stats,
+        raw_runs=raw_runs,
+        data_scale=data_scale,
+        total_duration_s=round(duration, 1),
+    )
+
+
+def _stability_emoji(stability: str) -> str:
+    return {"stable": "●", "acceptable": "◐", "unstable": "○"}[stability]
+
+
+def _format_ci(stat: RunStatistics) -> str:
+    return f"[{stat.ci95_low}, {stat.ci95_high}]"
+
+
+def generate_markdown_report(result: MultiRunResult) -> str:
+    """生成 Markdown 格式的测试报告"""
+    lines = []
+    lines.append(f"# SOMA v{result.version} 基准测试报告")
+    lines.append("")
+    lines.append(f"| 项目 | 数值 |")
+    lines.append(f"|------|------|")
+    lines.append(f"| 版本 | {result.version} |")
+    lines.append(f"| 测试轮次 | {result.runs} 轮独立运行 |")
+    lines.append(f"| 数据规模 | {result.data_scale} |")
+    lines.append(f"| 总耗时 | {result.total_duration_s}s |")
+    lines.append("")
+
+    # 综合评分
+    lines.append("## 综合评分")
+    lines.append("")
+    lines.append(f"| 维度 | 均值 | 标准差 | 95%置信区间 | CV% | 稳定性 | 范围 |")
+    lines.append(f"|------|------|--------|-------------|-----|--------|------|")
+    for key in ["overall", "memory", "wisdom", "evolution", "scalability"]:
+        if key in result.scores:
+            s = result.scores[key]
+            lines.append(
+                f"| {key} | {s.mean} | ±{s.std} | {_format_ci(s)} "
+                f"| {s.cv_pct}% | {_stability_emoji(s.stability)} {s.stability} "
+                f"| [{s.min_val}, {s.max_val}] |"
+            )
+    lines.append("")
+
+    # 细分指标（仅显示稳定性较差的指标）
+    unstable_details = {k: v for k, v in result.detail_scores.items() if v.stability != "stable"}
+    if unstable_details:
+        lines.append("## 波动较大的细分指标")
+        lines.append("")
+        lines.append(f"| 指标 | 均值 | 标准差 | CV% | 稳定性 |")
+        lines.append(f"|------|------|--------|-----|--------|")
+        for key, s in sorted(unstable_details.items(), key=lambda x: -x[1].cv_pct):
+            lines.append(
+                f"| {key} | {s.mean} | ±{s.std} | {s.cv_pct}% "
+                f"| {_stability_emoji(s.stability)} {s.stability} |"
+            )
+        lines.append("")
+
+    # 版本回归检测
+    lines.append("## 版本回归检测")
+    lines.append("")
+    lines.append("> 与上一版本的对比将在有历史数据后自动生成。")
+    lines.append("")
+    lines.append("---")
+    lines.append("")
+    lines.append(f"*报告由多轮基准测试自动生成。轮次: {result.runs}, 每轮独立数据库。*")
+    return "\n".join(lines)
+
+
+def generate_json_report(result: MultiRunResult) -> dict:
+    """生成机器可读的 JSON 报告"""
+    return {
+        "version": result.version,
+        "runs": result.runs,
+        "timestamp": result.timestamp,
+        "data_scale": result.data_scale,
+        "total_duration_s": result.total_duration_s,
+        "scores": {
+            key: {
+                "mean": s.mean,
+                "std": s.std,
+                "ci95": [s.ci95_low, s.ci95_high],
+                "cv_pct": s.cv_pct,
+                "stability": s.stability,
+                "range": [s.min_val, s.max_val],
+                "values": s.values,
+            }
+            for key, s in result.scores.items()
+        },
+        "detail_scores": {
+            key: {
+                "mean": s.mean,
+                "std": s.std,
+                "cv_pct": s.cv_pct,
+                "stability": s.stability,
+            }
+            for key, s in result.detail_scores.items()
+        },
+    }
+
+
+# ═══════════════════════════════════════════════════════════════
+# CLI 入口
+# ═══════════════════════════════════════════════════════════════
+
+def _parse_args():
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="SOMA 基准测试引擎",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+示例:
+  python -m soma.benchmarks                     # 单次基准测试
+  python -m soma.benchmarks --full --runs 5     # 多轮统计基准测试
+  python -m soma.benchmarks --full --runs 5 --output reports/  # 输出报告到目录
+        """,
+    )
+    parser.add_argument("--full", action="store_true", help="启用多轮统计基准测试")
+    parser.add_argument("--runs", type=int, default=5, help="多轮模式运行轮数 (默认 5)")
+    parser.add_argument("--output", type=str, default="reports", help="报告输出目录 (默认 reports/)")
+    parser.add_argument("--version", type=str, default="", help="版本号 (默认自动检测)")
+    return parser.parse_args()
+
+
+def main():
+    args = _parse_args()
+
+    if args.full:
+        from soma import SOMA
+
+        def agent_factory():
+            import tempfile
+            import os
+            tmpdir = tempfile.mkdtemp(prefix="soma_bench_")
+            return SOMA(persist_dir=tmpdir)._agent
+
+        result = run_multi_benchmark(
+            agent_factory=agent_factory,
+            runs=args.runs,
+            version=args.version,
+        )
+
+        # 输出报告
+        output_dir = Path(args.output)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        ts = time.strftime("%Y-%m-%d")
+        version_slug = result.version.replace(".", "-")
+
+        md_path = output_dir / f"BENCH_v{result.version}_{ts}.md"
+        md_path.write_text(generate_markdown_report(result), encoding="utf-8")
+        print(f"\n  Markdown 报告: {md_path}")
+
+        json_path = output_dir / f"BENCH_v{result.version}_{ts}.json"
+        json_path.write_text(json.dumps(generate_json_report(result), ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"  JSON 报告:   {json_path}")
+
+        # 打印摘要
+        print(f"\n{'='*50}")
+        print(f"  SOMA v{result.version} 基准测试 ({result.runs}轮)")
+        print(f"{'='*50}")
+        for key in ["overall", "memory", "wisdom", "evolution", "scalability"]:
+            if key not in result.scores:
+                continue
+            s = result.scores[key]
+            emoji = _stability_emoji(s.stability)
+            print(f"  {emoji} {key:15s}: {s.mean:6.1f} ± {s.std:4.1f}  (CV={s.cv_pct:.1f}%)")
+    else:
+        from soma import SOMA
+        import tempfile
+        tmpdir = tempfile.mkdtemp(prefix="soma_bench_")
+        soma = SOMA(persist_dir=tmpdir)
+        try:
+            run = run_full_benchmark(soma._agent, version=args.version or "0.6.1")
+            print(f"\n综合评分: {run.scores.get('overall', 'N/A')}")
+            for k, v in run.scores.items():
+                print(f"  {k}: {v}")
+        finally:
+            soma.close()
+
+
+if __name__ == "__main__":
+    main()

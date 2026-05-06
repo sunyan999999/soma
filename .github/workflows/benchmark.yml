@@ -1,0 +1,92 @@
+name: SOMA Benchmark
+
+on:
+  pull_request:
+    branches: [master, main]
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      full_benchmark:
+        description: '运行全量基准测试 (N=5轮)'
+        type: boolean
+        default: false
+
+jobs:
+  # ── PR 轻量测试 ──
+  quick-bench:
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && !inputs.full_benchmark)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install SOMA
+        run: |
+          pip install -e .
+          pip install chromadb
+
+      - name: Run Core Tests
+        run: |
+          python -m pytest tests/ -x -q --ignore=tests/test_stress.py -p no:warnings
+
+      - name: Quick Benchmark (1 round)
+        run: |
+          python -m soma.benchmarks --full --runs 1 --output reports/
+
+      - name: Upload Quick Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: quick-bench-report
+          path: reports/BENCH_*.md
+
+  # ── Release 全量测试 ──
+  full-bench:
+    if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.full_benchmark)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install SOMA + Competitors
+        run: |
+          pip install -e .
+          pip install chromadb
+
+      - name: Full Benchmark (5 rounds)
+        run: |
+          python -m soma.benchmarks --full --runs 5 --output reports/
+
+      - name: Live Competitor Benchmark
+        run: |
+          python scripts/live_benchmark.py --items 100 --queries 20 --output reports/
+
+      - name: Upload Full Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-bench-report
+          path: |
+            reports/BENCH_*.md
+            reports/BENCH_*.json
+            reports/LIVE_BENCH_*.md
+            reports/LIVE_BENCH_*.json
+
+      - name: Attach to Release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} \
+            reports/BENCH_*.md reports/BENCH_*.json \
+            reports/LIVE_BENCH_*.md reports/LIVE_BENCH_*.json \
+            --repo ${{ github.repository }}

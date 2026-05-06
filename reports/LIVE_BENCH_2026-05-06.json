@@ -1,0 +1,92 @@
+{
+  "timestamp": 1778054213.0971634,
+  "environment": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "python": "3.13.9",
+    "timestamp": "2026-05-06 15:56:53",
+    "n_items": 200,
+    "n_queries": 30
+  },
+  "results": {
+    "SOMA": {
+      "name": "SOMA",
+      "version": "0.6.1",
+      "available": true,
+      "data_source": "live",
+      "recall_at_5": 0.3,
+      "recall_at_10": 0.275,
+      "mrr": 0.1401,
+      "insert_p50_ms": 0.03,
+      "insert_p95_ms": 5.79,
+      "query_p50_ms": 10.1,
+      "query_p95_ms": 35.36,
+      "dedup_rate": 1.0,
+      "dedup_supported": true,
+      "reasoning_supported": true,
+      "evolution_supported": true,
+      "total_memories": 125,
+      "details": {
+        "fts5_enabled": true,
+        "wal_mode": true,
+        "vector_search": true
+      }
+    },
+    "ChromaDB": {
+      "name": "ChromaDB",
+      "version": "chromadb-1.5.9 (no-embeddings)",
+      "available": true,
+      "data_source": "live",
+      "recall_at_5": 0.025,
+      "recall_at_10": 0.05,
+      "mrr": 0.0222,
+      "insert_p50_ms": 3.9,
+      "insert_p95_ms": 6.2,
+      "query_p50_ms": 1.22,
+      "query_p95_ms": 2.41,
+      "dedup_rate": 0.0,
+      "dedup_supported": false,
+      "reasoning_supported": false,
+      "evolution_supported": false,
+      "total_memories": 200,
+      "details": {}
+    },
+    "Mem0": {
+      "name": "Mem0",
+      "version": "N/A",
+      "available": false,
+      "data_source": "unavailable",
+      "recall_at_5": 0.0,
+      "recall_at_10": 0.0,
+      "mrr": 0.0,
+      "insert_p50_ms": 0.0,
+      "insert_p95_ms": 0.0,
+      "query_p50_ms": 0.0,
+      "query_p95_ms": 0.0,
+      "dedup_rate": 0.0,
+      "dedup_supported": false,
+      "reasoning_supported": false,
+      "evolution_supported": false,
+      "total_memories": 0,
+      "details": {}
+    },
+    "Zep": {
+      "name": "Zep",
+      "version": "N/A",
+      "available": false,
+      "data_source": "unavailable",
+      "recall_at_5": 0.0,
+      "recall_at_10": 0.0,
+      "mrr": 0.0,
+      "insert_p50_ms": 0.0,
+      "insert_p95_ms": 0.0,
+      "query_p50_ms": 0.0,
+      "query_p95_ms": 0.0,
+      "dedup_rate": 0.0,
+      "dedup_supported": false,
+      "reasoning_supported": false,
+      "evolution_supported": false,
+      "total_memories": 0,
+      "details": {}
+    }
+  }
+}

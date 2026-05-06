@@ -36,7 +36,7 @@ class EpisodicStore(BaseMemoryStore):
         if self._use_vector:
             from soma.vector_store import NumpyVectorIndex
 
-            dim = embedder.dimension if embedder else 384
+            dim = embedder.dimension if embedder else 512
             self._vector_index = NumpyVectorIndex(self._db_path, dim)
             self._vector_index.ensure_table(self._conn)
             # 维度迁移：清除嵌入模型变更导致的不兼容旧向量
@@ -190,116 +190,23 @@ class EpisodicStore(BaseMemoryStore):
         if not keywords:
             return []
 
-        # 分离长关键词(FTS5 trigram)和短关键词(LIKE兜底)
-        fts_keywords = [kw for kw in keywords if len(kw) >= 3]
-        like_keywords = [kw for kw in keywords if len(kw) < 3]
+        from soma.memory.search_utils import fts5_keyword_search
 
-        seen_ids = set()
-        memories = []
-
-        # 用户过滤子句
-        user_clause = "AND em.user_id = ?" if user_id else ""
-        # 时间窗口：仅当 max_age_days 显式传入时启用
-        time_clause = ""
-        time_params = []
-        if max_age_days is not None:
-            min_ts = datetime.now(timezone.utc).timestamp() - max_age_days * 86400.0
-            time_clause = "AND em.timestamp >= ?"
-            time_params = [min_ts]
-
-        # 路径1: FTS5 trigram 全文搜索（3字及以上，毫秒级）
-        if fts_keywords:
-            fts_query = " OR ".join(
-                '"' + kw.replace('"', '""') + '"' for kw in fts_keywords
-            )
-            try:
-                params = [fts_query] + time_params
-                sql = f"""
-                    SELECT em.* FROM episodic_memories em
-                    INNER JOIN episodic_fts fts ON em.rowid = fts.rowid
-                    WHERE episodic_fts MATCH ?
-                    {time_clause} {user_clause}
-                    ORDER BY em.timestamp DESC, em.importance DESC
-                    LIMIT ?
-                """
-                if user_id:
-                    params.append(user_id)
-                params.append(top_k)
-                rows = self._conn.execute(sql, params).fetchall()
-                for r in rows:
-                    mem = self._row_to_memory(r)
-                    if mem.id not in seen_ids:
-                        seen_ids.add(mem.id)
-                        memories.append(mem)
-            except sqlite3.OperationalError:
-                _log.info("FTS5 搜索语法错误，降级到 LIKE 搜索")
-
-        # 路径2: LIKE 兜底（短关键词 1-2 字）
-        remaining = top_k - len(memories)
-        if like_keywords and remaining > 0:
-            conditions = [] if max_age_days is None else ["timestamp >= ?"]
-            params = [] if max_age_days is None else time_params.copy()
-            if user_id:
-                conditions.append("user_id = ?")
-                params.append(user_id)
-            if seen_ids:
-                placeholders = ",".join("?" * len(seen_ids))
-                conditions.append(f"id NOT IN ({placeholders})")
-                params.extend(seen_ids)
-            kw_conds = []
-            for kw in like_keywords:
-                pattern = f"%{kw}%"
-                kw_conds.append("(content LIKE ? OR context_json LIKE ?)")
-                params.extend([pattern, pattern])
-            conditions.append("(" + " OR ".join(kw_conds) + ")")
-            where_clause = " AND ".join(conditions)
-            sql = f"""
-                SELECT * FROM episodic_memories
-                WHERE {where_clause}
-                ORDER BY timestamp DESC, importance DESC
-                LIMIT ?
-            """
-            params.append(remaining)
-            rows = self._conn.execute(sql, params).fetchall()
-            for r in rows:
-                mem = self._row_to_memory(r)
-                if mem.id not in seen_ids:
-                    seen_ids.add(mem.id)
-                    memories.append(mem)
-
-        # 路径3: 纯 LIKE 兜底（FTS 失败时的完整回退）
-        if not memories and not fts_keywords:
-            return self._like_fallback(keywords, top_k, user_id=user_id, max_age_days=max_age_days)
-
-        return memories
-
-    def _like_fallback(
-        self, keywords: List[str], top_k: int = 5,
-        user_id: str = "",
-        max_age_days: Optional[float] = None,
-    ) -> List[MemoryUnit]:
-        """纯 LIKE 搜索兜底"""
-        conditions = [] if max_age_days is None else ["timestamp >= ?"]
-        params = []
-        if max_age_days is not None:
-            min_ts = datetime.now(timezone.utc).timestamp() - max_age_days * 86400.0
-            params.append(min_ts)
-        if user_id:
-            conditions.append("user_id = ?")
-            params.append(user_id)
-        for kw in keywords:
-            pattern = f"%{kw}%"
-            conditions.append("(content LIKE ? OR context_json LIKE ?)")
-            params.extend([pattern, pattern])
-        sql = f"""
-            SELECT * FROM episodic_memories
-            WHERE {' AND '.join(conditions)}
-            ORDER BY timestamp DESC, importance DESC
-            LIMIT ?
-        """
-        params.append(top_k)
-        rows = self._conn.execute(sql, params).fetchall()
-        return [self._row_to_memory(r) for r in rows]
+        return fts5_keyword_search(
+            self._conn,
+            keywords,
+            table_name="episodic_memories",
+            fts_table="episodic_fts",
+            search_cols=["content", "context_json"],
+            id_col="id",
+            time_col="timestamp",
+            importance_col="importance",
+            user_col="user_id",
+            row_converter=self._row_to_memory,
+            top_k=top_k,
+            user_id=user_id,
+            max_age_days=max_age_days,
+        )
 
     def query_by_vector(
         self, query_vec, top_k: int = 5, user_id: str = "",

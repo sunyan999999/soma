@@ -40,10 +40,14 @@ class SOMAConfig(BaseModel):
     llm_cache_ttl: int = 600  # 缓存有效期（秒），默认10分钟
     llm_cache_max_size: int = 50  # 最大缓存条目数
 
+    # 因果抽取（v0.6.0+）
+    causal_extraction: bool = False  # 是否在回答后自动抽取因果三元组
+    causal_extraction_complexity: int = 3  # 最低复杂度阈值（1-3），仅 >= 此值时触发
+
     # 嵌入模型配置（Alpha 新增）
     embedding_model_name: str = "BAAI/bge-small-zh-v1.5"
     use_vector_search: bool = True
-    vector_dim: int = 512
+    vector_dim: int = 512  # BAAI/bge-small-zh-v1.5 实际输出512维
     embedder_device: str = "cpu"  # "cpu" | "cuda"
 
     # Lazily loaded framework config

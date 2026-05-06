@@ -120,6 +120,11 @@ class SOMA:
         else:
             self._agent._last_anti_memories = []
 
+        # v0.6.0: 构建推理框架
+        self._agent._last_reasoning = self._agent._execute_reasoning(
+            problem, foci, activated, self._agent._last_anti_memories,
+        )
+
         mock_fallback = False
 
         try:
@@ -135,11 +140,15 @@ class SOMA:
             answer = self._mock_respond(problem, foci, activated)
             mock_fallback = True
 
+        # v0.6.0: 因果抽取
+        if complexity >= self._agent.config.causal_extraction_complexity:
+            self._agent._extract_causal_relations(problem, answer)
+
         for am in activated:
             am.memory.access_count += 1
             if am.source == "episodic":
                 self._agent.memory.episodic.increment_access(am.memory.id)
-        self._agent.evolver.set_current_context(foci, activated)
+        self._agent.evolver.set_current_context(foci, activated, problem)
         self._session_count += 1
         outcome = "failure" if mock_fallback else "success"
         self._agent.reflect(f"soma_{self._session_count}", outcome)
@@ -165,6 +174,7 @@ class SOMA:
             ],
             "memory_stats": self._agent.memory.stats(),
             "weights": self._agent.evolver.get_weights(),
+            "reasoning": getattr(self._agent, '_last_reasoning', []),
         }
 
         self._agent.record_session(problem, answer, foci, activated)
@@ -236,6 +246,10 @@ class SOMA:
         return self._agent.evolver.approve_law(
             candidate, embedder=self._agent.embedder,
         )
+
+    def get_thought_templates(self) -> list:
+        """获取已挖掘的思维模板（v0.6.0）"""
+        return self._agent.evolver.get_thought_templates()
 
     def close(self) -> None:
         """关闭底层 agent 及所有子组件连接"""
