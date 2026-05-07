@@ -54,6 +54,8 @@ alpha = [
 Homepage = "https://github.com/sunyan999999/soma"
 Repository = "https://github.com/sunyan999999/soma.git"
 Issues = "https://github.com/sunyan999999/soma/issues"
+Documentation = "https://sunyan999999.github.io/soma/"
+PyPI = "https://pypi.org/project/soma-wisdom/"
 
 [project.scripts]
 soma-quickstart = "soma.__main__:main"
