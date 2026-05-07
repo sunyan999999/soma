@@ -27,7 +27,7 @@ answer = soma.respond("How to analyze our growth bottleneck?")
 
 ### `soma.chat(problem: str) -> dict`
 
-Structured response including decomposition foci, activated memories, and memory stats.
+Structured response including decomposition foci, activated memories, reasoning framework (v0.6.0+), and memory stats.
 
 ```python
 result = soma.chat("What is first-principles thinking?")
@@ -36,6 +36,7 @@ result = soma.chat("What is first-principles thinking?")
 #   "answer": "...",
 #   "foci": [{"law_id": "...", "dimension": "...", "keywords": [...], "weight": 0.9, "rationale": "..."}],
 #   "activated_memories": [{"content": "...", "source": "episodic", "activation_score": 0.89}],
+#   "reasoning": [{"index": 1, "dimension": "...", "template": "...", "hypothesis": "...", "evidence": [...], "counter_evidence": [...]}],
 #   "memory_stats": {"episodic": 42, "semantic": 15, "indexed_vectors": 42},
 #   "weights": {"first_principles": 0.90, ...}
 # }
@@ -138,21 +139,57 @@ config = SOMAConfig(
 agent = SOMA_Agent(config)
 ```
 
-### `agent.respond(problem: str) -> str`
+### `agent.respond(problem: str, user_id: str = "") -> str`
 
 Same pipeline as `SOMA.respond`, without the auto-evolution counter.
+
+Pipeline (v0.6.0): complexity assess → decompose → activate → anti-bias search → **reasoning framework** → build prompt → call LLM → **causal extraction** → record.
 
 ### `agent.decompose(problem: str) -> List[Focus]`
 
 Raw decomposition result.
 
-### `agent.remember(content, context, importance) -> str`
+### `agent.remember(content, context, importance, user_id="", session_id="") -> str`
 
 Direct memory storage, same as facade.
 
+### `agent.remember_semantic(subject, predicate, object_, confidence=1.0, namespace="") -> None`
+
+Store a semantic triple (knowledge graph edge).
+
+### `agent.query_memory(query: str, top_k: int = 5, user_id: str = "") -> List[Dict]`
+
+Direct memory search, bypassing framework decomposition.
+
 ### `agent.reflect(task_id, outcome) -> None`
 
-Record session outcome.
+Record session outcome for meta-evolution tracking.
+
+### `agent.close() -> None`
+
+Close all sub-component connections (memory + evolver). Supports context manager (`with SOMA_Agent(config) as agent:`).
+
+### v0.6.0 Reasoning Engine (Internal)
+
+#### `agent._assess_complexity(problem: str) -> int`
+
+Static method. Returns 1 (simple), 2 (medium), or 3 (complex) based on text length (>100 chars) and depth keywords (为什么/如何/深层/根本/系统/矛盾 etc.).
+
+#### `agent._execute_reasoning(problem, foci, activated, anti_memories) -> List[Dict]`
+
+Build structured reasoning framework for each focus. Matches reasoning templates, hypothesis templates, collects supporting and counter evidence. Caps at 7 foci for L3. Returns list of reasoning blocks, each containing: `index`, `dimension`, `weight`, `template`, `hypothesis`, `evidence` (up to 3), `counter_evidence` (up to 2).
+
+#### `agent._match_template(law_id: str, templates: Dict[str, str]) -> str`
+
+Match a law_id to a reasoning/hypothesis template. Supports exact match, prefix match, and bidirectional substring match for combo templates.
+
+#### `agent._extract_causal_relations(problem: str, answer: str) -> None`
+
+Lightweight LLM call (~200 tokens) to extract "subject|predicate|object" triples from answer. Only triggers when `config.causal_extraction=True` and complexity >= `config.causal_extraction_complexity`. Failures are silently ignored.
+
+#### `agent._last_reasoning: List[Dict]`
+
+Instance variable storing the most recent reasoning framework. Readable by dashboards and external callers for observability.
 
 ---
 

@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Optional
 
-from soma.base import ActivatedMemory, Focus, MemoryUnit
+from soma.base import RECENCY_HALF_LIFE_DAYS, ActivatedMemory, Focus, MemoryUnit
 from soma.config import SOMAConfig
 from soma.memory.episodic import EpisodicStore
 from soma.memory.semantic import SemanticStore
@@ -84,7 +84,7 @@ class MemoryCore:
             mem = vec_mem.get(mid) or kw_mem.get(mid)
             if mem is not None:
                 days = (now_ts - mem.timestamp) / 86400.0
-                time_penalty = math.exp(-max(days, 0) / 7.0)
+                time_penalty = math.exp(-max(days, 0) / RECENCY_HALF_LIFE_DAYS)
                 score *= time_penalty
             rrf_scores[mid] = score
 

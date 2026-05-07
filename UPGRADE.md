@@ -1,5 +1,108 @@
 # 升级指南
 
+## 0.6.1 → 0.7.0
+
+### 破坏性变更
+
+**无。** 所有新增功能均带默认值，现有代码无需修改即可正常运行。
+
+### 重要新增：记忆智能 v0.7.0
+
+v0.7.0 引入三大记忆管理机制，模仿人脑记忆管理模式：
+
+#### 1. 摘要合并 — 相似记忆自动归并
+
+```
+合并前: 3条高度相似的"第一性原理"记忆（各200字，大量重复）
+合并后: 1条主体记忆 + 独特信息补充（300字，零冗余）
+```
+
+`evolve()` 每次自动扫描最近30天记忆，将相似度 >85% 的记忆对合并：
+- 高重要性记忆保留为主体，独特信息追加为"补充："段
+- 低重要性记忆标记为 `importance=-0.1`（14天宽限期后自动删除）
+- 合并日志记录到 `memory_merges` 表，可追溯
+
+```python
+changes = soma.evolve()
+# changes 中包含 {"type": "memory_consolidation", "merged_count": N}
+```
+
+#### 2. 主动遗忘 — Ebbinghaus 指数衰减
+
+模仿人脑遗忘曲线，三层策略：
+
+| 层级 | 策略 | 触发条件 |
+|------|------|---------|
+| 1. 时间衰减 | `strength = importance × e^(-λ × days) × (1 + recall_count × 0.2)` | strength < 0.05 |
+| 2. 访问频率 | 30天未访问 + 低重要性 | access_count=0 + importance < 0.5 |
+| 3. 冗余清理 | 合并废记忆14天宽限期后删除 | importance < 0 + 14天 |
+
+**类别差异化衰减率**: 策略(0.07) < 事实(0.10) < 洞察(0.12) < 决策(0.15) < 外部(0.20)
+
+**遗忘 = 归档，非真删除**。归档到 `episodic_archived` 表，可随时恢复：
+
+```python
+# 浏览归档
+store = soma._agent.memory.episodic
+archived = store.recall_archived(query="关键词")
+
+# 恢复指定记忆
+store.restore_archived(memory_id)
+```
+
+#### 3. 外部知识集成 — 批量导入
+
+支持从文件和 URL 批量导入知识：
+
+```python
+# 导入 Markdown 文件（自动分块）
+store = soma._agent.memory.episodic
+ids = store.import_knowledge("docs/strategy.md", user_id="user_1")
+
+# 导入 JSON 知识库
+ids = store.import_knowledge("data/knowledge_base.json")
+
+# 检查过期知识
+from soma.memory.external import ExternalKnowledgeImporter
+importer = ExternalKnowledgeImporter(store)
+expired = importer.check_expired()
+```
+
+支持格式：`.md` `.txt` `.json` `.jsonl` `.yaml` `.yml`
+
+默认 30 天过期（可通过 `context._expires_in_days` 配置），到期自动降低 importance。
+
+### 数据库变更
+
+**自动执行，无需手动干预。** 首次启动时自动创建三张新表：
+- `memory_merges` — 合并日志
+- `episodic_archived` — 归档记忆
+- 外部知识导入使用现有 `episodic_memories` 表（标记 `memory_type='external'`）
+
+### 安装
+
+```bash
+pip install --upgrade soma-wisdom
+```
+
+### 验证升级
+
+```python
+from soma import SOMA
+
+soma = SOMA()
+# 验证记忆智能功能可用
+assert hasattr(soma._agent.memory.episodic, 'consolidate')
+assert hasattr(soma._agent.memory.episodic, 'forget')
+assert hasattr(soma._agent.memory.episodic, 'import_knowledge')
+
+# 验证 evolve 管道包含新阶段
+changes = soma.evolve()
+print("v0.7.0 升级成功，变更列表:", changes)
+```
+
+---
+
 ## 0.6.0 → 0.6.1
 
 ### 破坏性变更

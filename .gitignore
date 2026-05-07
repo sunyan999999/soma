@@ -81,4 +81,10 @@ site/
 *.bak
 _benchmark_tmp/
 dashboard_data_backup/
+soma_data_v070/
+soma_data_backup_*/
 reports/
+
+# Generated artifacts (not source)
+deploy/
+*.pdf

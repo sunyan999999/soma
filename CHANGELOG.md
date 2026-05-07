@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.7.0] — 2026-05-07
+
+### 记忆智能 — 从"只增不减"到"合并+遗忘+外部知识"
+
+**生产验证**: 零熵智库1752条真实记忆，7天无重启。基准测试综合84.8分（v0.6.1: 65.7），进化闭环从0→71.9，可伸缩性100。342项测试全通过。
+
+v0.7.0 引入人脑式记忆管理三大机制：相似记忆自动摘要合并、低价值记忆主动遗忘归档、外部知识批量导入。让 AI Agent 的记忆系统从被动日志升级为主动精炼的知识引擎。
+
+### Added
+
+- **记忆摘要合并 (`soma/memory/consolidation.py`)**: ConsolidationEngine 提供两阶段相似度检测（FTS5 粗筛 + embedding 余弦相似度精排）、自动合并策略（保留高重要性为主体、独特信息追加、次要记忆标记待归档）、合并日志记录。`evolve()` 每次自动扫描最近30天记忆对，合并相似度 >0.85 的冗余记忆。
+- **主动遗忘引擎 (`soma/memory/forgetting.py`)**: ForgettingEngine 实现三层遗忘策略——(1) 时间衰减遗忘（Ebbinghaus 指数衰减 `strength = importance × e^(-λ × days) × (1 + recall_count × 0.2)`），(2) 访问频率遗忘（30天未访问+低重要性→冷记忆归档），(3) 冗余清理（合并后14天宽限期→永久删除）。类别差异化衰减率（策略0.07/事实0.10/洞察0.12/决策0.15/外部0.20）。归档到 `episodic_archived` 表，支持 `recall_archived()` 浏览和 `restore()` 恢复。
+- **外部知识集成 (`soma/memory/external.py`)**: KnowledgeSource 抽象基类 + FileSource（.md/.txt/.json/.jsonl/.yaml）分块导入 + URLSource（HTML抓取） + ExternalKnowledgeImporter。导入记忆标记 `memory_type="external"`，默认30天过期自动归档。`EpisodicStore.import_knowledge()` 一站式入口。
+- **LLM 重试机制 (`soma/retry.py`)**: tenacity 指数退避重试（3次、2s→30s）、可重试异常智能识别（网络超时/连接错误/5xx vs 认证失败/参数错误不重试）、`@llm_retry` 装饰器应用于所有 LLM 调用点（agent._do_llm_call / law_discovery / causal_extraction）。
+- **FTS5 搜索工具共用 (`soma/memory/search_utils.py`)**: 公共函数 `fts5_keyword_search()`，三库（episodic/semantic/skill）共用，FTS5 trigram + LIKE 双路径自动降级。
+
+### Changed
+
+- `SOMA.evolve()` 管道新增记忆合并和遗忘清理阶段，返回变更列表含 `memory_consolidation` 和 `memory_forgetting` 条目
+- `EpisodicStore` 新增 5 个公共方法：`consolidate()` / `forget()` / `recall_archived()` / `restore_archived()` / `import_knowledge()`
+- `_text_overlap()` 和 `_extract_unique_info()` 改用 jieba 分词，修复正则匹配中文整段为单 token 的问题
+- `_extract_json()` 拆分列表/字典两种解析分支，修复列表元素解包崩溃
+- `forgetting.py` 中 sqlite3.Row 访问改用 `row["key"] if "key" in row.keys() else default` 模式，修复 `.get()` 不存在的问题
+
+### Fixed
+
+- 中文文本相似度计算：正则 `[一-鿿]+` 将无空格中文匹配为整段单token → 改用 jieba 分词
+- JSON 列表导入解包崩溃：`_extract_json` 中 `enumerate` 返回 `(index, item)` 被错误解包为 `(k, item)` → 拆分为 list/dict 两分支
+- sqlite3.Row 访问崩溃：`row.get()` 不存在 → 改用 `in row.keys()` 检查
+
+---
+
 ## [0.6.1] — 2026-05-06
 
 ### 工程质量 + 客观测试体系

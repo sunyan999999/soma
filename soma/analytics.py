@@ -15,6 +15,8 @@ class AnalyticsStore:
     def __init__(self, persist_dir: Optional[Path] = None):
         if persist_dir is None:
             persist_dir = Path(os.environ.get("SOMA_DATA_DIR", "soma_data"))
+        elif isinstance(persist_dir, str):
+            persist_dir = Path(persist_dir)
         persist_dir.mkdir(parents=True, exist_ok=True)
         self._db_path = persist_dir / "analytics.db"
         self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)

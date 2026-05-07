@@ -12,6 +12,7 @@ class FakeLaw:
         self.id = id_
         self.name = name
         self.weight = weight
+        self.triggers: list = []
 
 
 class FakeEngine:

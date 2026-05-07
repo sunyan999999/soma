@@ -8,6 +8,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ---
+
+## [0.6.0] — 2026-05-04
+
+### 推理引擎 — 从"提供角度"到"执行推理"
+
+### Added
+- **结构化推理引擎**: 17个模板（7推理+7假设+6组合），在LLM调用前构建推理框架——每条规律专属引导问题+可检验假设+正反证据对照
+- **触发词自动扩展**: 问题关键词与规律共现>=5次后自动提升为正式触发词
+- **思维模板挖掘**: 同一问题领域+规律组合模式>=5次出现后固化为可复用模板
+- **因果关系自动抽取**: L3复杂问题后提取三元组存入语义记忆，失败不影响主流程
+- **Foci上限控制**: 超过7个foci时按权重降序取前7
+- **因果抽取配置**: `causal_extraction`和`causal_extraction_complexity`可控开关
+
+### Changed
+- `_build_prompt()` 重构为四段结构（推理框架+假设检验+证据对照+反视角）
+- `respond()` 新增Step 2.6（推理框架）和Step 4.5（因果抽取）
+- `MetaEvolver.set_current_context()` 新增`problem`参数
+- `SOMA.chat()` 返回新增`reasoning`字段
+
+### Fixed
+- `_promote_triggers()` law_found标记防止候选词永存
+- `_mine_thought_templates()` 保留已挖掘数据
+- `_match_template()` 组合模板优先匹配
+
+---
+
+## [0.5.0] — 2026-05-04
+
+### 思维框架深化 — 从"平铺列表"到"推理网络"
+
+### Added
+- **规律链推理**: 利用 `relations` 字段，规律间通过关联链传播激活
+- **规律组合模板**: 双规律同时触发时生成合成视角Focus
+- **认知偏差检测**: 过度使用规律自动降权，优质低使用规律自动提权
+- **确认偏误防御**: `anti_confirmation_search()` 检索反对视角证据
+- **问题复杂度自适应**: L1/L2/L3三级调整top_k/foci数量
+- **向量语义匹配兜底**: 关键词无匹配时计算嵌入余弦相似度
+- **动态权重步长**: 根据样本量自适应调整权重变化幅度
+- **LLM缓存可配置**: `llm_cache_ttl`和`llm_cache_max_size`可配置
+
+### Changed
+- `WisdomEngine` 可选接收`embedder`参数
+- `_build_prompt()` 新增"反面视角与潜在矛盾"段落
+- 动态语境排序替代纯权重排序
+
+### Fixed
+- `respond()`/`chat()` 正确区分LLM成功与mock回退，outcome不再无条件标记success
+
+---
+
 ## [0.4.0] — Unreleased
 
 ### Added

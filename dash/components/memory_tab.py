@@ -1,8 +1,6 @@
 """Memory 标签页 — 记忆统计、浏览、搜索、添加"""
 import streamlit as st
 
-from soma.base import Focus
-
 
 def render_memory_tab(agent):
     col1, col2 = st.columns([1, 2])

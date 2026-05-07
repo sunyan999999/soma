@@ -152,59 +152,57 @@ def mock_llm_response(foci, activated, problem):
 
 # ── 全局状态 ──────────────────────────────────────────────────
 
-_agent: Optional[SOMA_Agent] = None
+_soma: Optional["SOMA"] = None
 _initialized_mock = False
 
 
-def get_agent() -> SOMA_Agent:
-    global _agent, _initialized_mock
-    if _agent is None:
-        from soma import _DEFAULT_FRAMEWORK
-        framework = load_config(_DEFAULT_FRAMEWORK)
-        config = SOMAConfig(
-            framework=framework,
-            episodic_persist_dir=_DATA_DIR,
-            default_top_k=5,
+def get_agent():
+    """返回 SOMA 包装实例（v0.7.0：通过 __getattr__ 暴露 _agent 内部属性）。"""
+    global _soma, _initialized_mock
+    if _soma is None:
+        from soma import SOMA, _DEFAULT_FRAMEWORK
+        _soma = SOMA(
+            framework_config=str(_DEFAULT_FRAMEWORK),
+            persist_dir=str(_DATA_DIR),
+            top_k=5,
             recall_threshold=0.01,
             use_vector_search=True,
         )
-        _agent = SOMA_Agent(config)
 
         if MOCK_MODE and not _initialized_mock:
             _initialized_mock = True
-            # 仅在记忆库为空时注入示例数据，避免重启重复
-            if _agent.memory.stats()["episodic"] == 0:
-                _agent.remember(
+            if _soma._agent.memory.stats()["episodic"] == 0:
+                _soma.remember(
                     "第一性原理：回归事物最基本的要素，从底层逻辑出发推导。"
                     "商业中这意味着不被竞争对手干扰，关注客户最根本的需求。",
                     {"domain": "哲学", "type": "理论"}, importance=0.95,
                 )
-                _agent.remember(
+                _soma.remember(
                     "系统思维：增长停滞是产品、市场、团队、流程等多个要素"
                     "相互作用形成的负反馈回路，需要找到关键杠杆点。",
                     {"domain": "思维", "type": "方法论"}, importance=0.9,
                 )
-                _agent.remember(
+                _soma.remember(
                     "二八法则：80%的增长瓶颈来自20%的核心问题。",
                     {"domain": "管理", "type": "案例"}, importance=0.85,
                 )
-                _agent.remember(
+                _soma.remember(
                     "逆向思考案例：某SaaS产品不研究'如何增长'，而是研究'用户为何流失'，"
                     "发现流失主因后反向改进，6个月内实现增长突破。",
                     {"domain": "营销", "type": "案例"}, importance=0.85,
                 )
-                _agent.remember(
+                _soma.remember(
                     "矛盾分析：增长停滞的表面问题是获客不足，"
                     "深层矛盾是产品价值交付与用户期望之间的差距。",
                     {"domain": "分析", "type": "框架"}, importance=0.8,
                 )
-            if _agent.memory.stats()["semantic"] == 0:
-                _agent.remember_semantic("增长", "依赖", "创新")
-                _agent.remember_semantic("增长", "受阻于", "路径依赖")
-                _agent.remember_semantic("停滞", "源于", "价值交付不足")
-                _agent.remember_semantic("系统思维", "关联", "矛盾分析")
+            if _soma._agent.memory.stats()["semantic"] == 0:
+                _soma.remember_semantic("增长", "依赖", "创新")
+                _soma.remember_semantic("增长", "受阻于", "路径依赖")
+                _soma.remember_semantic("停滞", "源于", "价值交付不足")
+                _soma.remember_semantic("系统思维", "关联", "矛盾分析")
 
-    return _agent
+    return _soma
 
 
 # ── LiteLLM 调用 ──────────────────────────────────────────────
@@ -289,6 +287,7 @@ def call_llm(prompt: str, provider: dict) -> str:
 
 class ChatRequest(BaseModel):
     problem: str = Field(max_length=10000)
+    twin: str = Field(default="", max_length=100, description="分身名称，空字符串表示默认SOMA智者")
 
 
 class MemoryAddRequest(BaseModel):
@@ -606,10 +605,25 @@ def _detect_deep_mode(problem: str) -> bool:
     return any(t.lower() in lowered for t in _SOMA_TRIGGERS)
 
 
+def _get_twin_agent(twin_name: str, base_agent):
+    """路由到指定分身的 Agent 实例。
+
+    默认实现返回 None（分身不存在时回退到默认 SOMA 智者）。
+    部署服务器可覆盖此函数以接入自定义分身系统。
+    """
+    return None
+
+
 @app.post("/api/chat")
 def chat(req: ChatRequest):
     t0 = time.time()
     agent = get_agent()
+
+    # 分身路由：如果指定了 twin，尝试获取分身 Agent
+    if req.twin:
+        twin_agent = _get_twin_agent(req.twin, agent)
+        if twin_agent is not None:
+            agent = twin_agent
 
     # /soma 路由：检测深度分析意图，调整参数
     deep_mode = _detect_deep_mode(req.problem)
@@ -688,10 +702,10 @@ def chat(req: ChatRequest):
 
     agent.reflect(f"api_{len(agent.evolver.get_log())}", "success")
 
-    # 每 10 次成功会话自动触发一次进化
+    # 每 5 次成功会话自动触发一次进化
     session_count = len(agent.evolver.get_log())
-    if session_count > 0 and session_count % 10 == 0:
-        changes = agent.evolver.evolve()
+    if session_count > 0 and session_count % 5 == 0:
+        changes = agent.evolve()
         if changes:
             print(f"[SOMA] 自动进化完成: {len(changes)} 项变更")
 
@@ -740,6 +754,12 @@ async def chat_stream(req: ChatRequest):
         t0 = time.time()
         agent = get_agent()
         answer = ""  # 累积流式答案，用于会话记录
+
+        # 分身路由
+        if req.twin:
+            twin_agent = _get_twin_agent(req.twin, agent)
+            if twin_agent is not None:
+                agent = twin_agent
 
         # Phase 1: 拆解
         foci = agent.decompose(req.problem)
@@ -820,8 +840,8 @@ async def chat_stream(req: ChatRequest):
         agent.reflect(f"api_stream_{len(agent.evolver.get_log())}", "success")
 
         session_count = len(agent.evolver.get_log())
-        if session_count > 0 and session_count % 10 == 0:
-            changes = agent.evolver.evolve()
+        if session_count > 0 and session_count % 5 == 0:
+            changes = agent.evolve()
             if changes:
                 yield _sse_event("evolve", {"changes": changes})
 
@@ -955,8 +975,9 @@ def framework_adjust(req: WeightAdjustRequest):
 
 @app.post("/api/framework/evolve")
 def framework_evolve():
-    changes = get_agent().evolver.evolve()
-    weights = get_agent().evolver.get_weights()
+    agent = get_agent()
+    changes = agent.evolve()
+    weights = agent.get_weights()
     return {"changes": changes, "weights": weights}
 
 
@@ -995,8 +1016,8 @@ def reflect(req: ReflectRequest):
 
     # 立即检查是否需要进化
     log = agent.evolver.get_log()
-    if len(log) > 0 and len(log) % 10 == 0:
-        changes = agent.evolver.evolve()
+    if len(log) > 0 and len(log) % 5 == 0:
+        changes = agent.evolve()
         return {
             "status": "recorded",
             "outcome": normalized,
@@ -1206,7 +1227,7 @@ def get_report(report_id: str):
     for f in _REPORTS_DIR.glob("*.md"):
         content = f.read_text(encoding="utf-8")
         meta = _parse_report_frontmatter(content)
-        if meta.get("id") == report_id:
+        if meta.get("id", f.stem) == report_id:
             return {
                 "id": report_id,
                 "filename": f.name,

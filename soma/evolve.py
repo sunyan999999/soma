@@ -15,6 +15,8 @@ class MetaEvolver:
         self.memory_core = memory_core
         self._current_foci: List[Any] = []
         self._current_activated: List[Any] = []
+        self._candidate_triggers: Dict[str, Dict[str, Any]] = {}
+        self._last_problem: str = ""
 
         if persist_dir is None:
             persist_dir = Path(os.environ.get("SOMA_DATA_DIR", "soma_data"))
@@ -67,6 +69,32 @@ class MetaEvolver:
             )
             """
         )
+        # v0.6.0: 候选触发词追踪
+        self._conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS candidate_triggers (
+                law_id TEXT NOT NULL,
+                word TEXT NOT NULL,
+                session_count INTEGER DEFAULT 1,
+                first_seen REAL NOT NULL,
+                last_seen REAL NOT NULL,
+                PRIMARY KEY (law_id, word)
+            )
+            """
+        )
+        # v0.6.0: 思维模板追踪
+        self._conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS focus_patterns (
+                domain_key TEXT NOT NULL,
+                law_ids TEXT NOT NULL,
+                count INTEGER DEFAULT 1,
+                first_seen REAL NOT NULL,
+                last_seen REAL NOT NULL,
+                PRIMARY KEY (domain_key, law_ids)
+            )
+            """
+        )
         self._conn.commit()
 
     def _load_state(self):
@@ -102,6 +130,21 @@ class MetaEvolver:
                 "timestamp": r["timestamp"],
             })
 
+        # v0.6.0: 加载候选触发词
+        rows = self._conn.execute(
+            "SELECT law_id, word, session_count, first_seen, last_seen FROM candidate_triggers"
+        ).fetchall()
+        self._candidate_triggers: Dict[str, Dict[str, Any]] = {}
+        for r in rows:
+            key = f"{r['law_id']}::{r['word']}"
+            self._candidate_triggers[key] = {
+                "law_id": r["law_id"],
+                "word": r["word"],
+                "session_count": r["session_count"],
+                "first_seen": r["first_seen"],
+                "last_seen": r["last_seen"],
+            }
+
     def _save_weights(self):
         """将当前权重写入 SQLite"""
         for law in self.engine.laws:
@@ -114,9 +157,10 @@ class MetaEvolver:
 
     # ── 上下文捕获 ──────────────────────────────────────────
 
-    def set_current_context(self, foci, activated):
+    def set_current_context(self, foci, activated, problem: str = ""):
         self._current_foci = list(foci)
         self._current_activated = list(activated)
+        self._last_problem = problem
 
     # ── 反思与追踪 ──────────────────────────────────────────
 
@@ -165,6 +209,204 @@ class MetaEvolver:
             self._conn.commit()
             self._load_state()
 
+        # v0.6.0: 追踪触发词共现 + 思维模板模式（仅成功时）
+        if self._last_problem and is_success:
+            self.track_triggers(self._last_problem, self._current_foci, outcome)
+            self.track_focus_pattern(self._last_problem, self._current_foci)
+
+    # ── v0.6.0 触发词自动扩展 ─────────────────────────────
+
+    def track_triggers(self, problem: str, foci, outcome: str) -> None:
+        """追踪问题关键词与成功规律的共现关系。
+
+        成功会话中，将问题的关键词记录为该规律的候选触发词。
+        当某候选词在 >=5 次不同会话中出现时，自动提升为正式触发词。
+        """
+        if outcome.lower() not in ("success", "成功"):
+            return
+
+        from soma.engine import _extract_keywords
+        problem_words = _extract_keywords(problem, max_keywords=15)
+        if not problem_words:
+            return
+
+        ts = time_mod.time()
+        for focus in foci:
+            law_id = focus.law_id
+            # 跳过组合规律和反视角规律
+            if law_id.startswith("combo_") or law_id.endswith("_anti"):
+                continue
+            for word in problem_words:
+                key = f"{law_id}::{word}"
+                if key in self._candidate_triggers:
+                    entry = self._candidate_triggers[key]
+                    entry["session_count"] += 1
+                    entry["last_seen"] = ts
+                    self._conn.execute(
+                        "UPDATE candidate_triggers SET session_count=?, last_seen=? "
+                        "WHERE law_id=? AND word=?",
+                        (entry["session_count"], ts, law_id, word),
+                    )
+                else:
+                    self._candidate_triggers[key] = {
+                        "law_id": law_id,
+                        "word": word,
+                        "session_count": 1,
+                        "first_seen": ts,
+                        "last_seen": ts,
+                    }
+                    self._conn.execute(
+                        "INSERT INTO candidate_triggers (law_id, word, session_count, first_seen, last_seen) "
+                        "VALUES (?, ?, 1, ?, ?)",
+                        (law_id, word, ts, ts),
+                    )
+        self._conn.commit()
+
+    def track_focus_pattern(self, problem: str, foci) -> None:
+        """追踪问题领域与其触发的规律组合之间的关联模式。
+
+        用问题前几个关键词作为 domain_key，记录该领域下成功的 foci 组合。
+        当同一组合出现 >=5 次时，固化为可复用的思维模板。
+        """
+        from soma.engine import _extract_keywords
+        domain_words = _extract_keywords(problem, max_keywords=3)
+        if not domain_words:
+            return
+        domain_key = "_".join(domain_words)
+
+        # 提取规律ID列表（排序以保证一致性，跳过组合/反视角）
+        law_ids = sorted(
+            f.law_id for f in foci
+            if not f.law_id.startswith("combo_") and not f.law_id.endswith("_anti")
+        )
+        if not law_ids:
+            return
+        law_ids_str = ",".join(law_ids)
+
+        ts = time_mod.time()
+        existing = self._conn.execute(
+            "SELECT count FROM focus_patterns WHERE domain_key=? AND law_ids=?",
+            (domain_key, law_ids_str),
+        ).fetchone()
+
+        if existing:
+            new_count = existing["count"] + 1
+            self._conn.execute(
+                "UPDATE focus_patterns SET count=?, last_seen=? WHERE domain_key=? AND law_ids=?",
+                (new_count, ts, domain_key, law_ids_str),
+            )
+        else:
+            self._conn.execute(
+                "INSERT INTO focus_patterns (domain_key, law_ids, count, first_seen, last_seen) "
+                "VALUES (?, ?, 1, ?, ?)",
+                (domain_key, law_ids_str, ts, ts),
+            )
+        self._conn.commit()
+
+    def _mine_thought_templates(self, threshold: int = 3) -> List[Dict[str, Any]]:
+        """挖掘可复用的思维模板。
+
+        从 focus_patterns 中找出出现 >= threshold 次的 (domain, law_ids) 组合，
+        固化为思维模板。返回新固化的模板列表。
+        """
+        templates = []
+        rows = self._conn.execute(
+            "SELECT domain_key, law_ids, count FROM focus_patterns WHERE count >= ?",
+            (threshold,),
+        ).fetchall()
+
+        for row in rows:
+            # 将 law_ids 转为可读的规律名称列表
+            law_id_list = row["law_ids"].split(",")
+            law_names = []
+            for lid in law_id_list:
+                for law in self.engine.laws:
+                    if law.id == lid:
+                        law_names.append(law.name)
+                        break
+
+            templates.append({
+                "type": "thought_template",
+                "domain_key": row["domain_key"],
+                "law_ids": law_id_list,
+                "law_names": law_names,
+                "occurrences": row["count"],
+            })
+
+        if templates:
+            self._conn.commit()
+        return templates
+
+    def get_thought_templates(self) -> List[Dict[str, Any]]:
+        """获取所有已固化的思维模板（含未达阈值的高频模式）"""
+        rows = self._conn.execute(
+            "SELECT domain_key, law_ids, count FROM focus_patterns ORDER BY count DESC LIMIT 20"
+        ).fetchall()
+        result = []
+        for row in rows:
+            law_id_list = row["law_ids"].split(",")
+            law_names = []
+            for lid in law_id_list:
+                for law in self.engine.laws:
+                    if law.id == lid:
+                        law_names.append(law.name)
+                        break
+            result.append({
+                "domain_key": row["domain_key"],
+                "law_ids": law_id_list,
+                "law_names": law_names,
+                "count": row["count"],
+            })
+        return result
+
+    def _promote_triggers(self, threshold: int = 3) -> List[Dict[str, Any]]:
+        """将候选触发词提升为正式触发词。
+
+        条件：session_count >= threshold 且该词不在当前触发词列表中。
+        返回被提升的触发词列表。
+        """
+        promoted = []
+        # 构建当前触发词集合（按 law_id 分组）
+        current_triggers: Dict[str, set] = {}
+        for law in self.engine.laws:
+            current_triggers[law.id] = {t.lower() for t in law.triggers}
+
+        for key, entry in list(self._candidate_triggers.items()):
+            if entry["session_count"] < threshold:
+                continue
+            law_id = entry["law_id"]
+            word = entry["word"]
+            # 检查是否已是正式触发词
+            if law_id in current_triggers and word.lower() in current_triggers[law_id]:
+                continue
+            # 找到对应规律并添加触发词
+            law_found = False
+            for law in self.engine.laws:
+                if law.id == law_id:
+                    law_found = True
+                    triggers = getattr(law, 'triggers', [])
+                    if word not in triggers:
+                        triggers.append(word)
+                        promoted.append({
+                            "type": "trigger_promoted",
+                            "law_id": law_id,
+                            "word": word,
+                            "session_count": entry["session_count"],
+                        })
+                    break
+            # 仅当找到对应规律时才清除候选词
+            if law_found:
+                self._conn.execute(
+                    "DELETE FROM candidate_triggers WHERE law_id=? AND word=?",
+                    (law_id, word),
+                )
+
+        if promoted:
+            self._conn.commit()
+            # 重新加载候选词
+            self._load_state()
+        return promoted
+
     # ── 手动调权 ────────────────────────────────────────────
 
     def adjust_weight(self, law_id: str, new_weight: float) -> bool:
@@ -206,8 +448,11 @@ class MetaEvolver:
                             "reason": "偏差纠正：使用频率过高",
                             "usage_rate": round(usage_rate, 3),
                         })
-                    elif usage_rate < 0.03 and stats["total"] >= 3:
-                        rate = stats["successes"] / stats["total"] if stats["total"] > 0 else 0
+                    elif usage_rate < 0.03:
+                        total = stats["successes"] + stats["failures"]
+                        if total < 3:
+                            break
+                        rate = stats["successes"] / total if total > 0 else 0
                         if rate > 0.6 and old < 0.90:
                             # 很少使用但效果好的规律 → 提权
                             law.weight = round(min(0.95, old + 0.03), 4)
@@ -261,7 +506,12 @@ class MetaEvolver:
             self._save_weights()
 
         solidified = self._solidify_skills()
-        return changes + solidified
+
+        # v0.6.0: 触发词自动提升 + 思维模板挖掘
+        promoted_triggers = self._promote_triggers()
+        new_templates = self._mine_thought_templates()
+
+        return changes + solidified + promoted_triggers + new_templates
 
     def _calc_step(self, total_samples: int) -> float:
         """基于样本量动态计算权重调整步长"""
@@ -354,6 +604,8 @@ class MetaEvolver:
         self._conn.execute("DELETE FROM reflection_log")
         self._conn.execute("DELETE FROM law_stats")
         self._conn.execute("DELETE FROM skill_tracker")
+        self._conn.execute("DELETE FROM candidate_triggers")
+        self._conn.execute("DELETE FROM focus_patterns")
         self._conn.commit()
         self._load_state()
 

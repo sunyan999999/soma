@@ -311,5 +311,40 @@ class EpisodicStore(BaseMemoryStore):
         self._conn.commit()
         return self._conn.total_changes > 0
 
+    # ── v0.7.0 记忆智能 ─────────────────────────────────
+
+    def consolidate(self, user_id: str = "", max_merges: int = 10) -> int:
+        """执行一次记忆合并扫描（摘要合并）"""
+        from soma.memory.consolidation import ConsolidationEngine
+        engine = ConsolidationEngine(self._conn, self._embedder)
+        return engine.run_consolidation_pass(user_id=user_id, max_merges=max_merges)
+
+    def forget(self, user_id: str = "", max_archive: int = 50) -> dict:
+        """执行一次遗忘扫描（三层遗忘策略）"""
+        from soma.memory.forgetting import ForgettingEngine
+        engine = ForgettingEngine(self._conn)
+        return engine.run_forgetting_pass(user_id=user_id, max_archive=max_archive)
+
+    def recall_archived(self, query: str = "", user_id: str = "", top_k: int = 20):
+        """从归档中浏览/恢复记忆"""
+        from soma.memory.forgetting import ForgettingEngine
+        engine = ForgettingEngine(self._conn)
+        return engine.recall_archived(query=query, user_id=user_id, top_k=top_k)
+
+    def restore_archived(self, memory_id: str) -> bool:
+        """恢复一条归档记忆"""
+        from soma.memory.forgetting import ForgettingEngine
+        engine = ForgettingEngine(self._conn)
+        return engine.restore(memory_id)
+
+    def import_knowledge(
+        self, source_path: str, user_id: str = "", session_id: str = ""
+    ) -> list:
+        """从文件导入外部知识"""
+        from soma.memory.external import FileSource, ExternalKnowledgeImporter
+        source = FileSource(source_path)
+        importer = ExternalKnowledgeImporter(self)
+        return importer.import_source(source, user_id=user_id, session_id=session_id)
+
     def close(self):
         self._conn.close()

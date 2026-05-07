@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 
 # 近因衰减半衰期（天）：7天后权重衰减至 50%，14天后 25%，30天后 <5%
 # 与记忆查询的默认30天时间窗口配合 —— 半衰期针对"短期相关性"，时间窗口负责硬截断
-_RECENCY_HALF_LIFE_DAYS = 7.0
+RECENCY_HALF_LIFE_DAYS = 7.0
 
 
 @dataclass
@@ -35,7 +35,7 @@ class MemoryUnit:
         """
         now = datetime.now(timezone.utc).timestamp()
         days = max(now - self.timestamp, 0) / 86400.0
-        recency = math.exp(-days / _RECENCY_HALF_LIFE_DAYS)
+        recency = math.exp(-days / RECENCY_HALF_LIFE_DAYS)
         return recency * self.importance * (1.0 + 0.1 * self.access_count)
 
 

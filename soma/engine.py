@@ -126,6 +126,23 @@ class WisdomEngine(BaseFrameworkEngine):
                 )
                 foci.append(focus)
 
+        # ── 阶段1.5: 探索因子 — 匹配规律过少时注入未触发规律 ──
+        if 1 <= len(foci) <= 2 and len(foci) < len(self.laws):
+            triggered_ids = {f.law_id for f in foci}
+            unexplored = [l for l in self.laws if l.id not in triggered_ids]
+            if unexplored:
+                chosen = random.choice(unexplored)
+                foci.append(Focus(
+                    law_id=chosen.id,
+                    dimension=(
+                        f"从「{chosen.name}」出发（探索性视角）："
+                        f"{chosen.description}。应用于问题：「{problem}」"
+                    ),
+                    keywords=list(set(chosen.triggers + _extract_keywords(problem))),
+                    weight=round(chosen.weight * 0.7, 4),
+                    rationale=f"探索因子：直接匹配规律较少（{len(foci)}条），主动引入「{chosen.name}」拓宽思维维度",
+                ))
+
         # ── 阶段2: 规律链传播 — relations 激活关联规律 ─────
         if foci:
             directly_triggered = {f.law_id for f in foci}
@@ -141,9 +158,9 @@ class WisdomEngine(BaseFrameworkEngine):
                     rlaw = next((l for l in self.laws if l.id == related_id), None)
                     if not rlaw:
                         continue
-                    # 加成系数：部分命中时提高
+                    # 加成系数：部分命中时提高（v0.7.0 提高基准以增强低权重规律参与度）
                     partial = sum(1 for t in rlaw.triggers if t.lower() in problem_lower)
-                    bonus = 0.50 if partial > 0 else 0.35
+                    bonus = 0.60 if partial > 0 else 0.45
                     foci.append(Focus(
                         law_id=rlaw.id,
                         dimension=(

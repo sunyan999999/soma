@@ -76,6 +76,18 @@ class SOMA:
         self._agent = SOMA_Agent(self._config)
         self._session_count = 0
 
+    def __getattr__(self, name):
+        """将未定义的公开属性委托给内部 SOMA_Agent 实例。
+
+        这样外部代码（如 dash/server.py）可以直接访问 agent.hub、
+        agent.memory、agent.evolver 等属性，无需绕过 SOMA 包装类。
+        """
+        if name.startswith('_'):
+            raise AttributeError(
+                f"'{type(self).__name__}' object has no attribute '{name}'"
+            )
+        return getattr(self._agent, name)
+
     def respond(self, problem: str, user_id: str = "") -> str:
         """完整智者管道：拆解→激活→合成→反思→进化检测"""
         mock_fallback = False
@@ -91,7 +103,7 @@ class SOMA:
         self._session_count += 1
         outcome = "failure" if mock_fallback else "success"
         self._agent.reflect(f"soma_{self._session_count}", outcome)
-        if self._session_count > 0 and self._session_count % 10 == 0:
+        if self._session_count > 0 and self._session_count % 5 == 0:
             self._agent.evolver.evolve()
         return answer
 
@@ -152,7 +164,7 @@ class SOMA:
         self._session_count += 1
         outcome = "failure" if mock_fallback else "success"
         self._agent.reflect(f"soma_{self._session_count}", outcome)
-        if self._session_count > 0 and self._session_count % 10 == 0:
+        if self._session_count > 0 and self._session_count % 5 == 0:
             self._agent.evolver.evolve()
 
         result = {
@@ -221,8 +233,32 @@ class SOMA:
         self._agent.reflect(task_id, outcome)
 
     def evolve(self) -> list:
-        """执行自动进化"""
-        return self._agent.evolver.evolve()
+        """执行自动进化（权重调整 + 记忆合并 + 遗忘清理）"""
+        changes = self._agent.evolver.evolve()
+
+        # v0.7.0: 记忆合并 — 相似记忆自动归并
+        try:
+            merged = self._agent.memory.episodic.consolidate(max_merges=10)
+            if merged:
+                changes.append({
+                    "type": "memory_consolidation",
+                    "merged_count": merged,
+                })
+        except Exception:
+            pass
+
+        # v0.7.0: 主动遗忘 — 低价值记忆归档
+        try:
+            forgotten = self._agent.memory.episodic.forget(max_archive=50)
+            if any(forgotten.values()):
+                changes.append({
+                    "type": "memory_forgetting",
+                    "details": forgotten,
+                })
+        except Exception:
+            pass
+
+        return changes
 
     def get_weights(self) -> dict:
         return self._agent.evolver.get_weights()

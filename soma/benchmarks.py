@@ -1114,7 +1114,21 @@ def _format_ci(stat: RunStatistics) -> str:
 
 def generate_markdown_report(result: MultiRunResult) -> str:
     """生成 Markdown 格式的测试报告"""
+    from datetime import datetime, timezone
+
+    report_date = datetime.fromtimestamp(
+        result.timestamp, tz=timezone.utc
+    ).strftime("%Y-%m-%d")
+
     lines = []
+    lines.append("---")
+    lines.append(f"id: BENCH_v{result.version}")
+    lines.append(f"date: {report_date}")
+    lines.append(f"version: v{result.version}")
+    lines.append("models: [auto]")
+    lines.append(f"title: SOMA v{result.version} 基准测试报告")
+    lines.append("---")
+    lines.append("")
     lines.append(f"# SOMA v{result.version} 基准测试报告")
     lines.append("")
     lines.append(f"| 项目 | 数值 |")

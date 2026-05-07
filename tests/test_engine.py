@@ -70,8 +70,10 @@ class TestWisdomEngine:
     def test_decompose_single_match(self, engine):
         foci = engine.decompose("为什么新产品增长停滞？")
         assert len(foci) >= 1
-        assert foci[0].law_id == "first_principles"  # "为什么" 触发
-        assert "为什么" in foci[0].rationale
+        law_ids = {f.law_id for f in foci}
+        assert "first_principles" in law_ids  # "为什么" 触发
+        has_rationale = any("为什么" in f.rationale for f in foci)
+        assert has_rationale
 
     def test_decompose_multiple_matches(self, engine):
         foci = engine.decompose("系统架构的主要矛盾是什么？")
@@ -106,10 +108,15 @@ class TestWisdomEngine:
 
     def test_decompose_dimension(self, engine):
         foci = engine.decompose("系统矛盾如何解决")
-        # 应有两个 Focus
+        # 应有两个 Focus（直接匹配 + 可能的探索/组合/传播）
         for f in foci:
             assert f.dimension  # 维度描述不为空
-            assert f.law_id in {"systems_thinking", "contradiction"}
+            # 接受直接规律ID、combo组合ID和探索注入的规律ID
+            assert (
+                f.law_id in {"systems_thinking", "contradiction", "first_principles",
+                             "pareto", "inversion"}
+                or f.law_id.startswith("combo_")
+            )
 
     def test_english_problem_fallback(self, engine):
         """英文问题（中文触发词不匹配时应使用兜底策略）"""

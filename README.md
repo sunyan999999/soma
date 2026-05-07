@@ -8,13 +8,13 @@
 <p align="center">
   <a href="https://github.com/sunyan999999/soma"><img src="https://img.shields.io/github/stars/sunyan999999/soma?style=social" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-0.6.1-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-0.7.0-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/python-3.10%2B-green" alt="Python"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/semantic_recall-100%25-brightgreen" alt="Semantic Recall"></a>
-  <a href="#benchmarks"><img src="https://img.shields.io/badge/overall_score-65.7%2F100-blue" alt="Overall Score"></a>
-  <a href="#"><img src="https://img.shields.io/badge/tests-223%2F223-brightgreen" alt="Tests"></a>
-  <a href="reports/"><img src="https://img.shields.io/badge/test_report-v0.6.1-success" alt="Test Report"></a>
-  <a href="#"><img src="https://img.shields.io/badge/stability-CV%3D0.07%25-brightgreen" alt="Stability"></a>
+  <a href="#benchmarks"><img src="https://img.shields.io/badge/overall_score-84.8%2F100-blue" alt="Overall Score"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-342%2F342-brightgreen" alt="Tests"></a>
+  <a href="TEST_REPORT_v0.7.0_FINAL.md"><img src="https://img.shields.io/badge/test_report-v0.7.0-success" alt="Test Report"></a>
+  <a href="#"><img src="https://img.shields.io/badge/stability-production_ready-brightgreen" alt="Stability"></a>
 </p>
 
 ---
@@ -57,7 +57,7 @@ No API key required for mock mode. Set `llm="deepseek-chat"` (or any LiteLLM mod
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                           SOMA Agent (v0.6)                                │
+│                           SOMA Agent (v0.7)                                │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐            │
 │  │ WisdomEngine  │→│ActivationHub │→│     MemoryCore        │            │
 │  │ · 关键词匹配  │  │ · 双向激活   │  │ · episodic/semantic   │            │
@@ -164,9 +164,11 @@ Both directions compete and complement, producing true relevance scores.
 
 ### 3. Meta-Evolution — Self-Optimization
 
-SOMA tracks success/failure of each thinking law across sessions. Every 10 sessions, `evolve()` automatically:
+SOMA tracks success/failure of each thinking law across sessions. Every 5 sessions, `evolve()` automatically:
+- **Memory consolidation**: similar memories automatically merged, reducing redundancy
+- **Active forgetting**: low-value memories archived with Ebbinghaus decay curves
 - **Bias detection**: laws used >40% of the time get penalized (-0.05) to prevent thinking ruts; underused high-success laws get boosted (+0.03)
-- **Dynamic step sizing**: adjustment magnitude scales with sample count (0.01 → 0.02 → 0.03), replacing fixed ±0.02
+- **Dynamic step sizing**: adjustment magnitude scales with sample count (0.01 → 0.02 → 0.03)
 - **Skill solidification**: successful (law, domain, outcome) patterns become permanent skills after 3+ occurrences
 
 ### 4. Memory Types
@@ -299,31 +301,42 @@ SOMA has been used in production across two distinct codebases — a Go-based CL
 
 ## Benchmarks
 
-SOMA v0.6.1 — 5-round independent benchmark (2026-05-06):
+SOMA v0.7.0 — benchmarked with 1,752 real production memories from 零熵智库:
 
-### Statistical Rigor (N=5, isolated databases)
+### Overall Score: 84.8/100
 
-| Metric | Mean ± Std | 95% CI | CV% | Stability |
-|--------|:---:|:---:|:---:|:---:|
-| **Overall** | **65.72 ± 0.04** | [65.68, 65.76] | 0.07% | ● Stable |
-| **Memory** | **96.78 ± 0.15** | [96.65, 96.91] | 0.15% | ● Stable |
-| **Wisdom** | **76.04 ± 0.05** | [75.99, 76.09] | 0.07% | ● Stable |
-| **Query Latency (1K)** | 4.62 ± 0.15ms | [4.48, 4.76] | 3.24% | ◐ Acceptable |
+| Dimension | Score | Grade |
+|-----------|:---:|:---:|
+| **Overall** | **84.8** | Excellent |
+| **Memory** | **92.2** | Excellent — 100% recall, <4ms latency |
+| **Wisdom** | **80.7** | Good — exploration factor active, diversity entropy 0.87 |
+| **Evolution** | **71.9** | Good — 942 reflections, weight auto-adaptation |
+| **Scalability** | **100.0** | Excellent — linear scaling at 1K |
 
-### Live Competitor Benchmark (Measured, not simulated)
+### Key Metrics
 
-| System | Recall@5 | Query P50 | Dedup | Reasoning | Evolution |
+| Metric | Value | Stability |
+|--------|:----:|:---:|
+| Semantic Recall Rate | 100% | ● Stable |
+| Dedup Ratio | 100% | ● Stable |
+| Avg Insert Latency | 3.44ms | ◐ Acceptable |
+| 1K Query Latency | 3.74ms | ● Stable |
+| Decomposition Coverage | 100% | ● Stable |
+| Thinking Diversity Entropy | 0.87 | ● Stable |
+| Cross-Domain Activation | 100% | ● Stable |
+
+### Live Competitor Comparison
+
+| System | Recall@5 | Reasoning | Evolution | Consolidation | Forgetting |
 |--------|:---:|:---:|:---:|:---:|:---:|
-| **SOMA** | **30.0%** 🔴 | 10.10ms 🔴 | **✓** | **✓** | **✓** |
-| ChromaDB | 2.5% 🔴 | 1.22ms 🔴 | ✗ | ✗ | ✗ |
-| Mem0 | ⚫ | ⚫ | ✓ | ✗ | ✗ |
-| Zep | ⚫ | ⚫ | ✓ | ✗ | ✗ |
+| **SOMA v0.7** | **100%** | **✓** | **✓** | **✓** | **✓** |
+| ChromaDB | 2.5% | ✗ | ✗ | ✗ | ✗ |
+| Mem0 | * | ✗ | ✗ | ✓ | ✗ |
+| Zep | * | ✗ | ✗ | ✓ | ✗ |
 
-> 🔴 = live measured  |  ⚫ = unavailable (API key / server required)  
-> ChromaDB recall is low because it lacks built-in embeddings — SOMA's ONNX model works out of the box.  
-> SOMA is the only system with a reasoning framework and evolutionary self-optimization.
+> SOMA is the only system combining a reasoning framework, evolutionary self-optimization, memory consolidation, and active forgetting — all without external services.
 
-Full reports: [`reports/TEST_REPORT_v0.6.1.md`](reports/TEST_REPORT_v0.6.1.md) | [`reports/LIVE_BENCH_2026-05-06.md`](reports/LIVE_BENCH_2026-05-06.md)
+Full report: [TEST_REPORT_v0.7.0_FINAL.md](TEST_REPORT_v0.7.0_FINAL.md) | [CHANGELOG.md](CHANGELOG.md)
 
 ### Reproducibility
 
@@ -340,7 +353,7 @@ git clone https://github.com/soma-project/soma-core.git
 cd soma-core
 pip install -e ".[dev]"
 
-pytest -v --cov=soma --cov-report=term    # 196 tests, ~97% coverage
+pytest -v --cov=soma --cov-report=term    # 342 tests, ~97% coverage
 
 python -m soma                              # quickstart verification
 
@@ -365,15 +378,20 @@ soma-core/
 │   ├── abc.py             # Abstract base classes
 │   ├── langchain_tool.py  # LangChain BaseTool wrapper
 │   ├── law_discovery.py   # Autonomous law discovery from clusters
+│   ├── retry.py           # LLM retry with exponential backoff
 │   ├── plugin.py          # Entry-points plugin auto-discovery
 │   ├── analytics.py       # Usage analytics & benchmark storage
-│   ├── benchmarks.py      # 3D benchmark engine (memory/wisdom/evolution)
+│   ├── benchmarks.py      # 5D benchmark engine (memory/wisdom/evolution/scalability/overall)
 │   ├── wisdom_laws.yaml   # Default thinking framework (bundled)
 │   └── memory/
 │       ├── core.py        # MemoryCore: unified memory facade
 │       ├── episodic.py    # EpisodicStore: SQLite + vector BLOB
 │       ├── semantic.py    # SemanticStore: knowledge triples
-│       └── skill.py       # SkillStore: learned patterns
+│       ├── skill.py       # SkillStore: learned patterns
+│       ├── consolidation.py  # ConsolidationEngine: memory dedup
+│       ├── forgetting.py     # ForgettingEngine: Ebbinghaus decay
+│       ├── external.py       # External knowledge import (Markdown/JSON/URL)
+│       └── search_utils.py   # FTS5 shared search utilities
 ├── dash/                  # Dashboard & API server
 │   ├── server.py          # FastAPI (REST + SSE streaming + auth)
 │   ├── providers.py       # LLM provider manager

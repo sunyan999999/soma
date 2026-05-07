@@ -1,8 +1,8 @@
-from typing import Any, Dict, List, Optional
-
 import hashlib
+import logging
 import time
 from functools import lru_cache
+from typing import Any, Dict, List, Optional
 
 from litellm import completion
 
@@ -13,10 +13,123 @@ from soma.engine import WisdomEngine
 from soma.evolve import MetaEvolver
 from soma.hub import ActivationHub
 from soma.memory.core import MemoryCore
+from soma.retry import llm_retry
 
 
 class SOMA_Agent:
     """顶层统一对话接口 — 编排完整智者思维管道"""
+
+    # ── v0.6.0 推理模板：每条规律对应一个结构化推理框架 ─────
+    _REASONING_TEMPLATES: Dict[str, str] = {
+        "first_principles": (
+            "**第一性原理推理**\n"
+            "1. 基本要素识别：此问题最基础、不可再分的构成要素有哪些？\n"
+            "2. 假设检验：当前分析中有哪些未经验证的隐含假设？如果这些假设不成立会怎样？\n"
+            "3. 重构推导：抛开现有方案，从基本要素重新构建，会得到什么不同的解法？"
+        ),
+        "systems_thinking": (
+            "**系统思维推理**\n"
+            "1. 系统边界与结构：系统的边界、输入、输出是什么？关键组件及其连接关系？\n"
+            "2. 反馈回路：增强回路（正反馈）在哪里？平衡回路（负反馈）在哪里？\n"
+            "3. 杠杆点：系统中哪个节点的最小改变能产生最大的系统性影响？"
+        ),
+        "contradiction_analysis": (
+            "**矛盾分析推理**\n"
+            "1. 对立面识别：此问题中存在哪些对立统一的力量或利益？\n"
+            "2. 主要矛盾判定：哪一对矛盾是当前阶段的主要矛盾？为什么？\n"
+            "3. 矛盾转化：在什么条件下主要矛盾会发生转化？转化后的新主要矛盾可能是什么？"
+        ),
+        "pareto_principle": (
+            "**二八法则推理**\n"
+            "1. 关键少数识别：哪些 20% 的因素导致了 80% 的结果？判断依据是什么？\n"
+            "2. 非关键因素排除：哪些因素是「有用的多数」但不应分散精力？\n"
+            "3. 资源聚焦：将有限资源集中投放在哪几个关键点上收益最大？"
+        ),
+        "inversion": (
+            "**逆向思考推理**\n"
+            "1. 失败模式枚举：如果要让这件事彻底失败，有哪些最有效的路径？\n"
+            "2. 脆弱点暴露：逆向推演暴露了当前方案中的哪些脆弱点或盲区？\n"
+            "3. 防御策略：针对暴露的脆弱点，应该采取哪些预防或缓解措施？"
+        ),
+        "analogical_reasoning": (
+            "**类比推理**\n"
+            "1. 同构领域识别：哪些领域或场景在结构上与当前问题同构？相似点在哪里？\n"
+            "2. 可迁移模式提取：从类比领域中可提取哪些已验证的有效模式或方法？\n"
+            "3. 适应性改造：这些模式如何适配当前问题的特殊约束和条件？"
+        ),
+        "evolutionary_lens": (
+            "**演进视角推理**\n"
+            "1. 阶段定位：当前问题处于其生命周期的哪个阶段（萌芽/成长/成熟/衰退）？判断依据？\n"
+            "2. 演进驱动力：推动问题向下一个阶段演进的核心驱动力是什么？\n"
+            "3. 趋势预判：基于当前演进轨迹，6-12 个月后此问题最可能呈现什么状态？"
+        ),
+    }
+
+    # ── v0.6.0 假设模板：每条规律对应一个可检验假设 ─────────
+    _HYPOTHESIS_TEMPLATES: Dict[str, str] = {
+        "first_principles": (
+            "当前对「{problem}」的基本认知中，最核心的未验证假设是___，"
+            "如果这个假设被推翻，结论会如何改变？"
+        ),
+        "systems_thinking": (
+            "「{problem}」的系统杠杆点可能在___，在此处施加干预的预期连锁反应是___"
+        ),
+        "contradiction_analysis": (
+            "「{problem}」的主要矛盾是___与___的对立，矛盾的主要方面是___"
+        ),
+        "pareto_principle": (
+            "在「{problem}」中，真正决定 80% 结果的那 20% 关键因素是___"
+        ),
+        "inversion": (
+            "导致「{problem}」恶化的最有效途径是___，这暴露了当前方案的___漏洞"
+        ),
+        "analogical_reasoning": (
+            "与「{problem}」最相似的已知成功/失败场景是___，从该场景可借鉴的核心经验是___"
+        ),
+        "evolutionary_lens": (
+            "「{problem}」当前处于___阶段，下一个阶段是___，过渡的标志性信号是___"
+        ),
+    }
+
+    # ── v0.6.0 组合模板的推理框架 ───────────────────────────
+    _COMBO_REASONING: Dict[str, str] = {
+        "combo_first_principles_systems_thinking": (
+            "**根因系统分析推理**\n"
+            "1. 从基本要素出发，追踪其在系统网络中的传导路径\n"
+            "2. 识别哪个基本要素的变化会引发系统级连锁反应\n"
+            "3. 定位深层杠杆点：既能触及根本、又能影响全局的干预位置"
+        ),
+        "combo_systems_thinking_contradiction_analysis": (
+            "**动态张力分析推理**\n"
+            "1. 识别系统中相互制衡的力量对\n"
+            "2. 判断哪对张力是当前系统演化的主要驱动力\n"
+            "3. 分析如果其中一方被削弱或加强，系统的新的平衡点在哪里"
+        ),
+        "combo_contradiction_analysis_inversion": (
+            "**辩证反思推理**\n"
+            "1. 从正面论证当前方案的正确性\n"
+            "2. 从反面论证当前方案可能出错的所有路径\n"
+            "3. 正反综合：在哪些条件下正面成立、在哪些条件下反面成立"
+        ),
+        "combo_first_principles_pareto_principle": (
+            "**要素优先级排序推理**\n"
+            "1. 列出所有基本构成要素\n"
+            "2. 按影响力对每个要素排序，识别前 20%\n"
+            "3. 验证：忽略后 80% 要素，仅用前 20% 要素能否解释 80% 的结果"
+        ),
+        "combo_systems_thinking_evolutionary_lens": (
+            "**系统演进洞察推理**\n"
+            "1. 绘制系统当前状态的结构图\n"
+            "2. 回溯系统从上一阶段到当前的演变路径\n"
+            "3. 基于当前结构中的张力，预判系统的下一阶段形态"
+        ),
+        "combo_analogical_reasoning_first_principles": (
+            "**跨域本质映射推理**\n"
+            "1. 从类比领域提取其成功的底层基本原理\n"
+            "2. 剥离类比领域的特殊约束，保留可迁移的本质\n"
+            "3. 将本质原理映射到当前问题的具体约束中"
+        ),
+    }
 
     def __init__(self, config: SOMAConfig):
         self.config = config
@@ -61,6 +174,8 @@ class SOMA_Agent:
         self._last_prompt: str = ""
         # 保存最近一次反视角搜索结果（供 _build_prompt 使用）
         self._last_anti_memories: List[ActivatedMemory] = []
+        # 保存最近一次推理框架（v0.6.0 推理引擎）
+        self._last_reasoning: List[Dict] = []
 
     def respond(self, problem: str, user_id: str = "") -> str:
         """完整管道：拆解 → 双向激活 → 合成 → 应答"""
@@ -94,11 +209,20 @@ class SOMA_Agent:
         else:
             self._last_anti_memories = []
 
+        # Step 2.6: 构建结构化推理框架（v0.6.0 推理引擎）
+        self._last_reasoning = self._execute_reasoning(
+            problem, foci, activated, self._last_anti_memories,
+        )
+
         # Step 3: 合成 Prompt
         prompt = self._build_prompt(problem, foci, activated)
 
         # Step 4: 调用 LLM
         answer = self._call_llm(prompt, user_id)
+
+        # Step 4.5: 因果抽取（v0.6.0，仅复杂度达标且开关开启时执行）
+        if complexity >= self.config.causal_extraction_complexity:
+            self._extract_causal_relations(problem, answer)
 
         # Step 5: 更新访问计数（Python 对象 + 数据库持久化）
         for am in activated:
@@ -106,8 +230,8 @@ class SOMA_Agent:
             if am.source == "episodic":
                 self.memory.episodic.increment_access(am.memory.id)
 
-        # Step 6: 写入进化器上下文
-        self.evolver.set_current_context(foci, activated)
+        # Step 6: 写入进化器上下文（含问题文本，供触发词追踪）
+        self.evolver.set_current_context(foci, activated, problem)
 
         # Step 7: 录制 session（供仪表盘消费）
         self.record_session(problem, answer, foci, activated)
@@ -129,6 +253,83 @@ class SOMA_Agent:
         if any(w in problem for w in depth_words):
             score += 1
         return min(score, 3)
+
+    # ── v0.6.0 推理引擎方法 ──────────────────────────────
+
+    def _match_template(self, law_id: str, templates: Dict[str, str]) -> str:
+        """按 law_id 匹配模板，支持组合模板前缀匹配"""
+        if law_id in templates:
+            return templates[law_id]
+        for key in templates:
+            if key in law_id or law_id in key:
+                return templates[key]
+        return ""
+
+    def _execute_reasoning(
+        self,
+        problem: str,
+        foci: List[Focus],
+        activated: List[ActivatedMemory],
+        anti_memories: List[ActivatedMemory],
+    ) -> List[Dict]:
+        """构建结构化推理框架 — 为每个 Focus 匹配推理模板、假设和证据。
+
+        不调用 LLM，纯模板组织。结果注入 Prompt 引导 LLM 按框架思考。
+        """
+        blocks = []
+        # L3复杂度上限：最多7个foci，避免Prompt过长
+        if len(foci) > 7:
+            foci = sorted(foci, key=lambda f: f.weight, reverse=True)[:7]
+        for i, focus in enumerate(foci):
+            # 匹配推理模板 — 组合模板优先
+            template = ""
+            if focus.law_id.startswith("combo_"):
+                template = self._match_template(focus.law_id, self._COMBO_REASONING)
+            if not template:
+                template = self._match_template(focus.law_id, self._REASONING_TEMPLATES)
+            if not template:
+                template = (
+                    f"从「{focus.dimension[:60]}」的角度分析：\n"
+                    "请列出 3 个关键洞察，每个洞察附对应的证据或推理依据。"
+                )
+
+            # 匹配假设模板
+            hypo_tmpl = self._match_template(focus.law_id, self._HYPOTHESIS_TEMPLATES)
+            hypothesis = ""
+            if hypo_tmpl:
+                hypothesis = hypo_tmpl.replace("{problem}", problem)
+
+            # 收集与此 Focus 相关的证据片段
+            evidence_parts = []
+            focus_kw = set(focus.keywords[:5]) if focus.keywords else set()
+            for am in activated:
+                content = am.memory.content
+                hits = sum(1 for kw in focus_kw if kw.lower() in content.lower())
+                if hits > 0:
+                    evidence_parts.append(
+                        f"[关联度 {am.activation_score:.2f}] {content[:200]}"
+                    )
+            # 反视角证据
+            anti_parts = []
+            for am in anti_memories:
+                content = am.memory.content
+                hits = sum(1 for kw in focus_kw if kw.lower() in content.lower())
+                if hits > 0:
+                    anti_parts.append(
+                        f"[反对视角] {content[:200]}"
+                    )
+
+            blocks.append({
+                "index": i + 1,
+                "dimension": focus.dimension,
+                "weight": focus.weight,
+                "template": template,
+                "hypothesis": hypothesis,
+                "evidence": evidence_parts[:3],
+                "counter_evidence": anti_parts[:2],
+            })
+
+        return blocks
 
     def record_session(
         self, problem: str, answer: str,
@@ -168,23 +369,46 @@ class SOMA_Agent:
         foci: List[Focus],
         memories: List[ActivatedMemory],
     ) -> str:
-        """构建 LLM Prompt：思考角度 + 相关记忆 + 问题"""
-        # 思考角度 — 剥离规律名称，只保留思考方向描述
-        angles = []
-        for i, f in enumerate(foci):
-            clean = f.dimension
-            # 去掉 "从「规律名」出发：" 或 "从「规律名」视角审视：" 前缀
-            if "出发：" in clean:
-                clean = clean.split("出发：", 1)[1]
-            elif "视角审视：" in clean:
-                clean = clean.split("视角审视：", 1)[1]
-            # 去掉尾部 "应用于问题：「...」"
-            if "。应用于问题：" in clean:
-                clean = clean.split("。应用于问题：")[0]
-            angles.append(f"{i+1}. {clean}")
-        foci_text = "\n".join(angles)
+        """构建 LLM Prompt：推理框架 + 假设检验 + 证据对照 + 问题（v0.6.0 推理引擎）"""
+        # ── 结构化推理框架（v0.6.0） ─────────────────────────
+        reasoning_blocks = getattr(self, '_last_reasoning', [])
+        if not reasoning_blocks:
+            # 兼容旧路径：无推理框架时回退到简单角度列表
+            reasoning_blocks = self._execute_reasoning(
+                problem, foci, memories,
+                getattr(self, '_last_anti_memories', []),
+            )
 
-        # 记忆参考
+        framework_parts = []
+        for rb in reasoning_blocks:
+            part = f"""### 维度 {rb['index']}（权重 {rb['weight']:.2f}）
+
+{ rb['template'] }"""
+
+            if rb.get('hypothesis'):
+                part += f"""
+
+**可检验假设**：
+{ rb['hypothesis'] }"""
+
+            if rb.get('evidence'):
+                ev = "\n".join(rb['evidence'])
+                part += f"""
+
+**支持证据**：
+{ev}"""
+            if rb.get('counter_evidence'):
+                ce = "\n".join(rb['counter_evidence'])
+                part += f"""
+
+**反对证据**：
+{ce}"""
+
+            framework_parts.append(part)
+
+        reasoning_framework = "\n\n".join(framework_parts)
+
+        # ── 记忆参考 ─────────────────────────────────────────
         if memories:
             memory_text = "\n\n".join(
                 f"**[参考 {i+1}]** (来源: {am.source}, 关联度: {am.activation_score:.3f})\n"
@@ -194,7 +418,7 @@ class SOMA_Agent:
         else:
             memory_text = "（暂无直接相关的参考信息）"
 
-        # 反面视角 — 确认偏误检测结果
+        # ── 反面视角 ─────────────────────────────────────────
         anti_text = ""
         anti_memories = getattr(self, '_last_anti_memories', [])
         if anti_memories:
@@ -210,15 +434,18 @@ class SOMA_Agent:
                 + "\n\n".join(anti_parts)
             )
 
-        prompt = f"""你是一位**智者**，善于从多个角度深入思考问题。
+        prompt = f"""你是一位**智者**，善于运用多种思维框架深入分析问题。
 
-## 思考角度
-针对当前问题，可以从以下角度切入分析：
+## 结构化推理框架
+请按以下框架逐维度完成推理分析。对每个维度：
+1. 按模板中的指引完成分析和填空
+2. 检验提出的假设，结合支持/反对证据给出判断
+3. 给出该维度的核心结论（2-3 句话）
 
-{foci_text}
+{reasoning_framework}
 
 ## 相关记忆与经验
-以下是你过往积累的相关记忆片段和知识：
+以下是过往积累的相关记忆片段：
 
 {memory_text}
 {anti_text}
@@ -226,11 +453,14 @@ class SOMA_Agent:
 {problem}
 
 ---
-请综合以上思考角度和相关经验，给出有深度、有洞见的回答。
+**请按以下步骤作答**：
+1. 逐维度完成上述推理框架中的分析（用自然语言，不要提及框架/规律名称）
+2. 综合所有维度的分析结果，给出有深度的最终回答
+
 重要：
-1. **不要在回答中提及任何规律、理论或框架的名称**，将思考方式自然融入分析
-2. 用日常交流的语言表达，像一位智者在自然交谈
-3. 给出综合性的解答与建议"""
+- **不要在回答中提及任何规律、理论或框架的名称**，将思考方式自然融入分析
+- 用日常交流的语言表达，像一位智者在自然交谈
+- 当支持证据和反对证据都存在时，权衡两者而非选择性使用"""
 
         self._last_prompt = prompt
         return prompt
@@ -246,38 +476,76 @@ class SOMA_Agent:
             if time.time() - ts < ttl:
                 return answer
 
-        max_retries = 3
-        base_delay = 1.0
-        last_error = None
+        answer = self._do_llm_call(prompt)
 
-        for attempt in range(max_retries):
-            try:
-                response = completion(
-                    model=self.config.llm_model,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.7,
-                    timeout=60,
-                )
-                answer = response.choices[0].message.content
-                # 缓存结果
-                self._llm_cache[cache_key] = (time.time(), answer)
-                # 限制缓存大小
-                max_cache = self.config.llm_cache_max_size
-                if len(self._llm_cache) > max_cache:
-                    oldest = min(self._llm_cache, key=lambda k: self._llm_cache[k][0])
-                    del self._llm_cache[oldest]
-                return answer
-            except Exception as e:
-                last_error = e
-                if attempt < max_retries - 1:
-                    delay = base_delay * (2 ** attempt)
-                    time.sleep(delay)
-                else:
-                    raise RuntimeError(
-                        f"LLM 调用失败（已重试{max_retries}次）: {last_error}"
-                    ) from last_error
+        # 缓存结果
+        self._llm_cache[cache_key] = (time.time(), answer)
+        max_cache = self.config.llm_cache_max_size
+        if len(self._llm_cache) > max_cache:
+            oldest = min(self._llm_cache, key=lambda k: self._llm_cache[k][0])
+            del self._llm_cache[oldest]
+        return answer
 
-        raise RuntimeError(f"LLM 调用失败: {last_error}")
+    @llm_retry
+    def _do_llm_call(self, prompt: str) -> str:
+        """实际 LLM 调用，由 @llm_retry 装饰器自动重试"""
+        response = completion(
+            model=self.config.llm_model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+            timeout=60,
+        )
+        return response.choices[0].message.content
+
+    # ── v0.6.0 因果抽取 ─────────────────────────────────
+
+    @llm_retry
+    def _do_causal_extraction(self, extract_prompt: str) -> str:
+        """因果关系抽取 LLM 调用，由 @llm_retry 装饰器自动重试"""
+        response = completion(
+            model=self.config.llm_model,
+            messages=[{"role": "user", "content": extract_prompt}],
+            temperature=0.1,
+            timeout=15,
+        )
+        return response.choices[0].message.content
+
+    def _extract_causal_relations(self, problem: str, answer: str) -> None:
+        """从回答中自动抽取因果关系，存入语义记忆库。
+
+        仅在 config.causal_extraction=True 且复杂度达标时调用。
+        使用轻量 prompt（约 50 tokens）降低成本。
+        """
+        if not self.config.causal_extraction:
+            return
+
+        extract_prompt = (
+            f"从以下回答中提取因果关系三元组（主语, 谓语, 宾语），"
+            f"每行一个，格式：主语 | 谓语 | 宾语\n"
+            f"只提取明确的、有依据的因果关系，不要推测。\n\n"
+            f"问题：{problem[:200]}\n回答：{answer[:800]}\n\n"
+            "因果关系："
+        )
+
+        try:
+            raw = self._do_causal_extraction(extract_prompt)
+        except Exception:
+            return  # 因果抽取失败不影响主流程
+
+        # 解析三元组："主语 | 谓语 | 宾语"
+        for line in raw.strip().split("\n"):
+            line = line.strip()
+            parts = [p.strip() for p in line.split("|")]
+            if len(parts) >= 3:
+                subject, predicate, object_ = parts[0], parts[1], parts[2]
+                if subject and predicate and object_:
+                    try:
+                        self.remember_semantic(subject, predicate, object_, confidence=0.4)
+                    except Exception:
+                        logging.debug(
+                            f"语义三元组保存失败: ({subject}, {predicate}, {object_})",
+                            exc_info=True,
+                        )
 
     def remember(
         self,

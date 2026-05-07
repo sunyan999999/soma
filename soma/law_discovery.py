@@ -202,6 +202,16 @@ class LawDiscovery:
     ) -> Dict[str, Any]:
         """通过 LLM 审核生成规律"""
         from litellm import completion
+        from soma.retry import llm_retry
+
+        @llm_retry
+        def _call():
+            response = completion(
+                model=self._llm_model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.7,
+            )
+            return response.choices[0].message.content
 
         prompt = f"""你是一位认知科学专家。分析以下高关联记忆聚类，提取其中隐含的思维规律。
 
@@ -234,12 +244,7 @@ class LawDiscovery:
 - relations 从已有规律中选择1-2个最相关的"""
 
         try:
-            response = completion(
-                model=self._llm_model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.7,
-            )
-            text = response.choices[0].message.content
+            text = _call()
             # 提取 JSON
             import re
             json_match = re.search(r'\{[\s\S]*\}', text)
