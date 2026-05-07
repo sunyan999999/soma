@@ -578,10 +578,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#agentrespondproblem-str-str" class="md-nav__link">
+  <a href="#agentrespondproblem-str-user_id-str-str" class="md-nav__link">
     <span class="md-ellipsis">
       
-        agent.respond(problem: str) -&gt; str
+        agent.respond(problem: str, user_id: str = "") -&gt; str
       
     </span>
   </a>
@@ -600,10 +600,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#agentremembercontent-context-importance-str" class="md-nav__link">
+  <a href="#agentremembercontent-context-importance-user_id-session_id-str" class="md-nav__link">
     <span class="md-ellipsis">
       
-        agent.remember(content, context, importance) -&gt; str
+        agent.remember(content, context, importance, user_id="", session_id="") -&gt; str
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agentremember_semanticsubject-predicate-object_-confidence10-namespace-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent.remember_semantic(subject, predicate, object_, confidence=1.0, namespace="") -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agentquery_memoryquery-str-top_k-int-5-user_id-str-listdict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent.query_memory(query: str, top_k: int = 5, user_id: str = "") -&gt; List[Dict]
       
     </span>
   </a>
@@ -618,6 +640,89 @@
       
     </span>
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agentclose-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent.close() -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v060-reasoning-engine-internal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.6.0 Reasoning Engine (Internal)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v0.6.0 Reasoning Engine (Internal)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#agent_assess_complexityproblem-str-int" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent._assess_complexity(problem: str) -&gt; int
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agent_execute_reasoningproblem-foci-activated-anti_memories-listdict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent._execute_reasoning(problem, foci, activated, anti_memories) -&gt; List[Dict]
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agent_match_templatelaw_id-str-templates-dictstr-str-str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent._match_template(law_id: str, templates: Dict[str, str]) -&gt; str
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agent_extract_causal_relationsproblem-str-answer-str-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent._extract_causal_relations(problem: str, answer: str) -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agent_last_reasoning-listdict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent._last_reasoning: List[Dict]
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -1080,10 +1185,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#agentrespondproblem-str-str" class="md-nav__link">
+  <a href="#agentrespondproblem-str-user_id-str-str" class="md-nav__link">
     <span class="md-ellipsis">
       
-        agent.respond(problem: str) -&gt; str
+        agent.respond(problem: str, user_id: str = "") -&gt; str
       
     </span>
   </a>
@@ -1102,10 +1207,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#agentremembercontent-context-importance-str" class="md-nav__link">
+  <a href="#agentremembercontent-context-importance-user_id-session_id-str" class="md-nav__link">
     <span class="md-ellipsis">
       
-        agent.remember(content, context, importance) -&gt; str
+        agent.remember(content, context, importance, user_id="", session_id="") -&gt; str
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agentremember_semanticsubject-predicate-object_-confidence10-namespace-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent.remember_semantic(subject, predicate, object_, confidence=1.0, namespace="") -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agentquery_memoryquery-str-top_k-int-5-user_id-str-listdict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent.query_memory(query: str, top_k: int = 5, user_id: str = "") -&gt; List[Dict]
       
     </span>
   </a>
@@ -1120,6 +1247,89 @@
       
     </span>
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agentclose-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent.close() -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v060-reasoning-engine-internal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v0.6.0 Reasoning Engine (Internal)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="v0.6.0 Reasoning Engine (Internal)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#agent_assess_complexityproblem-str-int" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent._assess_complexity(problem: str) -&gt; int
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agent_execute_reasoningproblem-foci-activated-anti_memories-listdict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent._execute_reasoning(problem, foci, activated, anti_memories) -&gt; List[Dict]
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agent_match_templatelaw_id-str-templates-dictstr-str-str" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent._match_template(law_id: str, templates: Dict[str, str]) -&gt; str
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agent_extract_causal_relationsproblem-str-answer-str-none" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent._extract_causal_relations(problem: str, answer: str) -&gt; None
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agent_last_reasoning-listdict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        agent._last_reasoning: List[Dict]
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -1330,16 +1540,17 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">answer</span> <span class="o">=</span> <span class="n">soma</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="s2">&quot;How to analyze our growth bottleneck?&quot;</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="somachatproblem-str-dict"><code>soma.chat(problem: str) -&gt; dict</code><a class="headerlink" href="#somachatproblem-str-dict" title="Permanent link">&para;</a></h3>
-<p>Structured response including decomposition foci, activated memories, and memory stats.</p>
+<p>Structured response including decomposition foci, activated memories, reasoning framework (v0.6.0+), and memory stats.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">result</span> <span class="o">=</span> <span class="n">soma</span><span class="o">.</span><span class="n">chat</span><span class="p">(</span><span class="s2">&quot;What is first-principles thinking?&quot;</span><span class="p">)</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># {</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1">#   &quot;problem&quot;: &quot;...&quot;,</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1">#   &quot;answer&quot;: &quot;...&quot;,</span>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1">#   &quot;foci&quot;: [{&quot;law_id&quot;: &quot;...&quot;, &quot;dimension&quot;: &quot;...&quot;, &quot;keywords&quot;: [...], &quot;weight&quot;: 0.9, &quot;rationale&quot;: &quot;...&quot;}],</span>
 <a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1">#   &quot;activated_memories&quot;: [{&quot;content&quot;: &quot;...&quot;, &quot;source&quot;: &quot;episodic&quot;, &quot;activation_score&quot;: 0.89}],</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1">#   &quot;memory_stats&quot;: {&quot;episodic&quot;: 42, &quot;semantic&quot;: 15, &quot;indexed_vectors&quot;: 42},</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1">#   &quot;weights&quot;: {&quot;first_principles&quot;: 0.90, ...}</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># }</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1">#   &quot;reasoning&quot;: [{&quot;index&quot;: 1, &quot;dimension&quot;: &quot;...&quot;, &quot;template&quot;: &quot;...&quot;, &quot;hypothesis&quot;: &quot;...&quot;, &quot;evidence&quot;: [...], &quot;counter_evidence&quot;: [...]}],</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1">#   &quot;memory_stats&quot;: {&quot;episodic&quot;: 42, &quot;semantic&quot;: 15, &quot;indexed_vectors&quot;: 42},</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1">#   &quot;weights&quot;: {&quot;first_principles&quot;: 0.90, ...}</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="c1"># }</span>
 </code></pre></div>
 <h3 id="somaremembercontent-context-importance-str"><code>soma.remember(content, context, importance) -&gt; str</code><a class="headerlink" href="#somaremembercontent-context-importance-str" title="Permanent link">&para;</a></h3>
 <p>Store an episodic memory. Returns memory UUID.</p>
@@ -1398,14 +1609,32 @@
 <a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="p">)</span>
 <a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="n">agent</span> <span class="o">=</span> <span class="n">SOMA_Agent</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="agentrespondproblem-str-str"><code>agent.respond(problem: str) -&gt; str</code><a class="headerlink" href="#agentrespondproblem-str-str" title="Permanent link">&para;</a></h3>
+<h3 id="agentrespondproblem-str-user_id-str-str"><code>agent.respond(problem: str, user_id: str = "") -&gt; str</code><a class="headerlink" href="#agentrespondproblem-str-user_id-str-str" title="Permanent link">&para;</a></h3>
 <p>Same pipeline as <code>SOMA.respond</code>, without the auto-evolution counter.</p>
+<p>Pipeline (v0.6.0): complexity assess → decompose → activate → anti-bias search → <strong>reasoning framework</strong> → build prompt → call LLM → <strong>causal extraction</strong> → record.</p>
 <h3 id="agentdecomposeproblem-str-listfocus"><code>agent.decompose(problem: str) -&gt; List[Focus]</code><a class="headerlink" href="#agentdecomposeproblem-str-listfocus" title="Permanent link">&para;</a></h3>
 <p>Raw decomposition result.</p>
-<h3 id="agentremembercontent-context-importance-str"><code>agent.remember(content, context, importance) -&gt; str</code><a class="headerlink" href="#agentremembercontent-context-importance-str" title="Permanent link">&para;</a></h3>
+<h3 id="agentremembercontent-context-importance-user_id-session_id-str"><code>agent.remember(content, context, importance, user_id="", session_id="") -&gt; str</code><a class="headerlink" href="#agentremembercontent-context-importance-user_id-session_id-str" title="Permanent link">&para;</a></h3>
 <p>Direct memory storage, same as facade.</p>
+<h3 id="agentremember_semanticsubject-predicate-object_-confidence10-namespace-none"><code>agent.remember_semantic(subject, predicate, object_, confidence=1.0, namespace="") -&gt; None</code><a class="headerlink" href="#agentremember_semanticsubject-predicate-object_-confidence10-namespace-none" title="Permanent link">&para;</a></h3>
+<p>Store a semantic triple (knowledge graph edge).</p>
+<h3 id="agentquery_memoryquery-str-top_k-int-5-user_id-str-listdict"><code>agent.query_memory(query: str, top_k: int = 5, user_id: str = "") -&gt; List[Dict]</code><a class="headerlink" href="#agentquery_memoryquery-str-top_k-int-5-user_id-str-listdict" title="Permanent link">&para;</a></h3>
+<p>Direct memory search, bypassing framework decomposition.</p>
 <h3 id="agentreflecttask_id-outcome-none"><code>agent.reflect(task_id, outcome) -&gt; None</code><a class="headerlink" href="#agentreflecttask_id-outcome-none" title="Permanent link">&para;</a></h3>
-<p>Record session outcome.</p>
+<p>Record session outcome for meta-evolution tracking.</p>
+<h3 id="agentclose-none"><code>agent.close() -&gt; None</code><a class="headerlink" href="#agentclose-none" title="Permanent link">&para;</a></h3>
+<p>Close all sub-component connections (memory + evolver). Supports context manager (<code>with SOMA_Agent(config) as agent:</code>).</p>
+<h3 id="v060-reasoning-engine-internal">v0.6.0 Reasoning Engine (Internal)<a class="headerlink" href="#v060-reasoning-engine-internal" title="Permanent link">&para;</a></h3>
+<h4 id="agent_assess_complexityproblem-str-int"><code>agent._assess_complexity(problem: str) -&gt; int</code><a class="headerlink" href="#agent_assess_complexityproblem-str-int" title="Permanent link">&para;</a></h4>
+<p>Static method. Returns 1 (simple), 2 (medium), or 3 (complex) based on text length (&gt;100 chars) and depth keywords (为什么/如何/深层/根本/系统/矛盾 etc.).</p>
+<h4 id="agent_execute_reasoningproblem-foci-activated-anti_memories-listdict"><code>agent._execute_reasoning(problem, foci, activated, anti_memories) -&gt; List[Dict]</code><a class="headerlink" href="#agent_execute_reasoningproblem-foci-activated-anti_memories-listdict" title="Permanent link">&para;</a></h4>
+<p>Build structured reasoning framework for each focus. Matches reasoning templates, hypothesis templates, collects supporting and counter evidence. Caps at 7 foci for L3. Returns list of reasoning blocks, each containing: <code>index</code>, <code>dimension</code>, <code>weight</code>, <code>template</code>, <code>hypothesis</code>, <code>evidence</code> (up to 3), <code>counter_evidence</code> (up to 2).</p>
+<h4 id="agent_match_templatelaw_id-str-templates-dictstr-str-str"><code>agent._match_template(law_id: str, templates: Dict[str, str]) -&gt; str</code><a class="headerlink" href="#agent_match_templatelaw_id-str-templates-dictstr-str-str" title="Permanent link">&para;</a></h4>
+<p>Match a law_id to a reasoning/hypothesis template. Supports exact match, prefix match, and bidirectional substring match for combo templates.</p>
+<h4 id="agent_extract_causal_relationsproblem-str-answer-str-none"><code>agent._extract_causal_relations(problem: str, answer: str) -&gt; None</code><a class="headerlink" href="#agent_extract_causal_relationsproblem-str-answer-str-none" title="Permanent link">&para;</a></h4>
+<p>Lightweight LLM call (~200 tokens) to extract "subject|predicate|object" triples from answer. Only triggers when <code>config.causal_extraction=True</code> and complexity &gt;= <code>config.causal_extraction_complexity</code>. Failures are silently ignored.</p>
+<h4 id="agent_last_reasoning-listdict"><code>agent._last_reasoning: List[Dict]</code><a class="headerlink" href="#agent_last_reasoning-listdict" title="Permanent link">&para;</a></h4>
+<p>Instance variable storing the most recent reasoning framework. Readable by dashboards and external callers for observability.</p>
 <hr />
 <h2 id="wisdomengine">WisdomEngine<a class="headerlink" href="#wisdomengine" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma.engine</span><span class="w"> </span><span class="kn">import</span> <span class="n">WisdomEngine</span>
