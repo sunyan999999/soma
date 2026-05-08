@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://sunyan999999.github.io/soma/sitemap.xml
