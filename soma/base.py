@@ -58,3 +58,4 @@ class ActivatedMemory:
     activation_score: float  # 由 ActivationHub 计算
     source: str  # "episodic" | "semantic" | "skill"
     match_rationale: str = ""  # 为什么该记忆被激活
+    suggested_focus: Optional[Focus] = None  # v0.8.0: 记忆反向建议的思维焦点

@@ -71,3 +71,58 @@ class TestMemoryCore:
         )
         results = memory.query(focus)
         assert len(results) == 0
+
+    def test_graph_expanded_retrieval(self, memory):
+        """图谱扩展检索：当语义图谱中有 (A, 关联, B) 时，
+        搜索 A 应能找到关于 B 的情节记忆。"""
+        # 建立语义图谱：增长 → 第一性原理
+        memory.remember_semantic("增长", "依赖", "第一性原理")
+
+        # 存储关于 B 的情节记忆（不含 A 关键词）
+        memory.remember(
+            "第一性原理的核心：将问题分解到不可再分的基本元素",
+            {"domain": "方法论"},
+        )
+
+        # 用 A 关键词搜索 — 应通过图扩展找到关于 B 的记忆
+        focus = Focus(
+            law_id="first_principles",
+            dimension="如何分析增长问题",
+            keywords=["增长"],
+            weight=0.9,
+            rationale="",
+        )
+
+        results = memory.query(focus, top_k=5)
+        assert len(results) >= 1
+        contents = [r.memory.content.lower() for r in results]
+        assert any("第一性原理" in c for c in contents), \
+            f"图谱扩展未生效，检索结果: {contents}"
+
+    def test_graph_expansion_no_match(self, memory):
+        """图谱中无匹配节点时，扩展不应影响检索"""
+        memory.remember("普通的业务分析笔记", {"domain": "分析"})
+
+        focus = Focus(
+            law_id="pareto_principle",
+            dimension="测试",
+            keywords=["普通"],
+            weight=0.8,
+            rationale="",
+        )
+
+        results = memory.query(focus, top_k=5)
+        assert len(results) >= 1
+        # 无图谱匹配时行为正常
+
+    def test_expand_via_semantic_graph_empty(self, memory):
+        """空图谱时扩展返回空列表"""
+        terms = memory._expand_via_semantic_graph(["测试"])
+        assert terms == []
+
+    def test_expand_via_semantic_graph_with_data(self, memory):
+        """有匹配节点时返回扩展词"""
+        memory.remember_semantic("增长", "依赖", "第一性原理")
+        memory.remember_semantic("第一性原理", "应用于", "工程设计")
+        terms = memory._expand_via_semantic_graph(["增长"])
+        assert "第一性原理" in terms

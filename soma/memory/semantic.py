@@ -282,6 +282,40 @@ class SemanticStore(BaseMemoryStore):
 
         return {"node": node, "neighbors": subgraph_nodes, "edges": subgraph_edges}
 
+    def expand_query_terms(
+        self, nodes: List[str], depth: int = 2, max_terms: int = 10,
+    ) -> List[str]:
+        """从起始节点沿图BFS遍历，返回邻居节点标签作为扩展搜索词。
+
+        权重按图距离衰减：1跳×0.6, 2跳×0.36。
+        返回按衰减权重降序排列的邻居标签列表。
+        """
+        if not nodes:
+            return []
+
+        expanded: Dict[str, float] = {}  # node_label → decay_weight
+        frontier = set(nodes)
+        visited = set(nodes)
+
+        decay = 1.0
+        for d in range(depth):
+            decay *= 0.6
+            next_frontier = set()
+            for n in frontier:
+                if n not in self.graph:
+                    continue
+                for _, v in self.graph.out_edges(n):
+                    if v not in visited:
+                        visited.add(v)
+                        next_frontier.add(v)
+                        expanded[v] = max(expanded.get(v, 0), decay)
+            frontier = next_frontier
+            if not frontier:
+                break
+
+        ranked = sorted(expanded.items(), key=lambda x: -x[1])
+        return [term for term, _ in ranked[:max_terms]]
+
     def list_nodes(self) -> List[str]:
         return list(self.graph.nodes)
 

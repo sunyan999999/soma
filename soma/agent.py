@@ -13,6 +13,7 @@ from soma.engine import WisdomEngine
 from soma.evolve import MetaEvolver
 from soma.hub import ActivationHub
 from soma.memory.core import MemoryCore
+from soma.quality import QualityEvaluator
 from soma.retry import llm_retry
 
 
@@ -167,6 +168,9 @@ class SOMA_Agent:
         self.evolver = MetaEvolver(self.engine, memory_core=self.memory,
                                    persist_dir=config.episodic_persist_dir)
 
+        # v0.8.0: 反思质量评估器
+        self.quality_evaluator = QualityEvaluator(embedder=self.embedder)
+
         # LLM 短时缓存（避免相同 prompt 重复调用）
         self._llm_cache: Dict[str, tuple] = {}
 
@@ -199,7 +203,7 @@ class SOMA_Agent:
         elif complexity == 1:
             self.hub.top_k = max(original_top_k // 2, 2)
         try:
-            activated = self.hub.activate(foci, user_id=user_id)
+            activated = self.hub.activate(foci, user_id=user_id, laws=self.engine.laws)
         finally:
             self.hub.top_k = original_top_k
 
@@ -209,7 +213,15 @@ class SOMA_Agent:
         else:
             self._last_anti_memories = []
 
-        # Step 2.6: 构建结构化推理框架（v0.6.0 推理引擎）
+        # Step 2.6: v0.8.0 收集记忆建议的焦点，合并进推理框架
+        suggested_foci = []
+        for am in activated:
+            if am.suggested_focus and am.suggested_focus.weight >= 0.1:
+                suggested_foci.append(am.suggested_focus)
+        if suggested_foci:
+            foci = foci + suggested_foci
+
+        # Step 2.7: 构建结构化推理框架（v0.6.0 推理引擎）
         self._last_reasoning = self._execute_reasoning(
             problem, foci, activated, self._last_anti_memories,
         )
@@ -220,7 +232,23 @@ class SOMA_Agent:
         # Step 4: 调用 LLM
         answer = self._call_llm(prompt, user_id)
 
-        # Step 4.5: 因果抽取（v0.6.0，仅复杂度达标且开关开启时执行）
+        # Step 4.5: v0.8.0 反思质量自评
+        quality = self.quality_evaluator.evaluate(
+            answer=answer,
+            memory_contents=[am.memory.content for am in activated],
+            conflict_count=len(getattr(self.hub, 'last_conflicts', [])),
+        )
+        if quality["needs_reflection"]:
+            self._last_quality_note = (
+                f"[质量反馈] 综合分 {quality['overall']:.2f} ({quality['grade']}) — "
+                f"一致性 {quality['consistency']:.2f} "
+                f"连贯性 {quality['coherence']:.2f} "
+                f"可操作性 {quality['actionability']:.2f}"
+            )
+        else:
+            self._last_quality_note = ""
+
+        # Step 4.6: 因果抽取（v0.6.0，仅复杂度达标且开关开启时执行）
         if complexity >= self.config.causal_extraction_complexity:
             self._extract_causal_relations(problem, answer)
 
@@ -434,6 +462,24 @@ class SOMA_Agent:
                 + "\n\n".join(anti_parts)
             )
 
+        # ── v0.8.0 冲突检测警告 ─────────────────────────────
+        conflict_text = ""
+        if getattr(self.hub, 'last_conflicts', []):
+            conflict_parts = []
+            for i, (am_a, am_b, score) in enumerate(self.hub.last_conflicts):
+                conflict_parts.append(
+                    f"**矛盾 {i+1}** (冲突度: {score:.2f})\n"
+                    f"- 记忆A [{am_a.source}, 关联度 {am_a.activation_score:.3f}]: "
+                    f"{am_a.memory.content[:200]}\n"
+                    f"- 记忆B [{am_b.source}, 关联度 {am_b.activation_score:.3f}]: "
+                    f"{am_b.memory.content[:200]}"
+                )
+            conflict_text = (
+                "\n## 潜在记忆矛盾\n"
+                "以下记忆片段存在潜在逻辑矛盾，请结合上下文判断各自的适用条件：\n\n"
+                + "\n\n".join(conflict_parts)
+            )
+
         prompt = f"""你是一位**智者**，善于运用多种思维框架深入分析问题。
 
 ## 结构化推理框架
@@ -449,6 +495,7 @@ class SOMA_Agent:
 
 {memory_text}
 {anti_text}
+{conflict_text}
 ## 当前问题
 {problem}
 

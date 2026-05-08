@@ -60,3 +60,37 @@ class TestSemanticStore:
             store.add_triple(f"概念{i}", "关联", f"概念{i+1}")
         results = store.query_by_keywords(["概念"], top_k=3)
         assert len(results) <= 3
+
+    def test_expand_query_terms_depth_one(self, store):
+        terms = store.expand_query_terms(["快速决策"], depth=1)
+        assert "第一性原理" in terms
+        assert len(terms) >= 1
+
+    def test_expand_query_terms_depth_two(self, store):
+        store.add_triple("第一性原理", "应用于", "工程设计")
+        terms = store.expand_query_terms(["快速决策"], depth=2)
+        assert "第一性原理" in terms
+        assert "工程设计" in terms
+
+    def test_expand_query_terms_unknown_node(self, store):
+        terms = store.expand_query_terms(["不存在的概念"], depth=2)
+        assert terms == []
+
+    def test_expand_query_terms_empty_input(self, store):
+        terms = store.expand_query_terms([], depth=2)
+        assert terms == []
+
+    def test_expand_query_terms_max_terms_cap(self, store):
+        for i in range(20):
+            store.add_triple(f"概念{i}", "关联", f"概念{i+1}")
+        terms = store.expand_query_terms(["概念0"], depth=1, max_terms=5)
+        assert len(terms) <= 5
+
+    def test_expand_query_terms_dedup(self, store):
+        store.add_triple("快速决策", "也关联", "系统思维")
+        terms = store.expand_query_terms(["快速决策", "系统思维"], depth=1)
+        assert len(terms) == len(set(terms))  # no duplicates
+
+    def test_expand_query_terms_excludes_input_nodes(self, store):
+        terms = store.expand_query_terms(["快速决策"], depth=2)
+        assert "快速决策" not in terms  # input nodes excluded from expansion
