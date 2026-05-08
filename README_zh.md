@@ -2,8 +2,32 @@
 
 <p align="center">
   <strong>Wisdom over Memory — 智慧超越记忆</strong><br>
-  <em>为 AI Agent 构建的框架优先式认知架构</em>
+  <em>AI Agent 不该只是"记住"，应该<strong>悟到</strong>。</em>
 </p>
+
+```bash
+pip install soma-wisdom     # 五分钟，从零到会思考的 Agent
+```
+
+```python
+from soma import SOMA
+
+soma = SOMA()
+soma.remember("第一性原理：回归事物最基本的要素，从底层逻辑出发推导...",
+              context={"domain": "哲学"}, importance=0.9)
+answer = soma.respond("如何系统性地分析公司增长瓶颈？")
+# → 7条思维规律拆解问题 → 双向激活检索记忆 → 返回结构化分析
+```
+
+**为什么用 SOMA 而非向量数据库？** 传统记忆库（ChromaDB、Mem0）只管存和搜。SOMA **先思考再检索**：7条思维规律组成推理网络，分析问题的维度决定了要激活什么记忆。结果是能系统拆解问题的 Agent，而不是只会模式匹配的机器人。
+
+| | 向量数据库 | Mem0 | **SOMA** |
+|---|---|---|---|
+| 存取记忆 | ✓ | ✓ | ✓ |
+| 推理框架 | ✗ | ✗ | **✓ 7条思维规律** |
+| 自我进化 | ✗ | ✗ | **✓ 权重自动调优** |
+| 合并+遗忘 | ✗ | 部分 | **✓ 艾宾浩斯衰减** |
+| 离线零依赖 | 部分 | ✗ (需OpenAI) | **✓ ONNX+SQLite** |
 
 <p align="center">
   <a href="https://github.com/sunyan999999/soma"><img src="https://img.shields.io/github/stars/sunyan999999/soma?style=social" alt="GitHub stars"></a>
@@ -13,45 +37,14 @@
   <a href="#基准测试"><img src="https://img.shields.io/badge/语义召回-100%25-brightgreen" alt="语义召回率"></a>
   <a href="#基准测试"><img src="https://img.shields.io/badge/综合评分-84.8%2F100-blue" alt="综合评分"></a>
   <a href="#"><img src="https://img.shields.io/badge/测试-342%2F342-brightgreen" alt="测试"></a>
-  <a href="reports/"><img src="https://img.shields.io/badge/测试报告-v0.7.0-success" alt="测试报告"></a>
-  <a href="#"><img src="https://img.shields.io/badge/稳定性-生产就绪-brightgreen" alt="稳定性"></a>
+  <a href="TEST_REPORT_v0.7.0_FINAL.md"><img src="https://img.shields.io/badge/测试报告-v0.7.0-success" alt="测试报告"></a>
 </p>
 
----
-
-**SOMA**（Somatic Wisdom Architecture，体悟式智慧架构）是一个轻量、可拔插的 AI Agent 认知框架。与传统记忆库把记忆当被动存储不同，SOMA 以**显式思维框架**为索引来组织记忆——七条底层思考规律构成推理网络，而非平铺列表。规律间通过关联链传播激活、组合生成合成视角、自我纠正认知偏差。结果：Agent 能系统拆解问题、双向激活知识、随时间自我进化。
-
-**v0.7.0 记忆智能**：记忆不再是只增不减的日志——支持**相似记忆自动合并**、**低价值记忆主动遗忘（归档可恢复）**、**外部知识（Markdown/JSON/URL）批量导入**，模仿人脑的记忆管理机制，让记忆库保持精悍高效。
-
-> **不是让 AI 记更多，而是让 AI 悟更深。**
-
-📖 **[English README](README.md)** | **[文档](docs/)** | **[测试报告](reports/)** | **[变更日志](CHANGELOG.md)** | **[贡献指南](CONTRIBUTING.md)**
+📖 **[English README](README.md)** | **[文档](https://sunyan999999.github.io/soma/)** | **[变更日志](CHANGELOG.md)** | **[贡献指南](CONTRIBUTING.md)**
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/demo-pipeline.gif" alt="SOMA Pipeline Demo" width="720">
 </p>
-
-## ⚡ 五分钟接入
-
-```bash
-pip install soma-wisdom
-python -m soma          # 一行命令验证全部功能
-```
-
-```python
-from soma import SOMA
-
-soma = SOMA()                                        # 零配置启动
-
-soma.remember(
-    "第一性原理：回归事物最基本的要素，从底层逻辑出发推导...",
-    context={"domain": "哲学", "type": "理论"},
-    importance=0.9,
-)
-
-answer = soma.respond("如何系统性地分析公司增长瓶颈？")
-print(answer)
-```
 
 无需 API Key 即可在 Mock 模式下运行。设置 `llm="deepseek-chat"`（或任意 LiteLLM 模型）接入真实 LLM。
 

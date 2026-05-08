@@ -2,8 +2,32 @@
 
 <p align="center">
   <strong>Wisdom over Memory — 智慧超越记忆</strong><br>
-  <em>Framework-First Cognitive Architecture for AI Agents</em>
+  <em>AI agents shouldn't just remember. They should <strong>understand</strong>.</em>
 </p>
+
+```bash
+pip install soma-wisdom     # 5 minutes from zero to thinking agent
+```
+
+```python
+from soma import SOMA
+
+soma = SOMA()
+soma.remember("First-principles thinking: deconstruct to fundamentals...",
+              context={"domain": "philosophy"}, importance=0.9)
+answer = soma.respond("How to analyze our growth bottleneck?")
+# → decomposes through 7 thinking laws → activates relevant memories → returns reasoned answer
+```
+
+**Why SOMA instead of a vector database?** Traditional memory (ChromaDB, Mem0) stores and retrieves. SOMA **thinks first**: a 7-law reasoning network decomposes problems *before* fetching memories. The result: agents that systematically analyze, not just pattern-match.
+
+| | Vector DBs | Mem0 | **SOMA** |
+|---|---|---|---|
+| Stores & retrieves | ✓ | ✓ | ✓ |
+| Reasoning framework | ✗ | ✗ | **✓ 7 thinking laws** |
+| Self-evolution | ✗ | ✗ | **✓ weights auto-tune** |
+| Consolidation + forgetting | ✗ | partial | **✓ Ebbinghaus decay** |
+| Offline / zero infra | varies | ✗ (OpenAI) | **✓ ONNX, SQLite** |
 
 <p align="center">
   <a href="https://github.com/sunyan999999/soma"><img src="https://img.shields.io/github/stars/sunyan999999/soma?style=social" alt="GitHub stars"></a>
@@ -14,44 +38,13 @@
   <a href="#benchmarks"><img src="https://img.shields.io/badge/overall_score-84.8%2F100-blue" alt="Overall Score"></a>
   <a href="#"><img src="https://img.shields.io/badge/tests-342%2F342-brightgreen" alt="Tests"></a>
   <a href="TEST_REPORT_v0.7.0_FINAL.md"><img src="https://img.shields.io/badge/test_report-v0.7.0-success" alt="Test Report"></a>
-  <a href="#"><img src="https://img.shields.io/badge/stability-production_ready-brightgreen" alt="Stability"></a>
 </p>
 
----
-
-**SOMA** is a lightweight, pluggable cognitive framework that gives AI agents the ability to *think*, not just retrieve. It organizes memory around an explicit **wisdom framework** — seven thinking laws that form a reasoning network, not a flat list. Laws chain through relations, combine into synthesized perspectives, and self-correct against cognitive bias. The result: agents that decompose problems systematically, activate relevant knowledge bidirectionally, and evolve their own reasoning over time.
-
-> **Not "make AI remember more." Make AI *understand deeper*.**
-
-📖 **[中文文档](README_zh.md)** | **[Documentation](docs/)** | **[Test Reports](reports/)** | **[Changelog](CHANGELOG.md)** | **[Contributing](CONTRIBUTING.md)**
+📖 **[中文文档](README_zh.md)** | **[Docs](https://sunyan999999.github.io/soma/)** | **[Changelog](CHANGELOG.md)** | **[Contributing](CONTRIBUTING.md)**
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/demo-pipeline.gif" alt="SOMA Pipeline Demo" width="720">
 </p>
-
-## ⚡ Five-Minute Integration
-
-```bash
-pip install soma-wisdom
-python -m soma          # one-command verification
-```
-
-```python
-from soma import SOMA
-
-soma = SOMA()                                        # zero-config start
-
-soma.remember(
-    "First-principles thinking: deconstruct to fundamentals...",
-    context={"domain": "philosophy", "type": "theory"},
-    importance=0.9,
-)
-
-answer = soma.respond("How to analyze our growth bottleneck?")
-print(answer)
-```
-
-No API key required for mock mode. Set `llm="deepseek-chat"` (or any LiteLLM model) for real LLM responses.
 
 ## Architecture
 

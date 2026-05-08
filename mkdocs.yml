@@ -1,7 +1,12 @@
-site_name: SOMA
-site_description: SOMA — 智慧超越记忆，为AI Agent构建的框架优先式认知架构
+site_name: SOMA — Somatic Wisdom Architecture
+site_description: >-
+  SOMA is a cognitive memory framework for AI agents. 7 thinking laws decompose problems,
+  bidirectional activation retrieves memories, and weights self-evolve over time.
+  pip install soma-wisdom. 智慧超越记忆。
+site_url: https://sunyan999999.github.io/soma/
 repo_url: https://github.com/sunyan999999/soma
 edit_uri: edit/main/docs/
+site_author: SOMA Project Team
 
 theme:
   name: material
@@ -31,10 +36,20 @@ nav:
   - 核心理念: philosophy.md
   - 架构手册: architecture.md
   - API 参考: api/index.md
-  - API 稳定性: api_stability.md
   - 自定义指南: guides/customization.md
+  - 对比分析:
+    - SOMA vs Mem0: articles/soma-vs-mem0.md
+    - SOMA vs Letta: articles/soma-vs-letta.md
+    - Why We Built SOMA: articles/why-we-built-soma.md
   - 贡献指南: contributing.md
   - 变更日志: changelog.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/sunyan999999/soma
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/soma-wisdom/
 
 plugins:
   - search
