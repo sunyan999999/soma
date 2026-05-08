@@ -40,7 +40,7 @@ answer = soma.respond("How to analyze our growth bottleneck?")
   <a href="TEST_REPORT_v0.7.0_FINAL.md"><img src="https://img.shields.io/badge/test_report-v0.7.0-success" alt="Test Report"></a>
 </p>
 
-📖 **[中文文档](README_zh.md)** | **[Docs](https://sunyan999999.github.io/soma/)** | **[Changelog](CHANGELOG.md)** | **[Contributing](CONTRIBUTING.md)**
+📖 **[中文文档](README_zh.md)** | **[Docs](https://sunyan999999.github.io/soma/)** | **[Demo](https://github.com/sunyan999999/soma-demo)** | **[Roadmap](ROADMAP.md)** | **[Changelog](CHANGELOG.md)** | **[Contributing](CONTRIBUTING.md)**
 
 <p align="center">
   <img src="https://raw.githubusercontent.com/sunyan999999/soma/main/docs/images/demo-pipeline.gif" alt="SOMA Pipeline Demo" width="720">
