@@ -1,0 +1,1183 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="SOMA is a cognitive memory framework for AI agents. 7 thinking laws decompose problems, bidirectional activation retrieves memories, and weights self-evolve over time. pip install soma-wisdom. 智慧超越记忆。">
+      
+      
+        <meta name="author" content="SOMA Project Team">
+      
+      
+        <link rel="canonical" href="https://sunyan999999.github.io/soma/plan-v0.8.0/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>SOMA v0.8.0 开发计划 — 知识图谱与推理引擎 - SOMA — Somatic Wisdom Architecture</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#soma-v080" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href=".." title="SOMA — Somatic Wisdom Architecture" class="md-header__button md-logo" aria-label="SOMA — Somatic Wisdom Architecture" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SOMA — Somatic Wisdom Architecture
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              SOMA v0.8.0 开发计划 — 知识图谱与推理引擎
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/sunyan999999/soma" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="SOMA — Somatic Wisdom Architecture" class="md-nav__button md-logo" aria-label="SOMA — Somatic Wisdom Architecture" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    SOMA — Somatic Wisdom Architecture
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/sunyan999999/soma" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速开始
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../philosophy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    核心理念
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构手册
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API 参考
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/customization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    自定义指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    对比分析
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    对比分析
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../articles/soma-vs-mem0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SOMA vs Mem0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../articles/soma-vs-letta/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SOMA vs Letta
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../articles/why-we-built-soma/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Why We Built SOMA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    贡献指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    变更日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        设计原则
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#v070" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        架构背景（v0.7.0 现状）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        任务拆分（6 个子任务 + 集成测试）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="任务拆分（6 个子任务 + 集成测试）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#0" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        任务 0：语义图谱接入检索管道 ⭐ 基础
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        任务 1：因果推理链
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        任务 2：记忆冲突检测
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        任务 3：双向激活闭环
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        任务 4：跨领域类比引擎
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        任务 5：反思质量自评
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        任务 6：集成测试与基准验证
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        执行顺序
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        关键设计决策
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        预计工作量
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="soma-v080">SOMA v0.8.0 开发计划 — 知识图谱与推理引擎<a class="headerlink" href="#soma-v080" title="Permanent link">&para;</a></h1>
+<h2 id="_1">设计原则<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>连接而非重建</strong>：不创建新的存储层，连接现有的 EpisodicStore、SemanticStore 和 WisdomEngine</li>
+<li><strong>增量可验证</strong>：每个子任务有明确的验收标准、测试文件和预期行为</li>
+<li><strong>API 向后兼容</strong>：所有变更不破坏 v0.7.0 的公开 API</li>
+</ol>
+<hr />
+<h2 id="v070">架构背景（v0.7.0 现状）<a class="headerlink" href="#v070" title="Permanent link">&para;</a></h2>
+<p>当前 SOMA 的推理管道是线性的：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Problem → WisdomEngine.decompose() → [Focus...]
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>                                    ↓
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>              ActivationHub.activate(foci) → [ActivatedMemory...]
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>                                    ↓
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>              SOMA_Agent._answer(problem, foci, memories) → response
+</code></pre></div>
+<p>关键断点（需要 v0.8.0 修复）：
+- <strong>SemanticStore 的 NetworkX 图有 <code>get_neighbors()</code>，但检索管道从未调用它</strong>
+- <strong>ActivationHub 名为"双向激活"，实际只是 Focus→Memory 单向</strong>
+- <strong>没有冲突检测：两条矛盾记忆可以同时被激活且得高分</strong>
+- <strong>没有因果推理：三元素存储存在但从不构建因果图</strong>
+- <strong>组合模板是硬编码的，不是动态发现的</strong></p>
+<hr />
+<h2 id="6">任务拆分（6 个子任务 + 集成测试）<a class="headerlink" href="#6" title="Permanent link">&para;</a></h2>
+<h3 id="0">任务 0：语义图谱接入检索管道 ⭐ 基础<a class="headerlink" href="#0" title="Permanent link">&para;</a></h3>
+<p><strong>目标</strong>：让 SemanticStore 的图结构参与 MemoryCore 的检索过程。</p>
+<p><strong>当前行为</strong>：
+- <code>_hybrid_search()</code> 只做向量检索 + 关键词检索的 RRF 融合
+- SemanticStore 的图被查询但边的遍历结果被丢弃
+- 一个概念的相关概念永远不会被检索到</p>
+<p><strong>目标行为</strong>：
+- 当聚焦点关键词匹配到三元素图谱中的节点时，沿边遍历 1-2 跳
+- 找到的邻居节点作为「扩展关键词」参与 episodic 检索
+- 扩展关键词的权重按图距离衰减（1 跳 × 0.6，2 跳 × 0.36）</p>
+<p><strong>涉及文件</strong>：
+| 文件 | 变更类型 | 说明 |
+|------|---------|------|
+| <code>soma/memory/semantic.py</code> | 修改 | 新增 <code>expand_keywords(node, depth=2)</code> 方法，沿图遍历返回邻居节点标签 |
+| <code>soma/memory/core.py</code> | 修改 | <code>_hybrid_search()</code> 调用 <code>semantic.expand_keywords()</code>，将扩展词加入关键词检索 |
+| <code>tests/test_semantic.py</code> | 新增测试 | 测试图遍历扩展的正确性（深度、衰减） |
+| <code>tests/test_memory_core.py</code> | 新增测试 | 验证混合检索结果包含图扩展带来的相关记忆 |</p>
+<p><strong>验收标准</strong>：
+- [ ] <code>expand_keywords("客户流失", depth=2)</code> 返回 <code>["用户留存", "产品体验", "定价策略"]</code> 等图邻居
+- [ ] 检索 "客户流失" 时，包含 "用户留存" 节点的记忆出现在结果中（之前不会）
+- [ ] 图扩展耗时 &lt; 5ms（10K 节点规模）
+- [ ] 无图扩展时检索行为不变（向后兼容）</p>
+<hr />
+<h3 id="1">任务 1：因果推理链<a class="headerlink" href="#1" title="Permanent link">&para;</a></h3>
+<p><strong>目标</strong>：构建因果子图，支持从现象追溯到根因的分析链。</p>
+<p><strong>当前行为</strong>：
+- 三元素存储了 <code>(A, causes, B)</code> 但没有因果路径查询
+- 用户问「为什么客户流失？」时，SOMA 只能返回孤立的因果陈述
+- 无法展示 A→B→C→D 的因果链条</p>
+<p><strong>目标行为</strong>：
+- 新增 <code>CausalPath</code> 查询：给定起始节点，在语义图谱中沿因果边（causes/leads_to/prevents/increases/decreases）遍历
+- 支持「根因分析」模式：找出无前驱因果边的叶子节点
+- 支持「影响分析」模式：从给定节点出发找所有下游影响</p>
+<p><strong>涉及文件</strong>：
+| 文件 | 变更类型 | 说明 |
+|------|---------|------|
+| <code>soma/memory/causal.py</code> | <strong>新建</strong> | <code>CausalGraph</code> 类：因果边过滤、路径查询、根因/影响分析 |
+| <code>soma/memory/semantic.py</code> | 修改 | 添加 <code>get_causal_edges()</code> 和 <code>get_edges_by_predicate(predicates)</code> |
+| <code>soma/memory/core.py</code> | 修改 | 暴露 <code>query_causal_chain(node, direction, depth)</code> |
+| <code>soma/hub/_core.py</code> | 修改 | 当 foci 中有 <code>systems_thinking</code> 律时，自动触发因果分析 |
+| <code>tests/test_causal.py</code> | <strong>新建</strong> | 因果路径查询、根因发现、循环检测测试 |</p>
+<p><strong>验收标准</strong>：
+- [ ] 给定 A→B→C→D 因果链，<code>find_root_causes("D")</code> 返回 <code>["A"]</code>
+- [ ] 给定分叉因果，<code>find_all_effects("A")</code> 返回 A 的所有下游节点
+- [ ] 因果环路 <code>A→B→C→A</code> 被检测到并标记，而非无限循环
+- [ ] 空因果图返回空列表，不报错
+- [ ] 因果分析耗时：1000 边图 &lt; 10ms</p>
+<hr />
+<h3 id="2">任务 2：记忆冲突检测<a class="headerlink" href="#2" title="Permanent link">&para;</a></h3>
+<p><strong>目标</strong>：当两条被激活的记忆存在逻辑矛盾时，自动检测并标记。</p>
+<p><strong>当前行为</strong>：
+- 没有冲突检测机制
+- 两条矛盾的记忆可以同时被激活得高分
+- <code>anti_confirmation_search</code> 只做简单的否定词匹配，不够语义化</p>
+<p><strong>目标行为</strong>：
+- 对高激活记忆对进行语义矛盾检测
+- 使用嵌入向量的余弦相似度 + 否定变换来判断是否矛盾
+- 冲突记忆在最终排序中被降权或标记警告
+- 在响应 prompt 中注入冲突提示（"以下记忆存在潜在矛盾..."）</p>
+<p><strong>涉及文件</strong>：
+| 文件 | 变更类型 | 说明 |
+|------|---------|------|
+| <code>soma/hub/_conflict.py</code> | <strong>新建</strong> | <code>ConflictDetector</code> 类：嵌入向量矛盾检测、冲突评分、证据强度计算 |
+| <code>soma/hub/_ranker.py</code> | 修改 | 在 MMR 之后加入冲突降权步骤 |
+| <code>soma/hub/_core.py</code> | 修改 | 集成 <code>ConflictDetector</code>，在 activate 返回前运行 |
+| <code>soma/agent.py</code> | 修改 | 在 prompt 中注入冲突提示信息 |
+| <code>tests/test_conflict.py</code> | <strong>新建</strong> | 矛盾检测准确性、误报率、性能测试 |</p>
+<p><strong>验收标准</strong>：
+- [ ] «价格是客户流失的主因» vs «价格不是问题，服务质量才是» → 检测为矛盾（相似度 &gt; 阈值且语义极性相反）
+- [ ] «天气影响销量» vs «促销活动提升销量» → 不检测为矛盾（可以同时成立）
+- [ ] 冲突检测不对性能造成显著影响（&lt; 20ms 额外延迟）
+- [ ] 误报率 &lt; 15%（在人工标注的测试集上）</p>
+<hr />
+<h3 id="3">任务 3：双向激活闭环<a class="headerlink" href="#3" title="Permanent link">&para;</a></h3>
+<p><strong>目标</strong>：让高激活记忆能够「反馈」到思维框架，触发额外的思维规律或聚焦点。</p>
+<p><strong>当前行为</strong>：
+- Focus → Memory：思维规律激活记忆（单向）
+- 名称叫 "bi-directional" 但实际只有一个方向</p>
+<p><strong>目标行为</strong>：
+- 被激活的记忆如果有 <code>suggested_law</code> 元数据 → 触发对应思维规律
+- 被激活记忆的领域标签（domain）映射到思维规律 → 提升相关规律权重
+- 在 <code>ActivationHub.activate()</code> 返回的 <code>ActivatedMemory</code> 中增加 <code>suggested_focus</code> 字段
+- WisdomEngine 在下一次分解时考虑记忆建议的修正</p>
+<p><strong>涉及文件</strong>：
+| 文件 | 变更类型 | 说明 |
+|------|---------|------|
+| <code>soma/hub/_core.py</code> | 修改 | activate() 后运行 memory→focus 反向传播 |
+| <code>soma/hub/_scorer.py</code> | 修改 | 计算 memory.suggested_law 的激活潜力 |
+| <code>soma/engine.py</code> | 修改 | decompose() 接受可选的 <code>memory_suggestions</code> 参数 |
+| <code>soma/base.py</code> | 修改 | ActivatedMemory 新增 <code>suggested_focus: Optional[Focus]</code> 字段 |
+| <code>tests/test_hub.py</code> | 修改 | 测试反向激活的正确性 |</p>
+<p><strong>验收标准</strong>：
+- [ ] 一条带有 <code>suggested_law: "systems_thinking"</code> 的记忆被激活后，下一次 decompose 中 systems_thinking 权重提升
+- [ ] 反向激活的影响不超过直接触发的 50%（避免记忆过度影响思维框架）
+- [ ] 无 <code>suggested_law</code> 的记忆不产生虚假的反向激活
+- [ ] 反向激活逻辑在 <code>explain_activation()</code> 中可追溯</p>
+<hr />
+<h3 id="4">任务 4：跨领域类比引擎<a class="headerlink" href="#4" title="Permanent link">&para;</a></h3>
+<p><strong>目标</strong>：当问题域记忆中内容较少时，从其他领域寻找结构相似的记忆模式。</p>
+<p><strong>当前行为</strong>：
+- 检索只在内容相关的记忆中搜索
+- 如果问题域（如「医疗」）记忆中信息少，检索结果稀疏
+- 没有「这个医疗问题本质上和机械工程中的故障诊断是同一个结构」的能力</p>
+<p><strong>目标行为</strong>：
+- 提取当前问题的「结构特征」——不是内容关键词，而是关系模式
+- 在语义图谱中搜索具有相似关系结构的其他领域
+- 将找到的类比领域的记忆作为「补充视角」加入结果
+- 标注为类比结果（不同于直接检索结果）</p>
+<p><strong>结构特征提取</strong>：
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>问题: &quot;如何降低客户流失率？&quot;
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>结构: [实体: 客户] --[减少]--&gt; [指标: 流失率]
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>类比: [实体: 热力学系统] --[减少]--&gt; [指标: 熵增]
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>      → 从热力学中借用&quot;封闭系统熵增不可避免&quot;的洞察
+</code></pre></div></p>
+<p><strong>涉及文件</strong>：
+| 文件 | 变更类型 | 说明 |
+|------|---------|------|
+| <code>soma/engine/analogy.py</code> | <strong>新建</strong> | <code>AnalogyEngine</code>：结构模式提取 + 跨域图谱匹配 |
+| <code>soma/hub/_retriever.py</code> | 修改 | 当某领域记忆 &lt; 阈值时，触发类比检索 |
+| <code>soma/hub/_core.py</code> | 修改 | 在结果中标记类比来源 |
+| <code>soma/base.py</code> | 修改 | ActivatedMemory 新增 <code>source_type: str</code> 字段（direct/analogy） |
+| <code>tests/test_analogy.py</code> | <strong>新建</strong> | 结构匹配准确性、跨域检索测试 |</p>
+<p><strong>验收标准</strong>：
+- [ ] 问题域记忆 &lt; 3 条时自动触发类比检索
+- [ ] 返回的类比记忆与原问题有结构相似性（同构子图匹配得分 &gt; 0.5）
+- [ ] 类比结果标注为 <code>source_type: "analogy"</code>，与直接检索区分
+- [ ] 类比检索不增加超过 50ms 的延迟</p>
+<hr />
+<h3 id="5">任务 5：反思质量自评<a class="headerlink" href="#5" title="Permanent link">&para;</a></h3>
+<p><strong>目标</strong>：SOMA 对自己的回答进行质量评估，低分回答自动重新生成。</p>
+<p><strong>当前行为</strong>：
+- LLM 生成的反思直接存储
+- 没有质量评估机制
+- 低质量反思和高质量反思权重相同地参与演化</p>
+<p><strong>目标行为</strong>：
+- 每次 <code>respond()</code> 后运行质量自评
+- 评估维度：内部一致性（引用记忆是否支持结论）、逻辑连贯性、可操作性
+- 低于阈值的回答自动重新生成（最多 3 次）
+- 质量分数影响记忆存储时的 importance 权重</p>
+<p><strong>评分机制</strong>：
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>quality_score = 0.4 * consistency_score    # 记忆是否支撑结论
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>              + 0.3 * coherence_score       # 逻辑是否连贯
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>              + 0.3 * actionability_score   # 是否给出可执行建议
+</code></pre></div></p>
+<p><strong>一致性评分</strong>（不需要 LLM，本地计算）：
+- 被引用的记忆嵌入向量 vs 结论嵌入向量的余弦相似度
+- 如果结论远离所有引用记忆 → 一致性低</p>
+<p><strong>连贯性评分</strong>（需要轻量 LLM 调用，或本地规则）：
+- 段落间是否存在逻辑跳跃
+- 是否有「因为 A 所以 B」的因果连接词</p>
+<p><strong>可操作性评分</strong>（本地规则）：
+- 是否包含具体的步骤、数字、时间线
+- 关键词匹配：百分比、天/周/月、步骤 1/2/3</p>
+<p><strong>涉及文件</strong>：
+| 文件 | 变更类型 | 说明 |
+|------|---------|------|
+| <code>soma/quality.py</code> | <strong>新建</strong> | <code>QualityEvaluator</code>：三维度评分、阈值判定、重试逻辑 |
+| <code>soma/agent.py</code> | 修改 | respond() 后调用 QualityEvaluator，低分触发重生成 |
+| <code>soma/evolve.py</code> | 修改 | reflect() 中考虑质量分数 |
+| <code>soma/config.py</code> | 修改 | 新增 <code>quality_threshold</code> 配置项（默认 0.7） |
+| <code>tests/test_quality.py</code> | <strong>新建</strong> | 评分准确性、重试机制、配置生效测试 |</p>
+<p><strong>验收标准</strong>：
+- [ ] 高质量回答（引用了相关记忆、逻辑连贯、可操作）→ 得分 &gt; 0.7
+- [ ] 低质量回答（未引用记忆、逻辑跳跃、空洞）→ 得分 &lt; 0.5
+- [ ] 得分 &lt; 0.7 时自动重试，最多 3 次，取最高分
+- [ ] 3 次重试后仍低分 → 返回最佳结果但标记为「低置信度」
+- [ ] 自评耗时 &lt; 200ms（不含 LLM 调用时）或 &lt; 2s（含轻量 LLM 时）</p>
+<hr />
+<h3 id="6_1">任务 6：集成测试与基准验证<a class="headerlink" href="#6_1" title="Permanent link">&para;</a></h3>
+<p><strong>目标</strong>：确保所有新功能协同工作，无性能退化。</p>
+<p><strong>涉及的测试文件</strong>：
+| 文件 | 说明 |
+|------|------|
+| <code>tests/test_v080_integration.py</code> | 全管道集成测试：图扩展→因果分析→冲突检测→双向激活→类比→质量评估 |
+| <code>tests/test_v080_benchmark.py</code> | 基准回归：确保 v0.7.0 基准分数不退化 |
+| <code>tests/test_v080_performance.py</code> | 性能测试：各模块单独延迟 + 端到端延迟 |</p>
+<p><strong>验收标准</strong>：
+- [ ] 所有 v0.7.0 测试继续通过（342 测试 + 新增）
+- [ ] 基准综合评分不低于 v0.7.0 的 84.8
+- [ ] 端到端 respond() 延迟增加不超过 30%
+- [ ] 100% 新增代码有测试覆盖</p>
+<hr />
+<h2 id="_2">执行顺序<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>任务 0 (语义图谱接入) ──→ 任务 1 (因果推理链)
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>     ↓                          ↓
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>任务 2 (冲突检测)    ←── 任务 0 + 任务 1 的图谱数据
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>     ↓
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>任务 3 (双向激活)    ←── 依赖任务 2 的冲突信息
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>     ↓
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>任务 4 (跨域类比)    ←── 依赖任务 0 的图谱扩展 + 任务 3 的激活数据
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>     ↓
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>任务 5 (反思质量)    ←── 独立，可与前面并行
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>     ↓
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>任务 6 (集成测试)    ←── 全部完成后
+</code></pre></div>
+<h2 id="_3">关键设计决策<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>不引入新依赖</strong>：因果图、类比引擎均基于已有的 NetworkX + NumPy，不新增 PyPI 依赖</li>
+<li><strong>图谱查询惰性化</strong>：只在需要时才做图遍历，不影响普通的快速检索路径</li>
+<li><strong>冲突检测本地化</strong>：使用嵌入向量相似度计算，不调用 LLM（避免额外延迟和成本）</li>
+<li><strong>质量评估分阶段</strong>：一致性评估用本地嵌入，连贯性评估可选 LLM，可操作性评估纯规则</li>
+<li><strong>向后兼容</strong>：所有新参数都有默认值，关闭新功能后行为与 v0.7.0 完全一致</li>
+</ol>
+<h2 id="_4">预计工作量<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>任务</th>
+<th>预计时间</th>
+<th>核心文件数</th>
+<th>测试文件数</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0: 语义图谱接入</td>
+<td>1 天</td>
+<td>2 修改</td>
+<td>2 修改</td>
+</tr>
+<tr>
+<td>1: 因果推理链</td>
+<td>2 天</td>
+<td>1 新建 + 3 修改</td>
+<td>1 新建</td>
+</tr>
+<tr>
+<td>2: 冲突检测</td>
+<td>2 天</td>
+<td>1 新建 + 3 修改</td>
+<td>1 新建</td>
+</tr>
+<tr>
+<td>3: 双向激活</td>
+<td>1.5 天</td>
+<td>4 修改</td>
+<td>1 修改</td>
+</tr>
+<tr>
+<td>4: 跨域类比</td>
+<td>2 天</td>
+<td>1 新建 + 3 修改</td>
+<td>1 新建</td>
+</tr>
+<tr>
+<td>5: 反思质量</td>
+<td>2 天</td>
+<td>1 新建 + 3 修改</td>
+<td>1 新建</td>
+</tr>
+<tr>
+<td>6: 集成测试</td>
+<td>1 天</td>
+<td>3 新建</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>合计</strong></td>
+<td><strong>~11.5 天</strong></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/sunyan999999/soma" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://pypi.org/project/soma-wisdom/" target="_blank" rel="noopener" title="pypi.org" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.expand", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
