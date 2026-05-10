@@ -118,9 +118,7 @@ class TestConflictDetector:
         memory.remember_semantic("价格", "causes", "客户流失")
         memory.remember_semantic("价格", "prevents", "客户流失")
 
-        detector_with_graph = ConflictDetector(
-            memory._embedder, semantic_store=memory.semantic,
-        )
+        detector_with_graph = ConflictDetector(memory._embedder)
         triples1 = [
             {"subject": "价格", "predicate": "causes", "object": "客户流失"},
         ]

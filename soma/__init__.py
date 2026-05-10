@@ -120,9 +120,19 @@ class SOMA:
         elif complexity == 1:
             self._agent.hub.top_k = max(original_top_k // 2, 2)
         try:
-            activated = self._agent.hub.activate(foci, user_id=user_id)
+            activated = self._agent.hub.activate(
+                foci, user_id=user_id, laws=self._agent.engine.laws,
+            )
         finally:
             self._agent.hub.top_k = original_top_k
+
+        # v0.8.0: 收集记忆建议的焦点，合并进推理框架
+        suggested_foci = []
+        for am in activated:
+            if am.suggested_focus and am.suggested_focus.weight >= 0.1:
+                suggested_foci.append(am.suggested_focus)
+        if suggested_foci:
+            foci = foci + suggested_foci
 
         # 确认偏误检测
         if complexity >= 2:
@@ -155,6 +165,22 @@ class SOMA:
         # v0.6.0: 因果抽取
         if complexity >= self._agent.config.causal_extraction_complexity:
             self._agent._extract_causal_relations(problem, answer)
+
+        # v0.8.0: 反思质量自评
+        quality = self._agent.quality_evaluator.evaluate(
+            answer=answer,
+            memory_contents=[am.memory.content for am in activated],
+            conflict_count=len(getattr(self._agent.hub, 'last_conflicts', [])),
+        )
+        if quality["needs_reflection"]:
+            self._agent._last_quality_note = (
+                f"[质量反馈] 综合分 {quality['overall']:.2f} ({quality['grade']}) — "
+                f"一致性 {quality['consistency']:.2f} "
+                f"连贯性 {quality['coherence']:.2f} "
+                f"可操作性 {quality['actionability']:.2f}"
+            )
+        else:
+            self._agent._last_quality_note = ""
 
         for am in activated:
             am.memory.access_count += 1

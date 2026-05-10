@@ -33,7 +33,6 @@ class ActivationHub:
         self.ranker = ranker or MMRRanker(mmr_lambda)
         self.conflict_detector = conflict_detector or ConflictDetector(
             memory_core._embedder,
-            semantic_store=memory_core.semantic,
         )
         # 最近一次激活检测到的冲突对
         self.last_conflicts: List[Tuple[ActivatedMemory, ActivatedMemory, float]] = []
@@ -76,20 +75,21 @@ class ActivationHub:
         )
         mmr_pool = all_activated[:mmr_pool_size]
 
-        # v0.8.0: 冲突检测 — 识别矛盾记忆对并降权
-        conflicts = self.conflict_detector.find_conflicts(mmr_pool)
-        self.last_conflicts = conflicts
-        if conflicts:
-            penalized: set = set()
-            for am_a, am_b, conflict_score in conflicts:
-                penalty = 1.0 - conflict_score * 0.4
-                if id(am_a) not in penalized:
-                    am_a.activation_score *= penalty
-                    penalized.add(id(am_a))
-                if id(am_b) not in penalized:
-                    am_b.activation_score *= penalty
-                    penalized.add(id(am_b))
-            mmr_pool.sort(key=lambda am: am.activation_score, reverse=True)
+        # v0.8.0: 冲突检测 — 仅在完整框架会话中运行，简单查询跳过
+        if laws:
+            conflicts = self.conflict_detector.find_conflicts(mmr_pool)
+            self.last_conflicts = conflicts
+            if conflicts:
+                penalized: set = set()
+                for am_a, am_b, conflict_score in conflicts:
+                    penalty = 1.0 - conflict_score * 0.4
+                    if id(am_a) not in penalized:
+                        am_a.activation_score *= penalty
+                        penalized.add(id(am_a))
+                    if id(am_b) not in penalized:
+                        am_b.activation_score *= penalty
+                        penalized.add(id(am_b))
+                mmr_pool.sort(key=lambda am: am.activation_score, reverse=True)
 
         results = self.ranker.rerank(
             mmr_pool, self.top_k, self.threshold, self.mmr_lambda,
@@ -188,12 +188,12 @@ class ActivationHub:
         if not edges:
             return result
 
-        # 收集聚焦点关键词中在图谱中有匹配的概念
         all_keywords = set()
         for f in foci:
             all_keywords.update(f.keywords)
-        graph_nodes = set(cg.store.list_nodes())
-        matched = [kw for kw in all_keywords if kw in graph_nodes]
+        # O(K) 查找避免 O(N) 全图遍历
+        graph = cg.store.graph
+        matched = [kw for kw in all_keywords if kw in graph]
 
         for node in matched:
             roots = cg.find_root_causes(node)

@@ -22,7 +22,17 @@ from soma.agent import SOMA_Agent
 from soma.analytics import AnalyticsStore
 from dash.providers import get_provider_manager
 
-app = FastAPI(title="SOMA API", version="0.6.1")
+
+def _get_package_version() -> str:
+    """自动获取已安装的 soma-wisdom 版本号"""
+    try:
+        from importlib.metadata import version
+        return version("soma-wisdom")
+    except Exception:
+        return "0.8.0"
+
+
+app = FastAPI(title="SOMA API", version=_get_package_version())
 
 _CORS_ORIGINS = os.environ.get(
     "SOMA_CORS_ORIGINS",

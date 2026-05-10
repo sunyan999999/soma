@@ -19,6 +19,15 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 
+def _get_version() -> str:
+    """自动获取已安装的 soma-wisdom 版本号"""
+    try:
+        from importlib.metadata import version
+        return version("soma-wisdom")
+    except Exception:
+        return "unknown"
+
+
 # ═══════════════════════════════════════════════════════════════
 # 数据量级别
 # ═══════════════════════════════════════════════════════════════
@@ -323,7 +332,7 @@ class ScalabilityBenchmark:
 @dataclass
 class BenchmarkRun:
     """一次完整基准测试运行"""
-    version: str = "0.6.1"
+    version: str = ""
     timestamp: float = 0.0
     memory: MemoryBenchmark = field(default_factory=MemoryBenchmark)
     wisdom: WisdomBenchmark = field(default_factory=WisdomBenchmark)
@@ -924,11 +933,7 @@ def calculate_scores(run: BenchmarkRun) -> Dict[str, float]:
 def run_full_benchmark(agent, ablation_data: Optional[Dict] = None, version: str = "") -> BenchmarkRun:
     """运行完整三维+伸缩性基准测试"""
     if not version:
-        try:
-            from importlib.metadata import version as pkg_version
-            version = pkg_version("soma-wisdom")
-        except Exception:
-            version = "0.6.1"
+        version = _get_version()
     print("🧠 运行记忆维度基准...")
     memory = run_memory_benchmark(agent)
 
@@ -1030,11 +1035,7 @@ def run_multi_benchmark(
         ablation_data: 消融实验数据 (可选)
     """
     if not version:
-        try:
-            from importlib.metadata import version as pkg_version
-            version = pkg_version("soma-wisdom")
-        except Exception:
-            version = "0.6.1"
+        version = _get_version()
 
     t0 = time.time()
     raw_runs: List[BenchmarkRun] = []
@@ -1282,7 +1283,7 @@ def main():
         tmpdir = tempfile.mkdtemp(prefix="soma_bench_")
         soma = SOMA(persist_dir=tmpdir)
         try:
-            run = run_full_benchmark(soma._agent, version=args.version or "0.6.1")
+            run = run_full_benchmark(soma._agent, version=args.version or _get_version())
             print(f"\n综合评分: {run.scores.get('overall', 'N/A')}")
             for k, v in run.scores.items():
                 print(f"  {k}: {v}")

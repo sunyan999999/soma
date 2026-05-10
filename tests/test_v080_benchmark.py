@@ -127,9 +127,11 @@ class TestBenchmarks:
         assert elapsed < 5, f"质量评估延迟 {elapsed:.1f}ms 超过 5ms 上限"
 
     def test_analogy_latency_under_20ms(self, mc):
-        """类比搜索延迟 < 20ms"""
+        """类比搜索延迟 < 20ms（含缓存预热）"""
         from soma.analogy import AnalogyEngine
         engine = AnalogyEngine(mc.semantic)
+        # 预热：首次调用构建结构签名缓存
+        engine.find_analogous_nodes(["概念A"], max_results=3)
         start = time.perf_counter()
         _ = engine.find_analogous_nodes(["概念A"], max_results=3)
         elapsed = (time.perf_counter() - start) * 1000

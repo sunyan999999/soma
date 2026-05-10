@@ -18,6 +18,15 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+
+def _get_version() -> str:
+    """自动获取已安装的 soma-wisdom 版本号"""
+    try:
+        from importlib.metadata import version
+        return version("soma-wisdom")
+    except Exception:
+        return "unknown"
+
 # 确保 soma 包可导入
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -129,7 +138,7 @@ def benchmark_soma(agent, memories: List[str], queries: List[dict]) -> LiveResul
     """实测 SOMA 性能"""
     result = LiveResult(
         name="SOMA",
-        version="0.6.1",
+        version=_get_version(),
         dedup_supported=True,
         reasoning_supported=True,
         evolution_supported=True,

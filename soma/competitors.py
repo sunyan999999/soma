@@ -16,6 +16,16 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+
+def _get_version() -> str:
+    """自动获取已安装的 soma-wisdom 版本号"""
+    try:
+        from importlib.metadata import version
+        return version("soma-wisdom")
+    except Exception:
+        return "unknown"
+
+
 # ═══════════════════════════════════════════════════════════════
 # GitHub 星数实时获取
 # ═══════════════════════════════════════════════════════════════
@@ -44,7 +54,7 @@ def fetch_competitor_stars(force: bool = False) -> Dict[str, Dict[str, Any]]:
     for key, repo in _COMPETITOR_REPOS.items():
         try:
             url = f"https://api.github.com/repos/{repo}"
-            req = urllib.request.Request(url, headers={"User-Agent": "SOMA/0.6"})
+            req = urllib.request.Request(url, headers={"User-Agent": f"SOMA/{_get_version()}"})
             with urllib.request.urlopen(req, timeout=5) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
             result[key] = {
@@ -490,7 +500,7 @@ class CompetitorBenchmark:
 
         return CompetitorResult(
             name="SOMA",
-            version="0.6.1",
+            version=_get_version(),
             available=True,
             semantic_recall=round(avg_recall, 4),
             avg_query_ms=round(avg_query, 1),

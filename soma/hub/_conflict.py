@@ -34,11 +34,10 @@ class ConflictDetector:
          {"prevents", "blocks", "decreases", "reduces"}),
     ]
 
-    def __init__(self, embedder, semantic_store=None):
+    def __init__(self, embedder):
         self._embedder = embedder
-        self._semantic = semantic_store
-        self._similarity_threshold = 0.3  # 话题相似度阈值
-        self._conflict_threshold = 0.5     # 冲突分数>此值视为矛盾
+        self._similarity_threshold = 0.3
+        self._conflict_threshold = 0.5
 
     def _encode(self, text: str) -> np.ndarray:
         if self._embedder is None:
@@ -47,6 +46,16 @@ class ConflictDetector:
             return np.array(self._embedder.encode(text))
         except Exception:
             return np.array([])
+
+    def _encode_batch(self, texts: List[str]) -> List[np.ndarray]:
+        """批量编码多条文本，单次 ONNX 推理替代逐条调用"""
+        if self._embedder is None or not texts:
+            return [np.array([])] * len(texts)
+        try:
+            vecs = self._embedder.encode_batch(texts)
+            return [np.asarray(v, dtype=np.float32) for v in vecs]
+        except Exception:
+            return [np.array([]) for _ in texts]
 
     def _cosine_sim(self, a: np.ndarray, b: np.ndarray) -> float:
         if len(a) == 0 or len(b) == 0:
@@ -60,39 +69,40 @@ class ConflictDetector:
         text_lower = text.lower()
         return any(pat in text_lower for pat in self.NEGATION_PATTERNS)
 
-    def conflict_score(self, am1: ActivatedMemory, am2: ActivatedMemory) -> float:
+    def conflict_score(
+        self, am1: ActivatedMemory, am2: ActivatedMemory,
+        emb1: Optional[np.ndarray] = None,
+        emb2: Optional[np.ndarray] = None,
+    ) -> float:
         """计算两条激活记忆之间的冲突分数 [0, 1]。
 
         0 = 无冲突（不同话题或观点一致）
         1 = 强烈矛盾（同一话题但断言完全相反）
+
+        可传入预编码的嵌入向量避免重复编码。
         """
         t1, t2 = am1.memory.content, am2.memory.content
 
-        # 嵌入相似度：两者是否在讨论同一话题
-        emb1 = self._encode(t1)
-        emb2 = self._encode(t2)
+        if emb1 is None:
+            emb1 = self._encode(t1)
+        if emb2 is None:
+            emb2 = self._encode(t2)
         if len(emb1) == 0 or len(emb2) == 0:
             return 0.0
 
         topic_sim = self._cosine_sim(emb1, emb2)
         if topic_sim < self._similarity_threshold:
-            return 0.0  # 不同话题，不可能矛盾
+            return 0.0
 
-        # 同话题：检查否定模式
         neg1 = self._has_negation(t1)
         neg2 = self._has_negation(t2)
 
         if neg1 != neg2:
-            # 一条否定、一条肯定 → 可能矛盾
-            # 矛盾分数 = 话题相似度 * 否定系数
             return topic_sim * 0.8
         elif neg1 and neg2:
-            # 两条都否定 → 可能一致（都在否定同一件事），低冲突
             return topic_sim * 0.2
         else:
-            # 两条都肯定 → 需要检查是否针对同一主张的不同立场
-            # 用关键词提取判断
-            return topic_sim * 0.15  # 基础相似度带来的低冲突
+            return topic_sim * 0.15
 
     def triple_conflict_score(
         self,
@@ -128,14 +138,29 @@ class ConflictDetector:
         """在激活记忆列表中查找冲突对。
 
         返回 [(am_a, am_b, conflict_score), ...]，按冲突分数降序排列。
+        预编码所有文本避免重复 ONNX 推理 —— 每条记忆只编码一次。
         """
-        if len(activated) < 2:
+        n = len(activated)
+        if n < 2:
             return []
 
+        # 批量编码：单次 ONNX 推理替代逐条编码，大幅降低延迟
+        texts = [am.memory.content for am in activated]
+        embeddings = self._encode_batch(texts)
+
         conflicts = []
-        for i in range(len(activated)):
-            for j in range(i + 1, len(activated)):
-                score = self.conflict_score(activated[i], activated[j])
+        for i in range(n):
+            emb_i = embeddings[i]
+            if len(emb_i) == 0:
+                continue
+            for j in range(i + 1, n):
+                emb_j = embeddings[j]
+                if len(emb_j) == 0:
+                    continue
+                score = self.conflict_score(
+                    activated[i], activated[j],
+                    emb1=emb_i, emb2=emb_j,
+                )
                 if score >= self._conflict_threshold:
                     conflicts.append((activated[i], activated[j], score))
 

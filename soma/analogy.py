@@ -43,11 +43,25 @@ class AnalogyEngine:
 
     从语义图谱中寻找与目标概念结构相似的其他领域概念，
     用于在直接检索结果不足时补充跨域视角。
+
+    内置结构签名缓存和节点扫描上限，避免大规模图谱上的 O(N×E) 扫描。
     """
+
+    _MAX_SCAN_NODES = 500   # 单次扫描节点上限，超出则截断
+    _MAX_GRAPH_NODES = 2000  # 图谱总节点超过此值直接跳过类比
 
     def __init__(self, semantic_store: SemanticStore):
         self._semantic = semantic_store
-        self._min_similarity = 0.3  # 结构相似度阈值
+        self._min_similarity = 0.3
+        self._sig_cache: Dict[str, Tuple[FrozenSet, FrozenSet]] = {}
+        self._cache_edge_count = -1  # 用于检测图变更
+
+    def _ensure_cache(self):
+        """图未变更时缓存有效，否则清空重建是按需的。"""
+        current_edges = self._semantic.count_triples()
+        if current_edges != self._cache_edge_count:
+            self._sig_cache.clear()
+            self._cache_edge_count = current_edges
 
     def structural_signature(self, node: str) -> Dict:
         """返回节点的结构指纹描述。"""
@@ -65,14 +79,16 @@ class AnalogyEngine:
     def find_analogous_nodes(
         self, keywords: List[str], max_results: int = 5,
     ) -> List[Tuple[str, float, str]]:
-        """为给定关键词搜索结构相似的类比节点。
-
-        返回 [(节点名, 相似度, 结构描述), ...]，按相似度降序排列。
-        """
+        """为给定关键词搜索结构相似的类比节点。"""
         if not keywords or self._semantic.count_triples() == 0:
             return []
 
-        # 收集所有关键词的联合结构指纹
+        total_nodes = self._semantic.graph.number_of_nodes()
+        if total_nodes > self._MAX_GRAPH_NODES:
+            return []  # 图谱过大，跳过全图扫描
+
+        self._ensure_cache()
+
         all_in_preds: Set[str] = set()
         all_out_preds: Set[str] = set()
         matched_nodes: Set[str] = set()
@@ -80,7 +96,9 @@ class AnalogyEngine:
         for kw in keywords:
             if kw in self._semantic.graph:
                 matched_nodes.add(kw)
-                in_p, out_p = _predicate_sets(self._semantic, kw)
+                if kw not in self._sig_cache:
+                    self._sig_cache[kw] = _predicate_sets(self._semantic, kw)
+                in_p, out_p = self._sig_cache[kw]
                 all_in_preds.update(in_p)
                 all_out_preds.update(out_p)
 
@@ -90,17 +108,21 @@ class AnalogyEngine:
         target_in = frozenset(all_in_preds)
         target_out = frozenset(all_out_preds)
 
-        # 在图谱中搜索具有相似谓词模式的其他节点
         candidates: List[Tuple[str, float]] = []
+        scanned = 0
         for node in self._semantic.graph.nodes():
             if node in matched_nodes:
                 continue
-            node_in, node_out = _predicate_sets(self._semantic, node)
+            if scanned >= self._MAX_SCAN_NODES:
+                break
+            if node not in self._sig_cache:
+                self._sig_cache[node] = _predicate_sets(self._semantic, node)
+            node_in, node_out = self._sig_cache[node]
+            scanned += 1
             if not node_in and not node_out:
                 continue
             in_sim = _jaccard(target_in, node_in)
             out_sim = _jaccard(target_out, node_out)
-            # 综合相似度：入边 + 出边，入边权重略高
             sim = in_sim * 0.6 + out_sim * 0.4
             if sim >= self._min_similarity:
                 candidates.append((node, sim))

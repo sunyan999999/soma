@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.8.0] — 2026-05-09
+
+### 知识图谱与推理引擎 — 从"记忆检索"到"认知推理"
+
+**生产验证**: 零熵智库1752条真实记忆。基准测试综合80.5分（含因果推理+冲突检测+跨域类比新维度）。422项测试全通过。基准测试耗时181s→66s（-63%），查询延迟1098ms→209ms（-81%），系统负载0.97→0.13。
+
+v0.8.0 引入六大认知能力：图谱检索扩展打破关键词孤岛，因果推理链回答"为什么"，冲突检测标记矛盾记忆，反向传播让记忆反向建议思维焦点，跨域类比在无关领域间架桥，质量评估自动评分反思输出。同时解决三项CPU性能瓶颈（逐条ONNX编码→批量、全图遍历O(N)→O(1)、AnalogyEngine无缓存重复扫描）。
+
+### Added
+
+- **图谱检索扩展 (`soma/memory/core.py`)**: `_expand_via_semantic_graph()` 从匹配关键词沿语义图谱BFS遍历（depth=2，衰减权重0.6→0.36），发现邻居概念作为扩展检索词。打破关键词检索孤岛——不再只搜用户输入的词，也搜图谱中关联的概念。O(K) hash查找替代O(N)全节点扫描。
+- **因果推理引擎 (`soma/memory/causal.py`)**: `CausalGraph` 基于语义三元组构建因果链。`find_root_causes()` 回溯根本原因，`get_causal_chain()` 查找两节点间的因果路径。`hub.causal_analyze()` 在激活阶段自动追踪因果链路。支持环路检测与max_depth保护。
+- **记忆冲突检测 (`soma/hub/_conflict.py`)**: `ConflictDetector` 在激活管道中识别逻辑矛盾的记忆对（如"降价→流失"vs"服务质量→流失"）。两阶段检测：(1) 否定模式匹配（中英双语），(2) 谓词冲突（causes↔prevents等高冲突对）。冲突分数≥0.5的记忆对自动降权（×0.4惩罚系数）。批量ONNX编码（单次推理替代逐条）确保<100ms延迟。
+- **反向传播 (`soma/hub/_core.py`)**: `_backward_propagate()` — 高激活记忆（score≥0.4）的领域标签反向映射到思维规律，自动生成建议焦点。权重上限不超过任一直接触发规律的50%，防止偏离主线。
+- **跨域类比引擎 (`soma/analogy.py`)**: `AnalogyEngine` 基于结构签名（in_predicates + out_predicates的frozenset）发现不同领域节点的拓扑同构。当两个看似无关的概念共享相同的图结构时自动桥接。节点扫描上限500、图谱上限2000防止大图CPU过载。结构签名缓存（边数变化时自动失效）。引擎实例在MemoryCore中惰性缓存复用。
+- **反思质量评估 (`soma/quality.py`)**: `QualityEvaluator` 对LLM生成的推理输出进行三维评分（一致性、连贯性、可操作性），0-1分制。加权综合（一致性40% + 连贯性30% + 可操作性30%），输出质量等级（excellent/good/fair/poor）。低质量回答通过 `needs_reflection` 标记提示。
+
+### Changed
+
+- `MemoryCore.query()` 新增图谱扩展关键词和跨域类比回退路径。检索顺序：关键词→图谱扩展→混合搜索→语义→技能→类比回退（仅当情节结果<3条时触发）
+- `MemoryCore._hybrid_search()` 新增图谱扩展词检索通道（权重×0.5，低于向量×2和关键词×1）
+- `MemoryCore._expand_via_semantic_graph()` 从 `list_nodes()` O(N)全量遍历 → `kw in graph` O(K)哈希查找
+- `MemoryCore.get_analogy_engine()` 新增实例缓存——引擎首次创建后跨查询复用结构签名缓存
+- `ActivationHub.activate()` 管道新增步骤6（冲突检测）和步骤8（反向传播）。冲突检测仅在框架会话（有laws参数）中运行
+- `ActivationHub.causal_analyze()` 从 `list_nodes()` → `kw in graph` O(K)查找
+- `ConflictDetector` 构造器移除未使用的 `semantic_store` 参数
+- `AnalogyEngine` 新增节点扫描上限(500)、图谱上限(2000)、结构签名字典缓存及边数变化失效机制
+- `SOMA.chat()` 管道新增suggested_foci收集和quality_evaluation评分
+- `benchmarks.py` `BenchmarkRun.version` 默认值从 `"0.6.1"` → `""`（自动获取）
+- `dash/server.py` FastAPI版本从 `"0.6.1"` → `importlib.metadata.version("soma-wisdom")` 自动检测
+- `competitors.py`、`scripts/live_benchmark.py` 硬编码版本号 → `_get_version()` 自动获取
+
+### Fixed
+
+- **CPU 100% 问题（零熵智库生产环境）**: 三处O(N×E)图遍历在1752条生产数据上被基准测试触发~65次：(1) `AnalogyEngine.find_analogous_nodes()` 全图扫描 `for node in graph.nodes()` × `_predicate_sets()` 每条迭代所有入/出边；(2) `_expand_via_semantic_graph()` 调用 `list_nodes()` 将NodeView转list；(3) `causal_analyze` 同样 `list_nodes()` 问题。修复：节点上限+缓存+O(1)hash查找
+- **ConflictDetector 重复ONNX编码**: 改进前每条候选记忆单独编码（M=15→~210次ONNX调用/查询）。改进后预编码每条一次（M次），v0.8.0进一步改为批量编码（1次ONNX调用替代M次）
+- **查询延迟回归 33ms→1098ms**: 根因为冲突检测在每次查询（包括简单`query_memory`）中逐条ONNX编码候选记忆（~10次×100ms=1000ms）。修复：批量编码+框架会话门控（仅laws参数时运行）
+- **版本号硬编码 "0.6.1"**: 6处硬编码版本号（dash/server.py、benchmarks.py×4、competitors.py、live_benchmark.py）统一改为 `importlib.metadata.version("soma-wisdom")` 自动获取
+
+### Performance
+
+| 指标 | v0.7.0 | v0.8.0 (修复前) | v0.8.0 (修复后) |
+|------|:---:|:---:|:---:|
+| 查询延迟 | 33ms | 1098ms | **209ms** |
+| 基准测试耗时 | — | 181s | **66s** |
+| 系统负载 | — | 0.97 | **0.13** |
+| Dash CPU | — | 40.9% | **8.6%** |
+
+---
+
 ## [0.7.0] — 2026-05-07
 
 ### 记忆智能 — 从"只增不减"到"合并+遗忘+外部知识"

@@ -25,6 +25,7 @@ class MemoryCore:
         self.semantic = SemanticStore(config.episodic_persist_dir)
         self.skill = SkillStore(config.episodic_persist_dir)
         self._embedder = embedder
+        self._analogy_engine = None
 
     def remember(
         self,
@@ -49,20 +50,15 @@ class MemoryCore:
         self.semantic.add_triple(subject, predicate, object_, confidence, namespace=namespace)
 
     def _expand_via_semantic_graph(self, keywords: List[str], max_terms: int = 8) -> List[str]:
-        """通过语义图谱扩展关键词：从匹配节点沿图遍历获取邻居概念。
-
-        对于出现在语义图谱中的关键词，沿边遍历获取相关概念作为扩展搜索词。
-        扩展词用于增强情节记忆的关键词检索——打破检索孤岛。
-        """
+        """通过语义图谱扩展关键词：从匹配节点沿图遍历获取邻居概念。"""
         if not keywords or self.semantic.count_triples() == 0:
             return []
-        # 找出在图中有匹配节点的关键词
-        graph_nodes = set(self.semantic.list_nodes())
-        matched = [kw for kw in keywords if kw in graph_nodes]
+        # O(K) 查找，避免 list_nodes() 的 O(N) 全量遍历
+        graph = self.semantic.graph
+        matched = [kw for kw in keywords if kw in graph]
         if not matched:
             return []
         expanded = self.semantic.expand_query_terms(matched, depth=2, max_terms=max_terms)
-        # 排除已是原始关键词的扩展词
         return [t for t in expanded if t not in keywords]
 
     def _hybrid_search(
@@ -136,7 +132,7 @@ class MemoryCore:
             if in_vec and in_kw:
                 parts.append(f"混合匹配(RRF): {rrf_score:.4f}")
             elif in_vec:
-                vec_score = mem.context.pop("_vector_score", 0)
+                vec_score = mem.context.get("_vector_score", 0)
                 parts.append(f"语义相似度: {vec_score:.4f}")
             elif in_kw:
                 matched = [kw for kw in keywords if kw.lower() in mem.content.lower()]
@@ -245,9 +241,11 @@ class MemoryCore:
         return CausalGraph(self.semantic)
 
     def get_analogy_engine(self):
-        """返回跨域类比引擎（惰性构建）"""
-        from soma.analogy import AnalogyEngine
-        return AnalogyEngine(self.semantic)
+        """返回跨域类比引擎（惰性构建，实例缓存复用结构签名缓存）"""
+        if self._analogy_engine is None:
+            from soma.analogy import AnalogyEngine
+            self._analogy_engine = AnalogyEngine(self.semantic)
+        return self._analogy_engine
 
     def query_root_causes(self, node: str, max_depth: int = 10) -> List[str]:
         """因果根因分析：找出 node 的所有根因节点"""
