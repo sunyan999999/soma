@@ -3,6 +3,7 @@ import asyncio
 import json as _json
 import os
 import sys
+import threading
 import time
 from dataclasses import asdict
 from pathlib import Path
@@ -1129,6 +1130,13 @@ def analytics_clear(keep: int = 200):
 
 # ── Benchmarks ──────────────────────────────────────────────
 
+_BENCHMARK_MIN_INTERVAL = 300  # 两次基准测试最小间隔（秒），防重复触发
+_BENCHMARK_MAX_RUNTIME = 600   # 单次基准测试最大运行时间（秒），超时强制终止
+_benchmark_lock = threading.Lock()
+_benchmark_running = False
+_last_benchmark_ts: float = 0
+
+
 @app.get("/api/benchmarks/latest")
 def benchmarks_latest():
     """获取最近一次基准测试结果"""
@@ -1152,29 +1160,71 @@ def benchmarks_compare():
 
 @app.post("/api/benchmarks/run")
 def benchmarks_run():
-    """触发一次完整基准测试"""
-    try:
-        from soma.benchmarks import run_full_benchmark
-        agent = get_agent()
-        # 尝试加载消融实验数据
-        ablation_path = _DATA_DIR / "ablation_results.json"
-        ablation_data = None
-        if ablation_path.exists():
-            import json as _json
-            with open(ablation_path, "r", encoding="utf-8") as f:
-                ablation_data = _json.load(f)
-        run = run_full_benchmark(agent, ablation_data, version=app.version)
-        run_id = _get_analytics().record_benchmark(run)
-        return {
-            "run_id": run_id,
-            "scores": run.scores,
-            "memory": asdict(run.memory),
-            "wisdom": asdict(run.wisdom),
-            "evolution": asdict(run.evolution),
-            "scalability": asdict(run.scalability),
-        }
-    except Exception as e:
-        raise HTTPException(500, f"基准测试运行失败: {str(e)[:300]}")
+    """触发一次完整基准测试（带冷却保护 + 超时控制）"""
+    global _benchmark_running, _last_benchmark_ts
+
+    # 第一层：检查是否已有基准测试在运行
+    if _benchmark_running:
+        raise HTTPException(409, "基准测试已在运行中，请等待完成后再试")
+
+    # 第二层：冷却时间检查
+    with _benchmark_lock:
+        elapsed = time.time() - _last_benchmark_ts
+        if elapsed < _BENCHMARK_MIN_INTERVAL:
+            remaining = int(_BENCHMARK_MIN_INTERVAL - elapsed)
+            raise HTTPException(
+                429,
+                f"请等待 {remaining} 秒后再发起基准测试（冷却间隔 {_BENCHMARK_MIN_INTERVAL} 秒）",
+            )
+
+    # 第三层：在后台线程中运行，带超时保护
+    _benchmark_running = True
+    result_holder = {"run": None, "error": None}
+
+    def _run_benchmark():
+        try:
+            from soma.benchmarks import run_full_benchmark
+            agent = get_agent()
+            ablation_path = _DATA_DIR / "ablation_results.json"
+            ablation_data = None
+            if ablation_path.exists():
+                with open(ablation_path, "r", encoding="utf-8") as f:
+                    ablation_data = _json.load(f)
+            result_holder["run"] = run_full_benchmark(agent, ablation_data, version=app.version)
+        except Exception as e:
+            result_holder["error"] = str(e)[:300]
+
+    thread = threading.Thread(target=_run_benchmark, daemon=True)
+    thread.start()
+    thread.join(timeout=_BENCHMARK_MAX_RUNTIME)
+
+    _benchmark_running = False
+    _last_benchmark_ts = time.time()
+
+    if thread.is_alive():
+        # 超时：线程仍在运行，但不再等待
+        raise HTTPException(
+            500,
+            f"基准测试超时（>{_BENCHMARK_MAX_RUNTIME}秒），后台线程仍在运行。"
+            f"请等待 {_BENCHMARK_MIN_INTERVAL} 秒冷却后重试。",
+        )
+
+    if result_holder["error"]:
+        raise HTTPException(500, f"基准测试运行失败: {result_holder['error']}")
+
+    run = result_holder["run"]
+    if run is None:
+        raise HTTPException(500, "基准测试未产生结果")
+
+    run_id = _get_analytics().record_benchmark(run)
+    return {
+        "run_id": run_id,
+        "scores": run.scores,
+        "memory": asdict(run.memory),
+        "wisdom": asdict(run.wisdom),
+        "evolution": asdict(run.evolution),
+        "scalability": asdict(run.scalability),
+    }
 
 
 # ── Test Reports ──────────────────────────────────────────────
