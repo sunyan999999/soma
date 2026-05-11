@@ -41,6 +41,8 @@ nav:
     - SOMA vs Mem0: articles/soma-vs-mem0.md
     - SOMA vs Letta: articles/soma-vs-letta.md
     - Why We Built SOMA: articles/why-we-built-soma.md
+  - 案例研究: case-studies.md
+  - 常见问题: faq.md
   - 贡献指南: contributing.md
   - 变更日志: changelog.md
 
