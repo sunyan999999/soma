@@ -1,0 +1,2140 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="SOMA is a cognitive memory framework for AI agents. 7 thinking laws decompose problems, bidirectional activation retrieves memories, and weights self-evolve over time. pip install soma-wisdom. 智慧超越记忆。">
+      
+      
+        <meta name="author" content="SOMA Project Team">
+      
+      
+        <link rel="canonical" href="https://sunyan999999.github.io/soma/v0.9.0-capabilities-en/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>SOMA v0.9.0 Comprehensive Capability Introduction - SOMA — Somatic Wisdom Architecture</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#soma-v090-comprehensive-capability-introduction" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href=".." title="SOMA — Somatic Wisdom Architecture" class="md-header__button md-logo" aria-label="SOMA — Somatic Wisdom Architecture" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SOMA — Somatic Wisdom Architecture
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              SOMA v0.9.0 Comprehensive Capability Introduction
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/sunyan999999/soma" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="SOMA — Somatic Wisdom Architecture" class="md-nav__button md-logo" aria-label="SOMA — Somatic Wisdom Architecture" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    SOMA — Somatic Wisdom Architecture
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/sunyan999999/soma" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速开始
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../philosophy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    核心理念
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构手册
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API 参考
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/customization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    自定义指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    对比分析
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    对比分析
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../articles/soma-vs-mem0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SOMA vs Mem0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../articles/soma-vs-letta/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SOMA vs Letta
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../articles/why-we-built-soma/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Why We Built SOMA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../case-studies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    案例研究
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    贡献指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    变更日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#table-of-contents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Table of Contents
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version Overview
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Version Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#evolution-roadmap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evolution Roadmap
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#key-numbers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Numbers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core Architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#five-core-capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Five Core Capabilities
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Five Core Capabilities">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-agentregistry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. AgentRegistry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-expertrouter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. ExpertRouter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-distributedevolver" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. DistributedEvolver
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-consensusprotocol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. ConsensusProtocol
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-memory-isolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Memory Isolation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#technical-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Technical Details
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Technical Details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#zero-external-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Zero External Dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-agent-test-suite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-Agent Test Suite
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#benchmarks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Benchmarks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#significance-for-different-roles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Significance for Different Roles
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Significance for Different Roles">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#for-ai-agent-developers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        For AI Agent Developers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#for-large-language-models-llms" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        For Large Language Models (LLMs)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#for-end-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        For End Users
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#for-technical-decision-makers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        For Technical Decision Makers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick Start
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quick Start">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#5-minutes-create-your-first-expert-team" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5 Minutes: Create Your First Expert Team
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#10-minutes-multi-agent-consensus-decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10 Minutes: Multi-Agent Consensus Decision
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-api-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete API Reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Complete API Reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#agentregistry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AgentRegistry
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#expertrouter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ExpertRouter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#distributedevolver" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        DistributedEvolver
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#consensusprotocol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConsensusProtocol
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#memoryunit-new-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MemoryUnit (New Fields)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#production-recommendations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production Recommendations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Production Recommendations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#production-verified-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Production-Verified Configuration (零熵智库)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-guidelines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Performance Guidelines
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#upgrading-from-v080" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upgrading from v0.8.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#looking-ahead-to-v0100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Looking Ahead to v0.10.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="soma-v090-comprehensive-capability-introduction">SOMA v0.9.0 Comprehensive Capability Introduction<a class="headerlink" href="#soma-v090-comprehensive-capability-introduction" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p><strong>From "Single-Agent Reasoning" to "Multi-Agent Collaboration" — a paradigm shift</strong></p>
+</blockquote>
+<hr />
+<h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
+<ol>
+<li><a href="#version-overview">Version Overview</a></li>
+<li><a href="#core-architecture">Core Architecture</a></li>
+<li><a href="#five-core-capabilities">Five Core Capabilities</a></li>
+<li><a href="#technical-details">Technical Details</a></li>
+<li><a href="#benchmarks">Benchmarks</a></li>
+<li><a href="#significance-for-different-roles">Significance for Different Roles</a></li>
+<li><a href="#quick-start">Quick Start</a></li>
+<li><a href="#complete-api-reference">Complete API Reference</a></li>
+</ol>
+<hr />
+<h2 id="version-overview">Version Overview<a class="headerlink" href="#version-overview" title="Permanent link">&para;</a></h2>
+<p>SOMA v0.9.0 is the largest architectural upgrade since v0.1.0. While v0.8.0 completed the individual agent's cognitive reasoning loop (causal reasoning, conflict detection, cross-domain analogy, quality evaluation), v0.9.0 achieves <strong>the leap from individual to collective intelligence</strong> — enabling multiple SOMA Agents to collaborate as a team, each with independent memory, independent evolution paths, and specialized expertise domains, forming collective intelligence that surpasses any individual through expert routing, distributed evolution, and consensus protocols.</p>
+<h3 id="evolution-roadmap">Evolution Roadmap<a class="headerlink" href="#evolution-roadmap" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>v0.5.0 — Foundation: 7 Thinking Laws + Vector Retrieval + Evolution Loop
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>v0.6.0 — Reasoning Templates: Structured Reasoning Framework + Benchmark System
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>v0.7.0 — Memory Intelligence: Consolidation + Active Forgetting + External Knowledge Import
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>v0.8.0 — Cognitive Reasoning: Causal Chains + Conflict Detection + Cross-Domain Analogy + Quality Evaluation
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>v0.9.0 — Collective Intelligence: Multi-Agent Collaboration + Expert Routing + Distributed Evolution + Consensus ← Current
+</code></pre></div>
+<h3 id="key-numbers">Key Numbers<a class="headerlink" href="#key-numbers" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Test Cases</td>
+<td>473 all passing</td>
+</tr>
+<tr>
+<td>Multi-Agent Modules</td>
+<td>4 new modules (registry / router / evolve / consensus)</td>
+</tr>
+<tr>
+<td>New Code</td>
+<td>~1,200 lines</td>
+</tr>
+<tr>
+<td>External Dependencies Added</td>
+<td>0 (all built on existing stack)</td>
+</tr>
+<tr>
+<td>Backward Compatibility</td>
+<td>100% (all v0.8.0 APIs unchanged)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="core-architecture">Core Architecture<a class="headerlink" href="#core-architecture" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>┌─────────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>│                  SOMA v0.9.0 — Multi-Agent Collaboration Layer        │
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>│                                                                      │
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐   │
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>│  │  AgentRegistry   │  │  ExpertRouter    │  │ ConsensusProtocol │   │
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>│  │  · Register/     │  │  · L1 Keyword    │  │  · L1 Weighted    │   │
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>│  │    Unregister     │  │    Routing       │  │    Voting         │   │
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>│  │  · Expertise      │  │  · L2 Semantic   │  │  · L2 LLM         │   │
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>│  │    Tag Matching   │  │    Routing       │  │    Arbitration    │   │
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>│  │  · Session Stats  │  │  · L3 Fallback   │  │  · L3 Dialectical │   │
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>│  │                   │  │                  │  │    Synthesis      │   │
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>│  └────────┬──────────┘  └────────┬─────────┘  └────────┬──────────┘   │
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>│           │                      │                      │              │
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>│  ┌────────┴──────────────────────┴──────────────────────┴──────────┐   │
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>│  │                    DistributedEvolver                             │   │
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>│  │  · Independent per-agent evolution  · Periodic global merge      │   │
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>│  │  · Conflict arbitration mechanism                                │   │
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>│  └──────────────────────────────────────────────────────────────────┘   │
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>│                                                                      │
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>│  ┌──────────────────────────────────────────────────────────────────┐   │
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>│  │                     Memory Isolation Layer                        │   │
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>│  │  agent_id + shared_group_id → Three-State Isolation               │   │
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>│  │  · Private (agent_id=self)  · Group-Shared (shared_group_id)     │   │
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>│  │  · Global (agent_id=&quot;&quot;)                                          │   │
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>│  └──────────────────────────────────────────────────────────────────┘   │
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>│                                                                      │
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>│  ┌──────────────────────────────────────────────────────────────────┐   │
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>│  │           SOMA v0.8.0 Individual Cognitive Engine (fully retained)│   │
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>│  │  WisdomEngine → ActivationHub → MemoryCore                        │   │
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>│  │  CausalGraph · ConflictDetector · AnalogyEngine · QualityEval    │   │
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>│  └──────────────────────────────────────────────────────────────────┘   │
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>└─────────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+<hr />
+<h2 id="five-core-capabilities">Five Core Capabilities<a class="headerlink" href="#five-core-capabilities" title="Permanent link">&para;</a></h2>
+<h3 id="1-agentregistry">1. AgentRegistry<a class="headerlink" href="#1-agentregistry" title="Permanent link">&para;</a></h3>
+<p><strong>Formalizing Domain Expertise</strong></p>
+<p>Each Agent is no longer a homogeneous "general thinker" — instead, each is a specialized intelligent entity with explicit expertise domain labels, success rate tracking, and session statistics.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma.multi_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentRegistry</span><span class="p">,</span> <span class="n">AgentInfo</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">registry</span> <span class="o">=</span> <span class="n">AgentRegistry</span><span class="p">()</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># Register a legal expert agent</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">registry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">agent</span><span class="o">=</span><span class="n">law_agent</span><span class="p">,</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">expertise</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;legal&quot;</span><span class="p">,</span> <span class="s2">&quot;contracts&quot;</span><span class="p">,</span> <span class="s2">&quot;litigation&quot;</span><span class="p">,</span> <span class="s2">&quot;intellectual property&quot;</span><span class="p">],</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Specializes in legal text analysis, contract review, and compliance assessment&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="n">is_default</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="p">)</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="c1"># Register a technical architect agent</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="n">registry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="n">agent</span><span class="o">=</span><span class="n">tech_agent</span><span class="p">,</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    <span class="n">expertise</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;technology&quot;</span><span class="p">,</span> <span class="s2">&quot;architecture&quot;</span><span class="p">,</span> <span class="s2">&quot;performance optimization&quot;</span><span class="p">,</span> <span class="s2">&quot;system design&quot;</span><span class="p">],</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Specializes in distributed systems architecture, performance bottleneck analysis, and technology selection&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="p">)</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a><span class="c1"># Find experts by domain</span>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a><span class="n">experts</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">find_experts</span><span class="p">(</span><span class="s2">&quot;legal&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a><span class="c1"># → [(law_agent, 1.0), ...]</span>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="c1"># Get all agent statistics</span>
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="k">for</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">registry</span><span class="o">.</span><span class="n">list_agents</span><span class="p">():</span>
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">agent_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">expertise</span><span class="si">}</span><span class="s2"> &quot;</span>
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>          <span class="sa">f</span><span class="s2">&quot;(sessions=</span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">session_count</span><span class="si">}</span><span class="s2">, sr=</span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">success_rate</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Key Features</strong>:</p>
+<ul>
+<li><strong>Zero external dependencies</strong>: pure in-memory dict + dataclass, no Redis/ZooKeeper needed</li>
+<li><strong>Expertise matching algorithm</strong>: exact match 1.0 → fuzzy match 0.7 → no match 0.0</li>
+<li><strong>Session statistics</strong>: automatically tracks each agent's session count and success rate, providing weighted basis for distributed evolution</li>
+<li><strong>Default fallback</strong>: supports setting a general-purpose agent as fallback</li>
+</ul>
+<hr />
+<h3 id="2-expertrouter">2. ExpertRouter<a class="headerlink" href="#2-expertrouter" title="Permanent link">&para;</a></h3>
+<p><strong>"The right person for the right question"</strong></p>
+<p>A three-tier routing strategy ensuring each question reaches the most suitable expert agent. No LLM involvement in routing decisions — zero API calls, zero latency.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>User Question
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    │
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    ▼
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>┌──────────────┐
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>│ L1: Keyword   │ ← 8 domains × 80+ keywords, millisecond-level
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>│   Match       │   Legal / Tech / Finance / Management / Product
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>│   Hit → Route │   Science / Education / Healthcare
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>└──────┬───────┘
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>       │ No match
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>       ▼
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>┌──────────────┐
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>│ L2: Semantic  │ ← Requires embedder, computes cosine similarity
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>│   Match       │   between question and expertise descriptions
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>│   sim≥0.3 → Route │
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>└──────┬───────┘
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>       │ No match
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>       ▼
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>┌──────────────┐
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>│ L3: Default   │ ← General-purpose agent as fallback
+<a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>│   Fallback    │
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>└──────────────┘
+</code></pre></div>
+<p><strong>L1 Domain Keyword Table</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Domain</th>
+<th>Example Keywords</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Legal</td>
+<td>law, contract, litigation, regulation, compliance, IP, copyright, patent, arbitration</td>
+</tr>
+<tr>
+<td>Technology</td>
+<td>code, architecture, API, database, deploy, algorithm, performance, bug, programming</td>
+</tr>
+<tr>
+<td>Finance</td>
+<td>investment, stock, fund, budget, cost, revenue, profit, tax</td>
+</tr>
+<tr>
+<td>Management</td>
+<td>team, leadership, organization, strategy, process, performance review, hiring, culture</td>
+</tr>
+<tr>
+<td>Product</td>
+<td>user, requirements, experience, design, feature, iteration, growth, retention, conversion</td>
+</tr>
+<tr>
+<td>Science</td>
+<td>experiment, hypothesis, data, statistics, variable, control group, significance, correlation</td>
+</tr>
+<tr>
+<td>Education</td>
+<td>learning, teaching, curriculum, training, knowledge, skill, exam</td>
+</tr>
+<tr>
+<td>Healthcare</td>
+<td>diagnosis, treatment, medication, surgery, patient, clinical, pathology, prevention</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma.multi_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExpertRouter</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">router</span> <span class="o">=</span> <span class="n">ExpertRouter</span><span class="p">(</span><span class="n">registry</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">embedder</span><span class="p">)</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1"># Single-expert routing</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">agent</span><span class="p">,</span> <span class="n">confidence</span><span class="p">,</span> <span class="n">strategy</span> <span class="o">=</span> <span class="n">router</span><span class="o">.</span><span class="n">route</span><span class="p">(</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="s2">&quot;How to review IP clauses in a SaaS contract?&quot;</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="p">)</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="c1"># → (law_agent, 0.67, &quot;l1&quot;)  # Hit &quot;legal&quot;+&quot;contract&quot;+&quot;IP&quot; keywords</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="c1"># Multi-expert routing (for multi-angle analysis)</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="n">agents</span> <span class="o">=</span> <span class="n">router</span><span class="o">.</span><span class="n">route_multi</span><span class="p">(</span><span class="s2">&quot;Strategic planning for digital transformation&quot;</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="c1"># → [(tech_agent, 0.67, &quot;l1&quot;), (mgmt_agent, 0.67, &quot;l1&quot;), (product_agent, 0.33, &quot;l1&quot;)]</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="c1"># Routing statistics</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="nb">print</span><span class="p">(</span><span class="n">router</span><span class="o">.</span><span class="n">stats</span><span class="p">)</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="c1"># → {&quot;route_count&quot;: 100, &quot;l1_hit_rate&quot;: 0.73, &quot;l2_hit_rate&quot;: 0.15, &quot;fallback_rate&quot;: 0.12}</span>
+</code></pre></div>
+<hr />
+<h3 id="3-distributedevolver">3. DistributedEvolver<a class="headerlink" href="#3-distributedevolver" title="Permanent link">&para;</a></h3>
+<p><strong>Each Agent evolves independently, periodically merged into global wisdom</strong></p>
+<p>This is the most ambitious capability of v0.9.0. In traditional single-agent scenarios, the weights of 7 thinking laws could only be adjusted through a single agent's reflection. In v0.9.0, each expert agent maintains its own <code>MetaEvolver</code> instance (independent <code>evolver_&lt;agent_id&gt;.db</code>), evolving weights from their respective domain experience, then aggregating into global weights through merge strategies.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>  Agent A (Legal)       Agent B (Tech)        Agent C (Management)
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>  Independent           Independent           Independent
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>  Evolution             Evolution             Evolution
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>  evolver_A.db          evolver_B.db          evolver_C.db
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>      │                     │                     │
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>      └─────────────────────┼─────────────────────┘
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>                            │
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>                    ┌───────▼───────┐
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>                    │  Global Merge │
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>                    │  3 Strategies │
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>                    └───────┬───────┘
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>                            │
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>                    ┌───────▼───────┐
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>                    │  Conflict     │
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>                    │  Arbitration  │
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>                    │  Divergence    │
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>                    │  &gt;0.15: favor │
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>                    │  higher SR    │
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>                    └───────────────┘
+</code></pre></div>
+<p><strong>Three Merge Strategies</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Formula</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>simple_average</code></td>
+<td>Equal-weight average</td>
+<td>Homogeneous agent teams</td>
+</tr>
+<tr>
+<td><code>weighted_by_sessions</code></td>
+<td>Weighted by session count</td>
+<td>More experienced agents have more say</td>
+</tr>
+<tr>
+<td><code>weighted_by_success</code></td>
+<td>Weighted by success rate</td>
+<td><strong>Recommended default</strong> — more effective agents have more say</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Conflict Arbitration Mechanism</strong>:</p>
+<p>When two agents adjust the same law's weight in opposite directions (one up, one down) and the divergence exceeds 0.15, arbitration is automatically triggered — favoring the agent with higher success rate, pulling toward the best weight by 60%.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma.multi_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">DistributedEvolver</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">evo</span> <span class="o">=</span> <span class="n">DistributedEvolver</span><span class="p">(</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">persist_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;./multi_agent_data&quot;</span><span class="p">),</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">default_weights</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;first_principles&quot;</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">,</span> <span class="s2">&quot;systems_thinking&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="o">...</span><span class="p">},</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="n">merge_strategy</span><span class="o">=</span><span class="s2">&quot;weighted_by_success&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="p">)</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="c1"># Register each agent&#39;s evolver</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">evo</span><span class="o">.</span><span class="n">register_agent</span><span class="p">(</span><span class="s2">&quot;law_agent&quot;</span><span class="p">,</span> <span class="n">law_agent</span><span class="o">.</span><span class="n">evolver</span><span class="p">,</span> <span class="n">session_count</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">success_rate</span><span class="o">=</span><span class="mf">0.85</span><span class="p">)</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="n">evo</span><span class="o">.</span><span class="n">register_agent</span><span class="p">(</span><span class="s2">&quot;tech_agent&quot;</span><span class="p">,</span> <span class="n">tech_agent</span><span class="o">.</span><span class="n">evolver</span><span class="p">,</span> <span class="n">session_count</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span> <span class="n">success_rate</span><span class="o">=</span><span class="mf">0.92</span><span class="p">)</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="n">evo</span><span class="o">.</span><span class="n">register_agent</span><span class="p">(</span><span class="s2">&quot;mgmt_agent&quot;</span><span class="p">,</span> <span class="n">mgmt_agent</span><span class="o">.</span><span class="n">evolver</span><span class="p">,</span> <span class="n">session_count</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">success_rate</span><span class="o">=</span><span class="mf">0.78</span><span class="p">)</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="c1"># Trigger all agents to evolve independently</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="n">changes</span> <span class="o">=</span> <span class="n">evo</span><span class="o">.</span><span class="n">evolve_all</span><span class="p">()</span>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="c1"># → {&quot;law_agent&quot;: [{&quot;type&quot;: &quot;weight_adjustment&quot;, ...}], ...}</span>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="c1"># Merge into global weights</span>
+<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="n">global_weights</span> <span class="o">=</span> <span class="n">evo</span><span class="o">.</span><span class="n">merge_weights</span><span class="p">()</span>
+<a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="c1"># → {&quot;first_principles&quot;: 0.91, &quot;systems_thinking&quot;: 0.97, ...}</span>
+<a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>
+<a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a><span class="c1"># Apply global weights to all agents</span>
+<a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a><span class="n">applied</span> <span class="o">=</span> <span class="n">evo</span><span class="o">.</span><span class="n">apply_all</span><span class="p">()</span>
+<a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a><span class="c1"># → 3</span>
+<a id="__codelineno-6-26" name="__codelineno-6-26" href="#__codelineno-6-26"></a>
+<a id="__codelineno-6-27" name="__codelineno-6-27" href="#__codelineno-6-27"></a><span class="c1"># Statistics</span>
+<a id="__codelineno-6-28" name="__codelineno-6-28" href="#__codelineno-6-28"></a><span class="nb">print</span><span class="p">(</span><span class="n">evo</span><span class="o">.</span><span class="n">get_stats</span><span class="p">())</span>
+<a id="__codelineno-6-29" name="__codelineno-6-29" href="#__codelineno-6-29"></a><span class="c1"># → {&quot;agent_count&quot;: 3, &quot;merge_count&quot;: 1, &quot;merge_strategy&quot;: &quot;weighted_by_success&quot;, ...}</span>
+</code></pre></div>
+<hr />
+<h3 id="4-consensusprotocol">4. ConsensusProtocol<a class="headerlink" href="#4-consensusprotocol" title="Permanent link">&para;</a></h3>
+<p><strong>Enabling multiple Agents to reach consensus on the same question</strong></p>
+<p>When a complex problem requires multiple experts to collectively assess from different angles, the consensus protocol provides three-tier strategies to coordinate disagreements and produce a unified conclusion.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>┌─────────────────────────────────────────────────────┐
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>│              ConsensusProtocol                       │
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>│                                                      │
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>│  Input: Question + multiple AgentOpinions             │
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>│                                                      │
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>│  ┌──────────────┐                                    │
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>│  │ Auto-detect   │                                    │
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>│  │ agreement     │                                    │
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>│  │ level         │                                    │
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>│  │ ≥0.8 → Strong │                                    │
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>│  │ 0.5-0.8 →     │                                    │
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>│  │ Moderate       │                                    │
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>│  │ &lt;0.5 → Severe  │                                    │
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>│  └──────┬───────┘                                    │
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>│         │                                            │
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>│  ┌──────▼──────────────────────────────────────┐     │
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>│  │ L1: Weighted Voting                          │     │
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>│  │   confidence × answer aggregation            │     │
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>│  │   For: simple questions, many opinions        │     │
+<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>│  ├──────────────────────────────────────────────┤     │
+<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>│  │ L2: LLM Arbitration                          │     │
+<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a>│  │   LLM reads all opinions, resolves disputes  │     │
+<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a>│  │   For: moderate disagreement, external view  │     │
+<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a>│  ├──────────────────────────────────────────────┤     │
+<a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a>│  │ L3: Dialectical Synthesis                    │     │
+<a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a>│  │   Thesis → Antithesis → Synthesis            │     │
+<a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a>│  │   For: deep philosophical questions,         │     │
+<a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a>│  │   irreconcilable contradictions              │     │
+<a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a>│  └──────────────────────────────────────────────┘     │
+<a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a>│                                                      │
+<a id="__codelineno-7-31" name="__codelineno-7-31" href="#__codelineno-7-31"></a>│  Output: ConsensusResult                              │
+<a id="__codelineno-7-32" name="__codelineno-7-32" href="#__codelineno-7-32"></a>│    · consensus_answer: final unified answer           │
+<a id="__codelineno-7-33" name="__codelineno-7-33" href="#__codelineno-7-33"></a>│    · agreement_level: consensus degree 0-1            │
+<a id="__codelineno-7-34" name="__codelineno-7-34" href="#__codelineno-7-34"></a>│    · minority_view: minority opinion (if any)         │
+<a id="__codelineno-7-35" name="__codelineno-7-35" href="#__codelineno-7-35"></a>│    · disagreements: detailed list of disagreement     │
+<a id="__codelineno-7-36" name="__codelineno-7-36" href="#__codelineno-7-36"></a>│      points                                          │
+<a id="__codelineno-7-37" name="__codelineno-7-37" href="#__codelineno-7-37"></a>└─────────────────────────────────────────────────────┘
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma.multi_agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConsensusProtocol</span><span class="p">,</span> <span class="n">AgentOpinion</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">protocol</span> <span class="o">=</span> <span class="n">ConsensusProtocol</span><span class="p">(</span><span class="n">llm_call</span><span class="o">=</span><span class="n">my_llm_function</span><span class="p">)</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="c1"># Each agent produces their opinion</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="n">opinions</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    <span class="n">AgentOpinion</span><span class="p">(</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>        <span class="n">agent_id</span><span class="o">=</span><span class="s2">&quot;law_agent&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>        <span class="n">answer</span><span class="o">=</span><span class="s2">&quot;From a legal perspective, the main risk in this contract is the IP ownership clause...&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>        <span class="n">confidence</span><span class="o">=</span><span class="mf">0.85</span><span class="p">,</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>        <span class="n">key_points</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Unclear IP ownership&quot;</span><span class="p">,</span> <span class="s2">&quot;Asymmetric liability&quot;</span><span class="p">,</span> <span class="s2">&quot;Disputed jurisdiction&quot;</span><span class="p">],</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>    <span class="p">),</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>    <span class="n">AgentOpinion</span><span class="p">(</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>        <span class="n">agent_id</span><span class="o">=</span><span class="s2">&quot;tech_agent&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>        <span class="n">answer</span><span class="o">=</span><span class="s2">&quot;Technically, we need to focus on delivery standards and support terms...&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>        <span class="n">confidence</span><span class="o">=</span><span class="mf">0.78</span><span class="p">,</span>
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>        <span class="n">key_points</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Vague acceptance criteria&quot;</span><span class="p">,</span> <span class="s2">&quot;Undefined support SLA&quot;</span><span class="p">],</span>
+<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>    <span class="p">),</span>
+<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>    <span class="n">AgentOpinion</span><span class="p">(</span>
+<a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>        <span class="n">agent_id</span><span class="o">=</span><span class="s2">&quot;mgmt_agent&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a>        <span class="n">answer</span><span class="o">=</span><span class="s2">&quot;From a management perspective, the key risks are delivery timeline and change management...&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a>        <span class="n">confidence</span><span class="o">=</span><span class="mf">0.72</span><span class="p">,</span>
+<a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a>        <span class="n">key_points</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Unreasonable delivery timeline&quot;</span><span class="p">,</span> <span class="s2">&quot;Missing change management process&quot;</span><span class="p">],</span>
+<a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a>    <span class="p">),</span>
+<a id="__codelineno-8-25" name="__codelineno-8-25" href="#__codelineno-8-25"></a><span class="p">]</span>
+<a id="__codelineno-8-26" name="__codelineno-8-26" href="#__codelineno-8-26"></a>
+<a id="__codelineno-8-27" name="__codelineno-8-27" href="#__codelineno-8-27"></a><span class="c1"># Form consensus</span>
+<a id="__codelineno-8-28" name="__codelineno-8-28" href="#__codelineno-8-28"></a><span class="n">result</span> <span class="o">=</span> <span class="n">protocol</span><span class="o">.</span><span class="n">form_consensus</span><span class="p">(</span><span class="s2">&quot;Review the comprehensive risks of this contract&quot;</span><span class="p">,</span> <span class="n">opinions</span><span class="p">)</span>
+<a id="__codelineno-8-29" name="__codelineno-8-29" href="#__codelineno-8-29"></a>
+<a id="__codelineno-8-30" name="__codelineno-8-30" href="#__codelineno-8-30"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Agreement level: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">agreement_level</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-31" name="__codelineno-8-31" href="#__codelineno-8-31"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Strategy: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">strategy_used</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-32" name="__codelineno-8-32" href="#__codelineno-8-32"></a><span class="c1"># → strategy_used: &quot;voting&quot; (low divergence), &quot;llm_arbitration&quot; (moderate), &quot;dialectical_synthesis&quot; (severe)</span>
+<a id="__codelineno-8-33" name="__codelineno-8-33" href="#__codelineno-8-33"></a>
+<a id="__codelineno-8-34" name="__codelineno-8-34" href="#__codelineno-8-34"></a><span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">is_strong_consensus</span><span class="p">:</span>
+<a id="__codelineno-8-35" name="__codelineno-8-35" href="#__codelineno-8-35"></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Strong consensus reached!&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-36" name="__codelineno-8-36" href="#__codelineno-8-36"></a><span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-8-37" name="__codelineno-8-37" href="#__codelineno-8-37"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">disagreements</span><span class="p">)</span><span class="si">}</span><span class="s2"> disagreement points found&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-38" name="__codelineno-8-38" href="#__codelineno-8-38"></a>    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">minority_view</span><span class="p">:</span>
+<a id="__codelineno-8-39" name="__codelineno-8-39" href="#__codelineno-8-39"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Minority view: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">minority_view</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Agreement Level Detection Algorithm</strong>:</p>
+<ol>
+<li>Extract core claims (key_points) from all agent answers</li>
+<li>Compute Jaccard similarity of claim sets</li>
+<li>Weight by confidence (higher confidence agents have more weight)</li>
+<li>Output agreement_level ∈ [0, 1]</li>
+</ol>
+<hr />
+<h3 id="5-memory-isolation">5. Memory Isolation<a class="headerlink" href="#5-memory-isolation" title="Permanent link">&para;</a></h3>
+<p><strong>Three-State Isolation Model: Private / Group-Shared / Global</strong></p>
+<p>v0.9.0 adds <code>agent_id</code> and <code>shared_group_id</code> fields to <code>MemoryUnit</code>, enabling finer-grained memory access control.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>┌────────────────────────────────────────────┐
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>│              Memory Isolation               │
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>│                                             │
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>│  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>│  │ Agent A  │  │ Agent B  │  │ Agent C  │  │
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>│  │ Private  │  │ Private  │  │ Private  │  │
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>│  │ agent=A  │  │ agent=B  │  │ agent=C  │  │
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>│  └────┬─────┘  └────┬─────┘  └────┬─────┘  │
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>│       │              │              │       │
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>│       └──────────────┼──────────────┘       │
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>│                      │                      │
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>│              ┌───────▼───────┐              │
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>│              │ Group-Shared  │              │
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>│              │ group=&quot;team&quot;  │              │
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>│              │ A,B,C visible │              │
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>│              └───────────────┘              │
+<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>│                                             │
+<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a>│           ┌──────────────────┐              │
+<a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a>│           │   Global Memory   │              │
+<a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a>│           │   agent=&quot;&quot;        │              │
+<a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a>│           │   all agents      │              │
+<a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a>│           └──────────────────┘              │
+<a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a>└────────────────────────────────────────────┘
+</code></pre></div>
+<p><strong>Isolation Enforcement in Query Paths</strong>:</p>
+<ul>
+<li><strong>FTS5 Keyword Search Path</strong>: SQL WHERE clause precisely filters <code>agent_id = ? OR shared_group_id = ?</code></li>
+<li><strong>Vector Semantic Search Path</strong>: Python in-memory filtering <code>mem.agent_id != agent_id → skip</code></li>
+<li><strong>Semantic Memory</strong>: namespace-encoded isolation (<code>agent_id or user_id</code>)</li>
+<li><strong>Skill Memory</strong>: user_id + agent/group dual-channel filtering</li>
+</ul>
+<p><strong>Vector Index Startup Health Check</strong> (new in v0.9.0):</p>
+<p>When vector search is enabled after the fact (historical memories lack vectors), startup automatically detects <code>indexed/total &lt; 50%</code> and triggers a full rebuild. This solves the upgrade scenario where "memories exist, but vectors don't" — causing semantic search to degrade to keyword search.</p>
+<hr />
+<h2 id="technical-details">Technical Details<a class="headerlink" href="#technical-details" title="Permanent link">&para;</a></h2>
+<h3 id="zero-external-dependencies">Zero External Dependencies<a class="headerlink" href="#zero-external-dependencies" title="Permanent link">&para;</a></h3>
+<p>All 4 new v0.9.0 modules are built entirely on SOMA's existing tech stack:</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Storage</th>
+<th>Computation</th>
+<th>Communication</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AgentRegistry</td>
+<td>Python dict</td>
+<td>O(1) lookup</td>
+<td>In-process</td>
+</tr>
+<tr>
+<td>ExpertRouter</td>
+<td>Python dict</td>
+<td>O(n) keyword scan</td>
+<td>In-process</td>
+</tr>
+<tr>
+<td>DistributedEvolver</td>
+<td>SQLite (per agent)</td>
+<td>Weighted average</td>
+<td>In-process</td>
+</tr>
+<tr>
+<td>ConsensusProtocol</td>
+<td>No persistence</td>
+<td>Jaccard + LLM</td>
+<td>In-process</td>
+</tr>
+</tbody>
+</table>
+<p>No Redis (registry center), RabbitMQ (message queue), gRPC (service communication), or etcd (configuration center) needed. All agents collaborate within a single Python process, suitable for:</p>
+<ul>
+<li>Edge deployment (Raspberry Pi / embedded devices)</li>
+<li>Single-machine multi-agent scenarios (customer service systems, education platforms)</li>
+<li>Air-gapped environments (classified scenarios, offline terminals)</li>
+</ul>
+<h3 id="multi-agent-test-suite">Multi-Agent Test Suite<a class="headerlink" href="#multi-agent-test-suite" title="Permanent link">&para;</a></h3>
+<p>v0.9.0 adds 51 multi-agent specific tests (<code>tests/test_multi_agent.py</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Test Count</th>
+<th>Coverage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AgentRegistry</td>
+<td>10</td>
+<td>Register/unregister/find/default/dedup/stats</td>
+</tr>
+<tr>
+<td>ExpertRouter</td>
+<td>9</td>
+<td>L1 routing/L2 routing/fallback/multi-route/stats</td>
+</tr>
+<tr>
+<td>DistributedEvolver</td>
+<td>15</td>
+<td>Register/unregister/independent evolution/3 merge strategies/conflict arbitration/global apply</td>
+</tr>
+<tr>
+<td>ConsensusProtocol</td>
+<td>13</td>
+<td>Strong consensus/LLM arbitration/dialectical synthesis/disagreement detection/empty opinions</td>
+</tr>
+<tr>
+<td>Integration</td>
+<td>4</td>
+<td>End-to-end multi-agent collaboration flow</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="benchmarks">Benchmarks<a class="headerlink" href="#benchmarks" title="Permanent link">&para;</a></h2>
+<p>v0.9.0 achieved the following scores in the four-dimensional benchmark system (based on 1,752 real memories from 零熵智库 production):</p>
+<table>
+<thead>
+<tr>
+<th>Dimension</th>
+<th>Score</th>
+<th>Details</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Memory</td>
+<td>89.4</td>
+<td>Semantic recall rate 100%, dedup rate 100%, query latency 34ms</td>
+</tr>
+<tr>
+<td>Wisdom</td>
+<td>81.1</td>
+<td>Decomposition coverage 100%, thought diversity entropy 0.88, memory relevance 1.21</td>
+</tr>
+<tr>
+<td>Evolution</td>
+<td>75.0</td>
+<td>200 reflections, 281 solidified skills, recent 30-session success rate 100%</td>
+</tr>
+<tr>
+<td>Scalability</td>
+<td>100</td>
+<td>1K→10K query latency linear growth log₂(N)</td>
+</tr>
+<tr>
+<td><strong>Overall</strong></td>
+<td><strong>84.9</strong></td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="significance-for-different-roles">Significance for Different Roles<a class="headerlink" href="#significance-for-different-roles" title="Permanent link">&para;</a></h2>
+<h3 id="for-ai-agent-developers">For AI Agent Developers<a class="headerlink" href="#for-ai-agent-developers" title="Permanent link">&para;</a></h3>
+<p><strong>From "Building Tools" to "Building Teams"</strong></p>
+<p>Before v0.9.0, you used SOMA to equip a single agent with a thinking engine. After v0.9.0, you can create a team of expert agents — legal experts, technical advisors, management coaches — each with their own role, automatically assigned tasks through routing, and resolving disagreements through consensus protocols.</p>
+<p><strong>Real-World Scenarios</strong>:</p>
+<ul>
+<li><strong>Enterprise AI Middle Platform</strong>: One SOMA instance managing 40 domain-specific avatars, each with independent memory and evolution paths, sharing a global knowledge base</li>
+<li><strong>Intelligent Customer Service</strong>: Frontend router automatically dispatches by question type to technical/after-sales/complaint experts, no LLM needed for intent recognition</li>
+<li><strong>Education Tutoring Platform</strong>: Math expert, language expert, science expert evolve independently, periodically merge teaching strategy weights</li>
+</ul>
+<p><strong>What Doesn't Need to Change</strong>:</p>
+<ul>
+<li>Existing <code>soma.remember()</code> / <code>soma.respond()</code> / <code>soma.query_memory()</code> APIs are completely unchanged</li>
+<li>Single-agent usage is 100% compatible with v0.8.0</li>
+<li>Only use <code>soma.multi_agent</code> module when you need multi-agent collaboration</li>
+</ul>
+<h3 id="for-large-language-models-llms">For Large Language Models (LLMs)<a class="headerlink" href="#for-large-language-models-llms" title="Permanent link">&para;</a></h3>
+<p><strong>From "One Model Answers Everything" to "Expert Models for Each Domain"</strong></p>
+<p>v0.9.0's multi-agent architecture enables different LLM instances (or different prompt configurations of the same LLM) to play different roles:</p>
+<ul>
+<li><strong>Reduce Hallucinations</strong>: The consensus protocol's LLM arbitration layer cross-validates multiple independent judgments, reducing single-model bias</li>
+<li><strong>Save Tokens</strong>: The routing layer only sends questions to the most relevant Agent, rather than having all Agents participate</li>
+<li><strong>Break Through Single-Model Limitations</strong>: Different Agents can connect to different LLMs (Legal Agent using DeepSeek, Tech Agent using Claude, Management Agent using GPT), leveraging each model's strengths</li>
+</ul>
+<p><strong>Key Insight</strong>: v0.9.0 doesn't make LLMs stronger — it makes the organization of LLMs smarter.</p>
+<h3 id="for-end-users">For End Users<a class="headerlink" href="#for-end-users" title="Permanent link">&para;</a></h3>
+<p><strong>From "Asking AI" to "Asking an Expert Team"</strong></p>
+<p>When an average user asks "I want to start a business — what legal risks should I watch out for?":</p>
+<ul>
+<li><strong>Traditional AI</strong>: Gives generic advice, may miss critical legal details</li>
+<li><strong>v0.8.0 SOMA</strong>: Decomposes the question through 7 thinking laws, provides systematic analysis combining memory</li>
+<li><strong>v0.9.0 SOMA</strong>: Router automatically identifies "startup" → management, "legal risks" → legal, simultaneously engages both management expert and legal expert — both Agents analyze independently, then synthesize final advice through the consensus protocol</li>
+</ul>
+<p>Users don't need to know how many Agents are working behind the scenes — they just see a more comprehensive, more reliable answer that has been verified by multiple experts.</p>
+<h3 id="for-technical-decision-makers">For Technical Decision Makers<a class="headerlink" href="#for-technical-decision-makers" title="Permanent link">&para;</a></h3>
+<p><strong>From "Choosing a Library" to "Choosing an Architecture"</strong></p>
+<p>SOMA is not another vector database, not another agent framework — it is a <strong>complete cognitive architecture</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>What SOMA Provides</th>
+<th>What Traditional Approaches Require</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Reasoning</td>
+<td>7 thinking laws + reasoning templates</td>
+<td>Hand-written prompt engineering</td>
+</tr>
+<tr>
+<td>Memory</td>
+<td>SQLite + Vector + FTS5 + three stores</td>
+<td>Multi-component assembly (ChromaDB + PostgreSQL + Redis)</td>
+</tr>
+<tr>
+<td>Evolution</td>
+<td>Automatic weight adjustment + merge/forget</td>
+<td>None (or hand-written rules)</td>
+</tr>
+<tr>
+<td>Collaboration</td>
+<td>Registry + Router + Consensus Protocol</td>
+<td>ZooKeeper + Message Queue + hand-written protocols</td>
+</tr>
+<tr>
+<td>Deployment</td>
+<td><code>pip install soma-wisdom</code></td>
+<td>Docker Compose / K8s multi-service orchestration</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Single binary startup, zero operational burden.</strong></p>
+<hr />
+<h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
+<h3 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>pip<span class="w"> </span>install<span class="w"> </span>soma-wisdom&gt;<span class="o">=</span><span class="m">0</span>.9.0
+</code></pre></div>
+<h3 id="5-minutes-create-your-first-expert-team">5 Minutes: Create Your First Expert Team<a class="headerlink" href="#5-minutes-create-your-first-expert-team" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOMA</span><span class="p">,</span> <span class="n">SOMA_Agent</span><span class="p">,</span> <span class="n">SOMAConfig</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma.multi_agent</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    <span class="n">AgentRegistry</span><span class="p">,</span> <span class="n">ExpertRouter</span><span class="p">,</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="n">DistributedEvolver</span><span class="p">,</span> <span class="n">ConsensusProtocol</span><span class="p">,</span> <span class="n">AgentOpinion</span><span class="p">,</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="p">)</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="c1"># 1. Create 3 expert Agents</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SOMAConfig</span><span class="p">(</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>    <span class="n">framework_path</span><span class="o">=</span><span class="s2">&quot;wisdom_laws.yaml&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>    <span class="n">episodic_persist_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;./team_data&quot;</span><span class="p">),</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>    <span class="n">use_vector_search</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="p">)</span>
+<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>
+<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="n">law_agent</span> <span class="o">=</span> <span class="n">SOMA_Agent</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">agent_id</span><span class="o">=</span><span class="s2">&quot;law_expert&quot;</span><span class="p">,</span> <span class="n">group_id</span><span class="o">=</span><span class="s2">&quot;team&quot;</span><span class="p">)</span>
+<a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="n">tech_agent</span> <span class="o">=</span> <span class="n">SOMA_Agent</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">agent_id</span><span class="o">=</span><span class="s2">&quot;tech_architect&quot;</span><span class="p">,</span> <span class="n">group_id</span><span class="o">=</span><span class="s2">&quot;team&quot;</span><span class="p">)</span>
+<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="n">mgmt_agent</span> <span class="o">=</span> <span class="n">SOMA_Agent</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">agent_id</span><span class="o">=</span><span class="s2">&quot;mgmt_coach&quot;</span><span class="p">,</span> <span class="n">group_id</span><span class="o">=</span><span class="s2">&quot;team&quot;</span><span class="p">)</span>
+<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a>
+<a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="c1"># 2. Register in registry</span>
+<a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a><span class="n">registry</span> <span class="o">=</span> <span class="n">AgentRegistry</span><span class="p">()</span>
+<a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a><span class="n">registry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">law_agent</span><span class="p">,</span> <span class="n">expertise</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;legal&quot;</span><span class="p">,</span> <span class="s2">&quot;contract&quot;</span><span class="p">,</span> <span class="s2">&quot;compliance&quot;</span><span class="p">,</span> <span class="s2">&quot;IP&quot;</span><span class="p">],</span>
+<a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a>                  <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Legal risk analysis expert&quot;</span><span class="p">)</span>
+<a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a><span class="n">registry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">tech_agent</span><span class="p">,</span> <span class="n">expertise</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;tech&quot;</span><span class="p">,</span> <span class="s2">&quot;architecture&quot;</span><span class="p">,</span> <span class="s2">&quot;performance&quot;</span><span class="p">,</span> <span class="s2">&quot;security&quot;</span><span class="p">],</span>
+<a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a>                  <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Technical architecture advisor&quot;</span><span class="p">)</span>
+<a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a><span class="n">registry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">mgmt_agent</span><span class="p">,</span> <span class="n">expertise</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;management&quot;</span><span class="p">,</span> <span class="s2">&quot;strategy&quot;</span><span class="p">,</span> <span class="s2">&quot;team&quot;</span><span class="p">,</span> <span class="s2">&quot;organization&quot;</span><span class="p">],</span>
+<a id="__codelineno-11-26" name="__codelineno-11-26" href="#__codelineno-11-26"></a>                  <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Management coach&quot;</span><span class="p">,</span> <span class="n">is_default</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-11-27" name="__codelineno-11-27" href="#__codelineno-11-27"></a>
+<a id="__codelineno-11-28" name="__codelineno-11-28" href="#__codelineno-11-28"></a><span class="c1"># 3. Create router</span>
+<a id="__codelineno-11-29" name="__codelineno-11-29" href="#__codelineno-11-29"></a><span class="n">router</span> <span class="o">=</span> <span class="n">ExpertRouter</span><span class="p">(</span><span class="n">registry</span><span class="p">,</span> <span class="n">embedder</span><span class="o">=</span><span class="n">law_agent</span><span class="o">.</span><span class="n">embedder</span><span class="p">)</span>
+<a id="__codelineno-11-30" name="__codelineno-11-30" href="#__codelineno-11-30"></a>
+<a id="__codelineno-11-31" name="__codelineno-11-31" href="#__codelineno-11-31"></a><span class="c1"># 4. Route question to expert</span>
+<a id="__codelineno-11-32" name="__codelineno-11-32" href="#__codelineno-11-32"></a><span class="n">expert</span><span class="p">,</span> <span class="n">confidence</span><span class="p">,</span> <span class="n">strategy</span> <span class="o">=</span> <span class="n">router</span><span class="o">.</span><span class="n">route</span><span class="p">(</span>
+<a id="__codelineno-11-33" name="__codelineno-11-33" href="#__codelineno-11-33"></a>    <span class="s2">&quot;How to review IP clauses in a SaaS contract?&quot;</span>
+<a id="__codelineno-11-34" name="__codelineno-11-34" href="#__codelineno-11-34"></a><span class="p">)</span>
+<a id="__codelineno-11-35" name="__codelineno-11-35" href="#__codelineno-11-35"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Routed to: </span><span class="si">{</span><span class="n">expert</span><span class="o">.</span><span class="n">agent_id</span><span class="si">}</span><span class="s2"> (confidence=</span><span class="si">{</span><span class="n">confidence</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">, strategy=</span><span class="si">{</span><span class="n">strategy</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+<a id="__codelineno-11-36" name="__codelineno-11-36" href="#__codelineno-11-36"></a><span class="c1"># → Routed to: law_expert (confidence=0.67, strategy=l1)</span>
+<a id="__codelineno-11-37" name="__codelineno-11-37" href="#__codelineno-11-37"></a>
+<a id="__codelineno-11-38" name="__codelineno-11-38" href="#__codelineno-11-38"></a><span class="c1"># 5. Answer with the routed expert</span>
+<a id="__codelineno-11-39" name="__codelineno-11-39" href="#__codelineno-11-39"></a><span class="n">answer</span> <span class="o">=</span> <span class="n">expert</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span>
+<a id="__codelineno-11-40" name="__codelineno-11-40" href="#__codelineno-11-40"></a>    <span class="s2">&quot;How to review IP clauses in a SaaS contract?&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-41" name="__codelineno-11-41" href="#__codelineno-11-41"></a>    <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;user_001&quot;</span>
+<a id="__codelineno-11-42" name="__codelineno-11-42" href="#__codelineno-11-42"></a><span class="p">)</span>
+<a id="__codelineno-11-43" name="__codelineno-11-43" href="#__codelineno-11-43"></a><span class="nb">print</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="10-minutes-multi-agent-consensus-decision">10 Minutes: Multi-Agent Consensus Decision<a class="headerlink" href="#10-minutes-multi-agent-consensus-decision" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># Multiple experts give opinions on the same complex question</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="n">question</span> <span class="o">=</span> <span class="s2">&quot;Should the company build an in-house AI team or outsource?&quot;</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">opinions</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="k">for</span> <span class="n">agent_id</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;law_expert&quot;</span><span class="p">,</span> <span class="s2">&quot;tech_architect&quot;</span><span class="p">,</span> <span class="s2">&quot;mgmt_coach&quot;</span><span class="p">]:</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    <span class="n">agent</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">agent_id</span><span class="p">)</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="n">response</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="n">question</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;ceo_001&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>    <span class="c1"># Extract core claims from response (simplified example)</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>    <span class="n">foci</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">decompose</span><span class="p">(</span><span class="n">question</span><span class="p">)</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>    <span class="n">key_points</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">dimension</span><span class="p">[:</span><span class="mi">60</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">foci</span><span class="p">[:</span><span class="mi">3</span><span class="p">]]</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>
+<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a>    <span class="n">opinions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">AgentOpinion</span><span class="p">(</span>
+<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>        <span class="n">agent_id</span><span class="o">=</span><span class="n">agent_id</span><span class="p">,</span>
+<a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a>        <span class="n">answer</span><span class="o">=</span><span class="n">response</span><span class="p">,</span>
+<a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a>        <span class="n">confidence</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+<a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a>        <span class="n">foci</span><span class="o">=</span><span class="n">foci</span><span class="p">,</span>
+<a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a>        <span class="n">key_points</span><span class="o">=</span><span class="n">key_points</span><span class="p">,</span>
+<a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a>    <span class="p">))</span>
+<a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a>
+<a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a><span class="c1"># Form consensus</span>
+<a id="__codelineno-12-21" name="__codelineno-12-21" href="#__codelineno-12-21"></a><span class="n">protocol</span> <span class="o">=</span> <span class="n">ConsensusProtocol</span><span class="p">()</span>
+<a id="__codelineno-12-22" name="__codelineno-12-22" href="#__codelineno-12-22"></a><span class="n">result</span> <span class="o">=</span> <span class="n">protocol</span><span class="o">.</span><span class="n">form_consensus</span><span class="p">(</span><span class="n">question</span><span class="p">,</span> <span class="n">opinions</span><span class="p">)</span>
+<a id="__codelineno-12-23" name="__codelineno-12-23" href="#__codelineno-12-23"></a>
+<a id="__codelineno-12-24" name="__codelineno-12-24" href="#__codelineno-12-24"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Agreement level: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">agreement_level</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-25" name="__codelineno-12-25" href="#__codelineno-12-25"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Strategy: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">strategy_used</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-26" name="__codelineno-12-26" href="#__codelineno-12-26"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Final opinion: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">consensus_answer</span><span class="p">[:</span><span class="mi">200</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-27" name="__codelineno-12-27" href="#__codelineno-12-27"></a><span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">minority_view</span><span class="p">:</span>
+<a id="__codelineno-12-28" name="__codelineno-12-28" href="#__codelineno-12-28"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Minority view: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">minority_view</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="complete-api-reference">Complete API Reference<a class="headerlink" href="#complete-api-reference" title="Permanent link">&para;</a></h2>
+<h3 id="agentregistry">AgentRegistry<a class="headerlink" href="#agentregistry" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>register(agent, expertise, description, is_default)</code></td>
+<td>Register an expert agent</td>
+</tr>
+<tr>
+<td><code>unregister(agent_id)</code></td>
+<td>Unregister an agent</td>
+</tr>
+<tr>
+<td><code>get(agent_id)</code></td>
+<td>Get agent instance</td>
+</tr>
+<tr>
+<td><code>get_default()</code></td>
+<td>Get default fallback agent</td>
+</tr>
+<tr>
+<td><code>find_experts(domain, min_score)</code></td>
+<td>Find matching experts by domain</td>
+</tr>
+<tr>
+<td><code>list_agents()</code></td>
+<td>List all agent metadata</td>
+</tr>
+<tr>
+<td><code>record_session(agent_id, success)</code></td>
+<td>Record session result, update stats</td>
+</tr>
+<tr>
+<td><code>agent_count</code></td>
+<td>Number of registered agents</td>
+</tr>
+</tbody>
+</table>
+<h3 id="expertrouter">ExpertRouter<a class="headerlink" href="#expertrouter" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>route(problem, min_confidence, allow_fallback)</code></td>
+<td>Single-expert routing, returns <code>(agent, confidence, strategy)</code></td>
+</tr>
+<tr>
+<td><code>route_multi(problem, top_k, min_confidence)</code></td>
+<td>Multi-expert routing, returns top-K matches</td>
+</tr>
+<tr>
+<td><code>stats</code></td>
+<td>Routing statistics: <code>route_count</code>, <code>l1_hit_rate</code>, <code>l2_hit_rate</code>, <code>fallback_rate</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="distributedevolver">DistributedEvolver<a class="headerlink" href="#distributedevolver" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>register_agent(agent_id, evolver, session_count, success_rate)</code></td>
+<td>Register agent evolver</td>
+</tr>
+<tr>
+<td><code>unregister_agent(agent_id)</code></td>
+<td>Unregister</td>
+</tr>
+<tr>
+<td><code>evolve_agent(agent_id)</code></td>
+<td>Trigger single agent evolution</td>
+</tr>
+<tr>
+<td><code>evolve_all()</code></td>
+<td>Trigger all agents' independent evolution</td>
+</tr>
+<tr>
+<td><code>merge_weights(strategy)</code></td>
+<td>Execute global weight merge (3 strategies available)</td>
+</tr>
+<tr>
+<td><code>get_global_weights()</code></td>
+<td>Get most recent merged global weights</td>
+</tr>
+<tr>
+<td><code>apply_global_weights(agent_id)</code></td>
+<td>Apply global weights to a specific agent</td>
+</tr>
+<tr>
+<td><code>apply_all()</code></td>
+<td>Apply global weights to all agents</td>
+</tr>
+<tr>
+<td><code>get_stats()</code></td>
+<td>Distributed evolution statistics</td>
+</tr>
+</tbody>
+</table>
+<h3 id="consensusprotocol">ConsensusProtocol<a class="headerlink" href="#consensusprotocol" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>form_consensus(question, opinions)</code></td>
+<td>Form consensus, returns <code>ConsensusResult</code></td>
+</tr>
+<tr>
+<td><code>ConsensusResult.is_strong_consensus</code></td>
+<td>Whether consensus is strong (≥0.8)</td>
+</tr>
+<tr>
+<td><code>ConsensusResult.agent_count</code></td>
+<td>Number of participating agents</td>
+</tr>
+<tr>
+<td><code>ConsensusResult.minority_view</code></td>
+<td>Minority opinion (if any)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="memoryunit-new-fields">MemoryUnit (New Fields)<a class="headerlink" href="#memoryunit-new-fields" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agent_id</code></td>
+<td>str</td>
+<td>ID of the agent that owns this memory</td>
+</tr>
+<tr>
+<td><code>shared_group_id</code></td>
+<td>str</td>
+<td>ID of the collaboration group this memory belongs to</td>
+</tr>
+<tr>
+<td><code>user_id</code></td>
+<td>str</td>
+<td>ID of the user that owns this memory (existing)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="production-recommendations">Production Recommendations<a class="headerlink" href="#production-recommendations" title="Permanent link">&para;</a></h2>
+<h3 id="production-verified-configuration">Production-Verified Configuration (零熵智库)<a class="headerlink" href="#production-verified-configuration" title="Permanent link">&para;</a></h3>
+<p>The following configuration has been validated in real production (40 avatars, 1,752 memories, 34 days continuous operation):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">soma</span> <span class="o">=</span> <span class="n">SOMA</span><span class="p">(</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>    <span class="n">llm</span><span class="o">=</span><span class="s2">&quot;openai/deepseek-chat&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>    <span class="n">use_vector_search</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>    <span class="n">recall_threshold</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>   <span class="c1"># Low threshold, sorted by RRF fusion</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    <span class="n">top_k</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>                 <span class="c1"># Moderate candidate pool size</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>    <span class="n">persist_dir</span><span class="o">=</span><span class="s2">&quot;/opt/soma_data&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="p">)</span>
+</code></pre></div>
+<h3 id="performance-guidelines">Performance Guidelines<a class="headerlink" href="#performance-guidelines" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>&lt; 100 memories</strong>: No special optimization needed</li>
+<li><strong>100 - 2,000 memories</strong>: Recommended config (current production experience)</li>
+<li><strong>&gt; 2,000 memories</strong>: Consider raising <code>recall_threshold</code>, lowering <code>top_k</code>, increasing <code>evolve()</code> interval</li>
+<li><strong>Multi-Agent scenarios</strong>: Separate directories per agent to avoid SQLite lock contention</li>
+</ul>
+<hr />
+<h2 id="upgrading-from-v080">Upgrading from v0.8.0<a class="headerlink" href="#upgrading-from-v080" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span>soma-wisdom&gt;<span class="o">=</span><span class="m">0</span>.9.0
+</code></pre></div>
+<p><strong>Zero code changes</strong> — all v0.8.0 APIs are backward compatible. Multi-agent capabilities are provided through the new <code>soma.multi_agent</code> module and do not affect existing code.</p>
+<p>On startup, if historical memories are detected to lack vector indices (<code>indexed/total &lt; 50%</code>), a full rebuild is automatically triggered. The first startup may take 2-5 minutes (depending on memory count); subsequent startups complete instantly.</p>
+<hr />
+<h2 id="looking-ahead-to-v0100">Looking Ahead to v0.10.0<a class="headerlink" href="#looking-ahead-to-v0100" title="Permanent link">&para;</a></h2>
+<p>v0.9.0 completes the leap from individual to collective intelligence. Exploration directions for v0.10.0:</p>
+<ul>
+<li><strong>Agent Auto-Spawning</strong>: Automatically create new expert Agents when the router detects high fallback rates in certain domains</li>
+<li><strong>Cross-Agent Knowledge Distillation</strong>: Automatically transfer experience from high-success-rate Agents to low-success-rate Agents</li>
+<li><strong>Agent Market Protocol</strong>: Knowledge trading and reputation system between Agents</li>
+<li><strong>Federated Evolution</strong>: Securely share evolution weights across multiple SOMA instances (different servers) without sharing raw memory data</li>
+</ul>
+<hr />
+<p><strong>SOMA — Wisdom over Memory. Now, Wisdom over Solitude.</strong></p>
+<hr />
+<p><em>Document version: 1.0 | Applicable version: SOMA v0.9.0rc1 | Generated: 2026-05-12</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/sunyan999999/soma" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://pypi.org/project/soma-wisdom/" target="_blank" rel="noopener" title="pypi.org" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.expand", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,2836 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="SOMA is a cognitive memory framework for AI agents. 7 thinking laws decompose problems, bidirectional activation retrieves memories, and weights self-evolve over time. pip install soma-wisdom. 智慧超越记忆。">
+      
+      
+        <meta name="author" content="SOMA Project Team">
+      
+      
+        <link rel="canonical" href="https://sunyan999999.github.io/soma/v0.10.0-%E9%9B%B6%E7%86%B5%E6%95%B4%E5%90%88%E6%96%B9%E6%A1%88/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>SOMA v0.10.0 零熵智慧整合方案 - SOMA — Somatic Wisdom Architecture</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#soma-v0100" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href=".." title="SOMA — Somatic Wisdom Architecture" class="md-header__button md-logo" aria-label="SOMA — Somatic Wisdom Architecture" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SOMA — Somatic Wisdom Architecture
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              SOMA v0.10.0 零熵智慧整合方案
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/sunyan999999/soma" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="SOMA — Somatic Wisdom Architecture" class="md-nav__button md-logo" aria-label="SOMA — Somatic Wisdom Architecture" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    SOMA — Somatic Wisdom Architecture
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/sunyan999999/soma" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速开始
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../philosophy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    核心理念
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构手册
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API 参考
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/customization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    自定义指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    对比分析
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    对比分析
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../articles/soma-vs-mem0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SOMA vs Mem0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../articles/soma-vs-letta/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SOMA vs Letta
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../articles/why-we-built-soma/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Why We Built SOMA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../case-studies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    案例研究
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    贡献指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    变更日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        目录
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        总体判断
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="总体判断">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        可行性：全部可落地
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心洞察
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        推荐实施顺序
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        模块一：内求式复盘钩子
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="模块一：内求式复盘钩子">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        能力描述
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        现有基础
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        需要新建
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心类设计
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agentpy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        接入点（agent.py 改动）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        内置钩子设计（第一期 6 个）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        复杂度评估
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        模块二：守中执一动态平衡算法
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="模块二：守中执一动态平衡算法">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        能力描述
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        现有基础
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        需要新建
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心函数设计
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#consensusprotocol" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ConsensusProtocol 改动
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        阴阳权重参数
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        复杂度评估
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        模块三：认知熵值仪表盘
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="模块三：认知熵值仪表盘">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        能力描述
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        现有基础
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        需要新建
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心类设计
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        与管道的集成
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        负面词汇表设计（从零熵语料提取）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dash" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dash 仪表盘扩展
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        复杂度评估
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        模块四：空性偏差检测升级
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="模块四：空性偏差检测升级">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        能力描述
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        现有基础
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        需要新建
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心类设计
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#frame_keywordsyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        框架对映射表设计（frame_keywords.yaml）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        集成到现有偏差检测管道
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_33" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        复杂度评估
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_34" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        模块五：商道罗盘与企熵诊断仪
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="模块五：商道罗盘与企熵诊断仪">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_35" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        能力描述
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_36" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        现有基础
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_37" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        需要新建
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_38" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        插件基类设计
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_39" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        商道罗盘插件对话流
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_40" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        企熵诊断仪插件对话流
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agentpy_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        插件接入 agent.py
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_41" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        复杂度评估
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        模块六：规律贡献接口
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="模块六：规律贡献接口">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_43" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        能力描述
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_44" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        现有基础
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_45" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        需要新建
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#json-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        贡献格式 JSON Schema
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_46" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心类设计
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_47" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        审核流程
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_48" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        复杂度评估
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_49" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        实施路线图
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="实施路线图">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_50" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        里程碑
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_51" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        架构变更总览
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="架构变更总览">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_52" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        新增文件清单
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_53" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        修改文件清单
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_54" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        总代码量估算
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_55" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        风险与待讨论问题
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="风险与待讨论问题">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_56" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        技术风险
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_57" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        待讨论决策问题
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_58" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        总结
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="soma-v0100">SOMA v0.10.0 零熵智慧整合方案<a class="headerlink" href="#soma-v0100" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>从「技术架构」到「生命智慧载体」— 六模块可行性分析与实施路线</p>
+</blockquote>
+<hr />
+<h2 id="_1">目录<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<ol>
+<li><a href="#总体判断">总体判断</a></li>
+<li><a href="#模块一内求式复盘钩子">模块一：内求式复盘钩子</a></li>
+<li><a href="#模块二守中执一动态平衡算法">模块二：守中执一动态平衡算法</a></li>
+<li><a href="#模块三认知熵值仪表盘">模块三：认知熵值仪表盘</a></li>
+<li><a href="#模块四空性偏差检测升级">模块四：空性偏差检测升级</a></li>
+<li><a href="#模块五商道罗盘与企熵诊断仪">模块五：商道罗盘与企熵诊断仪</a></li>
+<li><a href="#模块六规律贡献接口">模块六：规律贡献接口</a></li>
+<li><a href="#实施路线图">实施路线图</a></li>
+<li><a href="#架构变更总览">架构变更总览</a></li>
+<li><a href="#风险与待讨论问题">风险与待讨论问题</a></li>
+</ol>
+<hr />
+<h2 id="_2">总体判断<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<h3 id="_3">可行性：全部可落地<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h3>
+<p>六个模块均可在 SOMA v0.9.0 基础上以<strong>增量方式</strong>实现，无需重写核心架构。每个模块都有明确的现有代码锚点作为扩展基础。</p>
+<h3 id="_4">核心洞察<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h3>
+<p>当前 SOMA 架构存在一条清晰的「认知处理链」：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>问题进入 → 拆解 → 记忆激活 → 冲突检测 → 推理框架 → LLM调用 → 质量评估 → 反思记录
+</code></pre></div>
+<p>六个模块分别在这条链的不同位置接入：</p>
+<table>
+<thead>
+<tr>
+<th>模块</th>
+<th>接入位置</th>
+<th>侵入性</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>内求复盘钩子</td>
+<td>管道每步之后</td>
+<td>低（钩子注入）</td>
+</tr>
+<tr>
+<td>守中执一算法</td>
+<td>冲突检测 / 共识协议</td>
+<td>低（新增策略）</td>
+</tr>
+<tr>
+<td>认知熵值仪表盘</td>
+<td>管道末尾（观察者）</td>
+<td>零（独立模块）</td>
+</tr>
+<tr>
+<td>空性偏差检测</td>
+<td>冲突检测阶段</td>
+<td>极低（追加函数调用）</td>
+</tr>
+<tr>
+<td>商道罗盘/企熵诊断仪</td>
+<td>管道入口（路由前）</td>
+<td>中（需插件系统）</td>
+</tr>
+<tr>
+<td>规律贡献接口</td>
+<td>规律发现 + 引擎层</td>
+<td>中（审核流程+存储）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_5">推荐实施顺序<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>第一阶段（1-2周）         第二阶段（2-3周）        第三阶段（3-4周）
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>┌──────────────┐       ┌──────────────┐       ┌──────────────┐
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>│ 认知熵值仪表盘 │  →   │ 空性偏差检测   │  →   │ 内求复盘钩子   │
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>│ (独立，快速验证) │      │ (小改动，高效果) │      │ (钩子框架先行) │
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>└──────────────┘       └──────────────┘       └──────────────┘
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>第四阶段（3-4周）        第五阶段（4-6周）        第六阶段（6-8周）
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>┌──────────────┐       ┌──────────────┐       ┌──────────────┐
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>│ 守中执一算法   │  →   │ 商道罗盘      │  →   │ 规律贡献接口   │
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>│ (≤50行核心函数) │      │ (需插件系统就绪) │      │ (最大范围)    │
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>└──────────────┘       └──────────────┘       └──────────────┘
+</code></pre></div>
+<hr />
+<h2 id="_6">模块一：内求式复盘钩子<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h2>
+<h3 id="_7">能力描述<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h3>
+<p>在 SOMA 的十步推理管道中，为每个步骤植入可配置的「觉察触发器」。不是事后的定期复盘，而是推理进行中的实时内省提示。</p>
+<h3 id="_8">现有基础<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>资产</th>
+<th>位置</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>soma.plugin.soma.hooks</code> 入口点组</td>
+<td><a href="soma/plugin.py#L19">plugin.py</a></td>
+<td>已定义但未接入管道</td>
+</tr>
+<tr>
+<td><code>SOMA_Agent.respond()</code> 管道步骤</td>
+<td><a href="soma/agent.py#L186-274">agent.py</a></td>
+<td>8 个明确步骤，每步后都是钩子注入点</td>
+</tr>
+<tr>
+<td><code>MetaEvolver.reflect()</code></td>
+<td><a href="soma/evolve.py#L167-215">evolve.py</a></td>
+<td>现有事后复盘机制，可复用其统计上下文</td>
+</tr>
+<tr>
+<td><code>_assess_complexity()</code></td>
+<td><a href="soma/agent.py#L277-290">agent.py</a></td>
+<td>complexity_score 直接可用作触发条件</td>
+</tr>
+<tr>
+<td><code>QualityEvaluator</code></td>
+<td><a href="soma/quality.py#L196-231">quality.py</a></td>
+<td>一致性/连贯性评估可作钩子输入</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_9">需要新建<a class="headerlink" href="#_9" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>soma/
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>├── hooks/
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>│   ├── __init__.py          # Hook, HookRegistry 导出
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>│   ├── _core.py             # InnerReflectionHook, HookRegistry 核心类
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>│   ├── _builtin_hooks.py    # 内置钩子实例（6-8个默认钩子）
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>│   └── hooks_config.yaml    # 可热加载的钩子配置
+</code></pre></div>
+<h3 id="_10">核心类设计<a class="headerlink" href="#_10" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># soma/hooks/_core.py</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">InnerReflectionHook</span><span class="p">:</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;内求钩子：在管道步骤后触发的觉察提示&quot;&quot;&quot;</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span>              <span class="c1"># 绑定的管道步骤名</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">trigger_condition</span><span class="p">:</span> <span class="n">Callable</span> <span class="c1"># 接收 context dict，返回 bool</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">reflection_template</span><span class="p">:</span> <span class="nb">str</span>    <span class="c1"># 模板字符串，用 {变量} 填充</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">is_triggered</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="k">class</span><span class="w"> </span><span class="nc">HookRegistry</span><span class="p">:</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;钩子注册表：发现、加载、匹配&quot;&quot;&quot;</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    <span class="n">hooks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">InnerReflectionHook</span><span class="p">]</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">load_builtin</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="o">...</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">load_from_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">yaml_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">):</span> <span class="o">...</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">load_from_plugins</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="o">...</span>       <span class="c1"># 从 soma.hooks 入口点发现</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">match</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span> <span class="o">...</span>
+</code></pre></div>
+<h3 id="agentpy">接入点（agent.py 改动）<a class="headerlink" href="#agentpy" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># SOMA_Agent.respond() — 每步末尾插入一行：</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="c1"># Step 1 后</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">foci</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">decompose</span><span class="p">(</span><span class="n">problem</span><span class="p">)</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="bp">self</span><span class="o">.</span><span class="n">_emit_hooks</span><span class="p">(</span><span class="s2">&quot;decompose&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;problem&quot;</span><span class="p">:</span> <span class="n">problem</span><span class="p">,</span> <span class="s2">&quot;foci&quot;</span><span class="p">:</span> <span class="n">foci</span><span class="p">,</span> <span class="s2">&quot;complexity&quot;</span><span class="p">:</span> <span class="n">complexity</span><span class="p">})</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="c1"># Step 2 后</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="n">activated</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hub</span><span class="o">.</span><span class="n">activate</span><span class="p">(</span><span class="n">foci</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="bp">self</span><span class="o">.</span><span class="n">_emit_hooks</span><span class="p">(</span><span class="s2">&quot;activate&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;foci&quot;</span><span class="p">:</span> <span class="n">foci</span><span class="p">,</span> <span class="s2">&quot;activated&quot;</span><span class="p">:</span> <span class="n">activated</span><span class="p">,</span> <span class="o">...</span><span class="p">})</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="c1"># Step 4 后</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="n">answer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call_llm</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a><span class="bp">self</span><span class="o">.</span><span class="n">_emit_hooks</span><span class="p">(</span><span class="s2">&quot;llm_call&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="n">answer</span><span class="p">,</span> <span class="o">...</span><span class="p">})</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="c1"># Step 6 后（行为建议生成后）</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="bp">self</span><span class="o">.</span><span class="n">_emit_hooks</span><span class="p">(</span><span class="s2">&quot;action_generation&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="n">answer</span><span class="p">,</span> <span class="s2">&quot;emotional_load&quot;</span><span class="p">:</span> <span class="o">...</span><span class="p">})</span>
+</code></pre></div>
+<h3 id="6">内置钩子设计（第一期 6 个）<a class="headerlink" href="#6" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>钩子</th>
+<th>触发步</th>
+<th>触发条件</th>
+<th>提示示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>复杂度觉察</td>
+<td>decompose 后</td>
+<td>complexity_score &gt; 6</td>
+<td>"这个问题复杂度较高，你第一反应是用哪种经典框架去分析？这个框架是否完全贴合当前场景？"</td>
+</tr>
+<tr>
+<td>情绪负载觉察</td>
+<td>activate 后</td>
+<td>emotional_load &gt; 0.7</td>
+<td>"我注意到您可能带着较强的情绪参与此次思考。建议先暂停几秒，感受一下呼吸，再决定是否采纳此建议。"</td>
+</tr>
+<tr>
+<td>框架惯性觉察</td>
+<td>reasoning 后</td>
+<td>连续 3 轮使用同一框架</td>
+<td>"您已连续多次使用{framework}框架分析问题，是否可以考虑切换到另一个维度？"</td>
+</tr>
+<tr>
+<td>信息缺失觉察</td>
+<td>prompt_build 前</td>
+<td>关键信息缺失 flag</td>
+<td>"在给出结论前，我注意到还缺少关于{missing_info}的信息，是否先补充后再继续？"</td>
+</tr>
+<tr>
+<td>行动外求觉察</td>
+<td>action 后</td>
+<td>建议中外部依赖占比 &gt; 0.7</td>
+<td>"这个行动建议较多依赖外部因素，在等待外部变化的同时，您自己可以先做的一小步是什么？"</td>
+</tr>
+<tr>
+<td>确定性觉察</td>
+<td>respond 结束</td>
+<td>建议确定性 &gt; 0.9</td>
+<td>"我对这个结论的确定性较高，但仍想邀请您用自己的判断再审视一下——这与您的直觉一致吗？"</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_11">复杂度评估<a class="headerlink" href="#_11" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>新增文件</strong>: 4 个（~350 行）</li>
+<li><strong>修改文件</strong>: 1 个（agent.py，约 +30 行）</li>
+<li><strong>测试</strong>: ~10 项（钩子注册/触发/配置热加载/管道注入）</li>
+<li><strong>风险</strong>: 低。钩子失败不应阻塞主管道，所有钩子调用包在 try/except 中</li>
+<li><strong>工期</strong>: 约 1 周</li>
+</ul>
+<hr />
+<h2 id="_12">模块二：守中执一动态平衡算法<a class="headerlink" href="#_12" title="Permanent link">&para;</a></h2>
+<h3 id="_13">能力描述<a class="headerlink" href="#_13" title="Permanent link">&para;</a></h3>
+<p>当多个思维规律产生冲突结论时，不以投票或平均为仲裁方式，而是回归一个根本锚点——「在当前情境下，何种选择更接近对使用者本心的守护？」——作为动态平衡准则。</p>
+<h3 id="_14">现有基础<a class="headerlink" href="#_14" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>资产</th>
+<th>位置</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ConsensusProtocol._weighted_voting()</code></td>
+<td><a href="soma/multi_agent/consensus.py#L101-156">consensus.py</a></td>
+<td>现有 L1 策略，可替换或补充为中道评估</td>
+</tr>
+<tr>
+<td><code>ConsensusProtocol._detect_disagreements()</code></td>
+<td><a href="soma/multi_agent/consensus.py#L267-294">consensus.py</a></td>
+<td>分歧检测可直接复用</td>
+</tr>
+<tr>
+<td><code>DistributedEvolver._resolve_conflicts()</code></td>
+<td><a href="soma/multi_agent/evolve.py#L173-208">multi_agent/evolve.py</a></td>
+<td>冲突仲裁中已有的「偏向成功率高的 agent」逻辑</td>
+</tr>
+<tr>
+<td><code>QualityEvaluator.consistency_score()</code></td>
+<td><a href="soma/quality.py#L60-97">quality.py</a></td>
+<td>语义连贯性计算可复用于熵变估算</td>
+</tr>
+<tr>
+<td><code>MetaEvolver._law_stats</code></td>
+<td><a href="soma/evolve.py">evolve.py</a></td>
+<td>成功率统计可作中道评分的历史基线</td>
+</tr>
+<tr>
+<td>用户历史反馈数据</td>
+<td><code>evolver.db</code> reflection_log 表</td>
+<td>可用于推断用户长期成长轨迹</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_15">需要新建<a class="headerlink" href="#_15" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>soma/multi_agent/
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>├── zhongdao.py           # 中道锚点评估核心（~120 行）
+</code></pre></div>
+<h3 id="_16">核心函数设计<a class="headerlink" href="#_16" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># soma/multi_agent/zhongdao.py</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_zhongdao_score</span><span class="p">(</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">candidate_action</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">user_profile</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">conversation_context</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="n">action_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>    <span class="c1"># 行动力权重（可配置）</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="n">awareness_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>  <span class="c1"># 觉知力权重（可配置）</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="sd">    计算候选行动方案的「中道」得分 (0~1)。</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="sd">    得分越高，越接近「向外解决」与「向内回看」的平衡。</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>    <span class="n">score</span> <span class="o">=</span> <span class="mf">0.0</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>    <span class="c1"># 维度 1: 内在熵减评估 (权重 0.3)</span>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>    <span class="c1"># 分析该行动是否会减少用户的内在混乱度</span>
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>    <span class="n">entropy_delta</span> <span class="o">=</span> <span class="n">_estimate_entropy_change</span><span class="p">(</span><span class="n">user_profile</span><span class="p">,</span> <span class="n">candidate_action</span><span class="p">)</span>
+<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>    <span class="n">score</span> <span class="o">+=</span> <span class="mf">0.3</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">entropy_delta</span><span class="p">)</span>  <span class="c1"># 熵减得分高</span>
+<a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>
+<a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>    <span class="c1"># 维度 2: 外部依赖评估 (权重 0.4)</span>
+<a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a>    <span class="c1"># 行动建议中外部因素占比越高，越偏离「内求」</span>
+<a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a>    <span class="n">external_ratio</span> <span class="o">=</span> <span class="n">_extract_external_dependency</span><span class="p">(</span><span class="n">candidate_action</span><span class="p">)</span>
+<a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a>    <span class="n">score</span> <span class="o">+=</span> <span class="mf">0.4</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">external_ratio</span><span class="p">)</span>
+<a id="__codelineno-6-26" name="__codelineno-6-26" href="#__codelineno-6-26"></a>
+<a id="__codelineno-6-27" name="__codelineno-6-27" href="#__codelineno-6-27"></a>    <span class="c1"># 维度 3: 长期成长对齐 (权重 0.3)</span>
+<a id="__codelineno-6-28" name="__codelineno-6-28" href="#__codelineno-6-28"></a>    <span class="c1"># 与用户历史成功案例的语义相似度</span>
+<a id="__codelineno-6-29" name="__codelineno-6-29" href="#__codelineno-6-29"></a>    <span class="n">growth_alignment</span> <span class="o">=</span> <span class="n">_compute_growth_alignment</span><span class="p">(</span>
+<a id="__codelineno-6-30" name="__codelineno-6-30" href="#__codelineno-6-30"></a>        <span class="n">candidate_action</span><span class="p">,</span> <span class="n">user_profile</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success_history&quot;</span><span class="p">,</span> <span class="p">[])</span>
+<a id="__codelineno-6-31" name="__codelineno-6-31" href="#__codelineno-6-31"></a>    <span class="p">)</span>
+<a id="__codelineno-6-32" name="__codelineno-6-32" href="#__codelineno-6-32"></a>    <span class="n">score</span> <span class="o">+=</span> <span class="mf">0.3</span> <span class="o">*</span> <span class="n">growth_alignment</span>
+<a id="__codelineno-6-33" name="__codelineno-6-33" href="#__codelineno-6-33"></a>
+<a id="__codelineno-6-34" name="__codelineno-6-34" href="#__codelineno-6-34"></a>    <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">)</span>
+<a id="__codelineno-6-35" name="__codelineno-6-35" href="#__codelineno-6-35"></a>
+<a id="__codelineno-6-36" name="__codelineno-6-36" href="#__codelineno-6-36"></a>
+<a id="__codelineno-6-37" name="__codelineno-6-37" href="#__codelineno-6-37"></a><span class="k">def</span><span class="w"> </span><span class="nf">_estimate_entropy_change</span><span class="p">(</span><span class="n">user_profile</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">action_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<a id="__codelineno-6-38" name="__codelineno-6-38" href="#__codelineno-6-38"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-6-39" name="__codelineno-6-39" href="#__codelineno-6-39"></a><span class="sd">    估算采纳此行动后的认知熵变。</span>
+<a id="__codelineno-6-40" name="__codelineno-6-40" href="#__codelineno-6-40"></a><span class="sd">    基于：近期对话连贯性趋势、决策犹豫频率、行动步骤清晰度。</span>
+<a id="__codelineno-6-41" name="__codelineno-6-41" href="#__codelineno-6-41"></a><span class="sd">    返回 0(大幅熵减) ~ 1(大幅熵增)。</span>
+<a id="__codelineno-6-42" name="__codelineno-6-42" href="#__codelineno-6-42"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-6-43" name="__codelineno-6-43" href="#__codelineno-6-43"></a>    <span class="k">pass</span>
+<a id="__codelineno-6-44" name="__codelineno-6-44" href="#__codelineno-6-44"></a>
+<a id="__codelineno-6-45" name="__codelineno-6-45" href="#__codelineno-6-45"></a>
+<a id="__codelineno-6-46" name="__codelineno-6-46" href="#__codelineno-6-46"></a><span class="k">def</span><span class="w"> </span><span class="nf">_extract_external_dependency</span><span class="p">(</span><span class="n">action_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<a id="__codelineno-6-47" name="__codelineno-6-47" href="#__codelineno-6-47"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-6-48" name="__codelineno-6-48" href="#__codelineno-6-48"></a><span class="sd">    分析行动建议中对外部因素的依赖程度。</span>
+<a id="__codelineno-6-49" name="__codelineno-6-49" href="#__codelineno-6-49"></a><span class="sd">    关键词匹配：等待别人、需要领导、市场变化、政策支持...</span>
+<a id="__codelineno-6-50" name="__codelineno-6-50" href="#__codelineno-6-50"></a><span class="sd">    返回 0(完全内求) ~ 1(完全外求)。</span>
+<a id="__codelineno-6-51" name="__codelineno-6-51" href="#__codelineno-6-51"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-6-52" name="__codelineno-6-52" href="#__codelineno-6-52"></a>    <span class="k">pass</span>
+<a id="__codelineno-6-53" name="__codelineno-6-53" href="#__codelineno-6-53"></a>
+<a id="__codelineno-6-54" name="__codelineno-6-54" href="#__codelineno-6-54"></a>
+<a id="__codelineno-6-55" name="__codelineno-6-55" href="#__codelineno-6-55"></a><span class="k">def</span><span class="w"> </span><span class="nf">_compute_growth_alignment</span><span class="p">(</span><span class="n">action_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">success_history</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<a id="__codelineno-6-56" name="__codelineno-6-56" href="#__codelineno-6-56"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-6-57" name="__codelineno-6-57" href="#__codelineno-6-57"></a><span class="sd">    与用户历史成功采纳的行动建议做语义相似度比较。</span>
+<a id="__codelineno-6-58" name="__codelineno-6-58" href="#__codelineno-6-58"></a><span class="sd">    返回 0(全新方向) ~ 1(高度一致)。</span>
+<a id="__codelineno-6-59" name="__codelineno-6-59" href="#__codelineno-6-59"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-6-60" name="__codelineno-6-60" href="#__codelineno-6-60"></a>    <span class="k">pass</span>
+</code></pre></div>
+<h3 id="consensusprotocol">ConsensusProtocol 改动<a class="headerlink" href="#consensusprotocol" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># 在 form_consensus() 方法中新增 strategy=&quot;zhongdao&quot; 分支</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">form_consensus</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">question</span><span class="p">,</span> <span class="n">opinions</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">):</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="c1"># ...existing code...</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="k">if</span> <span class="n">strategy</span> <span class="o">==</span> <span class="s2">&quot;zhongdao&quot;</span> <span class="ow">or</span> <span class="p">(</span><span class="n">strategy</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_should_use_zhongdao</span><span class="p">(</span><span class="n">opinions</span><span class="p">)):</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_zhongdao_balance</span><span class="p">(</span><span class="n">question</span><span class="p">,</span> <span class="n">opinions</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="_17">阴阳权重参数<a class="headerlink" href="#_17" title="Permanent link">&para;</a></h3>
+<p>在 <code>SOMAConfig</code> 中新增两个可配置参数：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># soma/config.py</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">SOMAConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="c1"># ... existing fields ...</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="c1"># 守中执一参数 (v0.10.0)</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>    <span class="n">yin_yang_action_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span>   <span class="c1"># 行动力（阳）权重</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    <span class="n">yin_yang_awareness_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span>  <span class="c1"># 觉知力（阴）权重</span>
+</code></pre></div>
+<p>这两个权重可根据用户的历���反馈动态调整——如果用户历史上采纳行动导向建议的成功率高，行动力权重自动微增；如果用户偏好深度反思，觉知力权重微增。</p>
+<h3 id="_18">复杂度评估<a class="headerlink" href="#_18" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>新增文件</strong>: 1 个（zhongdao.py，~120 行）</li>
+<li><strong>修改文件</strong>: 2 个（consensus.py +10行，config.py +4行）</li>
+<li><strong>测试</strong>: ~8 项（三种维度的评分计算、边界条件、策略集成）</li>
+<li><strong>风险</strong>: 低。作为 ConsensusProtocol 的新策略，不触动现有三条路径</li>
+<li><strong>工期</strong>: 约 1 周（核心算法 3 天 + 测试调优 2 天）</li>
+</ul>
+<hr />
+<h2 id="_19">模块三：认知熵值仪表盘<a class="headerlink" href="#_19" title="Permanent link">&para;</a></h2>
+<h3 id="_20">能力描述<a class="headerlink" href="#_20" title="Permanent link">&para;</a></h3>
+<p>为每次对话生成一个 0-100 的「清朗指数」，帮助使用者直观看到自己的思维状态是更有序还是更混乱了。当连续多轮熵值升高时，系统可主动切换为「觉察引导模式」。</p>
+<h3 id="_21">现有基础<a class="headerlink" href="#_21" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>资产</th>
+<th>位置</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>QualityEvaluator.coherence_score()</code></td>
+<td><a href="soma/quality.py#L101-148">quality.py</a></td>
+<td>段落结构、逻辑标记、句长方差计算可直接复用</td>
+</tr>
+<tr>
+<td><code>QualityEvaluator.consistency_score()</code></td>
+<td><a href="soma/quality.py#L60-97">quality.py</a></td>
+<td>语义连贯性计算</td>
+</tr>
+<tr>
+<td><code>SOMA_Agent.record_session()</code></td>
+<td><a href="soma/agent.py">agent.py</a></td>
+<td>会话录制，熵值可写入 AnalyticsStore</td>
+</tr>
+<tr>
+<td><code>AnalyticsStore</code></td>
+<td><a href="soma/analytics.py">analytics.py</a></td>
+<td>已有 session 表，可扩展 entropy 列</td>
+</tr>
+<tr>
+<td>Dash 服务</td>
+<td><a href="soma-core/dash/server.py">dash/server.py</a></td>
+<td>前端展示熵值趋势图</td>
+</tr>
+<tr>
+<td>jieba 分词</td>
+<td>依赖中已有</td>
+<td>负面词汇检测</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_22">需要新建<a class="headerlink" href="#_22" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>soma/
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>├── entropy.py             # CognitiveEntropyCalculator (~150 行)
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>├── entropy/
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>│   ├── __init__.py
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>│   └── negative_words.txt # 从零熵语料提取的负面词汇表（100-200词）
+</code></pre></div>
+<h3 id="_23">核心类设计<a class="headerlink" href="#_23" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># soma/entropy.py</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">CognitiveEntropyCalculator</span><span class="p">:</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;轻量级认知熵值计算器&quot;&quot;&quot;</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">window_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">):</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">=</span> <span class="n">window_size</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">negative_words</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_negative_words</span><span class="p">()</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conversation_turns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="sd">        返回:</span>
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="sd">        {</span>
+<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="sd">            &quot;clarity_index&quot;: 72,           # 清朗指数 0-100</span>
+<a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a><span class="sd">            &quot;logic_score&quot;: 0.82,           # 逻辑连贯性</span>
+<a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a><span class="sd">            &quot;emotional_score&quot;: 0.75,       # 情绪稳定性</span>
+<a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a><span class="sd">            &quot;focus_score&quot;: 0.68,           # 目标聚焦度</span>
+<a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a><span class="sd">            &quot;grade&quot;: &quot;安全区&quot;,              # 高风险区/安全区/高能区</span>
+<a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a><span class="sd">            &quot;trend&quot;: &quot;improving&quot;,           # improving/stable/declining</span>
+<a id="__codelineno-10-20" name="__codelineno-10-20" href="#__codelineno-10-20"></a><span class="sd">            &quot;suggestion&quot;: None,            # 若连续3轮&lt;50，填充切换建议</span>
+<a id="__codelineno-10-21" name="__codelineno-10-21" href="#__codelineno-10-21"></a><span class="sd">        }</span>
+<a id="__codelineno-10-22" name="__codelineno-10-22" href="#__codelineno-10-22"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-10-23" name="__codelineno-10-23" href="#__codelineno-10-23"></a>
+<a id="__codelineno-10-24" name="__codelineno-10-24" href="#__codelineno-10-24"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_logic_coherence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">turns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<a id="__codelineno-10-25" name="__codelineno-10-25" href="#__codelineno-10-25"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;语义片段间连贯性 —— 复用 embedder 计算相邻轮次余弦相似度&quot;&quot;&quot;</span>
+<a id="__codelineno-10-26" name="__codelineno-10-26" href="#__codelineno-10-26"></a>
+<a id="__codelineno-10-27" name="__codelineno-10-27" href="#__codelineno-10-27"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_emotional_stability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">turns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<a id="__codelineno-10-28" name="__codelineno-10-28" href="#__codelineno-10-28"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;情绪扰动指数 —— negative_words 词表匹配&quot;&quot;&quot;</span>
+<a id="__codelineno-10-29" name="__codelineno-10-29" href="#__codelineno-10-29"></a>
+<a id="__codelineno-10-30" name="__codelineno-10-30" href="#__codelineno-10-30"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_focus_clarity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">turns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<a id="__codelineno-10-31" name="__codelineno-10-31" href="#__codelineno-10-31"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;目标聚焦度 —— 话题一致性（连续轮次的主题向量方差）&quot;&quot;&quot;</span>
+<a id="__codelineno-10-32" name="__codelineno-10-32" href="#__codelineno-10-32"></a>
+<a id="__codelineno-10-33" name="__codelineno-10-33" href="#__codelineno-10-33"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_load_negative_words</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">:</span>
+<a id="__codelineno-10-34" name="__codelineno-10-34" href="#__codelineno-10-34"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;从零熵语料提取的高频功能词 100-200 个&quot;&quot;&quot;</span>
+</code></pre></div>
+<h3 id="_24">与管道的集成<a class="headerlink" href="#_24" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># SOMA_Agent 新增方法</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_cognitive_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;获取当前用户的认知熵值状态&quot;&quot;&quot;</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="n">recent_turns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">analytics</span><span class="o">.</span><span class="n">get_recent_sessions</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">entropy_calculator</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span><span class="n">recent_turns</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="_25">负面词汇表设计（从零熵语料提取）<a class="headerlink" href="#_25" title="Permanent link">&para;</a></h3>
+<p>从零熵书院日常课程/复盘文本中提取高频功能词，按类别组织：</p>
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>示例词（各10-20个）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>焦虑/不安</td>
+<td>焦虑、烦躁、不安、担忧、恐慌、着急、紧张、心慌</td>
+</tr>
+<tr>
+<td>迷茫/困惑</td>
+<td>迷茫、困惑、不知道、不确定、混乱、模糊、搞不清楚</td>
+</tr>
+<tr>
+<td>无力/疲惫</td>
+<td>累、疲惫、无力、不想动、崩溃、撑不住、倦怠</td>
+</tr>
+<tr>
+<td>情绪波动</td>
+<td>烦、生气、恼怒、委屈、难过、伤心、低落、压抑</td>
+</tr>
+<tr>
+<td>外归因</td>
+<td>别人、领导、环境、市场、政策、没办法、不得已</td>
+</tr>
+<tr>
+<td>犹豫/反复</td>
+<td>纠结、犹豫、徘徊、反反复复、拿不准、下不了决心</td>
+</tr>
+</tbody>
+</table>
+<h3 id="dash">Dash 仪表盘扩展<a class="headerlink" href="#dash" title="Permanent link">&para;</a></h3>
+<p>在现有 Dash 服务中新增一个「清朗指数」面板：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>┌─────────────────────────────────────────┐
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>│  清朗指数趋势 (近30轮)                    │
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>│  100 ┤                                │
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>│   80 ┤    ●━━━●━━━●                    │
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>│   60 ┤  ●           ●━━━●              │
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>│   40 ┤              高熵区              │
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>│   20 ┤                                │
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>│    0 ┤                                │
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>└─────────────────────────────────────────┘
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>当前: 72 (安全区) ↑ 较上轮 +8
+</code></pre></div>
+<h3 id="_26">复杂度评估<a class="headerlink" href="#_26" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>新增文件</strong>: 3 个（~280 行）</li>
+<li><strong>修改文件</strong>: 2 个（agent.py +10行，analytics.py 扩展 entropy 列）</li>
+<li><strong>测试</strong>: ~12 项（三个维度的计算、边界值、趋势判断、词表覆盖）</li>
+<li><strong>风险</strong>: 极低。完全独立的观察者模块，不修改管道逻辑</li>
+<li><strong>工期</strong>: 约 1 周（核心计算 3 天 + 词表提取 1 天 + Dash 面板 2 天）</li>
+</ul>
+<hr />
+<h2 id="_27">模块四：空性偏差检测升级<a class="headerlink" href="#_27" title="Permanent link">&para;</a></h2>
+<h3 id="_28">能力描述<a class="headerlink" href="#_28" title="Permanent link">&para;</a></h3>
+<p>在现有偏差检测基础上，新增「框架锚定识别」——检测用户是否过度锁定单一分析框架（如总从外部归因），并温和提示切换到其他视角。这体现了「空性」智慧：任何判断都依赖于特定框架，看见框架本身就是拓展认知边界。</p>
+<h3 id="_29">现有基础<a class="headerlink" href="#_29" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>资产</th>
+<th>位置</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ConflictDetector</code></td>
+<td><a href="soma/hub/_conflict.py">hub/_conflict.py</a></td>
+<td>现有的记忆冲突检测，扩展点清晰</td>
+</tr>
+<tr>
+<td><code>ActivationHub.anti_confirmation_search()</code></td>
+<td><a href="soma/hub/_core.py#L135-177">hub/_core.py</a></td>
+<td>已有反视角检索，新的偏差类型可在此追加</td>
+</tr>
+<tr>
+<td><code>ActivationHub.activate()</code></td>
+<td><a href="soma/hub/_core.py#L40-106">hub/_core.py</a></td>
+<td>偏差检测结果从这传入 prompt</td>
+</tr>
+<tr>
+<td><code>_build_prompt()</code></td>
+<td><a href="soma/agent.py#L401-520">agent.py</a></td>
+<td>已有「反面视角与潜在矛盾」section，可扩展</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_30">需要新建<a class="headerlink" href="#_30" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>soma/hub/
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>├── _frame_detector.py    # FrameAnchoringDetector (~80 行)
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>└── frame_keywords.yaml   # 框架关键词库配置（可热加载）
+</code></pre></div>
+<h3 id="_31">核心类设计<a class="headerlink" href="#_31" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># soma/hub/_frame_detector.py</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">FrameAnchoringDetector</span><span class="p">:</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;检测用户是否过度锁定单一分析框架&quot;&quot;&quot;</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keywords_config</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">frames</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_frames</span><span class="p">(</span><span class="n">keywords_config</span><span class="p">)</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">window_size</span> <span class="o">=</span> <span class="mi">5</span>  <span class="c1"># 最近 N 轮对话</span>
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">detect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conversation_turns</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="sd">        返回:</span>
+<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a><span class="sd">        None — 无框架锚定</span>
+<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a><span class="sd">        {</span>
+<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a><span class="sd">            &quot;frame&quot;: &quot;外部归因&quot;,</span>
+<a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a><span class="sd">            &quot;ratio&quot;: 0.75,</span>
+<a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a><span class="sd">            &quot;opposite_frame&quot;: &quot;内在归因&quot;,</span>
+<a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a><span class="sd">            &quot;reflection&quot;: &quot;我注意到您在过去几次对话中，有75%的分析都采用了「外部归因」框架...&quot;</span>
+<a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a><span class="sd">        }</span>
+<a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a><span class="sd">        &quot;&quot;&quot;</span>
+<a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a>
+<a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_load_frames</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config_path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;加载框架关键词库 {框架名: [关键词列表]}&quot;&quot;&quot;</span>
+<a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a>
+<a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_count_frame_usage</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">turns</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-14-26" name="__codelineno-14-26" href="#__codelineno-14-26"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;统计各框架在最近 N 轮中的使用频率&quot;&quot;&quot;</span>
+</code></pre></div>
+<h3 id="frame_keywordsyaml">框架对映射表设计（frame_keywords.yaml）<a class="headerlink" href="#frame_keywordsyaml" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nt">frames</span><span class="p">:</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="nt">外部归因</span><span class="p">:</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">    </span><span class="nt">keywords</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">环境</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">市场</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">别人</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">政策</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">领导</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">公司</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">经济</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">行业</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">大环境</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">社会</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">    </span><span class="nt">opposite</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">内在归因</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="w">  </span><span class="nt">内在归因</span><span class="p">:</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="w">    </span><span class="nt">keywords</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">自己</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">内求</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">觉察</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">复盘</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">修为</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">能力</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">认知</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">思维</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">心态</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">习惯</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">    </span><span class="nt">opposite</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">外部归因</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="w">  </span><span class="nt">系统思考</span><span class="p">:</span>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="w">    </span><span class="nt">keywords</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">系统</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">关联</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">整体</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">循环</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">反馈</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">模式</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">结构</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">因果</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">链条</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">全局</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="w">    </span><span class="nt">opposite</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">线性思考</span>
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a>
+<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="w">  </span><span class="nt">线性思考</span><span class="p">:</span>
+<a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="w">    </span><span class="nt">keywords</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">直接原因</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">都怪</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">只要...就</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">就是因为</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">肯定</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">绝对</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">一定</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a><span class="w">    </span><span class="nt">opposite</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">系统思考</span>
+<a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a>
+<a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a><span class="w">  </span><span class="nt">情绪主导</span><span class="p">:</span>
+<a id="__codelineno-15-19" name="__codelineno-15-19" href="#__codelineno-15-19"></a><span class="w">    </span><span class="nt">keywords</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">感觉</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">烦</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">难受</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">不安</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">压抑</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">生气</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">委屈</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">焦虑</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">崩溃</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">无力</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-15-20" name="__codelineno-15-20" href="#__codelineno-15-20"></a><span class="w">    </span><span class="nt">opposite</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">理性分析</span>
+<a id="__codelineno-15-21" name="__codelineno-15-21" href="#__codelineno-15-21"></a>
+<a id="__codelineno-15-22" name="__codelineno-15-22" href="#__codelineno-15-22"></a><span class="w">  </span><span class="nt">理性分析</span><span class="p">:</span>
+<a id="__codelineno-15-23" name="__codelineno-15-23" href="#__codelineno-15-23"></a><span class="w">    </span><span class="nt">keywords</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">数据</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">逻辑</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">分析</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">评估</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">计算</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">对比</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">指标</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">概率</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">风险</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">收益</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-15-24" name="__codelineno-15-24" href="#__codelineno-15-24"></a><span class="w">    </span><span class="nt">opposite</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">情绪主导</span>
+<a id="__codelineno-15-25" name="__codelineno-15-25" href="#__codelineno-15-25"></a>
+<a id="__codelineno-15-26" name="__codelineno-15-26" href="#__codelineno-15-26"></a><span class="w">  </span><span class="nt">短期导向</span><span class="p">:</span>
+<a id="__codelineno-15-27" name="__codelineno-15-27" href="#__codelineno-15-27"></a><span class="w">    </span><span class="nt">keywords</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">尽快</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">马上</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">这周</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">月底</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">赶工</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">紧急</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">冲刺</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">来不及</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">快点</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-15-28" name="__codelineno-15-28" href="#__codelineno-15-28"></a><span class="w">    </span><span class="nt">opposite</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">长期导向</span>
+<a id="__codelineno-15-29" name="__codelineno-15-29" href="#__codelineno-15-29"></a>
+<a id="__codelineno-15-30" name="__codelineno-15-30" href="#__codelineno-15-30"></a><span class="w">  </span><span class="nt">长期导向</span><span class="p">:</span>
+<a id="__codelineno-15-31" name="__codelineno-15-31" href="#__codelineno-15-31"></a><span class="w">    </span><span class="nt">keywords</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">长期</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">慢慢</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">积累</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">持续</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">稳健</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">根基</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">战略</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">未来</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">沉淀</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">耐心</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-15-32" name="__codelineno-15-32" href="#__codelineno-15-32"></a><span class="w">    </span><span class="nt">opposite</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">短期导向</span>
+</code></pre></div>
+<h3 id="_32">集成到现有偏差检测管道<a class="headerlink" href="#_32" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># 在 ActivationHub 或 SOMA_Agent 中追加调用</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="c1"># 现有:</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="n">anti_memories</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hub</span><span class="o">.</span><span class="n">anti_confirmation_search</span><span class="p">(</span><span class="n">foci</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="c1"># 新增:</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="n">frame_anchor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frame_detector</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">recent_conversation_turns</span><span class="p">)</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="k">if</span> <span class="n">frame_anchor</span><span class="p">:</span>
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_last_frame_reflection</span> <span class="o">=</span> <span class="n">frame_anchor</span><span class="p">[</span><span class="s2">&quot;reflection&quot;</span><span class="p">]</span>
+</code></pre></div>
+<h3 id="_33">复杂度评估<a class="headerlink" href="#_33" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>新增文件</strong>: 2 个（~130 行代码 + YAML 配置）</li>
+<li><strong>修改文件</strong>: 2 个（hub/_core.py +5行, agent.py _build_prompt +10行）</li>
+<li><strong>测试</strong>: ~8 项（框架检测、阈值计算、对立框架推荐、边界条件）</li>
+<li><strong>风险</strong>: 极低。追加式修改，不改动现有检测逻辑</li>
+<li><strong>工期</strong>: 约 3 天</li>
+</ul>
+<hr />
+<h2 id="_34">模块五：商道罗盘与企熵诊断仪<a class="headerlink" href="#_34" title="Permanent link">&para;</a></h2>
+<h3 id="_35">能力描述<a class="headerlink" href="#_35" title="Permanent link">&para;</a></h3>
+<p>以插件形式提供两个可选的场景化功能模块。每个插件包含自己的触发器、对话状态机与数据记录，独立于核心推理管道运行。</p>
+<h3 id="_36">现有基础<a class="headerlink" href="#_36" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>资产</th>
+<th>位置</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>soma.plugin</code> 入口点系统</td>
+<td><a href="soma/plugin.py">plugin.py</a></td>
+<td>插件发现机制已存在，需补充激活逻辑</td>
+</tr>
+<tr>
+<td><code>SOMA_Agent.chat()</code> 结构化返回</td>
+<td><a href="soma/agent.py">agent.py</a></td>
+<td>返回 dict 包含步骤详情，插件可消费</td>
+</tr>
+<tr>
+<td><code>SOMA_Agent.respond()</code> 管道</td>
+<td><a href="soma/agent.py#L186">agent.py</a></td>
+<td>插件可在管道入口拦截</td>
+</tr>
+<tr>
+<td><code>ConsensusProtocol</code> 状态机逻辑</td>
+<td><a href="soma/multi_agent/consensus.py">consensus.py</a></td>
+<td>状态机模式可复用</td>
+</tr>
+<tr>
+<td><code>MemoryUnit</code> / <code>EpisodicStore</code></td>
+<td><a href="soma/base.py">base.py</a> / <a href="soma/memory/episodic.py">episodic.py</a></td>
+<td>插件可独立记录诊断会话</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_37">需要新建<a class="headerlink" href="#_37" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>soma/
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>├── plugin_base.py                # SomaPlugin 抽象基类 + PluginRegistry (~100 行)
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>├── plugins/
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>│   ├── __init__.py
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>│   ├── business_compass.py       # 商道罗盘插件 (~180 行)
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>│   ├── enterprise_entropy.py     # 企熵诊断仪插件 (~200 行)
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>│   └── plugin_schema.yaml        # 插件注册规范
+</code></pre></div>
+<h3 id="_38">插件基类设计<a class="headerlink" href="#_38" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># soma/plugin_base.py</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">SomaPlugin</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;SOMA 功能插件基类&quot;&quot;&quot;</span>
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>    <span class="n">plugin_id</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>    <span class="n">plugin_name</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>
+<a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a>    <span class="nd">@abstractmethod</span>
+<a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">should_activate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_input</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<a id="__codelineno-18-14" name="__codelineno-18-14" href="#__codelineno-18-14"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;判断是否应激活此插件&quot;&quot;&quot;</span>
+<a id="__codelineno-18-15" name="__codelineno-18-15" href="#__codelineno-18-15"></a>
+<a id="__codelineno-18-16" name="__codelineno-18-16" href="#__codelineno-18-16"></a>    <span class="nd">@abstractmethod</span>
+<a id="__codelineno-18-17" name="__codelineno-18-17" href="#__codelineno-18-17"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent</span><span class="p">:</span> <span class="s2">&quot;SOMA_Agent&quot;</span><span class="p">,</span> <span class="n">user_input</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-18-18" name="__codelineno-18-18" href="#__codelineno-18-18"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;执行插件对话流，返回结果&quot;&quot;&quot;</span>
+<a id="__codelineno-18-19" name="__codelineno-18-19" href="#__codelineno-18-19"></a>
+<a id="__codelineno-18-20" name="__codelineno-18-20" href="#__codelineno-18-20"></a>    <span class="nd">@abstractmethod</span>
+<a id="__codelineno-18-21" name="__codelineno-18-21" href="#__codelineno-18-21"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-18-22" name="__codelineno-18-22" href="#__codelineno-18-22"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;获取当前会话状态（供持久化）&quot;&quot;&quot;</span>
+<a id="__codelineno-18-23" name="__codelineno-18-23" href="#__codelineno-18-23"></a>
+<a id="__codelineno-18-24" name="__codelineno-18-24" href="#__codelineno-18-24"></a>
+<a id="__codelineno-18-25" name="__codelineno-18-25" href="#__codelineno-18-25"></a><span class="k">class</span><span class="w"> </span><span class="nc">PluginRegistry</span><span class="p">:</span>
+<a id="__codelineno-18-26" name="__codelineno-18-26" href="#__codelineno-18-26"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;插件注册表&quot;&quot;&quot;</span>
+<a id="__codelineno-18-27" name="__codelineno-18-27" href="#__codelineno-18-27"></a>
+<a id="__codelineno-18-28" name="__codelineno-18-28" href="#__codelineno-18-28"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">discover</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span> <span class="o">...</span>
+<a id="__codelineno-18-29" name="__codelineno-18-29" href="#__codelineno-18-29"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">plugin</span><span class="p">:</span> <span class="n">SomaPlugin</span><span class="p">):</span> <span class="o">...</span>
+<a id="__codelineno-18-30" name="__codelineno-18-30" href="#__codelineno-18-30"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">find_active</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_input</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">SomaPlugin</span><span class="p">]:</span> <span class="o">...</span>
+</code></pre></div>
+<h3 id="_39">商道罗盘插件对话流<a class="headerlink" href="#_39" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>用户输入商业问题
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>      │
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>      ▼
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>┌─────────────────┐
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>│ 触发检测          │ ← 商业关键词 + 商道指数 &lt; 阈值
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>│ 命中 → 激活插件   │
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>└────────┬────────┘
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>         │
+<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>         ▼
+<a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a>┌─────────────────┐
+<a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a>│ 阶段1: 探索心态   │ ← &quot;您在处理这个商业问题时，内心第一反应
+<a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a>│                 │     是&#39;保护利益&#39;还是&#39;创造价值&#39;？&quot;
+<a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a>└────────┬────────┘
+<a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a>         │
+<a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a>         ▼
+<a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a>┌─────────────────┐
+<a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a>│ 阶段2: 引导反思   │ ← &quot;如果先把&#39;守护利益&#39;放下，假设资源充足，
+<a id="__codelineno-19-18" name="__codelineno-19-18" href="#__codelineno-19-18"></a>│                 │     您最想用这个商业场景去成就谁？&quot;
+<a id="__codelineno-19-19" name="__codelineno-19-19" href="#__codelineno-19-19"></a>└────────┬────────┘
+<a id="__codelineno-19-20" name="__codelineno-19-20" href="#__codelineno-19-20"></a>         │
+<a id="__codelineno-19-21" name="__codelineno-19-21" href="#__codelineno-19-21"></a>         ▼
+<a id="__codelineno-19-22" name="__codelineno-19-22" href="#__codelineno-19-22"></a>┌─────────────────┐
+<a id="__codelineno-19-23" name="__codelineno-19-23" href="#__codelineno-19-23"></a>│ 阶段3: 洞察总结   │ ← 根据前两阶段的回答生成个性化洞察
+<a id="__codelineno-19-24" name="__codelineno-19-24" href="#__codelineno-19-24"></a>│                 │     + &quot;接下来三天，每次思考此项目前先问自己：
+<a id="__codelineno-19-25" name="__codelineno-19-25" href="#__codelineno-19-25"></a>│                 │      我今天的行动是否让Ta更靠近想要的？&quot;
+<a id="__codelineno-19-26" name="__codelineno-19-26" href="#__codelineno-19-26"></a>└────────┬────────┘
+<a id="__codelineno-19-27" name="__codelineno-19-27" href="#__codelineno-19-27"></a>         │
+<a id="__codelineno-19-28" name="__codelineno-19-28" href="#__codelineno-19-28"></a>         ▼
+<a id="__codelineno-19-29" name="__codelineno-19-29" href="#__codelineno-19-29"></a>┌─────────────────┐
+<a id="__codelineno-19-30" name="__codelineno-19-30" href="#__codelineno-19-30"></a>│ 写入商道日志     │ ← 持久化到独立表
+<a id="__codelineno-19-31" name="__codelineno-19-31" href="#__codelineno-19-31"></a>└─────────────────┘
+</code></pre></div>
+<h3 id="_40">企熵诊断仪插件对话流<a class="headerlink" href="#_40" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>用户提出团队/组织问题
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>      │
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>      ▼
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>┌─────────────────┐
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>│ 结构化提问序列    │ ← 5-8个评估问题
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>│ · 团队决策共识度  │
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>│ · 关键时刻退缩者  │
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>│ · 信息透明度      │
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>│ · 冲突处理方式    │
+<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>│ · 能量流动方向    │
+<a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a>└────────┬────────┘
+<a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a>         │
+<a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a>         ▼
+<a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a>┌─────────────────┐
+<a id="__codelineno-20-15" name="__codelineno-20-15" href="#__codelineno-20-15"></a>│ 组织熵值计算      │ ← 基于回答生成 低/中/高 三级评估
+<a id="__codelineno-20-16" name="__codelineno-20-16" href="#__codelineno-20-16"></a>│ 输出诊断报告      │
+<a id="__codelineno-20-17" name="__codelineno-20-17" href="#__codelineno-20-17"></a>└────────┬────────┘
+<a id="__codelineno-20-18" name="__codelineno-20-18" href="#__codelineno-20-18"></a>         │
+<a id="__codelineno-20-19" name="__codelineno-20-19" href="#__codelineno-20-19"></a>         ▼
+<a id="__codelineno-20-20" name="__codelineno-20-20" href="#__codelineno-20-20"></a>┌─────────────────┐
+<a id="__codelineno-20-21" name="__codelineno-20-21" href="#__codelineno-20-21"></a>│ 生成行动建议      │ ← 针对熵值来源给出「化熵为光」建议
+<a id="__codelineno-20-22" name="__codelineno-20-22" href="#__codelineno-20-22"></a>└─────────────────┘
+</code></pre></div>
+<h3 id="agentpy_1">插件接入 agent.py<a class="headerlink" href="#agentpy_1" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="c1"># SOMA_Agent.respond() 入口新增</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">respond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">problem</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>    <span class="c1"># 检查是否有应激活的插件</span>
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>    <span class="n">active_plugins</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">plugin_registry</span><span class="o">.</span><span class="n">find_active</span><span class="p">(</span>
+<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>        <span class="n">problem</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span> <span class="s2">&quot;user_profile&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_profile</span><span class="p">(</span><span class="n">user_id</span><span class="p">)}</span>
+<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>    <span class="p">)</span>
+<a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a>
+<a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a>    <span class="k">if</span> <span class="n">active_plugins</span><span class="p">:</span>
+<a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a>        <span class="c1"># 插件拦截模式：由插件接管对话</span>
+<a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a>        <span class="k">for</span> <span class="n">plugin</span> <span class="ow">in</span> <span class="n">active_plugins</span><span class="p">:</span>
+<a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a>            <span class="n">result</span> <span class="o">=</span> <span class="n">plugin</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">problem</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+<a id="__codelineno-21-13" name="__codelineno-21-13" href="#__codelineno-21-13"></a>            <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;handled&quot;</span><span class="p">):</span>
+<a id="__codelineno-21-14" name="__codelineno-21-14" href="#__codelineno-21-14"></a>                <span class="k">return</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;response&quot;</span><span class="p">]</span>
+<a id="__codelineno-21-15" name="__codelineno-21-15" href="#__codelineno-21-15"></a>
+<a id="__codelineno-21-16" name="__codelineno-21-16" href="#__codelineno-21-16"></a>    <span class="c1"># 否则进入正常推理管道</span>
+<a id="__codelineno-21-17" name="__codelineno-21-17" href="#__codelineno-21-17"></a>    <span class="o">...</span>
+</code></pre></div>
+<h3 id="_41">复杂度评估<a class="headerlink" href="#_41" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>新增文件</strong>: 5 个（~550 行）</li>
+<li><strong>修改文件</strong>: 2 个（agent.py +15行, plugin.py +10行）</li>
+<li><strong>测试</strong>: ~15 项（插件发现/激活/状态机流程/拦截/回退）</li>
+<li><strong>风险</strong>: 中。插件拦截逻辑需仔细处理回退，避免阻塞正常推理管道</li>
+<li><strong>工期</strong>: 约 2 周</li>
+</ul>
+<hr />
+<h2 id="_42">模块六：规律贡献接口<a class="headerlink" href="#_42" title="Permanent link">&para;</a></h2>
+<h3 id="_43">能力描述<a class="headerlink" href="#_43" title="Permanent link">&para;</a></h3>
+<p>开放一个去中心化的规律贡献入口，让 SOMA 的使用者（零熵家人们）将自己实证有效的思维模型提交为可复用的思考规律，经审核后纳入规律网络。</p>
+<h3 id="_44">现有基础<a class="headerlink" href="#_44" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>资产</th>
+<th>位置</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LawDiscovery</code></td>
+<td><a href="soma/law_discovery.py">law_discovery.py</a></td>
+<td>已有规律自动发现和审核（dedup by embedding）</td>
+</tr>
+<tr>
+<td><code>MetaEvolver.discover_laws()</code></td>
+<td><a href="soma/evolve.py">evolve.py</a></td>
+<td>调用 LawDiscovery 的入口</td>
+</tr>
+<tr>
+<td><code>MetaEvolver.approve_law()</code></td>
+<td><a href="soma/evolve.py">evolve.py</a></td>
+<td>已有审核通过流程</td>
+</tr>
+<tr>
+<td><code>wisdom_laws.yaml</code></td>
+<td><a href="soma/wisdom_laws.yaml">config/</a></td>
+<td>规律定义的源格式</td>
+</tr>
+<tr>
+<td><code>WisdomEngine._semantic_match()</code></td>
+<td><a href="soma/engine.py">engine.py</a></td>
+<td>新规律注册后的语义匹配</td>
+</tr>
+<tr>
+<td>向量索引</td>
+<td><a href="soma/vector_store.py">vector_store.py</a></td>
+<td>规律去重的 embedding 基础设施</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_45">需要新建<a class="headerlink" href="#_45" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>soma/
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>├── contribution.py              # ContributionHandler + PatternSubmission (~200 行)
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>├── contribution_schema.json     # 贡献格式 JSON Schema
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>└── contribution_store.py        # 提交持久化 (~100 行)
+</code></pre></div>
+<h3 id="json-schema">贡献格式 JSON Schema<a class="headerlink" href="#json-schema" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="p">{</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="w">    </span><span class="nt">&quot;$schema&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://json-schema.org/draft/2020-12/schema&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="w">    </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SOMA Pattern Contribution&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="w">    </span><span class="nt">&quot;required&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;pattern_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;description&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;category&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;contributor&quot;</span><span class="p">],</span>
+<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="w">    </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="w">        </span><span class="nt">&quot;pattern_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a><span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a><span class="w">            </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;规律名称，如&#39;感恩交换法&#39;&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a><span class="w">            </span><span class="nt">&quot;maxLength&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span>
+<a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a><span class="w">        </span><span class="p">},</span>
+<a id="__codelineno-23-12" name="__codelineno-23-12" href="#__codelineno-23-12"></a><span class="w">        </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-13" name="__codelineno-23-13" href="#__codelineno-23-13"></a><span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-14" name="__codelineno-23-14" href="#__codelineno-23-14"></a><span class="w">            </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;详细描述该规律的应用场景和效果&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-15" name="__codelineno-23-15" href="#__codelineno-23-15"></a><span class="w">            </span><span class="nt">&quot;maxLength&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">500</span>
+<a id="__codelineno-23-16" name="__codelineno-23-16" href="#__codelineno-23-16"></a><span class="w">        </span><span class="p">},</span>
+<a id="__codelineno-23-17" name="__codelineno-23-17" href="#__codelineno-23-17"></a><span class="w">        </span><span class="nt">&quot;trigger_conditions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-18" name="__codelineno-23-18" href="#__codelineno-23-18"></a><span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-19" name="__codelineno-23-19" href="#__codelineno-23-19"></a><span class="w">            </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-20" name="__codelineno-23-20" href="#__codelineno-23-20"></a><span class="w">                </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-21" name="__codelineno-23-21" href="#__codelineno-23-21"></a><span class="w">                </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-22" name="__codelineno-23-22" href="#__codelineno-23-22"></a><span class="w">                    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;enum&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;keyword_match&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;semantic_match&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;context_match&quot;</span><span class="p">]},</span>
+<a id="__codelineno-23-23" name="__codelineno-23-23" href="#__codelineno-23-23"></a><span class="w">                    </span><span class="nt">&quot;keywords&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">}},</span>
+<a id="__codelineno-23-24" name="__codelineno-23-24" href="#__codelineno-23-24"></a><span class="w">                    </span><span class="nt">&quot;semantic_description&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">}</span>
+<a id="__codelineno-23-25" name="__codelineno-23-25" href="#__codelineno-23-25"></a><span class="w">                </span><span class="p">}</span>
+<a id="__codelineno-23-26" name="__codelineno-23-26" href="#__codelineno-23-26"></a><span class="w">            </span><span class="p">}</span>
+<a id="__codelineno-23-27" name="__codelineno-23-27" href="#__codelineno-23-27"></a><span class="w">        </span><span class="p">},</span>
+<a id="__codelineno-23-28" name="__codelineno-23-28" href="#__codelineno-23-28"></a><span class="w">        </span><span class="nt">&quot;processing_flow&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-29" name="__codelineno-23-29" href="#__codelineno-23-29"></a><span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-30" name="__codelineno-23-30" href="#__codelineno-23-30"></a><span class="w">            </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-31" name="__codelineno-23-31" href="#__codelineno-23-31"></a><span class="w">                </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-32" name="__codelineno-23-32" href="#__codelineno-23-32"></a><span class="w">                </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-33" name="__codelineno-23-33" href="#__codelineno-23-33"></a><span class="w">                    </span><span class="nt">&quot;step&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">},</span>
+<a id="__codelineno-23-34" name="__codelineno-23-34" href="#__codelineno-23-34"></a><span class="w">                    </span><span class="nt">&quot;prompt&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">},</span>
+<a id="__codelineno-23-35" name="__codelineno-23-35" href="#__codelineno-23-35"></a><span class="w">                    </span><span class="nt">&quot;inputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">}},</span>
+<a id="__codelineno-23-36" name="__codelineno-23-36" href="#__codelineno-23-36"></a><span class="w">                    </span><span class="nt">&quot;outputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">}}</span>
+<a id="__codelineno-23-37" name="__codelineno-23-37" href="#__codelineno-23-37"></a><span class="w">                </span><span class="p">}</span>
+<a id="__codelineno-23-38" name="__codelineno-23-38" href="#__codelineno-23-38"></a><span class="w">            </span><span class="p">}</span>
+<a id="__codelineno-23-39" name="__codelineno-23-39" href="#__codelineno-23-39"></a><span class="w">        </span><span class="p">},</span>
+<a id="__codelineno-23-40" name="__codelineno-23-40" href="#__codelineno-23-40"></a><span class="w">        </span><span class="nt">&quot;effect_metrics&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-41" name="__codelineno-23-41" href="#__codelineno-23-41"></a><span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-42" name="__codelineno-23-42" href="#__codelineno-23-42"></a><span class="w">            </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">},</span>
+<a id="__codelineno-23-43" name="__codelineno-23-43" href="#__codelineno-23-43"></a><span class="w">            </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;衡量该规律效果的指标&quot;</span>
+<a id="__codelineno-23-44" name="__codelineno-23-44" href="#__codelineno-23-44"></a><span class="w">        </span><span class="p">},</span>
+<a id="__codelineno-23-45" name="__codelineno-23-45" href="#__codelineno-23-45"></a><span class="w">        </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-46" name="__codelineno-23-46" href="#__codelineno-23-46"></a><span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-47" name="__codelineno-23-47" href="#__codelineno-23-47"></a><span class="w">            </span><span class="nt">&quot;enum&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;家庭关系&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;个人成长&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;商业实践&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;团队协作&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;身心健康&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;学习方法&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;其他&quot;</span><span class="p">]</span>
+<a id="__codelineno-23-48" name="__codelineno-23-48" href="#__codelineno-23-48"></a><span class="w">        </span><span class="p">},</span>
+<a id="__codelineno-23-49" name="__codelineno-23-49" href="#__codelineno-23-49"></a><span class="w">        </span><span class="nt">&quot;contributor&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-50" name="__codelineno-23-50" href="#__codelineno-23-50"></a><span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-51" name="__codelineno-23-51" href="#__codelineno-23-51"></a><span class="w">            </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;贡献者的零熵 ID&quot;</span>
+<a id="__codelineno-23-52" name="__codelineno-23-52" href="#__codelineno-23-52"></a><span class="w">        </span><span class="p">},</span>
+<a id="__codelineno-23-53" name="__codelineno-23-53" href="#__codelineno-23-53"></a><span class="w">        </span><span class="nt">&quot;empirical_basis&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-23-54" name="__codelineno-23-54" href="#__codelineno-23-54"></a><span class="w">            </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-55" name="__codelineno-23-55" href="#__codelineno-23-55"></a><span class="w">            </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;实证基础：在什么场景下验证了多少次&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-56" name="__codelineno-23-56" href="#__codelineno-23-56"></a><span class="w">            </span><span class="nt">&quot;maxLength&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">300</span>
+<a id="__codelineno-23-57" name="__codelineno-23-57" href="#__codelineno-23-57"></a><span class="w">        </span><span class="p">}</span>
+<a id="__codelineno-23-58" name="__codelineno-23-58" href="#__codelineno-23-58"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-23-59" name="__codelineno-23-59" href="#__codelineno-23-59"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="_46">核心类设计<a class="headerlink" href="#_46" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="c1"># soma/contribution.py</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">PatternSubmission</span><span class="p">:</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;用户提交的规律&quot;&quot;&quot;</span>
+<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>    <span class="n">pattern_name</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a>    <span class="n">category</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>    <span class="n">contributor</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a>    <span class="n">trigger_conditions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span>
+<a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a>    <span class="n">processing_flow</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span>
+<a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a>    <span class="n">effect_metrics</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+<a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a>    <span class="n">empirical_basis</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-24-13" name="__codelineno-24-13" href="#__codelineno-24-13"></a>
+<a id="__codelineno-24-14" name="__codelineno-24-14" href="#__codelineno-24-14"></a>    <span class="c1"># 审核状态</span>
+<a id="__codelineno-24-15" name="__codelineno-24-15" href="#__codelineno-24-15"></a>    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;pending&quot;</span>  <span class="c1"># pending / auto_reviewed / approved / rejected</span>
+<a id="__codelineno-24-16" name="__codelineno-24-16" href="#__codelineno-24-16"></a>    <span class="n">energy_score</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>     <span class="c1"># 被采纳能量值</span>
+<a id="__codelineno-24-17" name="__codelineno-24-17" href="#__codelineno-24-17"></a>    <span class="n">embedding</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<a id="__codelineno-24-18" name="__codelineno-24-18" href="#__codelineno-24-18"></a>
+<a id="__codelineno-24-19" name="__codelineno-24-19" href="#__codelineno-24-19"></a>
+<a id="__codelineno-24-20" name="__codelineno-24-20" href="#__codelineno-24-20"></a><span class="k">class</span><span class="w"> </span><span class="nc">ContributionHandler</span><span class="p">:</span>
+<a id="__codelineno-24-21" name="__codelineno-24-21" href="#__codelineno-24-21"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;规律贡献处理器&quot;&quot;&quot;</span>
+<a id="__codelineno-24-22" name="__codelineno-24-22" href="#__codelineno-24-22"></a>
+<a id="__codelineno-24-23" name="__codelineno-24-23" href="#__codelineno-24-23"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">engine</span><span class="p">:</span> <span class="n">WisdomEngine</span><span class="p">,</span> <span class="n">embedder</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">ContributionStore</span><span class="p">):</span>
+<a id="__codelineno-24-24" name="__codelineno-24-24" href="#__codelineno-24-24"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">engine</span> <span class="o">=</span> <span class="n">engine</span>
+<a id="__codelineno-24-25" name="__codelineno-24-25" href="#__codelineno-24-25"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">embedder</span> <span class="o">=</span> <span class="n">embedder</span>
+<a id="__codelineno-24-26" name="__codelineno-24-26" href="#__codelineno-24-26"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">store</span> <span class="o">=</span> <span class="n">store</span>
+<a id="__codelineno-24-27" name="__codelineno-24-27" href="#__codelineno-24-27"></a>
+<a id="__codelineno-24-28" name="__codelineno-24-28" href="#__codelineno-24-28"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">submit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">submission</span><span class="p">:</span> <span class="n">PatternSubmission</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-24-29" name="__codelineno-24-29" href="#__codelineno-24-29"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;提交新规律，返回 submission_id&quot;&quot;&quot;</span>
+<a id="__codelineno-24-30" name="__codelineno-24-30" href="#__codelineno-24-30"></a>        <span class="c1"># 1. 格式校验 (JSON Schema)</span>
+<a id="__codelineno-24-31" name="__codelineno-24-31" href="#__codelineno-24-31"></a>        <span class="c1"># 2. 计算 embedding</span>
+<a id="__codelineno-24-32" name="__codelineno-24-32" href="#__codelineno-24-32"></a>        <span class="c1"># 3. 与现有规律做去重检查（相似度 &lt; 0.85 才通过）</span>
+<a id="__codelineno-24-33" name="__codelineno-24-33" href="#__codelineno-24-33"></a>        <span class="c1"># 4. 持久化到 contribution_store</span>
+<a id="__codelineno-24-34" name="__codelineno-24-34" href="#__codelineno-24-34"></a>        <span class="c1"># 5. 返回 submission_id 供跟踪</span>
+<a id="__codelineno-24-35" name="__codelineno-24-35" href="#__codelineno-24-35"></a>
+<a id="__codelineno-24-36" name="__codelineno-24-36" href="#__codelineno-24-36"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">auto_review</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">submission_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-24-37" name="__codelineno-24-37" href="#__codelineno-24-37"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;自动第一轮审核&quot;&quot;&quot;</span>
+<a id="__codelineno-24-38" name="__codelineno-24-38" href="#__codelineno-24-38"></a>        <span class="c1"># 格式完整性 + 与已有规律去重 + 触发条件合理性</span>
+<a id="__codelineno-24-39" name="__codelineno-24-39" href="#__codelineno-24-39"></a>
+<a id="__codelineno-24-40" name="__codelineno-24-40" href="#__codelineno-24-40"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">manual_approve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">submission_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">reviewer_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<a id="__codelineno-24-41" name="__codelineno-24-41" href="#__codelineno-24-41"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;人工审核通过，纳入规律网络&quot;&quot;&quot;</span>
+<a id="__codelineno-24-42" name="__codelineno-24-42" href="#__codelineno-24-42"></a>        <span class="c1"># 生成 pattern_id，加入 wisdom_laws.yaml 和向量索引</span>
+<a id="__codelineno-24-43" name="__codelineno-24-43" href="#__codelineno-24-43"></a>
+<a id="__codelineno-24-44" name="__codelineno-24-44" href="#__codelineno-24-44"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">record_adoption</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">outcome</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<a id="__codelineno-24-45" name="__codelineno-24-45" href="#__codelineno-24-45"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;记录规律被采纳的结果&quot;&quot;&quot;</span>
+<a id="__codelineno-24-46" name="__codelineno-24-46" href="#__codelineno-24-46"></a>        <span class="c1"># 成功 → energy_score +1</span>
+<a id="__codelineno-24-47" name="__codelineno-24-47" href="#__codelineno-24-47"></a>        <span class="c1"># 负面反馈 → energy_score -2</span>
+<a id="__codelineno-24-48" name="__codelineno-24-48" href="#__codelineno-24-48"></a>        <span class="c1"># 低于阈值 → 自动降级，不再参与检索</span>
+<a id="__codelineno-24-49" name="__codelineno-24-49" href="#__codelineno-24-49"></a>
+<a id="__codelineno-24-50" name="__codelineno-24-50" href="#__codelineno-24-50"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_active_patterns</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<a id="__codelineno-24-51" name="__codelineno-24-51" href="#__codelineno-24-51"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;检索当前上下文应激活的贡献规律&quot;&quot;&quot;</span>
+<a id="__codelineno-24-52" name="__codelineno-24-52" href="#__codelineno-24-52"></a>        <span class="c1"># 基于语义匹配 + energy_score 阈值过滤</span>
+</code></pre></div>
+<h3 id="_47">审核流程<a class="headerlink" href="#_47" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>用户提交
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>    │
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>    ▼
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>┌──────────────┐
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a>│ 自动审核       │ ← JSON Schema 校验 + embedding 去重（sim &lt; 0.85）
+<a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a>│ (秒级完成)     │
+<a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a>└──────┬───────┘
+<a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a>       │
+<a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a>       ▼
+<a id="__codelineno-25-10" name="__codelineno-25-10" href="#__codelineno-25-10"></a>┌──────────────┐
+<a id="__codelineno-25-11" name="__codelineno-25-11" href="#__codelineno-25-11"></a>│ 人工审核       │ ← 零熵书院认证「规律审核员」手动审查
+<a id="__codelineno-25-12" name="__codelineno-25-12" href="#__codelineno-25-12"></a>│ (文化+技术)    │    检查价值观合规性 + 实用性
+<a id="__codelineno-25-13" name="__codelineno-25-13" href="#__codelineno-25-13"></a>└──────┬───────┘
+<a id="__codelineno-25-14" name="__codelineno-25-14" href="#__codelineno-25-14"></a>       │
+<a id="__codelineno-25-15" name="__codelineno-25-15" href="#__codelineno-25-15"></a>       ▼
+<a id="__codelineno-25-16" name="__codelineno-25-16" href="#__codelineno-25-16"></a>┌──────────────┐
+<a id="__codelineno-25-17" name="__codelineno-25-17" href="#__codelineno-25-17"></a>│ 纳入规律网络   │ ← 生成 pattern_id，加入索引
+<a id="__codelineno-25-18" name="__codelineno-25-18" href="#__codelineno-25-18"></a>│               │    初始 energy_score = 5
+<a id="__codelineno-25-19" name="__codelineno-25-19" href="#__codelineno-25-19"></a>└──────┬───────┘
+<a id="__codelineno-25-20" name="__codelineno-25-20" href="#__codelineno-25-20"></a>       │
+<a id="__codelineno-25-21" name="__codelineno-25-21" href="#__codelineno-25-21"></a>       ▼
+<a id="__codelineno-25-22" name="__codelineno-25-22" href="#__codelineno-25-22"></a>┌──────────────┐
+<a id="__codelineno-25-23" name="__codelineno-25-23" href="#__codelineno-25-23"></a>│ 运行中追踪     │ ← 每采纳一次 energy_score +1
+<a id="__codelineno-25-24" name="__codelineno-25-24" href="#__codelineno-25-24"></a>│               │    负面反馈 energy_score -2
+<a id="__codelineno-25-25" name="__codelineno-25-25" href="#__codelineno-25-25"></a>│               │    score &lt; 0 → 自动降级
+<a id="__codelineno-25-26" name="__codelineno-25-26" href="#__codelineno-25-26"></a>└──────────────┘
+</code></pre></div>
+<h3 id="_48">复杂度评估<a class="headerlink" href="#_48" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>新增文件</strong>: 3 个（~380 行）</li>
+<li><strong>修改文件</strong>: 2 个（engine.py +10行, evolve.py +10行）</li>
+<li><strong>测试</strong>: ~15 项（提交/自动审核/人工审批/能量值/去重/降级）</li>
+<li><strong>风险</strong>: 中-高。涉及规律系统的修改，审核流程的安全性是关键</li>
+<li><strong>工期</strong>: 约 3 周</li>
+</ul>
+<hr />
+<h2 id="_49">实施路线图<a class="headerlink" href="#_49" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>第1周                第2周                第3周                第4周
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>├────────────────────┼────────────────────┼────────────────────┼────────────────────┤
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>│                                                                              │
+<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a>│ ████████████████████ 模块三: 认知熵值仪表盘                                    │
+<a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>│ 独立模块，快速出成果                                                          │
+<a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a>│                                                                              │
+<a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a>│                     ████████████████████ 模块四: 空性偏差检测                  │
+<a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a>│                     小改动，高效果                                            │
+<a id="__codelineno-26-9" name="__codelineno-26-9" href="#__codelineno-26-9"></a>│                                                                              │
+<a id="__codelineno-26-10" name="__codelineno-26-10" href="#__codelineno-26-10"></a>│                                         ████████████████████ 模块一: 内求钩子  │
+<a id="__codelineno-26-11" name="__codelineno-26-11" href="#__codelineno-26-11"></a>│                                         钩子框架 + 6个内置钩子                 │
+<a id="__codelineno-26-12" name="__codelineno-26-12" href="#__codelineno-26-12"></a>│                                                                              │
+<a id="__codelineno-26-13" name="__codelineno-26-13" href="#__codelineno-26-13"></a>│                                                             ████████████████  │
+<a id="__codelineno-26-14" name="__codelineno-26-14" href="#__codelineno-26-14"></a>│                                                             模块二: 守中执一   │
+<a id="__codelineno-26-15" name="__codelineno-26-15" href="#__codelineno-26-15"></a>│                                                             核心函数≤100行    │
+<a id="__codelineno-26-16" name="__codelineno-26-16" href="#__codelineno-26-16"></a>│                                                                              │
+<a id="__codelineno-26-17" name="__codelineno-26-17" href="#__codelineno-26-17"></a>├────────────────────┼────────────────────┼────────────────────┼────────────────┤
+<a id="__codelineno-26-18" name="__codelineno-26-18" href="#__codelineno-26-18"></a>│                                                                              │
+<a id="__codelineno-26-19" name="__codelineno-26-19" href="#__codelineno-26-19"></a>│ 第5周              第6周                第7周                第8周             │
+<a id="__codelineno-26-20" name="__codelineno-26-20" href="#__codelineno-26-20"></a>│                                                                              │
+<a id="__codelineno-26-21" name="__codelineno-26-21" href="#__codelineno-26-21"></a>│ ████████████████████ 模块五: 插件系统 + 商道罗盘 + 企熵诊断仪                   │
+<a id="__codelineno-26-22" name="__codelineno-26-22" href="#__codelineno-26-22"></a>│                                                                              │
+<a id="__codelineno-26-23" name="__codelineno-26-23" href="#__codelineno-26-23"></a>│                                         ████████████████████████████████████  │
+<a id="__codelineno-26-24" name="__codelineno-26-24" href="#__codelineno-26-24"></a>│                                         模块六: 规律贡献接口                   │
+<a id="__codelineno-26-25" name="__codelineno-26-25" href="#__codelineno-26-25"></a>│                                         最大范围，需要审核流程设计              │
+<a id="__codelineno-26-26" name="__codelineno-26-26" href="#__codelineno-26-26"></a>└──────────────────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+<h3 id="_50">里程碑<a class="headerlink" href="#_50" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>里程碑</th>
+<th>时间</th>
+<th>交付物</th>
+<th>验证方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M1</td>
+<td>第 1 周末</td>
+<td>认知熵值仪表盘</td>
+<td>100 轮模拟对话，熵值趋势图正常</td>
+</tr>
+<tr>
+<td>M2</td>
+<td>第 2 周末</td>
+<td>空性偏差检测 + 熵值仪表盘集成</td>
+<td>框架锚定检测单元测试全通过</td>
+</tr>
+<tr>
+<td>M3</td>
+<td>第 3 周末</td>
+<td>内求复盘钩子框架 + 6 个内置钩子</td>
+<td>完整管道运行，钩子生成提示正常</td>
+</tr>
+<tr>
+<td>M4</td>
+<td>第 4 周末</td>
+<td>守中执一算法</td>
+<td>多专家冲突场景仲裁正确</td>
+</tr>
+<tr>
+<td>M5</td>
+<td>第 6 周末</td>
+<td>插件系统 + 两个插件</td>
+<td>端到端: 商业提问 → 插件触发 → 对话流走完</td>
+</tr>
+<tr>
+<td>M6</td>
+<td>第 8 周末</td>
+<td>规律贡献接口</td>
+<td>提交 → 自动审核 → 人工审批 → 纳入 → 追踪</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_51">架构变更总览<a class="headerlink" href="#_51" title="Permanent link">&para;</a></h2>
+<h3 id="_52">新增文件清单<a class="headerlink" href="#_52" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>soma/
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>├── entropy.py                        # 认知熵值计算器
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>├── entropy/
+<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>│   ├── __init__.py
+<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>│   └── negative_words.txt            # 负面词汇表
+<a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a>├── hooks/
+<a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a>│   ├── __init__.py
+<a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a>│   ├── _core.py                      # InnerReflectionHook + HookRegistry
+<a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a>│   ├── _builtin_hooks.py             # 6个内置钩子
+<a id="__codelineno-27-10" name="__codelineno-27-10" href="#__codelineno-27-10"></a>│   └── hooks_config.yaml             # 钩子热配置
+<a id="__codelineno-27-11" name="__codelineno-27-11" href="#__codelineno-27-11"></a>├── hub/
+<a id="__codelineno-27-12" name="__codelineno-27-12" href="#__codelineno-27-12"></a>│   ├── _frame_detector.py            # 框架锚定检测器
+<a id="__codelineno-27-13" name="__codelineno-27-13" href="#__codelineno-27-13"></a>│   └── frame_keywords.yaml           # 框架关键词库
+<a id="__codelineno-27-14" name="__codelineno-27-14" href="#__codelineno-27-14"></a>├── multi_agent/
+<a id="__codelineno-27-15" name="__codelineno-27-15" href="#__codelineno-27-15"></a>│   └── zhongdao.py                   # 中道平衡算法
+<a id="__codelineno-27-16" name="__codelineno-27-16" href="#__codelineno-27-16"></a>├── plugin_base.py                    # SomaPlugin 抽象基类
+<a id="__codelineno-27-17" name="__codelineno-27-17" href="#__codelineno-27-17"></a>├── plugins/
+<a id="__codelineno-27-18" name="__codelineno-27-18" href="#__codelineno-27-18"></a>│   ├── __init__.py
+<a id="__codelineno-27-19" name="__codelineno-27-19" href="#__codelineno-27-19"></a>│   ├── business_compass.py           # 商道罗盘
+<a id="__codelineno-27-20" name="__codelineno-27-20" href="#__codelineno-27-20"></a>│   ├── enterprise_entropy.py         # 企熵诊断仪
+<a id="__codelineno-27-21" name="__codelineno-27-21" href="#__codelineno-27-21"></a>│   └── plugin_schema.yaml
+<a id="__codelineno-27-22" name="__codelineno-27-22" href="#__codelineno-27-22"></a>├── contribution.py                   # 规律贡献处理器
+<a id="__codelineno-27-23" name="__codelineno-27-23" href="#__codelineno-27-23"></a>├── contribution_schema.json          # 贡献格式
+<a id="__codelineno-27-24" name="__codelineno-27-24" href="#__codelineno-27-24"></a>└── contribution_store.py             # 贡献持久化
+</code></pre></div>
+<h3 id="_53">修改文件清单<a class="headerlink" href="#_53" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>改动量</th>
+<th>改动描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agent.py</code></td>
+<td>+60 行</td>
+<td>钩子注入点、插件拦截、熵值记录、框架检测调用</td>
+</tr>
+<tr>
+<td><code>config.py</code></td>
+<td>+10 行</td>
+<td>阴阳权重参数、熵值窗口配置、钩子启用开关</td>
+</tr>
+<tr>
+<td><code>hub/_core.py</code></td>
+<td>+15 行</td>
+<td>框架锚定检测接入 activate()</td>
+</tr>
+<tr>
+<td><code>multi_agent/consensus.py</code></td>
+<td>+15 行</td>
+<td>新增 zhongdao 策略分支</td>
+</tr>
+<tr>
+<td><code>engine.py</code></td>
+<td>+10 行</td>
+<td>贡献规律注入规律网络</td>
+</tr>
+<tr>
+<td><code>evolve.py</code></td>
+<td>+10 行</td>
+<td>贡献规律采纳追踪</td>
+</tr>
+<tr>
+<td><code>plugin.py</code></td>
+<td>+10 行</td>
+<td>PluginRegistry 与热加载</td>
+</tr>
+<tr>
+<td><code>analytics.py</code></td>
+<td>+5 行</td>
+<td>entropy 列扩展</td>
+</tr>
+<tr>
+<td><code>pyproject.toml</code></td>
+<td>+5 行</td>
+<td>新增插件入口点声明</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_54">总代码量估算<a class="headerlink" href="#_54" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>代码量</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>新增代码</td>
+<td>~1,800 行</td>
+</tr>
+<tr>
+<td>修改代码</td>
+<td>~140 行</td>
+</tr>
+<tr>
+<td>测试代码</td>
+<td>~600 行</td>
+</tr>
+<tr>
+<td>配置文件</td>
+<td>~200 行 YAML</td>
+</tr>
+<tr>
+<td><strong>总计</strong></td>
+<td><strong>~2,740 行</strong></td>
+</tr>
+</tbody>
+</table>
+<p>相比 v0.9.0 新增 ~1,200 行，v0.10.0 的改动量约为 v0.9.0 的 1.5 倍。</p>
+<hr />
+<h2 id="_55">风险与待讨论问题<a class="headerlink" href="#_55" title="Permanent link">&para;</a></h2>
+<h3 id="_56">技术风险<a class="headerlink" href="#_56" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>风险</th>
+<th>等级</th>
+<th>缓解措施</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>钩子注入影响管道性能</td>
+<td>低</td>
+<td>钩子只做字符串模板填充，O(1)；可配置开关</td>
+</tr>
+<tr>
+<td>负面词汇表覆盖不足</td>
+<td>中</td>
+<td>先用零熵语料初始化 150 词，开放热更新接口</td>
+</tr>
+<tr>
+<td>中道算法的「熵变估算」过于主观</td>
+<td>中</td>
+<td>第一个版本用简单的代理指标（连贯性+关键词），后续迭代</td>
+</tr>
+<tr>
+<td>插件拦截错误导致正常管道不可用</td>
+<td>中</td>
+<td>插件运行在 try/except 中，异常时自动回退正常管道</td>
+</tr>
+<tr>
+<td>规律贡献的审核瓶颈</td>
+<td>中</td>
+<td>自动审核负责去重和格式，人工只审价值观和实用性</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_57">待讨论决策问题<a class="headerlink" href="#_57" title="Permanent link">&para;</a></h3>
+<p>以下问题建议与文化赋能师和开发者一起讨论后确定：</p>
+<p><strong>D1 — 钩子的侵入程度</strong>：钩子提示是仅记录在日志中（静默），还是实时呈现给用户？如果实时呈现，以什么形式（附加在回答末尾 / 单独提示 / 仅对开发者可见）？</p>
+<p><strong>D2 — 认知熵值的「觉察引导模式」触发阈值</strong>：连续几轮熵值低于多少时切换？50 分？40 分？切换后如何恢复？</p>
+<p><strong>D3 — 中道算法的「阴阳权重」初始值</strong>：行动力(阳)和觉知力(阴)各 0.5 是否合理？不同用户类型是否需要不同初始配置？</p>
+<p><strong>D4 — 规律贡献的价值观边界</strong>：什么算「善」的规律？是否需要一份明确的价值观审核标准文档？</p>
+<p><strong>D5 — 贡献规律的版本管理</strong>：当原始贡献者修改一个已被广泛采纳的规律时，如何处理——更新还是分叉？</p>
+<p><strong>D6 — 零熵测试系统的集成程度</strong>：认知熵值和零熵现有的「能量信息测试系统」之间是什么关系——独立并行、数据互相参照、还是深度集成？</p>
+<hr />
+<h2 id="_58">总结<a class="headerlink" href="#_58" title="Permanent link">&para;</a></h2>
+<p>六个模块的整合不是向 SOMA「添加功能」，而是为其注入一种<strong>全新的认知范式</strong>。当前 SOMA 是一个高效的问题解决引擎——它能思考、能记忆、能进化。整合零熵智慧后，SOMA 将增加一个新的维度：<strong>觉察</strong>。</p>
+<p>它不只帮用户「想得更清楚」，还能帮用户「看见自己在怎么想」。</p>
+<p>技术上，六个模块的设计遵循了同一个约束：<strong>每个模块都可以独立开关、独立迭代、独立验证</strong>。没有一个是必须依赖其他模块才能运行的。这让实施可以灵活推进，有任何模块达不到预期都可以单独回退而不影响整体。</p>
+<hr />
+<p><em>文档版本: 1.0 | 适用于: SOMA v0.9.0 → v0.10.0 规划 | 生成日期: 2026-05-12</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/sunyan999999/soma" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://pypi.org/project/soma-wisdom/" target="_blank" rel="noopener" title="pypi.org" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.expand", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

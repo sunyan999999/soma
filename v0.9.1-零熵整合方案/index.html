@@ -1,0 +1,3057 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="SOMA is a cognitive memory framework for AI agents. 7 thinking laws decompose problems, bidirectional activation retrieves memories, and weights self-evolve over time. pip install soma-wisdom. 智慧超越记忆。">
+      
+      
+        <meta name="author" content="SOMA Project Team">
+      
+      
+        <link rel="canonical" href="https://sunyan999999.github.io/soma/v0.9.1-%E9%9B%B6%E7%86%B5%E6%95%B4%E5%90%88%E6%96%B9%E6%A1%88/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>SOMA v0.9.1 零熵智慧整合方案 - SOMA — Somatic Wisdom Architecture</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#soma-v091" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href=".." title="SOMA — Somatic Wisdom Architecture" class="md-header__button md-logo" aria-label="SOMA — Somatic Wisdom Architecture" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SOMA — Somatic Wisdom Architecture
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              SOMA v0.9.1 零熵智慧整合方案
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/sunyan999999/soma" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="SOMA — Somatic Wisdom Architecture" class="md-nav__button md-logo" aria-label="SOMA — Somatic Wisdom Architecture" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    SOMA — Somatic Wisdom Architecture
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/sunyan999999/soma" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速开始
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../philosophy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    核心理念
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构手册
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API 参考
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/customization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    自定义指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    对比分析
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    对比分析
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../articles/soma-vs-mem0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SOMA vs Mem0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../articles/soma-vs-letta/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SOMA vs Letta
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../articles/why-we-built-soma/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Why We Built SOMA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../case-studies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    案例研究
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    贡献指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    变更日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#v091" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        一、为什么是 v0.9.1
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="一、为什么是 v0.9.1">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        版本语义
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v0100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        与 v0.10.0 的关系
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        二、兼容性第一原则
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="二、兼容性第一原则">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 硬约束
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 公开接口清单（基线）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 新增内容如何做到不影响存量
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        三、全局约束与设计准则
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        四、模块逐一拆解
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="四、模块逐一拆解">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        模块一：认知熵值仪表盘
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="模块一：认知熵值仪表盘">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        实现内容
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        兼容性证明
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        风险矩阵
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        引导模式状态机（D2 确认参数）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        模块二：空性偏差检测升级
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="模块二：空性偏差检测升级">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        实现内容
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        兼容性证明
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        风险矩阵
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        模块三：内求复盘钩子
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="模块三：内求复盘钩子">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        实现内容
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        兼容性证明
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        风险矩阵
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        模块四：守中执一动态平衡算法
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="模块四：守中执一动态平衡算法">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        实现内容
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        兼容性证明
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        阴阳权重自动演化（D3 确认参数）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        风险矩阵
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        模块六：规律贡献接口
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="模块六：规律贡献接口">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        实现内容
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        兼容性证明
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d4-d5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        审核流程与安全设计（D4 + D5 确认）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        风险矩阵
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        五、端到端风险推演
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="五、端到端风险推演">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 升级场景推演
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 数据库迁移推演
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 跨模块交互推演
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 最坏情况推演
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        六、对整体开发计划的影响
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="六、对整体开发计划的影响">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        原计划
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        调整后
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v091-v0100" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        为什么 v0.9.1 不影响 v0.10.0
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        七、实施路线图（含兼容性验证关卡）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="七、实施路线图（含兼容性验证关卡）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        阶段划分（按文化赋能师建议的优先级调整）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        每阶段的兼容性验证关卡
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        测试增量估算
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_33" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        八、总结
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="八、总结">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_34" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        这次整合的本质
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_35" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        决策状态
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_36" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        技术上的承诺
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_37" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        九、六项关键决策（已确认）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="九、六项关键决策（已确认）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#d1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D1：内求复盘钩子的输出通道
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d2_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D2：认知熵值的干预阈值
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d3_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D3：守中执一算法的阴阳权重
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D4：规律贡献的审核标准
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D5：规律升级的版本管理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#d6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        D6：与零熵测试系统的关系
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_38" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        决策后的实施优先级调整
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_39" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        十、下一步
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="soma-v091">SOMA v0.9.1 零熵智慧整合方案<a class="headerlink" href="#soma-v091" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>版本定位: v0.9.0 里程碑升级 | 原则: 零接口变更 | 新增: 觉察维度</p>
+</blockquote>
+<hr />
+<h2 id="v091">一、为什么是 v0.9.1<a class="headerlink" href="#v091" title="Permanent link">&para;</a></h2>
+<h3 id="_1">版本语义<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h3>
+<p>v0.9.0 完成了「从个体到群体」的跃迁 — 多 Agent 协作、专家路由、共识协议已就位。本次整合在此之上新增一个维度：<strong>觉察</strong>。</p>
+<p>不改变现有架构。不修改任何公开 API。六个模块像六块积木，按需叠加上去。</p>
+<p>v0.9.1 = v0.9.0 的全部能力 + 「看见自己在怎么想」的觉察层。</p>
+<h3 id="v0100">与 v0.10.0 的关系<a class="headerlink" href="#v0100" title="Permanent link">&para;</a></h3>
+<p>原计划 v0.10.0 的四个方向（Agent 自动孵化、跨 Agent 知识蒸馏、Agent 市场协议、联邦演化）<strong>不受影响</strong>。本次整合是中途插入的里程碑，不替代原有路线，可并行推进。</p>
+<hr />
+<h2 id="_2">二、兼容性第一原则<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<h3 id="21">2.1 硬约束<a class="headerlink" href="#21" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>2000+ 开发者的存量代码，升级到 v0.9.1 后不做任何改动就能正常运行。</strong></p>
+</blockquote>
+<p>这是最高优先级约束。具体体现为五条铁律：</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>铁律</th>
+<th>验证方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>所有公开方法的签名不变</td>
+<td>逐个比对 <code>SOMA</code>、<code>SOMA_Agent</code>、<code>SOMAConfig</code>、<code>ConsensusProtocol</code> 等 30+ 个公开方法</td>
+</tr>
+<tr>
+<td>2</td>
+<td>所有公开类的构造参数不变</td>
+<td>现有 <code>SOMA(llm="...", use_vector_search=True)</code> 写法不报错</td>
+</tr>
+<tr>
+<td>3</td>
+<td>所有公开方法的返回类型不变</td>
+<td><code>respond()</code> 还是返回 <code>str</code>，<code>chat()</code> 还是返回 <code>dict</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>所有新行为默认关闭</td>
+<td>新增 config 字段默认值 <code>False</code> / <code>None</code> / <code>0</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>新模块不影响已有 import</td>
+<td>新增 <code>soma.entropy</code>、<code>soma.hooks</code> 等包，不修改已有 import 路径</td>
+</tr>
+</tbody>
+</table>
+<h3 id="22">2.2 公开接口清单（基线）<a class="headerlink" href="#22" title="Permanent link">&para;</a></h3>
+<p>以下 30 个公开接口在 v0.9.1 中<strong>不做任何签名变更</strong>：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>SOMA.__init__(framework_config, llm, use_vector_search, persist_dir, recall_threshold, top_k, agent_id, group_id)
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>SOMA.respond(problem, user_id) → str
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>SOMA.chat(problem, user_id) → dict
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>SOMA.remember(content, context, importance, user_id, session_id) → str
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>SOMA.remember_semantic(subject, predicate, object_, confidence, namespace) → None
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>SOMA.query_memory(query, top_k, user_id) → list
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>SOMA.decompose(problem) → list
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>SOMA.reflect(task_id, outcome) → None
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>SOMA.evolve() → list
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>SOMA.get_weights() → dict
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>SOMA.adjust_weight(law_id, new_weight) → bool
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>SOMA.discover_laws() → dict|None
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>SOMA.approve_law(candidate) → bool
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>SOMA.get_thought_templates() → list
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>SOMA.close() → None
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>SOMA.stats → dict  (property)
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>SOMA_Agent.__init__(config, agent_id, group_id)
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>SOMA_Agent.respond(problem, user_id) → str
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>SOMA_Agent.chat(problem, user_id) → dict  (虽未直接在agent.py定义，但通过__init__.py暴露)
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>SOMAConfig(framework_path, episodic_persist_dir, llm_model, default_top_k, recall_threshold,
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>           adaptive_params, llm_cache_ttl, llm_cache_max_size, causal_extraction,
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>           causal_extraction_complexity, embedding_model_name, use_vector_search,
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>           vector_dim, embedder_device, framework)
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>ConsensusProtocol.__init__(llm_call)
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>ConsensusProtocol.form_consensus(question, opinions, strategy) → ConsensusResult
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>AgentRegistry.register(agent, expertise, description, is_default)
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>AgentRegistry.unregister(agent_id)
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>AgentRegistry.get(agent_id)
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>AgentRegistry.find_experts(domain, min_score)
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>ExpertRouter.route(problem, min_confidence, allow_fallback)
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>DistributedEvolver.register_agent(...) / evolve_all() / merge_weights(...)
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>MemoryUnit(id, content, timestamp, importance, access_count, context, memory_type,
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>           user_id, session_id, agent_id, shared_group_id)
+</code></pre></div>
+<h3 id="23">2.3 新增内容如何做到不影响存量<a class="headerlink" href="#23" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>新增方式                      │  对存量代码的影响
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>─────────────────────────────┼──────────────────────────
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>SOMAConfig 新增可选字段       │  Pydantic 自动设默认值，旧代码不传不报错
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>SOMA 新增方法                 │  加新方法不影响已有调用
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>soma.xxx 新子包               │  不 import 就不加载，零开销
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>管道步骤用 if config.flag: 包裹 │  flag 默认 False，旧代码路径完全跳过
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>新策略作为 ConsensusProtocol 选项 │  默认 strategy=&quot;auto&quot;，行为不变
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>新 SQLite 表                  │  独立表名和前缀，不与现有表冲突
+</code></pre></div>
+<hr />
+<h2 id="_3">三、全局约束与设计准则<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
+<p>每个模块的设计必须满足以下 8 条准则：</p>
+<p><strong>G1. 错误隔离</strong>：任何新模块的异常不得传播到核心管道。所有新代码调用包裹在 <code>try/except</code> 中，记录日志后静默跳过。</p>
+<p><strong>G2. 无嵌入器降级</strong>：依赖 embedder 的功能必须有非嵌入器的回退路径（如字符级 bigram 相似度替代余弦相似度）。</p>
+<p><strong>G3. 无 LLM 降级</strong>：依赖 LLM 的功能必须有非 LLM 的回退路径（如规则替代仲裁）。</p>
+<p><strong>G4. 可配置开关</strong>：每个模块有独立的启用开关。用户可以只开某一个而关闭其他五个。</p>
+<p><strong>G5. 资源上限</strong>：任何新数据存储（SQLite 表、内存缓存）都有明确的大小上限和淘汰策略。</p>
+<p><strong>G6. 线程安全</strong>：在 WAL 模式下读写不互斥。Python 层的全局状态（如 hook registry）使用线程安全的数据结构。</p>
+<p><strong>G7. 日志可观测</strong>：每个模块的关键状态变化（启用/禁用/触发/异常）都输出 INFO/DEBUG 日志。</p>
+<p><strong>G8. 独立可测试</strong>：每个模块可以在 <code>SOMA(enable_xxx=False)</code> 环境下独立测试，不需要同时启用其他模块。</p>
+<hr />
+<h2 id="_4">四、模块逐一拆解<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
+<p>以下每个模块按统一格式展开：
+- 实现内容（精确到新增哪些文件、修改哪些文件的哪些位置）
+- 兼容性保证（证明对存量零影响）
+- 风险矩阵（每个步骤可能出什么错、概率、影响、缓解）</p>
+<hr />
+<h3 id="_5">模块一：认知熵值仪表盘<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h3>
+<p><strong>定位</strong>：独立观察者模块。挂在管道末尾，不修改管道内任何逻辑。</p>
+<h4 id="_6">实现内容<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h4>
+<p><strong>新增文件（3 个）</strong>：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>soma/entropy.py              (~220 行)
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>  └─ CognitiveEntropyCalculator 类
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>     ├─ calculate(conversation_turns) → dict
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>     ├─ _logic_coherence(turns) → float     # 相邻轮次余弦相似度均值
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>     ├─ _emotional_stability(turns) → float  # 负面词密度倒数
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>     ├─ _focus_clarity(turns) → float        # 话题向量方差倒数
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>     ├─ _load_negative_words() → set
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>     ├─ GuidanceState(Enum)                   # NORMAL / GUIDANCE
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>     ├─ _check_guidance_transition() → GuidanceState  # D2 确认的阈值逻辑
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>     └─ _render_breathing_reminder() → str            # D2 确认的呼吸提醒
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>soma/entropy/__init__.py     (空)
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>soma/entropy/negative_words.txt  (~150词，从零熵语料提取)
+</code></pre></div>
+<p><strong>修改文件（2 个，增量极小）</strong>：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>soma/config.py (+5 行)
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  SOMAConfig 新增字段:
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    enable_cognitive_entropy: bool = False  # 默认关闭
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    entropy_window_size: int = 20            # 滑动窗口大小
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>soma/__init__.py (+15 行)
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>  SOMA.__init__ 中:
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    if self._config.enable_cognitive_entropy:
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>        self._entropy_calc = CognitiveEntropyCalculator(...)
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>  SOMA 新增方法 (不影响存量):
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    def get_cognitive_state(self, user_id: str = &quot;&quot;) -&gt; dict
+</code></pre></div>
+<h4 id="_7">兼容性证明<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>检查项</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>现有方法签名是否改变</td>
+<td>否 — 只新增 <code>get_cognitive_state()</code></td>
+</tr>
+<tr>
+<td>现有方法返回值是否改变</td>
+<td>否 — <code>respond()</code>/<code>chat()</code> 返回值不变</td>
+</tr>
+<tr>
+<td>默认行为是否改变</td>
+<td>否 — <code>enable_cognitive_entropy=False</code>，旧路径完全不动</td>
+</tr>
+<tr>
+<td>新增 import 是否影响启动</td>
+<td>否 — <code>soma.entropy</code> 只在 config flag 为 True 时才 import</td>
+</tr>
+<tr>
+<td>新增数据表是否冲突</td>
+<td>否 — 熵值历史写入 <code>analytics</code> 表的新列 <code>entropy_score</code>（可 NULL）</td>
+</tr>
+</tbody>
+</table>
+<p><code>soma/analytics.py</code> 的 <code>analytics_sessions</code> 表新增一列：
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">analytics_sessions</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">entropy_score</span><span class="w"> </span><span class="nb">REAL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
+</code></pre></div>
+列有 DEFAULT NULL，存量行不受影响，SQLite ALTER TABLE 在表空时也是瞬间完成。</p>
+<h4 id="_8">风险矩阵<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>故障场景</th>
+<th>触发条件</th>
+<th>概率</th>
+<th>影响</th>
+<th>缓解措施</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>E1</td>
+<td><code>negative_words.txt</code> 文件缺失</td>
+<td>安装不完整</td>
+<td>低</td>
+<td>熵值计算失败</td>
+<td><code>except FileNotFoundError</code> → 使用内置 50 词最小词表</td>
+</tr>
+<tr>
+<td>E2</td>
+<td>旧版 analytics 表无 <code>entropy_score</code> 列</td>
+<td>从 v0.9.0 升级</td>
+<td>中</td>
+<td>写入失败</td>
+<td>ALTER TABLE 用 try/except 包裹，列已存在则跳过</td>
+</tr>
+<tr>
+<td>E3</td>
+<td>对话轮次不足（&lt;3 轮）</td>
+<td>新用户</td>
+<td>高</td>
+<td>无法计算连贯性</td>
+<td><code>len(turns) &lt; 3</code> → 返回 <code>clarity_index=50, grade="数据不足"</code></td>
+</tr>
+<tr>
+<td>E4</td>
+<td>embedder 不可用</td>
+<td>未安装 ONNX</td>
+<td>低</td>
+<td>连贯性计算崩溃</td>
+<td>回退到字符 bigram 重叠率（已有实现可复用）</td>
+</tr>
+<tr>
+<td>E5</td>
+<td>10000+ 轮对话后窗口计算变慢</td>
+<td>长期用户</td>
+<td>低</td>
+<td>响应延迟</td>
+<td>窗口固定 20 轮，O(20) 计算量恒定</td>
+</tr>
+</tbody>
+</table>
+<h4 id="d2">引导模式状态机（D2 确认参数）<a class="headerlink" href="#d2" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># 阈值参数（D2 确认）</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">GUIDANCE_ENTER_THRESHOLD</span> <span class="o">=</span> <span class="mi">40</span>       <span class="c1"># 熵值 &lt; 40 分</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">GUIDANCE_ENTER_CONSECUTIVE</span> <span class="o">=</span> <span class="mi">3</span>      <span class="c1"># 连续 3 轮</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">GUIDANCE_EXIT_THRESHOLD</span> <span class="o">=</span> <span class="mi">50</span>        <span class="c1"># 熵值 ≥ 50 分</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">GUIDANCE_EXIT_CONSECUTIVE</span> <span class="o">=</span> <span class="mi">2</span>       <span class="c1"># 连续 2 轮</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">GUIDANCE_DIRECT_ANSWER_RATIO</span> <span class="o">=</span> <span class="mf">0.3</span>  <span class="c1"># 引导模式下直接回答占比上限</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="c1"># 引导模式下的行为变更：</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="c1"># 1. respond() 直接回答从 70%+ 降至 &lt; 30%</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="c1"># 2. 以引导性问题替代直接结论：「如果换个角度…？」「你觉得根源在哪里？」</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="c1"># 3. 响应末尾追加呼吸提醒（随机从 3 条内置模板选取）</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="n">BREATHING_REMINDERS</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>    <span class="s2">&quot;在继续之前，不妨先做一次深呼吸，感受当下的状态。&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>    <span class="s2">&quot;暂停三秒，问问自己：我现在的情绪在哪个位置？&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>    <span class="s2">&quot;注意到思绪的速度了吗？先回到呼吸，再回到问题。&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="p">]</span>
+</code></pre></div>
+<p>引导模式状态存储在内存中（会话级临时状态，不持久化）。进入和退出均有 INFO 日志记录。</p>
+<hr />
+<h3 id="_9">模块二：空性偏差检测升级<a class="headerlink" href="#_9" title="Permanent link">&para;</a></h3>
+<p><strong>定位</strong>：现有偏差检测的追加式扩展。在 <code>ConflictDetector</code> 的调用点之后，追加一次 <code>FrameAnchoringDetector</code> 调用。</p>
+<h4 id="_10">实现内容<a class="headerlink" href="#_10" title="Permanent link">&para;</a></h4>
+<p><strong>新增文件（2 个）</strong>：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>soma/hub/_frame_detector.py  (~90 行)
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>  └─ FrameAnchoringDetector 类
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>     ├─ detect(conversation_turns) → Optional[dict]
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>     ├─ _load_frames() → dict
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>     └─ _count_frame_usage(turns) → dict
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>soma/hub/frame_keywords.yaml  (~60 行)
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>  8 对框架关键词 + 对立映射
+</code></pre></div>
+<p><strong>修改文件（3 个，追加式修改）</strong>：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>soma/config.py (+3 行)
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>  SOMAConfig 新增字段:
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    enable_frame_detection: bool = False
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    frame_detection_window: int = 5
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>soma/hub/_core.py (+8 行)
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>  ActivationHub.__init__ 中:
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    self._frame_detector = None
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    if enable_frame_detection:
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>        self._frame_detector = FrameAnchoringDetector()
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>  ActivationHub.activate() 末尾:
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>    不修改 activate() 本身。新增独立方法:
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>    def detect_frame_anchoring(self, recent_turns) → Optional[dict]
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>soma/agent.py (+10 行)
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>  _build_prompt() 中，在「反面视角与潜在矛盾」section 之后追加:
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>    if self.config.enable_frame_detection:
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>        frame_result = self.hub.detect_frame_anchoring(recent_turns)
+<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>        if frame_result:
+<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>            prompt_parts.append(f&quot;\n## 觉察提示\n{frame_result[&#39;reflection&#39;]}&quot;)
+</code></pre></div>
+<h4 id="_11">兼容性证明<a class="headerlink" href="#_11" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>检查项</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>现有方法签名是否改变</td>
+<td>否 — <code>ActivationHub</code> 新增方法，不修改已有方法</td>
+</tr>
+<tr>
+<td>默认行为是否改变</td>
+<td>否 — <code>enable_frame_detection=False</code>，prompt 不追加任何新内容</td>
+</tr>
+<tr>
+<td>prompt 结构是否改变</td>
+<td>否 — 只在 flag 为 True 时追加 section，flag 关闭时 prompt 与 v0.9.0 完全一致</td>
+</tr>
+<tr>
+<td>框架关键词库缺失时是否崩溃</td>
+<td>否 — <code>_load_frames()</code> 有内置 8 对的默认词库，YAML 文件缺失时回退</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_12">风险矩阵<a class="headerlink" href="#_12" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>故障场景</th>
+<th>触发条件</th>
+<th>概率</th>
+<th>影响</th>
+<th>缓解措施</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F1</td>
+<td>框架检测过于频繁触发</td>
+<td>用户高频使用同一框架合理</td>
+<td>中</td>
+<td>体验干扰</td>
+<td>阈值设为 60%+（5 轮中 3 轮以上），且同一框架每小时只提示一次</td>
+</tr>
+<tr>
+<td>F2</td>
+<td>关键词匹配误判框架</td>
+<td>正常对话中包含框架词</td>
+<td>低</td>
+<td>错误提示</td>
+<td>检测结果只在 prompt 中以温和建议形式出现，LLM 可自行判断是否采纳</td>
+</tr>
+<tr>
+<td>F3</td>
+<td>prompt 因追加内容超长</td>
+<td>已有大量记忆和反视角时</td>
+<td>低</td>
+<td>LLM token 超限</td>
+<td>框架提示控制在 80 字以内</td>
+</tr>
+<tr>
+<td>F4</td>
+<td><code>recent_turns</code> 数据不足</td>
+<td>新会话</td>
+<td>高</td>
+<td>检测无结果</td>
+<td><code>len(turns) &lt; window_size</code> → 直接返回 None</td>
+</tr>
+<tr>
+<td>F5</td>
+<td>对立框架映射缺失</td>
+<td>新增框架未定义 opposite</td>
+<td>低</td>
+<td>提示不完整</td>
+<td>用 <code>opposite_frame.get(frame, "另一个视角")</code> 兜底</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="_13">模块三：内求复盘钩子<a class="headerlink" href="#_13" title="Permanent link">&para;</a></h3>
+<p><strong>定位</strong>：管道的透明观察者层。在推理管道每步之后检查并生成觉察提示，但不改变任何步骤的输入输出。</p>
+<h4 id="_14">实现内容<a class="headerlink" href="#_14" title="Permanent link">&para;</a></h4>
+<p><strong>新增文件（5 个）</strong>：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>soma/hooks/__init__.py        (导出)
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>soma/hooks/_core.py           (~150 行)
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>  └─ InnerReflectionHook 数据类
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>  └─ HookRegistry 类
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>     ├─ load_builtin()
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>     ├─ load_from_config(yaml_path)
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>     ├─ match(step_name, context) → List[str]
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>     └─ max_hooks_per_step: int = 2  # 每步最多触发 2 个钩子
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>soma/hooks/_builtin_hooks.py  (~80 行)
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>  6 个内置钩子实例（见下表）
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>soma/hooks/hooks_config.yaml  (~40 行)
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>  可热加载的钩子配置，允许零熵研究员调整触发条件
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>soma/hooks/_reflection_store.py (~60 行)
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>  └─ ReflectionStore 类  # D1 确认：独立反射存储
+<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>     ├─ append(reflection) → None
+<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>     ├─ get_recent(user_id, limit) → List[dict]
+<a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>     └─ clear(user_id) → None
+</code></pre></div>
+<p><strong>内置钩子定义</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>钩子名</th>
+<th>触发步</th>
+<th>触发条件</th>
+<th>提示模板</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>complexity_awareness</code></td>
+<td>decompose 后</td>
+<td><code>complexity_score &gt; 6</code></td>
+<td>"这个问题复杂度较高，你第一反应是用哪种经典框架去分析？这个框架是否完全贴合当前场景？"</td>
+</tr>
+<tr>
+<td><code>emotional_load_awareness</code></td>
+<td>activate 后</td>
+<td><code>emotional_load &gt; 0.7</code></td>
+<td>"我注意到您可能带着较强的情绪参与此次思考。建议先暂停几秒，感受一下呼吸，再决定是否采纳此建议。"</td>
+</tr>
+<tr>
+<td><code>frame_inertia_awareness</code></td>
+<td>reasoning 后</td>
+<td>连续 3 轮使用同一主导规律</td>
+<td>"您已连续多次使用「{dominant_law}」角度分析，是否考虑切换到另一个维度？"</td>
+</tr>
+<tr>
+<td><code>info_gap_awareness</code></td>
+<td>prompt_build 前</td>
+<td>记忆覆盖度 &lt; 0.3</td>
+<td>"在给出结论前，我注意到还缺少关于当前情境的关键信息，是否先补充后再继续？"</td>
+</tr>
+<tr>
+<td><code>external_dependency_awareness</code></td>
+<td>action 后</td>
+<td>建议中外部归因词占比 &gt; 0.6</td>
+<td>"这个建议较多涉及外部因素。在等待外部变化的同时，您自己可以先做的一小步是什么？"</td>
+</tr>
+<tr>
+<td><code>deterministic_awareness</code></td>
+<td>respond 结束</td>
+<td>置信度 &gt; 0.9 但历史采纳率 &lt; 0.5</td>
+<td>"我对这个结论的确定性较高，但历史数据显示您的采纳率偏低——这与您的直觉一致吗？"</td>
+</tr>
+</tbody>
+</table>
+<p><strong>修改文件（2 个）</strong>：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>soma/config.py (+3 行)
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>  SOMAConfig 新增字段:
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    enable_inner_reflection: bool = False
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    hooks_config_path: Optional[str] = None  # 自定义钩子配置
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>soma/agent.py (+25 行)
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>  SOMA_Agent.__init__ 中:
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    self._hook_registry = None
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    if config.enable_inner_reflection:
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>        self._hook_registry = HookRegistry(...)
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>  respond() 方法中，在 6 个步骤后各插入一行:
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>    self._emit_hooks(&quot;step_name&quot;, context_dict)
+</code></pre></div>
+<h4 id="_15">兼容性证明<a class="headerlink" href="#_15" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>检查项</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>现有方法签名是否改变</td>
+<td>否</td>
+</tr>
+<tr>
+<td>respond() 返回值是否改变</td>
+<td>否 — 钩子提示通过独立的 log channel 输出，不附加到 answer 字符串</td>
+</tr>
+<tr>
+<td>默认行为是否改变</td>
+<td>否 — <code>enable_inner_reflection=False</code>，管道内零额外开销</td>
+</tr>
+<tr>
+<td>钩子异常是否影响管道</td>
+<td>否 — <code>_emit_hooks()</code> 内部所有钩子调用包在 try/except 中</td>
+</tr>
+</tbody>
+</table>
+<p><strong>关键设计决策 — 钩子输出的三通道（D1 确认：C+A 混合方案）</strong>：</p>
+<p>钩子提示<strong>绝不混入</strong> <code>respond()</code> 的返回值。通过三条独立通道输出：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>Channel 1: soma.reflections (内存 list) — 外部应用主动拉取
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>  → soma.get_hook_reflections(user_id, limit) → List[dict]
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>  → 每个 reflection: {step, hook_name, prompt, timestamp, session_id}
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>  → 外部应用决定是否展示、如何展示给用户
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>Channel 2: Python logging (INFO 级别) — 静默日志
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>  → 格式: [HOOK:{hook_name}] step={step} {prompt}
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>  → 写入日志文件，不打扰用户
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>Channel 3: reflection_log 表 (SQLite 持久化)
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>  → reflection_type=&quot;inner_hook&quot;
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>  → 可被 MetaEvolver.evolve() 读取用于权重调整
+</code></pre></div>
+<p><strong>新增公开方法（不影响存量）</strong>：
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># soma/__init__.py 新增</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_hook_reflections</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;获取最近的内求钩子提示，按时间倒序&quot;&quot;&quot;</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="o">...</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">clear_hook_reflections</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;清空已读取的钩子提示&quot;&quot;&quot;</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>    <span class="o">...</span>
+</code></pre></div></p>
+<h4 id="_16">风险矩阵<a class="headerlink" href="#_16" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>故障场景</th>
+<th>触发条件</th>
+<th>概率</th>
+<th>影响</th>
+<th>缓解措施</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>H1</td>
+<td>钩子模板变量缺失导致 KeyError</td>
+<td>配置错误</td>
+<td>低</td>
+<td>单个钩子失败</td>
+<td><code>str.format()</code> 用 <code>{var:default}</code> 安全格式，缺失变量显示空串</td>
+</tr>
+<tr>
+<td>H2</td>
+<td>hooks_config.yaml 格式错误</td>
+<td>手动编辑失误</td>
+<td>中</td>
+<td>自定义钩子加载失败</td>
+<td>YAML 解析异常 → 回退到内置钩子 + WARNING 日志</td>
+</tr>
+<tr>
+<td>H3</td>
+<td>每步触发过多钩子</td>
+<td>多个钩子条件同时满足</td>
+<td>低</td>
+<td>日志/存储膨胀</td>
+<td><code>max_hooks_per_step=2</code>，按优先级截断</td>
+</tr>
+<tr>
+<td>H4</td>
+<td>循环引用（钩子触发导致状态变化→再触发钩子）</td>
+<td>钩子设计不当</td>
+<td>极低</td>
+<td>钩子风暴</td>
+<td>每个钩子每会话最多触发 3 次（去重计数）</td>
+</tr>
+<tr>
+<td>H5</td>
+<td><code>_current_context</code> 为 None 时钩子触发</td>
+<td>异常流程</td>
+<td>低</td>
+<td>钩子崩溃</td>
+<td>所有钩子逻辑先检查 <code>context is not None</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="_17">模块四：守中执一动态平衡算法<a class="headerlink" href="#_17" title="Permanent link">&para;</a></h3>
+<p><strong>定位</strong>：<code>ConsensusProtocol</code> 的新增策略。不修改现有三条策略（voting/arbitration/synthesis），作为第四条可选策略。</p>
+<h4 id="_18">实现内容<a class="headerlink" href="#_18" title="Permanent link">&para;</a></h4>
+<p><strong>新增文件（1 个）</strong>：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>soma/multi_agent/zhongdao.py  (~120 行)
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>  └─ compute_zhongdao_score(candidate_action, user_profile, context) → float
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>  └─ _estimate_entropy_change(user_profile, action_text) → float
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>  └─ _extract_external_dependency(action_text) → float
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>  └─ _compute_growth_alignment(action_text, success_history) → float
+</code></pre></div>
+<p><strong>修改文件（2 个）</strong>：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>soma/config.py (+8 行)
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>  SOMAConfig 新增字段:
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>    zhongdao_action_weight: float = 0.5      # 行动导向（阳），D3 确认
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>    zhongdao_awareness_weight: float = 0.5   # 觉察导向（阴），D3 确认
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    zhongdao_user_type: str = &quot;general&quot;      # 用户类型: entrepreneur/practitioner/general
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>    zhongdao_auto_adjust_max: float = 0.02   # 每步最大自动调整幅度，D3 确认
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>    zhongdao_weight_min: float = 0.3         # 权重硬下限，D3 确认
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>    zhongdao_weight_max: float = 0.7         # 权重硬上限，D3 确认
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>soma/multi_agent/consensus.py (+40 行)
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>  form_consensus() 新增策略分支:
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>    if strategy == &quot;zhongdao&quot;:
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>        return self._zhongdao_balance(question, opinions)
+<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>
+<a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a>  新增方法:
+<a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a>    def _zhongdao_balance(self, question, opinions) → ConsensusResult
+<a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a>    def _apply_user_type_bias(self) → None         # 用户类型微调，D3 确认
+<a id="__codelineno-13-18" name="__codelineno-13-18" href="#__codelineno-13-18"></a>    def _auto_adjust_weights(self, feedback) → None # 自动演化 ±0.02，D3 确认
+</code></pre></div>
+<h4 id="_19">兼容性证明<a class="headerlink" href="#_19" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>检查项</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>现有方法签名是否改变</td>
+<td>否 — <code>form_consensus()</code> 已有 <code>strategy</code> 参数，<code>"zhongdao"</code> 只是一个新的枚举值</td>
+</tr>
+<tr>
+<td>默认策略是否改变</td>
+<td>否 — <code>strategy="auto"</code> 的逻辑不变</td>
+</tr>
+<tr>
+<td>三个现有策略是否改变</td>
+<td>否 — <code>_weighted_voting()</code>、<code>_llm_arbitration()</code>、<code>_dialectical_synthesis()</code> 代码不动</td>
+</tr>
+<tr>
+<td>不传 user_profile 时是否崩溃</td>
+<td>否 — 全部维度使用默认值（0.5）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="d3">阴阳权重自动演化（D3 确认参数）<a class="headerlink" href="#d3" title="Permanent link">&para;</a></h4>
+<p><div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># 用户类型微调（初始化时一次性调整，±0.1）</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">USER_TYPE_ADJUSTMENTS</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="s2">&quot;entrepreneur&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="o">+</span><span class="mf">0.1</span><span class="p">,</span> <span class="s2">&quot;awareness&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">},</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>    <span class="s2">&quot;practitioner&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="s2">&quot;awareness&quot;</span><span class="p">:</span> <span class="o">+</span><span class="mf">0.1</span><span class="p">},</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>    <span class="s2">&quot;general&quot;</span><span class="p">:</span>       <span class="p">{</span><span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">&quot;awareness&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">},</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="p">}</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="c1"># 每次 evolve() 调用的自动调整（步进 ±0.02，硬边界 0.3/0.7）</span>
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">_auto_adjust_zhongdao</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recent_feedback</span><span class="p">:</span> <span class="nb">list</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>    <span class="n">avg_feedback</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">score</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">recent_feedback</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">recent_feedback</span><span class="p">)</span>
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>    <span class="k">if</span> <span class="n">avg_feedback</span> <span class="o">&gt;</span> <span class="mf">0.7</span><span class="p">:</span>
+<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>        <span class="c1"># 正向反馈 → 强化当前主导方向，但步进极小</span>
+<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>        <span class="n">delta</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mf">0.02</span><span class="p">,</span> <span class="n">avg_feedback</span> <span class="o">-</span> <span class="mf">0.7</span><span class="p">)</span>
+<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>    <span class="k">elif</span> <span class="n">avg_feedback</span> <span class="o">&lt;</span> <span class="mf">0.3</span><span class="p">:</span>
+<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>        <span class="c1"># 负向反馈 → 回调</span>
+<a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a>        <span class="n">delta</span> <span class="o">=</span> <span class="o">-</span><span class="nb">min</span><span class="p">(</span><span class="mf">0.02</span><span class="p">,</span> <span class="mf">0.3</span> <span class="o">-</span> <span class="n">avg_feedback</span><span class="p">)</span>
+<a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>        <span class="k">return</span>  <span class="c1"># 中性区间 [0.3, 0.7]，不调整</span>
+<a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a>
+<a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">action_weight</span> <span class="o">=</span> <span class="n">clamp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">action_weight</span> <span class="o">+</span> <span class="n">delta</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">)</span>
+<a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">awareness_weight</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">action_weight</span>  <span class="c1"># 保持总和恒为 1.0</span>
+<a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a><span class="err">```</span> <span class="o">|</span>
+<a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a>
+<a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a><span class="c1">#### 风险矩阵</span>
+<a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a>
+<a id="__codelineno-14-26" name="__codelineno-14-26" href="#__codelineno-14-26"></a><span class="o">|</span> <span class="c1"># | 故障场景 | 触发条件 | 概率 | 影响 | 缓解措施 |</span>
+<a id="__codelineno-14-27" name="__codelineno-14-27" href="#__codelineno-14-27"></a><span class="o">|---|---------|---------|------|------|---------|</span>
+<a id="__codelineno-14-28" name="__codelineno-14-28" href="#__codelineno-14-28"></a><span class="o">|</span> <span class="n">Z1</span> <span class="o">|</span> <span class="err">`</span><span class="n">_estimate_entropy_change</span><span class="p">()</span><span class="err">`</span> <span class="n">的</span> <span class="n">embedder</span> <span class="n">不可用</span> <span class="o">|</span> <span class="n">未配置向量搜索</span> <span class="o">|</span> <span class="n">中</span> <span class="o">|</span> <span class="n">维度</span> <span class="mi">1</span> <span class="n">失效</span> <span class="o">|</span> <span class="n">回退到字符</span> <span class="n">bigram</span> <span class="n">相似度</span><span class="err">（</span><span class="n">已有</span> <span class="n">QualityEvaluator</span> <span class="n">实现可复用</span><span class="err">）</span> <span class="o">|</span>
+<a id="__codelineno-14-29" name="__codelineno-14-29" href="#__codelineno-14-29"></a><span class="o">|</span> <span class="n">Z2</span> <span class="o">|</span> <span class="n">三个维度权重之和不为</span> <span class="mf">1.0</span> <span class="o">|</span> <span class="n">配置错误</span> <span class="o">|</span> <span class="n">极低</span> <span class="o">|</span> <span class="n">评分偏斜</span> <span class="o">|</span> <span class="err">`</span><span class="fm">__init__</span><span class="err">`</span> <span class="n">时验证权重</span><span class="err">，</span><span class="n">自动归一化</span> <span class="o">|</span>
+<a id="__codelineno-14-30" name="__codelineno-14-30" href="#__codelineno-14-30"></a><span class="o">|</span> <span class="n">Z3</span> <span class="o">|</span> <span class="err">`</span><span class="n">success_history</span><span class="err">`</span> <span class="n">为空</span><span class="err">（</span><span class="n">新用户</span><span class="err">）</span> <span class="o">|</span> <span class="n">首次使用</span> <span class="o">|</span> <span class="n">高</span> <span class="o">|</span> <span class="n">维度</span> <span class="mi">3</span> <span class="n">失效</span> <span class="o">|</span> <span class="n">空列表时</span> <span class="err">`</span><span class="n">_compute_growth_alignment</span><span class="err">`</span> <span class="n">返回</span> <span class="mf">0.5</span><span class="err">（</span><span class="n">中性值</span><span class="err">）</span> <span class="o">|</span>
+<a id="__codelineno-14-31" name="__codelineno-14-31" href="#__codelineno-14-31"></a><span class="o">|</span> <span class="n">Z4</span> <span class="o">|</span> <span class="n">外部依赖关键词列表不完整</span> <span class="o">|</span> <span class="n">覆盖不足</span> <span class="o">|</span> <span class="n">中</span> <span class="o">|</span> <span class="n">维度</span> <span class="mi">2</span> <span class="n">评分不准</span> <span class="o">|</span> <span class="n">关键词列表放在外部</span> <span class="n">YAML</span> <span class="n">文件中</span><span class="err">，</span><span class="n">可热更新</span> <span class="o">|</span>
+<a id="__codelineno-14-32" name="__codelineno-14-32" href="#__codelineno-14-32"></a><span class="o">|</span> <span class="n">Z5</span> <span class="o">|</span> <span class="n">中道分数与用户实际偏好相反</span> <span class="o">|</span> <span class="n">个性化差异</span> <span class="o">|</span> <span class="n">中</span> <span class="o">|</span> <span class="n">用户不满意</span> <span class="o">|</span> <span class="n">结果标注</span> <span class="err">`</span><span class="n">strategy_used</span><span class="o">=</span><span class="s2">&quot;zhongdao&quot;</span><span class="err">`，</span><span class="n">可通过反馈数据调整权重</span> <span class="o">|</span>
+<a id="__codelineno-14-33" name="__codelineno-14-33" href="#__codelineno-14-33"></a>
+<a id="__codelineno-14-34" name="__codelineno-14-34" href="#__codelineno-14-34"></a><span class="o">---</span>
+<a id="__codelineno-14-35" name="__codelineno-14-35" href="#__codelineno-14-35"></a>
+<a id="__codelineno-14-36" name="__codelineno-14-36" href="#__codelineno-14-36"></a><span class="c1">### 模块五：插件系统升级 + 商道罗盘 + 企熵诊断仪</span>
+<a id="__codelineno-14-37" name="__codelineno-14-37" href="#__codelineno-14-37"></a>
+<a id="__codelineno-14-38" name="__codelineno-14-38" href="#__codelineno-14-38"></a><span class="o">**</span><span class="n">定位</span><span class="o">**</span><span class="err">：</span><span class="n">将现有插件发现机制升级为可激活</span><span class="err">、</span><span class="n">可运行状态机的插件框架</span><span class="err">，</span><span class="n">并以两个业务插件作为首批应用</span><span class="err">。</span>
+<a id="__codelineno-14-39" name="__codelineno-14-39" href="#__codelineno-14-39"></a>
+<a id="__codelineno-14-40" name="__codelineno-14-40" href="#__codelineno-14-40"></a><span class="c1">#### 实现内容</span>
+<a id="__codelineno-14-41" name="__codelineno-14-41" href="#__codelineno-14-41"></a>
+<a id="__codelineno-14-42" name="__codelineno-14-42" href="#__codelineno-14-42"></a><span class="o">**</span><span class="n">新增文件</span><span class="err">（</span><span class="mi">5</span> <span class="n">个</span><span class="err">）</span><span class="o">**</span><span class="err">：</span>
+</code></pre></div>
+soma/plugin_base.py              (~110 行)
+  └─ SomaPlugin(ABC)
+     ├─ plugin_id, plugin_name, description
+     ├─ should_activate(user_input, context) → bool
+     ├─ run(agent, user_input, context) → PluginResult
+     └─ reset()  # 重置插件状态
+  └─ PluginRegistry
+     ├─ discover()
+     ├─ register(plugin)
+     └─ find_active(user_input, context) → List[SomaPlugin]</p>
+<p>soma/plugins/<strong>init</strong>.py</p>
+<p>soma/plugins/business_compass.py  (~180 行)
+  └─ BusinessCompassPlugin(SomaPlugin)
+     三阶段对话状态机: explore_mindset → guided_reflection → insight_summary</p>
+<p>soma/plugins/enterprise_entropy.py (~200 行)
+  └─ EnterpriseEntropyPlugin(SomaPlugin)
+     结构化提问诊断 → 组织熵值计算 → 行动建议生成</p>
+<p>soma/plugins/plugin_schema.yaml   (~20 行)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>**修改文件（3 个）**：
+</code></pre></div>
+soma/config.py (+3 行)
+  SOMAConfig 新增字段:
+    enable_plugins: bool = False
+    plugin_dir: Optional[str] = None</p>
+<p>soma/plugin.py (+15 行)
+  新增: PluginRegistry 类 + register_plugin() / activate_plugin() 函数</p>
+<p>soma/<strong>init</strong>.py (+20 行)
+  SOMA 新增方法:
+    def enable_plugin(self, plugin_id: str) → bool
+    def disable_plugin(self, plugin_id: str) → bool
+    def list_plugins(self) → list
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>#### 兼容性证明
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>| 检查项 | 结果 |
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>|--------|------|
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>| 现有方法是否改变 | 否 — 新增 `enable_plugin()` / `disable_plugin()` / `list_plugins()` |
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>| 默认行为是否改变 | 否 — `enable_plugins=False`，插件系统完全不加载 |
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>| 插件异常是否阻塞管道 | 否 — 插件在 `respond()` 入口处检查，异常时跳过插件走正常管道 |
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>| 插件数据表是否冲突 | 否 — 插件数据表统一前缀 `plugin_{plugin_id}_` |
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>
+<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>**关键设计 — 插件拦截与回退**：
+<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>
+<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>```python
+<a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a># SOMA.respond() 入口
+<a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a>def respond(self, problem: str, user_id: str = &quot;&quot;) -&gt; str:
+<a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a>    # 插件拦截 (v0.9.1)
+<a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a>    if self._config.enable_plugins:
+<a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a>        try:
+<a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a>            for plugin in self._plugin_registry.find_active(problem, context):
+<a id="__codelineno-16-19" name="__codelineno-16-19" href="#__codelineno-16-19"></a>                result = plugin.run(self._agent, problem, context)
+<a id="__codelineno-16-20" name="__codelineno-16-20" href="#__codelineno-16-20"></a>                if result.handled:
+<a id="__codelineno-16-21" name="__codelineno-16-21" href="#__codelineno-16-21"></a>                    return result.response
+<a id="__codelineno-16-22" name="__codelineno-16-22" href="#__codelineno-16-22"></a>        except Exception:
+<a id="__codelineno-16-23" name="__codelineno-16-23" href="#__codelineno-16-23"></a>            _log.warning(&quot;插件执行异常，回退到正常推理管道&quot;, exc_info=True)
+<a id="__codelineno-16-24" name="__codelineno-16-24" href="#__codelineno-16-24"></a>
+<a id="__codelineno-16-25" name="__codelineno-16-25" href="#__codelineno-16-25"></a>    # 正常推理管道（代码不变）
+<a id="__codelineno-16-26" name="__codelineno-16-26" href="#__codelineno-16-26"></a>    return self._agent.respond(problem, user_id=user_id)
+</code></pre></div></p>
+<h4 id="_20">风险矩阵<a class="headerlink" href="#_20" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>故障场景</th>
+<th>触发条件</th>
+<th>概率</th>
+<th>影响</th>
+<th>缓解措施</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P1</td>
+<td>插件状态机卡住</td>
+<td>用户中途退出或输入异常</td>
+<td>中</td>
+<td>后续对话异常</td>
+<td>状态机有 10 分钟超时，超时自动 <code>reset()</code></td>
+</tr>
+<tr>
+<td>P2</td>
+<td>插件误触发（非商业问题触发商道插件）</td>
+<td>关键词匹配过宽</td>
+<td>中</td>
+<td>体验干扰</td>
+<td>触发器保守设计：商业关键词 + 用户问题长度 &gt; 10 字</td>
+</tr>
+<tr>
+<td>P3</td>
+<td>插件数据库无限增长</td>
+<td>长期使用</td>
+<td>低</td>
+<td>存储压力</td>
+<td>插件会话记录保留最近 100 条</td>
+</tr>
+<tr>
+<td>P4</td>
+<td>插件文件热加载冲突</td>
+<td>运行时替换插件文件</td>
+<td>极低</td>
+<td>插件加载失败</td>
+<td>插件在 SOMA 初始化时一次性加载，运行时不热加载</td>
+</tr>
+<tr>
+<td>P5</td>
+<td>两个插件同时激活冲突</td>
+<td>用户问题同时命中两个插件</td>
+<td>低</td>
+<td>输出混乱</td>
+<td><code>find_active()</code> 只返回优先级最高的 1 个插件</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="_21">模块六：规律贡献接口<a class="headerlink" href="#_21" title="Permanent link">&para;</a></h3>
+<p><strong>定位</strong>：独立的贡献管理系统。不与核心推理管道耦合，只通过审核流程向规律网络注入已验证的思维模型。</p>
+<h4 id="_22">实现内容<a class="headerlink" href="#_22" title="Permanent link">&para;</a></h4>
+<p><strong>新增文件（3 个）</strong>：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>soma/contribution.py             (~200 行)
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>  └─ PatternSubmission 数据类
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>  └─ ContributionHandler
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>     ├─ submit(submission) → submission_id
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>     ├─ auto_review(submission_id) → ReviewResult
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>     ├─ manual_approve(submission_id, reviewer_id) → bool
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>     ├─ record_adoption(pattern_id, outcome) → None
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>     └─ get_active_patterns(context, limit) → list
+<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>
+<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>soma/contribution_schema.json    (~50 行)
+<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>  提交格式 JSON Schema
+<a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>
+<a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a>soma/contribution_store.py      (~100 行)
+<a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a>  └─ ContributionStore (SQLite)
+<a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a>     表: contributions, approved_patterns, adoption_log
+</code></pre></div>
+<p><strong>修改文件（2 个）</strong>：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>soma/engine.py (+10 行)
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>  WisdomEngine 新增方法:
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>    def inject_contributed_pattern(pattern) → bool
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>    在 decompose() 的 fallback 阶段，检查是否有匹配的贡献规律
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>soma/law_discovery.py (+15 行)
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>  LawDiscovery 新增:
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>    def validate_contribution(submission) → dict  # 去重 + 格式校验
+</code></pre></div>
+<h4 id="_23">兼容性证明<a class="headerlink" href="#_23" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>检查项</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>现有方法是否改变</td>
+<td>否 — <code>decompose()</code> 内部在 fallback 阶段追加贡献规律检查，只增加候选不删除现有逻辑</td>
+</tr>
+<tr>
+<td>贡献规律是否可能破坏现有推理</td>
+<td>否 — 贡献规律只在 fallback 阶段参与，优先级低于内置 7 条规律</td>
+</tr>
+<tr>
+<td>未审核的贡献是否影响系统</td>
+<td>否 — 只有 <code>manual_approve()</code> 通过后才注入规律网络</td>
+</tr>
+<tr>
+<td>贡献存储是否与核心数据库冲突</td>
+<td>否 — 独立的 <code>contribution_store.db</code> 文件</td>
+</tr>
+</tbody>
+</table>
+<h4 id="d4-d5">审核流程与安全设计（D4 + D5 确认）<a class="headerlink" href="#d4-d5" title="Permanent link">&para;</a></h4>
+<p><strong>第一关：自动审核（4 类禁止内容，直接拒绝）</strong></p>
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>检测方式</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>投机取巧</td>
+<td>关键词匹配（走捷径/薅羊毛/套利/钻空子）</td>
+<td>"如何利用规则漏洞快速获利"</td>
+</tr>
+<tr>
+<td>损害他人</td>
+<td>关键词匹配（攻击/诋毁/榨取/欺骗）</td>
+<td>"怎样让竞争对手倒闭"</td>
+</tr>
+<tr>
+<td>违背内求</td>
+<td>语义判断（外部归因占比 &gt; 0.8 + 零自省词汇）</td>
+<td>"一切都是环境的问题"</td>
+</tr>
+<tr>
+<td>捷径成功论</td>
+<td>关键词+语义（速成/秘籍/不劳而获）</td>
+<td>"三天成为亿万富翁的秘诀"</td>
+</tr>
+</tbody>
+</table>
+<p><strong>第二关：5 柱接受量表（人工审核，每柱 0-20 分，总分 ≥ 70 分通过）</strong></p>
+<table>
+<thead>
+<tr>
+<th>柱名</th>
+<th>含义</th>
+<th>满分标准</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>善行</td>
+<td>是否引向正向行动</td>
+<td>提供具体、可操作的向善行动路径</td>
+</tr>
+<tr>
+<td>善人</td>
+<td>是否促进人的成长</td>
+<td>关注人的内在成长而非仅外部结果</td>
+</tr>
+<tr>
+<td>善心</td>
+<td>是否引导内求觉察</td>
+<td>包含自我审视和反思的触发点</td>
+</tr>
+<tr>
+<td>善史</td>
+<td>是否符合长期价值</td>
+<td>不追求短期效果，考虑长期影响</td>
+</tr>
+<tr>
+<td>善修</td>
+<td>是否可实践验证</td>
+<td>规律可以被个人实践检验，非纯理论</td>
+</tr>
+</tbody>
+</table>
+<p>审核标准书面文档路径：<code>docs/contribution-audit-standards.md</code></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>用户提交 contribution.json
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>         │
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>         ▼
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>  ┌──────────────┐
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>  │ 自动审核      │ ← 4 类禁止检测 + JSON Schema + 去重 (sim &lt; 0.85)
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>  │               │   任一禁止类命中 → 直接拒绝，附拒绝原因
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>  └──────┬───────┘
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>         │ auto_review 通过
+<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>         ▼
+<a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a>  ┌──────────────┐
+<a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a>  │ 人工审核队列   │ ← 认证「规律审核员」按 5 柱量表评分
+<a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a>  │               │   总分 ≥ 70 → 通过 | 50-69 → 退回修改 | &lt; 50 → 拒绝
+<a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a>  └──────┬───────┘
+<a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a>         │ manual_approve 通过
+<a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a>         ▼
+<a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a>  ┌──────────────┐
+<a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a>  │ 纳入规律网络   │ ← pattern_id 加入向量索引，初始 energy=5
+<a id="__codelineno-19-18" name="__codelineno-19-18" href="#__codelineno-19-18"></a>  │ v1.0 (活跃)   │   触发条件加入 engine 关键词表
+<a id="__codelineno-19-19" name="__codelineno-19-19" href="#__codelineno-19-19"></a>  └──────┬───────┘
+<a id="__codelineno-19-20" name="__codelineno-19-20" href="#__codelineno-19-20"></a>         │
+<a id="__codelineno-19-21" name="__codelineno-19-21" href="#__codelineno-19-21"></a>         ▼
+<a id="__codelineno-19-22" name="__codelineno-19-22" href="#__codelineno-19-22"></a>  ┌──────────────┐
+<a id="__codelineno-19-23" name="__codelineno-19-23" href="#__codelineno-19-23"></a>  │ 运行中追踪     │ ← 每次采纳 +1 energy，负面反馈 -2 energy
+<a id="__codelineno-19-24" name="__codelineno-19-24" href="#__codelineno-19-24"></a>  │               │   energy &lt; 0 → 自动降级（归档，不删除）
+<a id="__codelineno-19-25" name="__codelineno-19-25" href="#__codelineno-19-25"></a>  └──────┬───────┘
+<a id="__codelineno-19-26" name="__codelineno-19-26" href="#__codelineno-19-26"></a>         │ energy ≥ 50 或 &gt;30 次采纳（D5 确认）
+<a id="__codelineno-19-27" name="__codelineno-19-27" href="#__codelineno-19-27"></a>         ▼
+<a id="__codelineno-19-28" name="__codelineno-19-28" href="#__codelineno-19-28"></a>  ┌──────────────┐
+<a id="__codelineno-19-29" name="__codelineno-19-29" href="#__codelineno-19-29"></a>  │ 升级审核       │ ← 3 位独立审核员全部通过 → v2.0
+<a id="__codelineno-19-30" name="__codelineno-19-30" href="#__codelineno-19-30"></a>  │               │   旧版 v1.0 归档到 pattern_archive 表
+<a id="__codelineno-19-31" name="__codelineno-19-31" href="#__codelineno-19-31"></a>  │               │   需要 changelog（变更说明 + 理由）
+<a id="__codelineno-19-32" name="__codelineno-19-32" href="#__codelineno-19-32"></a>  └──────────────┘
+</code></pre></div>
+<h4 id="_24">风险矩阵<a class="headerlink" href="#_24" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>故障场景</th>
+<th>触发条件</th>
+<th>概率</th>
+<th>影响</th>
+<th>缓解措施</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C1</td>
+<td>恶意提交（不当内容）</td>
+<td>开放提交</td>
+<td>中</td>
+<td>审核队列污染</td>
+<td>自动审核 4 类禁止检测（D4）+ 人工为最后关卡</td>
+</tr>
+<tr>
+<td>C2</td>
+<td>提交大量低质量规律</td>
+<td>滥用</td>
+<td>中</td>
+<td>审核人力消耗</td>
+<td>每人每天限提交 3 条；energy &lt; -5 的提交者暂停提交权限</td>
+</tr>
+<tr>
+<td>C3</td>
+<td>贡献规律与现有规律高度相似</td>
+<td>独立发现相同规律</td>
+<td>中</td>
+<td>冗余</td>
+<td>embedding sim &gt; 0.85 → 拒绝，提示「与已有规律高度相似」</td>
+</tr>
+<tr>
+<td>C4</td>
+<td>5 柱评分标准执行不一致</td>
+<td>不同审核员理解偏差</td>
+<td>中</td>
+<td>审核质量波动</td>
+<td>编写 <code>contribution-audit-standards.md</code>（D4）作为统一标准 + 审核员培训</td>
+</tr>
+<tr>
+<td>C5</td>
+<td>升级审核 3 人难以凑齐</td>
+<td>审核员活跃度不足</td>
+<td>中</td>
+<td>升级流程阻塞</td>
+<td>升级不紧急（energy &lt; 50 时规律正常使用），审核超时 7 天自动提醒</td>
+</tr>
+<tr>
+<td>C6</td>
+<td>旧版本归档后无法回溯</td>
+<td>SQLite 文件损坏</td>
+<td>极低</td>
+<td>历史数据丢失</td>
+<td>WAL 模式 + 定期备份 + pattern_archive 表与主表同目录</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_25">五、端到端风险推演<a class="headerlink" href="#_25" title="Permanent link">&para;</a></h2>
+<h3 id="51">5.1 升级场景推演<a class="headerlink" href="#51" title="Permanent link">&para;</a></h3>
+<p><strong>场景 A：老用户从 v0.9.0 升级到 v0.9.1</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>1. pip install --upgrade soma-wisdom==0.9.1
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>2. 原有代码 import soma; soma = SOMA(use_vector_search=True)
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>3. 不修改任何代码，直接运行
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>4. 预期：行为与 v0.9.0 完全一致（所有新 flag 默认 False）
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>5. 新文件 soma/entropy.py 等被安装但不会被 import（延迟加载）
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>6. analytics_sessions 表追加 entropy_score 列（ALTER TABLE，瞬间完成）
+</code></pre></div>
+<p><strong>场景 B：新用户直接安装 v0.9.1</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>1. pip install soma-wisdom==0.9.1
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>2. 默认行为：纯 v0.9.0 模式（所有新功能关闭）
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>3. 阅读文档后按需开启：
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>   soma = SOMA(use_vector_search=True, enable_cognitive_entropy=True)
+</code></pre></div>
+<p><strong>场景 C：用户开启部分新功能</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>1. 只开熵值仪表盘，不开钩子/框架检测/插件
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>2. 预期：仪表盘正常工作，管道不受影响
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>3. 验证：每个模块的独立开关有效
+</code></pre></div>
+<h3 id="52">5.2 数据库迁移推演<a class="headerlink" href="#52" title="Permanent link">&para;</a></h3>
+<p>所有新增列/表都使用 <code>IF NOT EXISTS</code> 或 try/except 包围：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="c1"># 安全迁移模式 (每个新增列都用这个模式)</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">col_def</span> <span class="ow">in</span> <span class="p">[</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>    <span class="p">(</span><span class="s2">&quot;entropy_score&quot;</span><span class="p">,</span> <span class="s2">&quot;REAL DEFAULT NULL&quot;</span><span class="p">),</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="p">]:</span>
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>    <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>            <span class="sa">f</span><span class="s2">&quot;ALTER TABLE analytics_sessions ADD COLUMN </span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">col_def</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>        <span class="p">)</span>
+<a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>    <span class="k">except</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">OperationalError</span><span class="p">:</span>
+<a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a>        <span class="k">pass</span>  <span class="c1"># 列已存在，跳过</span>
+</code></pre></div>
+<p>这个模式已在 v0.9.0 的 <code>episodic.py</code> 中验证过（88-100 行的列迁移逻辑），稳定可靠。</p>
+<h3 id="53">5.3 跨模块交互推演<a class="headerlink" href="#53" title="Permanent link">&para;</a></h3>
+<p>六个模块之间的依赖关系：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>               ┌─────────────┐
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>               │ 认知熵值仪表盘 │  ← 完全独立，零耦合
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>               └─────────────┘
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>
+<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>               ┌─────────────┐
+<a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>               │ 空性偏差检测   │  ← 依赖: hub/_core.py (追加式)
+<a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a>               └──────┬──────┘
+<a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>                      │ 共享: recent_conversation_turns
+<a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a>                      │
+<a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a>               ┌──────▼──────┐
+<a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a>               │ 内求复盘钩子   │  ← 依赖: agent.py 管道 (观察者)
+<a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a>               └──────┬──────┘
+<a id="__codelineno-24-13" name="__codelineno-24-13" href="#__codelineno-24-13"></a>                      │ 同一个 _emit_hooks() 调用点
+<a id="__codelineno-24-14" name="__codelineno-24-14" href="#__codelineno-24-14"></a>                      │
+<a id="__codelineno-24-15" name="__codelineno-24-15" href="#__codelineno-24-15"></a>      ┌───────────────┼───────────────┐
+<a id="__codelineno-24-16" name="__codelineno-24-16" href="#__codelineno-24-16"></a>      │               │               │
+<a id="__codelineno-24-17" name="__codelineno-24-17" href="#__codelineno-24-17"></a>┌─────▼─────┐  ┌──────▼──────┐  ┌─────▼─────┐
+<a id="__codelineno-24-18" name="__codelineno-24-18" href="#__codelineno-24-18"></a>│ 守中执一    │  │ 商道罗盘     │  │ 规律贡献   │
+<a id="__codelineno-24-19" name="__codelineno-24-19" href="#__codelineno-24-19"></a>│ (独立策略)  │  │ (独立插件)   │  │ (独立模块) │
+<a id="__codelineno-24-20" name="__codelineno-24-20" href="#__codelineno-24-20"></a>└───────────┘  └─────────────┘  └───────────┘
+</code></pre></div>
+<p>关键发现：<strong>六个模块之间几乎零相互依赖</strong>。这意味着：
+1. 任何一个模块出问题，不会牵连其他模块
+2. 可以独立回退任何一个模块
+3. 可以分批发版，不需要六个一起上</p>
+<h3 id="54">5.4 最坏情况推演<a class="headerlink" href="#54" title="Permanent link">&para;</a></h3>
+<p><strong>假设：升级后出现严重 bug，需要紧急回退</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="c1"># 回退方案：一行命令</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>pip<span class="w"> </span>install<span class="w"> </span>soma-wisdom<span class="o">==</span><span class="m">0</span>.9.0
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="c1"># 影响评估：</span>
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="c1"># - 数据库中的新列（entropy_score 等）留在表中，不影响 v0.9.0 读取</span>
+<a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a><span class="c1"># - 新增文件（entropy.py, hooks/ 等）被卸载</span>
+<a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a><span class="c1"># - 用户代码不需要任何修改</span>
+<a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a><span class="c1"># 回退时间：&lt; 1 分钟</span>
+</code></pre></div>
+<hr />
+<h2 id="_26">六、对整体开发计划的影响<a class="headerlink" href="#_26" title="Permanent link">&para;</a></h2>
+<h3 id="_27">原计划<a class="headerlink" href="#_27" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>v0.9.x — 多Agent协作（已完成）
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>v0.10.0 — Agent自动孵化 + 跨Agent知识蒸馏 + Agent市场协议 + 联邦演化
+</code></pre></div>
+<h3 id="_28">调整后<a class="headerlink" href="#_28" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>v0.9.1 — 零熵觉察层（本次整合）
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>  ├─ 认知熵值仪表盘
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>  ├─ 空性偏差检测
+<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>  ├─ 内求复盘钩子
+<a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a>  ├─ 守中执一算法
+<a id="__codelineno-27-6" name="__codelineno-27-6" href="#__codelineno-27-6"></a>  ├─ 商道罗盘 + 企熵诊断仪（插件）
+<a id="__codelineno-27-7" name="__codelineno-27-7" href="#__codelineno-27-7"></a>  └─ 规律贡献接口
+<a id="__codelineno-27-8" name="__codelineno-27-8" href="#__codelineno-27-8"></a>
+<a id="__codelineno-27-9" name="__codelineno-27-9" href="#__codelineno-27-9"></a>v0.10.0 — Agent生态扩展（原计划，不变）
+<a id="__codelineno-27-10" name="__codelineno-27-10" href="#__codelineno-27-10"></a>  ├─ Agent自动孵化
+<a id="__codelineno-27-11" name="__codelineno-27-11" href="#__codelineno-27-11"></a>  ├─ 跨Agent知识蒸馏
+<a id="__codelineno-27-12" name="__codelineno-27-12" href="#__codelineno-27-12"></a>  ├─ Agent市场协议
+<a id="__codelineno-27-13" name="__codelineno-27-13" href="#__codelineno-27-13"></a>  └─ 联邦演化
+</code></pre></div>
+<h3 id="v091-v0100">为什么 v0.9.1 不影响 v0.10.0<a class="headerlink" href="#v091-v0100" title="Permanent link">&para;</a></h3>
+<ol>
+<li>
+<p><strong>代码路径不重叠</strong>：v0.9.1 的新代码在 <code>soma/entropy/</code>、<code>soma/hooks/</code>、<code>soma/plugins/</code>、<code>soma/contribution.py</code>，v0.10.0 的改动在 <code>soma/multi_agent/</code>，互不冲突。</p>
+</li>
+<li>
+<p><strong>v0.9.1 的插件框架对 v0.10.0 有益</strong>：v0.10.0 的 Agent 市场协议可以直接复用插件注册和激活机制。</p>
+</li>
+<li>
+<p><strong>v0.9.1 的贡献接口对 v0.10.0 有益</strong>：跨 Agent 知识蒸馏可以利用贡献规律作为蒸馏源。</p>
+</li>
+<li>
+<p><strong>开发资源可以并行</strong>：如果有多人协作，v0.9.1 和 v0.10.0 可以同时推进。</p>
+</li>
+</ol>
+<hr />
+<h2 id="_29">七、实施路线图（含兼容性验证关卡）<a class="headerlink" href="#_29" title="Permanent link">&para;</a></h2>
+<h3 id="_30">阶段划分（按文化赋能师建议的优先级调整）<a class="headerlink" href="#_30" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>Phase A: 审核标准 + 空性偏差（第1-2周）[D4 优先]
+<a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>  ├─ 编写 docs/contribution-audit-standards.md（4类禁止+5柱评分细则）
+<a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>  └─ 模块二: 空性偏差检测升级（FrameAnchoringDetector）
+<a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a>  验收: 审核标准文档完成 + 框架检测不影响存量测试
+<a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>
+<a id="__codelineno-28-6" name="__codelineno-28-6" href="#__codelineno-28-6"></a>Phase B: 钩子反射 + 阴阳权重（第3-4周）[D1 + D3 并行]
+<a id="__codelineno-28-7" name="__codelineno-28-7" href="#__codelineno-28-7"></a>  ├─ 模块三: 内求复盘钩子（三通道输出 + get_hook_reflections API）
+<a id="__codelineno-28-8" name="__codelineno-28-8" href="#__codelineno-28-8"></a>  └─ 模块四: 守中执一算法（用户类型微调 + 自动演化 ±0.02）
+<a id="__codelineno-28-9" name="__codelineno-28-9" href="#__codelineno-28-9"></a>  验收: 钩子框架 + 6内置钩子 + 异常隔离 + 中道评分三维度
+<a id="__codelineno-28-10" name="__codelineno-28-10" href="#__codelineno-28-10"></a>
+<a id="__codelineno-28-11" name="__codelineno-28-11" href="#__codelineno-28-11"></a>Phase C: 熵值引导模式（第5-6周）[D2，依赖 Phase B 钩子框架]
+<a id="__codelineno-28-12" name="__codelineno-28-12" href="#__codelineno-28-12"></a>  └─ 模块一: 认知熵值仪表盘 + 引导模式状态机（40/50 阈值）
+<a id="__codelineno-28-13" name="__codelineno-28-13" href="#__codelineno-28-13"></a>  验收: 熵值三维度计算 + 引导模式进入/退出正常
+<a id="__codelineno-28-14" name="__codelineno-28-14" href="#__codelineno-28-14"></a>
+<a id="__codelineno-28-15" name="__codelineno-28-15" href="#__codelineno-28-15"></a>Phase D: 生态扩展层（第7-10周）[D5 + D6 收尾]
+<a id="__codelineno-28-16" name="__codelineno-28-16" href="#__codelineno-28-16"></a>  ├─ 模块五: 插件系统 + 商道罗盘 + 企熵诊断仪
+<a id="__codelineno-28-17" name="__codelineno-28-17" href="#__codelineno-28-17"></a>  ├─ 模块六: 规律贡献接口（4类禁止 + 5柱评分 + 版本升级管理）
+<a id="__codelineno-28-18" name="__codelineno-28-18" href="#__codelineno-28-18"></a>  └─ D6: 零熵测试系统独立并行文档说明
+<a id="__codelineno-28-19" name="__codelineno-28-19" href="#__codelineno-28-19"></a>  验收: 端到端贡献→审核→纳入→升级→归档流程
+</code></pre></div>
+<h3 id="_31">每阶段的兼容性验证关卡<a class="headerlink" href="#_31" title="Permanent link">&para;</a></h3>
+<p>每个 Phase 结束时必须通过以下关卡才能进入下一阶段：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>关卡 1: 存量测试全通过
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a>  运行: pytest tests/ -v
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a>  要求: 473 项全绿，0 失败
+<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a>
+<a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a>关卡 2: API 签名一致性
+<a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a>  运行: 脚本逐一调用 30 个公开接口，确认签名和返回类型不变
+<a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a>
+<a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a>关卡 3: 默认行为一致性
+<a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a>  验证: SOMA() 无参构造后 respond/chat/remember 行为与 v0.9.0 相同
+<a id="__codelineno-29-10" name="__codelineno-29-10" href="#__codelineno-29-10"></a>
+<a id="__codelineno-29-11" name="__codelineno-29-11" href="#__codelineno-29-11"></a>关卡 4: 独立开关验证
+<a id="__codelineno-29-12" name="__codelineno-29-12" href="#__codelineno-29-12"></a>  验证: 逐一开启每个新 flag，确认只有目标模块生效
+<a id="__codelineno-29-13" name="__codelineno-29-13" href="#__codelineno-29-13"></a>
+<a id="__codelineno-29-14" name="__codelineno-29-14" href="#__codelineno-29-14"></a>关卡 5: 升级回退验证
+<a id="__codelineno-29-15" name="__codelineno-29-15" href="#__codelineno-29-15"></a>  验证: pip install soma-wisdom==0.9.0 后数据库正常读写
+</code></pre></div>
+<h3 id="_32">测试增量估算<a class="headerlink" href="#_32" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>新增测试数</th>
+<th>覆盖内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Phase A</td>
+<td>~15 项</td>
+<td>框架检测、审核格式校验、4类禁止检测、5柱评分计算、降级路径</td>
+</tr>
+<tr>
+<td>Phase B</td>
+<td>~25 项</td>
+<td>钩子注册/触发/频率限制/异常隔离/三通道输出/反射API、中道评分三维度/用户类型微调/自动演化边界</td>
+</tr>
+<tr>
+<td>Phase C</td>
+<td>~15 项</td>
+<td>熵值三维度计算、引导模式进入/退出/呼吸提醒、降级路径</td>
+</tr>
+<tr>
+<td>Phase D</td>
+<td>~30 项</td>
+<td>插件发现/激活/状态机/拦截回退、贡献提交/4类禁止/5柱评分/去重/版本升级/归档</td>
+</tr>
+<tr>
+<td><strong>总计</strong></td>
+<td><strong>~85 项</strong></td>
+<td><strong>累计测试约 558 项</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_33">八、总结<a class="headerlink" href="#_33" title="Permanent link">&para;</a></h2>
+<h3 id="_34">这次整合的本质<a class="headerlink" href="#_34" title="Permanent link">&para;</a></h3>
+<p>不是给 SOMA 添加六个「功能」。而是为其注入一个<strong>新的认知操作系统</strong>。</p>
+<p>当前 SOMA 的操作系统是「问题解决模式」——接收问题→拆解→检索→推理→回答。这次整合后，SOMA 将获得第二个模式——「觉察辅助模式」——在解决问题的同时，温和地帮助使用者看见自己的思维惯性、情绪扰动、认知边界。</p>
+<h3 id="_35">决策状态<a class="headerlink" href="#_35" title="Permanent link">&para;</a></h3>
+<p>6 项关键决策（D1-D6）已经与文化赋能师确认，详见第九节。核心决策：
+- <strong>D1</strong>：钩子走独立反射 API，不混入 answer 文本
+- <strong>D2</strong>：连续 3 轮 &lt; 40 分触发引导模式，2 轮 ≥ 50 分退出
+- <strong>D3</strong>：阴阳权重 0.5/0.5 起，用户类型 ±0.1，自动演化 ±0.02，边界 0.3/0.7
+- <strong>D4</strong>：4 类禁止 + 5 柱量表，需编写书面审核标准
+- <strong>D5</strong>：高能量规律（≥50 或 &gt;30 次采纳）需 3 人审核，旧版归档不删除
+- <strong>D6</strong>：SOMA 熵值与零熵测试系统独立并行，v0.9.1 不做技术集成</p>
+<h3 id="_36">技术上的承诺<a class="headerlink" href="#_36" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>承诺</th>
+<th>如何保证</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>不破坏一行存量代码</td>
+<td>所有新功能默认关闭，新行为由独立 config flag 控制</td>
+</tr>
+<tr>
+<td>不改变任何一个 API</td>
+<td>30 个公开接口签名和返回类型不变</td>
+</tr>
+<tr>
+<td>出问题可以一键回退</td>
+<td>pip install 旧版本，数据库无损</td>
+</tr>
+<tr>
+<td>六个模块独立可开关</td>
+<td>每个模块有独立的 enable_xxx config flag</td>
+</tr>
+</tbody>
+</table>
+<h2 id="_37">九、六项关键决策（已确认）<a class="headerlink" href="#_37" title="Permanent link">&para;</a></h2>
+<p>以下 6 项决策经与文化赋能师深入讨论后已确定，作为模块实现的最终技术参数。</p>
+<hr />
+<h3 id="d1">D1：内求复盘钩子的输出通道<a class="headerlink" href="#d1" title="Permanent link">&para;</a></h3>
+<p><strong>决策：C+A 混合方案 — 独立钩子反射 API + 静默日志</strong></p>
+<p>钩子提示<strong>绝不混入</strong> <code>respond()</code> 的返回值。技术实现：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>钩子触发后的三条输出通道：
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a>┌─────────────────────────────────────────────────────┐
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a>│ Channel 1: soma.reflections (内存 list)              │
+<a id="__codelineno-30-4" name="__codelineno-30-4" href="#__codelineno-30-4"></a>│   → soma.get_hook_reflections(user_id) → List[dict] │
+<a id="__codelineno-30-5" name="__codelineno-30-5" href="#__codelineno-30-5"></a>│   → 外部应用主动拉取，按需展示给用户                   │
+<a id="__codelineno-30-6" name="__codelineno-30-6" href="#__codelineno-30-6"></a>│   → 每个 reflection 包含: step, hook_name, prompt,   │
+<a id="__codelineno-30-7" name="__codelineno-30-7" href="#__codelineno-30-7"></a>│      timestamp, session_id                          │
+<a id="__codelineno-30-8" name="__codelineno-30-8" href="#__codelineno-30-8"></a>├─────────────────────────────────────────────────────┤
+<a id="__codelineno-30-9" name="__codelineno-30-9" href="#__codelineno-30-9"></a>│ Channel 2: Python logging (级别 INFO)                │
+<a id="__codelineno-30-10" name="__codelineno-30-10" href="#__codelineno-30-10"></a>│   → 静默写入日志文件，不打扰用户                       │
+<a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a>│   → 格式: [HOOK:{hook_name}] step={step} {prompt}   │
+<a id="__codelineno-30-12" name="__codelineno-30-12" href="#__codelineno-30-12"></a>├─────────────────────────────────────────────────────┤
+<a id="__codelineno-30-13" name="__codelineno-30-13" href="#__codelineno-30-13"></a>│ Channel 3: reflection_log 表 (持久化)                 │
+<a id="__codelineno-30-14" name="__codelineno-30-14" href="#__codelineno-30-14"></a>│   → reflection_type=&quot;inner_hook&quot;                    │
+<a id="__codelineno-30-15" name="__codelineno-30-15" href="#__codelineno-30-15"></a>│   → 可被 MetaEvolver 的 evolve() 读取用于权重调整      │
+<a id="__codelineno-30-16" name="__codelineno-30-16" href="#__codelineno-30-16"></a>└─────────────────────────────────────────────────────┘
+</code></pre></div>
+<p>新增公开方法（不影响存量）：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_hook_reflections</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;获取最近的内求钩子提示，按时间倒序&quot;&quot;&quot;</span>
+<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>    <span class="o">...</span>
+<a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a>
+<a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">clear_hook_reflections</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;清空已读取的钩子提示&quot;&quot;&quot;</span>
+<a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a>    <span class="o">...</span>
+</code></pre></div>
+<p><strong>设计理由</strong>：钩子提示是「觉察辅助」而非「答案修正」。强行混入 answer 会破坏返回格式兼容性，让外部应用自行决定如何展示是最灵活的做法。</p>
+<hr />
+<h3 id="d2_1">D2：认知熵值的干预阈值<a class="headerlink" href="#d2_1" title="Permanent link">&para;</a></h3>
+<p><strong>决策：连续 3 轮 &lt; 40 分触发引导模式，连续 2 轮 ≥ 50 分后退出</strong></p>
+<p>引导模式的行为变更：</p>
+<table>
+<thead>
+<tr>
+<th>正常模式</th>
+<th>引导模式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>直接回答占 70%+</td>
+<td>直接回答降至 &lt; 30%</td>
+</tr>
+<tr>
+<td>主动给出结论</td>
+<td>以引导性问题为主（「你觉得…？」「如果换个角度…？」）</td>
+</tr>
+<tr>
+<td>无干预</td>
+<td>响应末尾追加呼吸提醒（随机从 3 条模板中选取）</td>
+</tr>
+</tbody>
+</table>
+<p>技术参数：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="n">GUIDANCE_ENTER_THRESHOLD</span> <span class="o">=</span> <span class="mi">40</span>      <span class="c1"># 熵值低于 40 分</span>
+<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a><span class="n">GUIDANCE_ENTER_CONSECUTIVE</span> <span class="o">=</span> <span class="mi">3</span>     <span class="c1"># 连续 3 轮</span>
+<a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a><span class="n">GUIDANCE_EXIT_THRESHOLD</span> <span class="o">=</span> <span class="mi">50</span>       <span class="c1"># 熵值恢复到 50 分以上</span>
+<a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a><span class="n">GUIDANCE_EXIT_CONSECUTIVE</span> <span class="o">=</span> <span class="mi">2</span>      <span class="c1"># 连续 2 轮</span>
+<a id="__codelineno-32-5" name="__codelineno-32-5" href="#__codelineno-32-5"></a><span class="n">GUIDANCE_DIRECT_ANSWER_RATIO</span> <span class="o">=</span> <span class="mf">0.3</span> <span class="c1"># 引导模式下直接回答占比上限</span>
+<a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a>
+<a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a><span class="c1"># 呼吸提醒模板（内置 3 条，可扩展）</span>
+<a id="__codelineno-32-8" name="__codelineno-32-8" href="#__codelineno-32-8"></a><span class="n">BREATHING_REMINDERS</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-32-9" name="__codelineno-32-9" href="#__codelineno-32-9"></a>    <span class="s2">&quot;在继续之前，不妨先做一次深呼吸，感受当下的状态。&quot;</span><span class="p">,</span>
+<a id="__codelineno-32-10" name="__codelineno-32-10" href="#__codelineno-32-10"></a>    <span class="s2">&quot;暂停三秒，问问自己：我现在的情绪在哪个位置？&quot;</span><span class="p">,</span>
+<a id="__codelineno-32-11" name="__codelineno-32-11" href="#__codelineno-32-11"></a>    <span class="s2">&quot;注意到思绪的速度了吗？先回到呼吸，再回到问题。&quot;</span><span class="p">,</span>
+<a id="__codelineno-32-12" name="__codelineno-32-12" href="#__codelineno-32-12"></a><span class="p">]</span>
+</code></pre></div>
+<p>引导模式状态存储在 <code>CognitiveEntropyCalculator</code> 的内存状态中，不持久化（会话级别的临时状态）。</p>
+<hr />
+<h3 id="d3_1">D3：守中执一算法的阴阳权重<a class="headerlink" href="#d3_1" title="Permanent link">&para;</a></h3>
+<p><strong>决策：初始 0.5/0.5，按用户类型微调，步进 ±0.02，硬边界 0.3/0.7</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="c1"># 初始权重</span>
+<a id="__codelineno-33-2" name="__codelineno-33-2" href="#__codelineno-33-2"></a><span class="n">zhongdao_action_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span>     <span class="c1"># 行动导向（阳）</span>
+<a id="__codelineno-33-3" name="__codelineno-33-3" href="#__codelineno-33-3"></a><span class="n">zhongdao_awareness_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span>  <span class="c1"># 觉察导向（阴）</span>
+<a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a>
+<a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a><span class="c1"># 用户类型微调（初始化时一次性调整）</span>
+<a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a><span class="n">USER_TYPE_ADJUSTMENTS</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-33-7" name="__codelineno-33-7" href="#__codelineno-33-7"></a>    <span class="s2">&quot;entrepreneur&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="o">+</span><span class="mf">0.1</span><span class="p">,</span> <span class="s2">&quot;awareness&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">},</span>  <span class="c1"># 创业者 → 偏行动</span>
+<a id="__codelineno-33-8" name="__codelineno-33-8" href="#__codelineno-33-8"></a>    <span class="s2">&quot;practitioner&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="s2">&quot;awareness&quot;</span><span class="p">:</span> <span class="o">+</span><span class="mf">0.1</span><span class="p">},</span>  <span class="c1"># 修行者 → 偏觉察</span>
+<a id="__codelineno-33-9" name="__codelineno-33-9" href="#__codelineno-33-9"></a>    <span class="s2">&quot;general&quot;</span><span class="p">:</span>       <span class="p">{</span><span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">&quot;awareness&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">},</span>   <span class="c1"># 通用 → 不调整</span>
+<a id="__codelineno-33-10" name="__codelineno-33-10" href="#__codelineno-33-10"></a><span class="p">}</span>
+<a id="__codelineno-33-11" name="__codelineno-33-11" href="#__codelineno-33-11"></a>
+<a id="__codelineno-33-12" name="__codelineno-33-12" href="#__codelineno-33-12"></a><span class="c1"># 自动演化的约束</span>
+<a id="__codelineno-33-13" name="__codelineno-33-13" href="#__codelineno-33-13"></a><span class="n">AUTO_ADJUST_MAX_PER_STEP</span> <span class="o">=</span> <span class="mf">0.02</span>   <span class="c1"># 每步最多调整 ±0.02</span>
+<a id="__codelineno-33-14" name="__codelineno-33-14" href="#__codelineno-33-14"></a><span class="n">HARD_MIN</span> <span class="o">=</span> <span class="mf">0.3</span>                     <span class="c1"># 硬下限</span>
+<a id="__codelineno-33-15" name="__codelineno-33-15" href="#__codelineno-33-15"></a><span class="n">HARD_MAX</span> <span class="o">=</span> <span class="mf">0.7</span>                     <span class="c1"># 硬上限</span>
+<a id="__codelineno-33-16" name="__codelineno-33-16" href="#__codelineno-33-16"></a>
+<a id="__codelineno-33-17" name="__codelineno-33-17" href="#__codelineno-33-17"></a><span class="c1"># 自动调整逻辑</span>
+<a id="__codelineno-33-18" name="__codelineno-33-18" href="#__codelineno-33-18"></a><span class="k">def</span><span class="w"> </span><span class="nf">_auto_adjust_zhongdao</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feedback_score</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+<a id="__codelineno-33-19" name="__codelineno-33-19" href="#__codelineno-33-19"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;根据用户反馈微调权重&quot;&quot;&quot;</span>
+<a id="__codelineno-33-20" name="__codelineno-33-20" href="#__codelineno-33-20"></a>    <span class="k">if</span> <span class="n">feedback_score</span> <span class="o">&gt;</span> <span class="mf">0.7</span><span class="p">:</span>  <span class="c1"># 正向反馈 → 微调当前主导权重</span>
+<a id="__codelineno-33-21" name="__codelineno-33-21" href="#__codelineno-33-21"></a>        <span class="n">delta</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">AUTO_ADJUST_MAX_PER_STEP</span><span class="p">,</span> <span class="n">feedback_score</span> <span class="o">-</span> <span class="mf">0.7</span><span class="p">)</span>
+<a id="__codelineno-33-22" name="__codelineno-33-22" href="#__codelineno-33-22"></a>    <span class="k">elif</span> <span class="n">feedback_score</span> <span class="o">&lt;</span> <span class="mf">0.3</span><span class="p">:</span>  <span class="c1"># 负向反馈 → 回调</span>
+<a id="__codelineno-33-23" name="__codelineno-33-23" href="#__codelineno-33-23"></a>        <span class="n">delta</span> <span class="o">=</span> <span class="o">-</span><span class="nb">min</span><span class="p">(</span><span class="n">AUTO_ADJUST_MAX_PER_STEP</span><span class="p">,</span> <span class="mf">0.3</span> <span class="o">-</span> <span class="n">feedback_score</span><span class="p">)</span>
+<a id="__codelineno-33-24" name="__codelineno-33-24" href="#__codelineno-33-24"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-33-25" name="__codelineno-33-25" href="#__codelineno-33-25"></a>        <span class="k">return</span>  <span class="c1"># 中性反馈，不调整</span>
+<a id="__codelineno-33-26" name="__codelineno-33-26" href="#__codelineno-33-26"></a>
+<a id="__codelineno-33-27" name="__codelineno-33-27" href="#__codelineno-33-27"></a>    <span class="n">new_action</span> <span class="o">=</span> <span class="n">clamp</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">action_weight</span> <span class="o">+</span> <span class="n">delta</span><span class="p">,</span> <span class="n">HARD_MIN</span><span class="p">,</span> <span class="n">HARD_MAX</span><span class="p">)</span>
+<a id="__codelineno-33-28" name="__codelineno-33-28" href="#__codelineno-33-28"></a>    <span class="n">new_awareness</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">new_action</span>  <span class="c1"># 保持总和为 1.0</span>
+<a id="__codelineno-33-29" name="__codelineno-33-29" href="#__codelineno-33-29"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">action_weight</span> <span class="o">=</span> <span class="n">new_action</span>
+<a id="__codelineno-33-30" name="__codelineno-33-30" href="#__codelineno-33-30"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">awareness_weight</span> <span class="o">=</span> <span class="n">new_awareness</span>
+</code></pre></div>
+<p><strong>设计理由</strong>：0.5 起点体现「守中」原则 — 不预设行动或觉察哪个更重要。用户类型只做微调（±0.1），不会让初始状态偏离太远。自动演化的步进极小（±0.02），确保权重变化缓慢而稳定。</p>
+<hr />
+<h3 id="d4">D4：规律贡献的审核标准<a class="headerlink" href="#d4" title="Permanent link">&para;</a></h3>
+<p><strong>决策：4 类禁止内容 + 5 柱接受量表 + 需编写书面审核标准文档</strong></p>
+<p><strong>4 类禁止内容（自动审核阶段直接拒绝）</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>类别</th>
+<th>检测方式</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>投机取巧</td>
+<td>关键词匹配（走捷径/薅羊毛/套利/钻空子）</td>
+<td>"如何利用规则漏洞快速获利"</td>
+</tr>
+<tr>
+<td>损害他人</td>
+<td>关键词匹配（攻击/诋毁/榨取/欺骗）</td>
+<td>"怎样让竞争对手倒闭"</td>
+</tr>
+<tr>
+<td>违背内求</td>
+<td>语义判断（外部归因占比 &gt; 0.8 + 零自省词汇）</td>
+<td>"一切都是环境的问题，只要换环境就好"</td>
+</tr>
+<tr>
+<td>捷径成功论</td>
+<td>关键词+语义（速成/秘籍/不劳而获）</td>
+<td>"三天成为亿万富翁的秘诀"</td>
+</tr>
+</tbody>
+</table>
+<p><strong>5 柱接受量表</strong>（人工审核阶段的评分标准，每柱 0-20 分，总分 ≥ 70 分通过）：</p>
+<table>
+<thead>
+<tr>
+<th>柱名</th>
+<th>含义</th>
+<th>满分标准</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>善行</td>
+<td>是否引向正向行动</td>
+<td>提供具体、可操作的向善行动路径</td>
+</tr>
+<tr>
+<td>善人</td>
+<td>是否促进人的成长</td>
+<td>关注人的内在成长而非仅外部结果</td>
+</tr>
+<tr>
+<td>善心</td>
+<td>是否引导内求觉察</td>
+<td>包含自我审视和反思的触发点</td>
+</tr>
+<tr>
+<td>善史</td>
+<td>是否符合长期价值</td>
+<td>不追求短期效果，考虑长期影响</td>
+</tr>
+<tr>
+<td>善修</td>
+<td>是否可实践验证</td>
+<td>规律可以被个人实践检验，非纯理论</td>
+</tr>
+</tbody>
+</table>
+<p><strong>需编写文档</strong>：<code>docs/contribution-audit-standards.md</code>，详细记录审核流程、标准操作程序、边界案例判定指南。该文档作为规律审核员的培训材料和操作手册。</p>
+<hr />
+<h3 id="d5">D5：规律升级的版本管理<a class="headerlink" href="#d5" title="Permanent link">&para;</a></h3>
+<p><strong>决策：版本化升级，高能量规律需 3 人独立审核</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>升级路径：
+<a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>┌──────────┐    energy ≥ 50    ┌──────────────┐
+<a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>│  v1.0    │ ──── 或 ───────→  │  升级审核流程  │
+<a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a>│ (活跃)   │  &gt;30次采纳        │  3人独立审核   │
+<a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a>└──────────┘                   └──────┬───────┘
+<a id="__codelineno-34-6" name="__codelineno-34-6" href="#__codelineno-34-6"></a>                                      │ 全部通过
+<a id="__codelineno-34-7" name="__codelineno-34-7" href="#__codelineno-34-7"></a>                                      ▼
+<a id="__codelineno-34-8" name="__codelineno-34-8" href="#__codelineno-34-8"></a>                               ┌──────────────┐
+<a id="__codelineno-34-9" name="__codelineno-34-9" href="#__codelineno-34-9"></a>                               │  v2.0        │
+<a id="__codelineno-34-10" name="__codelineno-34-10" href="#__codelineno-34-10"></a>                               │ (升级生效)    │
+<a id="__codelineno-34-11" name="__codelineno-34-11" href="#__codelineno-34-11"></a>                               │ changelog    │
+<a id="__codelineno-34-12" name="__codelineno-34-12" href="#__codelineno-34-12"></a>                               └──────────────┘
+<a id="__codelineno-34-13" name="__codelineno-34-13" href="#__codelineno-34-13"></a>
+<a id="__codelineno-34-14" name="__codelineno-34-14" href="#__codelineno-34-14"></a>旧版本处理：
+<a id="__codelineno-34-15" name="__codelineno-34-15" href="#__codelineno-34-15"></a>- v1.0 → 归档到 contribution_store.db 的 pattern_archive 表
+<a id="__codelineno-34-16" name="__codelineno-34-16" href="#__codelineno-34-16"></a>- 不删除（保持完整历史链）
+<a id="__codelineno-34-17" name="__codelineno-34-17" href="#__codelineno-34-17"></a>- 归档规律仍可查询但不参与活跃匹配
+<a id="__codelineno-34-18" name="__codelineno-34-18" href="#__codelineno-34-18"></a>- 如果 v2.0 的 energy 降到 &lt; 0，可回退到 v1.0
+</code></pre></div>
+<p><strong>Changelog 格式要求</strong>：
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="p">{</span>
+<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a><span class="w">  </span><span class="nt">&quot;pattern_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;P_xxx&quot;</span><span class="p">,</span>
+<a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a><span class="w">  </span><span class="nt">&quot;from_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.0&quot;</span><span class="p">,</span>
+<a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a><span class="w">  </span><span class="nt">&quot;to_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
+<a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a><span class="w">  </span><span class="nt">&quot;reviewers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;reviewer_id_1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;reviewer_id_2&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;reviewer_id_3&quot;</span><span class="p">],</span>
+<a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a><span class="w">  </span><span class="nt">&quot;change_summary&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;修改了触发条件的范围，从仅限企业场景扩展到团队场景&quot;</span><span class="p">,</span>
+<a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a><span class="w">  </span><span class="nt">&quot;rationale&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;在零熵智库的 50+ 次采纳中发现该规律在团队层面同样有效&quot;</span><span class="p">,</span>
+<a id="__codelineno-35-8" name="__codelineno-35-8" href="#__codelineno-35-8"></a><span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-05-12T10:00:00Z&quot;</span>
+<a id="__codelineno-35-9" name="__codelineno-35-9" href="#__codelineno-35-9"></a><span class="p">}</span>
+</code></pre></div></p>
+<hr />
+<h3 id="d6">D6：与零熵测试系统的关系<a class="headerlink" href="#d6" title="Permanent link">&para;</a></h3>
+<p><strong>决策：独立并行，v0.9.1 不做技术集成</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>当前关系：
+<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a>┌─────────────┐         ┌──────────────────┐
+<a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a>│ SOMA 熵值    │         │ 零熵智库测试系统    │
+<a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a>│ (内部指标)   │         │ (独立外部系统)     │
+<a id="__codelineno-36-5" name="__codelineno-36-5" href="#__codelineno-36-5"></a>│ - 逻辑连贯性  │  无技术  │ - 20项成长指标    │
+<a id="__codelineno-36-6" name="__codelineno-36-6" href="#__codelineno-36-6"></a>│ - 情绪稳定性  │  集成   │ - 生命赋能评估    │
+<a id="__codelineno-36-7" name="__codelineno-36-7" href="#__codelineno-36-7"></a>│ - 焦点清晰度  │         │ - 商业实践体系    │
+<a id="__codelineno-36-8" name="__codelineno-36-8" href="#__codelineno-36-8"></a>└─────────────┘         └──────────────────┘
+<a id="__codelineno-36-9" name="__codelineno-36-9" href="#__codelineno-36-9"></a>        │                        │
+<a id="__codelineno-36-10" name="__codelineno-36-10" href="#__codelineno-36-10"></a>        │     ┌──────────────┐   │
+<a id="__codelineno-36-11" name="__codelineno-36-11" href="#__codelineno-36-11"></a>        └─────┤ 人工对照参考   ├───┘
+<a id="__codelineno-36-12" name="__codelineno-36-12" href="#__codelineno-36-12"></a>              │ (不在代码层面) │
+<a id="__codelineno-36-13" name="__codelineno-36-13" href="#__codelineno-36-13"></a>              └──────────────┘
+</code></pre></div>
+<p><strong>v0.9.1 的做法</strong>：
+- SOMA 的 <code>CognitiveEntropyCalculator</code> 和零熵测试系统各自独立运行
+- 不做 API 对接、数据交换或分数映射
+- 两者产出可以人工对照参考，但不做技术层面的关联
+- 未来版本（v0.10.0+）如需集成，届时再设计数据交换协议</p>
+<p><strong>设计理由</strong>：两个系统的评估维度和方法论不同，强行在代码层面对齐会引入不必要的耦合。保持独立让各自可以按自己的节奏迭代。</p>
+<hr />
+<h3 id="_38">决策后的实施优先级调整<a class="headerlink" href="#_38" title="Permanent link">&para;</a></h3>
+<p>文化赋能师建议的实施顺序：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>优先级 1: D4 — 编写审核标准文档（代码实现的前提）
+<a id="__codelineno-37-2" name="__codelineno-37-2" href="#__codelineno-37-2"></a>    ↓
+<a id="__codelineno-37-3" name="__codelineno-37-3" href="#__codelineno-37-3"></a>优先级 2: D1 + D3 — 钩子反射 API + 阴阳权重配置（管道层改动）
+<a id="__codelineno-37-4" name="__codelineno-37-4" href="#__codelineno-37-4"></a>    ↓
+<a id="__codelineno-37-5" name="__codelineno-37-5" href="#__codelineno-37-5"></a>优先级 3: D2 — 熵值引导模式（依赖 D1 的钩子框架就位）
+<a id="__codelineno-37-6" name="__codelineno-37-6" href="#__codelineno-37-6"></a>    ↓
+<a id="__codelineno-37-7" name="__codelineno-37-7" href="#__codelineno-37-7"></a>优先级 4: D5 + D6 — 版本管理 + 系统关系文档（收尾）
+</code></pre></div>
+<p>对应到模块实现的调整：</p>
+<table>
+<thead>
+<tr>
+<th>原 Phase</th>
+<th>调整后</th>
+<th>变更说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Phase A: 熵值仪表盘 + 空性偏差</td>
+<td>Phase A: 空性偏差 + 审核标准文档(D4)</td>
+<td>先写标准再写代码</td>
+</tr>
+<tr>
+<td>Phase B: 内求复盘钩子</td>
+<td>Phase B: 内求钩子(D1) + 阴阳权重(D3)</td>
+<td>钩子输出通道独立化 + 权重微调逻辑</td>
+</tr>
+<tr>
+<td>Phase C: 守中执一算法</td>
+<td>Phase C: 认知熵值 + 引导模式(D2)</td>
+<td>熵值干预阈值 + 引导模式状态机</td>
+</tr>
+<tr>
+<td>Phase D: 插件 + 贡献</td>
+<td>Phase D: 插件 + 贡献(D5) + 系统文档(D6)</td>
+<td>版本管理 + 独立并行说明</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_39">十、下一步<a class="headerlink" href="#_39" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>编写审核标准文档</strong>：创建 <code>docs/contribution-audit-standards.md</code>，详细定义 4 类禁止内容的判定边界和 5 柱评分细则（与 D4 对齐）</li>
+<li><strong>更新模块实现细节</strong>：按 D1-D6 的确认参数细化各模块的伪代码和测试用例</li>
+<li><strong>启动 Phase A</strong>：空性偏差检测 + 审核标准文档编写</li>
+<li><strong>同步筹备 v0.10.0</strong>：Agent 生态扩展计划继续推进，与 v0.9.1 并行</li>
+</ol>
+<hr />
+<p><em>文档版本: 3.0 | 适用版本: SOMA v0.9.0 → v0.9.1 | 2026-05-12 | 纳入 D1-D6 确认决策 + 实施优先级调整</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/sunyan999999/soma" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://pypi.org/project/soma-wisdom/" target="_blank" rel="noopener" title="pypi.org" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.expand", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

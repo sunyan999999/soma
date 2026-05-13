@@ -1,0 +1,1858 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="SOMA is a cognitive memory framework for AI agents. 7 thinking laws decompose problems, bidirectional activation retrieves memories, and weights self-evolve over time. pip install soma-wisdom. 智慧超越记忆。">
+      
+      
+        <meta name="author" content="SOMA Project Team">
+      
+      
+        <link rel="canonical" href="https://sunyan999999.github.io/soma/v0.9.0-%E7%94%A8%E6%88%B7%E6%8C%87%E5%8D%97/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>SOMA v0.9.0 — 让 AI 学会思考的记忆架构 - SOMA — Somatic Wisdom Architecture</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#soma-v090-ai" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href=".." title="SOMA — Somatic Wisdom Architecture" class="md-header__button md-logo" aria-label="SOMA — Somatic Wisdom Architecture" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SOMA — Somatic Wisdom Architecture
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              SOMA v0.9.0 — 让 AI 学会思考的记忆架构
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/sunyan999999/soma" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="SOMA — Somatic Wisdom Architecture" class="md-nav__button md-logo" aria-label="SOMA — Somatic Wisdom Architecture" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    SOMA — Somatic Wisdom Architecture
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/sunyan999999/soma" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速开始
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../philosophy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    核心理念
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构手册
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API 参考
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/customization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    自定义指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    对比分析
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    对比分析
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../articles/soma-vs-mem0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SOMA vs Mem0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../articles/soma-vs-letta/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SOMA vs Letta
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../articles/why-we-built-soma/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Why We Built SOMA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../case-studies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    案例研究
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    贡献指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    变更日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        目录
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#soma" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        一句话说清楚 SOMA 是什么
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#soma_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SOMA 能做什么
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="SOMA 能做什么">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ai" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🧠 让 AI 记住，而不是忘记
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ai_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        💡 让 AI 思考，而不是匹配
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ai_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🌱 让 AI 越用越聪明
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ai_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        🤝 让 AI 团队协作
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        核心能力全景图
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        能力详解
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="能力详解">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ai_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第一层：记忆底座 — 让 AI 拥有不会遗忘的大脑
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第一层：记忆底座 — 让 AI 拥有不会遗忘的大脑">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        自动记忆
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        智能去重
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        双重搜索
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        记忆整理与遗忘
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        记忆安全隔离
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第二层：深度推理 — 不只是找答案，而是理解问题
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第二层：深度推理 — 不只是找答案，而是理解问题">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        七种思维规律
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        因果推理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        跨领域类比
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        质量自评
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_14" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第三层：持续进化 — 用得越久越懂你
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第三层：持续进化 — 用得越久越懂你">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_15" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        权重自动演化
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_16" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        技能固化
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_17" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        遗忘无用信息
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ai_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第四层：群体协作 — 一个 AI 团队为你工作
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="第四层：群体协作 — 一个 AI 团队为你工作">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        组建专家团队
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_19" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        智能路由 — 问题自动找对人
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_20" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        共识机制 — 多种意见合而为一
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        分布式演化 — 每个专家各自成长
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        应用场景
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="应用场景">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        场景一：企业智能客服
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ai_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        场景二：个人 AI 知识管家
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ai_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        场景三：团队协作 AI 中台
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_24" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        场景四：教育辅导平台
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_25" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        场景五：法律/医疗/金融专业顾问
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_26" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        对不同用户的价值
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="对不同用户的价值">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_27" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        对个人用户
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_28" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        对团队和中小企业
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_29" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        对企业
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        与其它方案的区别
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="与其它方案的区别">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#soma-vs-chromadb-pinecone-milvus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SOMA vs 普通向量数据库（ChromaDB / Pinecone / Milvus）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#soma-vs-agent-langchain-crewai-autogen" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SOMA vs 其他 Agent 框架（LangChain / CrewAI / AutoGen）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        开始使用
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="开始使用">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#30" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        最快体验（30 秒）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        第一次使用（3 行代码）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        下一步
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="soma-v090-ai">SOMA v0.9.0 — 让 AI 学会思考的记忆架构<a class="headerlink" href="#soma-v090-ai" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>一个会思考、会记忆、会成长、会协作的 AI 大脑系统</p>
+</blockquote>
+<hr />
+<h2 id="_1">目录<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<ol>
+<li><a href="#一句话说清楚-soma-是什么">一句话说清楚 SOMA 是什么</a></li>
+<li><a href="#soma-能做什么">SOMA 能做什么</a></li>
+<li><a href="#核心能力全景图">核心能力全景图</a></li>
+<li><a href="#能力详解">能力详解</a></li>
+<li><a href="#应用场景">应用场景</a></li>
+<li><a href="#对不同用户的价值">对不同用户的价值</a></li>
+<li><a href="#与其它方案的区别">与其它方案的区别</a></li>
+<li><a href="#开始使用">开始使用</a></li>
+</ol>
+<hr />
+<h2 id="soma">一句话说清楚 SOMA 是什么<a class="headerlink" href="#soma" title="Permanent link">&para;</a></h2>
+<p>SOMA 是一个给 AI 装上的「大脑操作系统」。</p>
+<p>现在的 AI 大模型就像一个人拥有海量知识，但每次对话结束就「失忆」。下次再聊，你们又是陌生人。</p>
+<p><strong>SOMA 解决了这个问题。</strong> 它让 AI 拥有：</p>
+<ul>
+<li><strong>记忆</strong>——记住跟你聊过的每一件事，下次自动回想起来</li>
+<li><strong>思考</strong>——用 7 种思维方式拆解问题，不是生硬匹配关键词</li>
+<li><strong>成长</strong>——用得越久越懂你，自动调整思维偏好</li>
+<li><strong>协作</strong>——多个 AI 分身组成团队，像人类专家团队一样讨论决策</li>
+</ul>
+<p>你可以把 SOMA 理解为一个「会思考的记忆库」，或者一个「越用越聪明的 AI 助手底座」。</p>
+<hr />
+<h2 id="soma_1">SOMA 能做什么<a class="headerlink" href="#soma_1" title="Permanent link">&para;</a></h2>
+<h3 id="ai">🧠 让 AI 记住，而不是忘记<a class="headerlink" href="#ai" title="Permanent link">&para;</a></h3>
+<p>普通 AI 每次对话都是全新开始。接入 SOMA 后，AI 能记住你们之前讨论过的所有事情——你的偏好、你的项目背景、你否定过的方案、你认同过的想法。下次对话时，相关记忆会自动浮现。</p>
+<h3 id="ai_1">💡 让 AI 思考，而不是匹配<a class="headerlink" href="#ai_1" title="Permanent link">&para;</a></h3>
+<p>普通 AI 面对问题，做的事情是搜索匹配最相关的信息。SOMA 的做法不同：它用 <strong>7 种思维规律</strong>来拆解问题——从第一性原理、系统关联、矛盾权衡、时间演化、信息完整性等多个维度同时分析，给出更深入、更结构化的思考结果。</p>
+<h3 id="ai_2">🌱 让 AI 越用越聪明<a class="headerlink" href="#ai_2" title="Permanent link">&para;</a></h3>
+<p>SOMA 会观察自己的思考效果，当一个思维角度反复帮你找到好答案，它的权重会自动上升；当某个角度一直没帮助，它的权重会下降。这不是人工调参，而是系统在真实使用中自动进化。</p>
+<h3 id="ai_3">🤝 让 AI 团队协作<a class="headerlink" href="#ai_3" title="Permanent link">&para;</a></h3>
+<p>一个 AI 再强也有盲区。SOMA v0.9.0 支持创建多个 AI 专家——法律专家、技术顾问、管理教练……每个都有自己的独立记忆和专长领域。问题来了自动分给最合适的专家，多个专家意见不一致时自动协调达成共识。</p>
+<hr />
+<h2 id="_2">核心能力全景图<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<p>SOMA 不是单一功能，而是一个层次化的认知系统。从底层到顶层，每一层都为上一层提供支撑：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌──────────────────────────────────────────────────────────────┐
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│                    第四层 · 群体协作                          │
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│   专家团队组建  →  问题自动路由  →  多角度综合分析  →  共识达成   │
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│   &quot;不是一个人思考，是一个团队在为你工作&quot;                        │
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>├──────────────────────────────────────────────────────────────┤
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│                    第三层 · 持续进化                          │
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│   观察使用效果  →  调整思维权重  →  固化有效技能  →  遗忘无用信息  │
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│   &quot;每次对话后都变得更懂你&quot;                                     │
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>├──────────────────────────────────────────────────────────────┤
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│                    第二层 · 深度推理                          │
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>│   七维思维拆解  →  因果链分析  →  矛盾检测  →  跨领域类比         │
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>│   &quot;不只是找答案，而是理解问题的本质&quot;                            │
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>├──────────────────────────────────────────────────────────────┤
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>│                    第一层 · 记忆底座                          │
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>│   自动记忆存储  →  智能去重  →  关键词搜索  →  语义理解搜索        │
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>│   &quot;过目不忘，随问随答&quot;                                        │
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>└──────────────────────────────────────────────────────────────┘
+</code></pre></div>
+<hr />
+<h2 id="_3">能力详解<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
+<h3 id="ai_4">第一层：记忆底座 — 让 AI 拥有不会遗忘的大脑<a class="headerlink" href="#ai_4" title="Permanent link">&para;</a></h3>
+<h4 id="_4">自动记忆<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h4>
+<p>每当 AI 和你对话，SOMA 会自动记录关键信息。不需要你手动保存，不需要你说「记住这个」。系统会自动判断什么值得记、什么可以忽略。</p>
+<p><strong>一个例子</strong>：你告诉 AI 「我们项目用的是 React 18，数据库是 PostgreSQL，下周五要上线」。SOMA 自动拆分并记住这三条关键信息。两周后你问「我们项目用的什么数据库」，AI 直接回答「PostgreSQL」，因为记忆自动被检索出来了。</p>
+<h4 id="_5">智能去重<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h4>
+<p>同样的信息不会反复存储。SOMA 会判断新内容是否和已有记忆重复——如果是在更新而非新增，如果一模一样则直接跳过。这让记忆库保持精简，不会随着使用时间膨胀到无法管理。</p>
+<h4 id="_6">双重搜索<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h4>
+<p>当你提问时，SOMA 同时用两种方式检索记忆：</p>
+<ul>
+<li><strong>关键词匹配</strong>：快速找出包含你提到词语的记忆，适合精确查找</li>
+<li><strong>语义理解</strong>：理解你问题的含义，找出意思相关的记忆——哪怕用词完全不同</li>
+</ul>
+<p>两种结果智能融合排序，确保最相关的记忆排在前面。</p>
+<p><strong>一个例子</strong>：你之前讨论过「用户登录的安全性」，现在问「怎么防止账号被盗」。用词完全不同，但语义搜索能理解两件事高度相关，把之前的讨论调出来。</p>
+<h4 id="_7">记忆整理与遗忘<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h4>
+<p>人的大脑不会记住所有事——不重要的事情会被遗忘，相关的事情会被合并。SOMA 模拟了同样的机制：</p>
+<ul>
+<li><strong>合并摘要</strong>：当多条记忆都在说同一件事的不同方面时，系统自动将它们合并成一条更完整的记忆，消除冗余</li>
+<li><strong>主动遗忘</strong>：长期不访问的低价值记忆会被自动归档（不是删除，需要时可以找回）</li>
+<li><strong>智能保留</strong>：重要的、经常访问的、近期记录的记忆会被保护，不会被遗忘</li>
+</ul>
+<h4 id="_8">记忆安全隔离<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h4>
+<p>在多人使用或多 AI 共存的场景中，记忆不会串。SOMA 有三层隔离：</p>
+<ul>
+<li><strong>你的记忆只有你能看到</strong>（除非你主动共享）</li>
+<li><strong>团队共享区</strong>：你可以把某些记忆开放给同一团队的人</li>
+<li><strong>全局知识库</strong>：通用的、不涉及隐私的知识对所有人开放</li>
+</ul>
+<p>这就像公司的网盘——有你的私人文件夹，有部门共享文件夹，也有全公司都能看的公共资料库。</p>
+<hr />
+<h3 id="_9">第二层：深度推理 — 不只是找答案，而是理解问题<a class="headerlink" href="#_9" title="Permanent link">&para;</a></h3>
+<p>这是 SOMA 区别于普通记忆库的核心能力。它不只是「找到相关信息拼在一起」，而是用一套完整的思维框架来拆解和分析问题。</p>
+<h4 id="_10">七种思维规律<a class="headerlink" href="#_10" title="Permanent link">&para;</a></h4>
+<p>SOMA 内置了 7 条思维规律，每一条代表一种分析问题的角度：</p>
+<table>
+<thead>
+<tr>
+<th>思维规律</th>
+<th>通俗解释</th>
+<th>什么时候最有用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>第一性原理</strong></td>
+<td>回到问题最根本的地方，问「这件事本质上是什么」</td>
+<td>面对复杂问题时，剥离表象直达本质</td>
+</tr>
+<tr>
+<td><strong>系统思维</strong></td>
+<td>把问题放在更大系统里看，考虑各部分怎么相互影响</td>
+<td>分析一个改动会带来哪些连锁反应</td>
+</tr>
+<tr>
+<td><strong>矛盾权衡</strong></td>
+<td>识别问题中的对立力量，不是非此即彼，而是找平衡点</td>
+<td>两个方案各有利弊，需要综合权衡</td>
+</tr>
+<tr>
+<td><strong>时间演化</strong></td>
+<td>考虑事情会怎么随时间变化——短期效果 vs 长期后果</td>
+<td>做决策时评估未来影响</td>
+</tr>
+<tr>
+<td><strong>信息完整性</strong></td>
+<td>审视自己知道什么、不知道什么，主动补全缺失的信息</td>
+<td>信息不足时避免武断决策</td>
+</tr>
+<tr>
+<td><strong>多视角采样</strong></td>
+<td>站在不同角色立场看问题，避免单维度思维</td>
+<td>涉及多方利益时需要换位思考</td>
+</tr>
+<tr>
+<td><strong>行动导向</strong></td>
+<td>思考的最终目标是行动——结论必须能落地执行</td>
+<td>需要产出具体方案而不是空谈分析</td>
+</tr>
+</tbody>
+</table>
+<p><strong>一个实际例子</strong>：用户问「我应该把单体应用拆成微服务吗？」</p>
+<ul>
+<li>普通 AI 回答：「微服务有这些好处……也有这些坏处……」</li>
+<li>SOMA 的思考过程：</li>
+<li><strong>第一性原理</strong>：这个应用的核心价值是什么？微服务是手段不是目的</li>
+<li><strong>系统思维</strong>：拆分会影响团队结构、部署流程、监控体系——不只是技术问题</li>
+<li><strong>矛盾权衡</strong>：开发速度 vs 运维复杂度，团队独立性 vs 全局一致性</li>
+<li><strong>时间演化</strong>：现在用户量 1000，半年后可能 10 万——现在拆还是以后拆？</li>
+<li><strong>信息完整性</strong>：我还不知道你的团队规模、技术栈、预算——在哪些信息缺失的情况下给出建议？</li>
+<li><strong>多视角</strong>：开发者怎么看、运维怎么看、产品经理怎么看、老板怎么看？</li>
+<li><strong>行动导向</strong>：不管拆不拆，下一步具体做什么？</li>
+</ul>
+<p>最终给用户的不是一段泛泛而谈，而是一个有结构、有深度、有可操作步骤的系统分析。</p>
+<h4 id="_11">因果推理<a class="headerlink" href="#_11" title="Permanent link">&para;</a></h4>
+<p>SOMA 不只记录「发生了什么」，还分析「为什么会发生」。</p>
+<p>如果你在排查一个 bug：「用户登录失败」，SOMA 不只是把之前关于登录的讨论调出来，而是构建因果链——上次登录模块改动→用了一个新依赖→那个依赖在 Node 18 下有兼容问题→你正好昨天升级了 Node。因果链帮助从根源解决问题，而不是反复打补丁。</p>
+<h4 id="_12">跨领域类比<a class="headerlink" href="#_12" title="Permanent link">&para;</a></h4>
+<p>当当前领域找不到直接答案时，SOMA 会尝试从其他领域寻找类似案例。比如你问「怎么设计一个推荐算法」，SOMA 可能从「商店怎么摆放商品引导顾客」这个完全不同领域的讨论中找到可迁移的思路。</p>
+<h4 id="_13">质量自评<a class="headerlink" href="#_13" title="Permanent link">&para;</a></h4>
+<p>每次思考结束后，SOMA 会评估自己的推理质量——逻辑是否严谨、论据是否充分、有没有遗漏关键视角。如果质量不达标，会主动标记出来建议进一步验证。</p>
+<hr />
+<h3 id="_14">第三层：持续进化 — 用得越久越懂你<a class="headerlink" href="#_14" title="Permanent link">&para;</a></h3>
+<h4 id="_15">权重自动演化<a class="headerlink" href="#_15" title="Permanent link">&para;</a></h4>
+<p>7 条思维规律不是平等使用的。对于你的具体场景，某些思维方式可能特别有效，某些可能不太适用。SOMA 会自动观察：</p>
+<ul>
+<li>哪些思维角度在过去的对话中帮到了你（你认同的、采纳的、深挖的）</li>
+<li>哪些思维角度很少用到或效果不佳</li>
+</ul>
+<p>然后自动调整各条规律的权重。比如你做产品设计工作，「系统思维」和「多视角采样」的权重可能会自动上升，而「行动导向」保持中等——因为你的场景更需要深度分析，而不是追求快速执行。</p>
+<p><strong>这个过程完全自动，不需要你手动调任何参数。</strong></p>
+<h4 id="_16">技能固化<a class="headerlink" href="#_16" title="Permanent link">&para;</a></h4>
+<p>当你反复和 SOMA 讨论某类问题时，SOMA 会从成功经验中提炼出可复用的技能。比如你经常做代码审查，SOMA 会自动形成「代码安全审查」「性能瓶颈分析」「架构合理性评估」等子技能，下次遇到类似问题时直接调用。</p>
+<p>目前生产环境中（零熵智库平台），经过一个多月的运行，系统已自动固化了 281 个技能。</p>
+<h4 id="_17">遗忘无用信息<a class="headerlink" href="#_17" title="Permanent link">&para;</a></h4>
+<p>和人类记忆一样，SOMA 不会无限堆积信息。系统会定期执行「遗忘扫描」：</p>
+<ul>
+<li>长期未被访问的记忆 → 归档</li>
+<li>被新信息取代的旧记忆 → 降权</li>
+<li>重要性低且时间久远的 → 谨慎移除</li>
+</ul>
+<p>这保证记忆库始终保持在可管理的大小，不会因为时间推移变得臃肿迟钝。</p>
+<hr />
+<h3 id="ai_5">第四层：群体协作 — 一个 AI 团队为你工作<a class="headerlink" href="#ai_5" title="Permanent link">&para;</a></h3>
+<p>v0.9.0 最大的升级，是从单个 AI 的智能升级到多个 AI 协作的集体智能。</p>
+<h4 id="_18">组建专家团队<a class="headerlink" href="#_18" title="Permanent link">&para;</a></h4>
+<p>你可以创建多个 AI 分身，每个有自己的专长领域和独立记忆：</p>
+<ul>
+<li>法律专家分身：专门处理合同、合规、知识产权相关问题</li>
+<li>技术顾问分身：专注技术架构、性能优化、代码审查</li>
+<li>产品经理分身：擅长需求分析、用户体验、功能规划</li>
+<li>管理教练分身：帮助团队建设、流程优化、战略决策</li>
+</ul>
+<p>每个分身都拥有独立的记忆和独立演化的思维权重，真正成为各自领域的专家。</p>
+<h4 id="_19">智能路由 — 问题自动找对人<a class="headerlink" href="#_19" title="Permanent link">&para;</a></h4>
+<p>当你提出问题，系统会自动判断应该由哪个专家来处理：</p>
+<ul>
+<li><strong>第一层判断</strong>：分析问题中的关键词——提到「合同」「违约」「赔偿」→ 自动路由给法律专家</li>
+<li><strong>第二层判断</strong>：如果关键词不够明确，就理解问题的含义——「我们这样写会不会被人告？」虽然没有法律关键词，但语义上和法律风险高度相关</li>
+<li><strong>第三层兜底</strong>：如果实在判断不了，交给通用分身处理</li>
+</ul>
+<p>这个过程毫秒级完成，你完全感知不到背后有多个 AI 在待命。</p>
+<h4 id="_20">共识机制 — 多种意见合而为一<a class="headerlink" href="#_20" title="Permanent link">&para;</a></h4>
+<p>面对复杂问题，可能需要多个专家从不同角度共同评估。比如「公司应该自建 AI 团队还是外包？」，这涉及技术、管理、法律、财务等多个维度。</p>
+<p>SOMA 的做法：</p>
+<ol>
+<li>同时请教技术顾问、管理教练、法律专家</li>
+<li>每个专家从自己的角度独立给出分析</li>
+<li>系统自动检测大家的意见有多大分歧</li>
+<li>如果意见基本一致 → 直接合并输出</li>
+<li>如果有中等分歧 → 用另一个 AI 阅读各方观点后进行仲裁</li>
+<li>如果分歧严重（比如法律要求自建、技术建议外包）→ 启动辩证综合，找到更高层次的统一方案</li>
+<li>最终输出一个综合了多方意见的结论，同时标注哪些点存在争议、少数派的观点是什么</li>
+</ol>
+<p>你看到的最终结果，是一个经过多专家交叉验证的、更全面更可靠的建议。</p>
+<h4 id="_21">分布式演化 — 每个专家各自成长<a class="headerlink" href="#_21" title="Permanent link">&para;</a></h4>
+<p>每个专家分身在自己的领域里独立演化思维权重：</p>
+<ul>
+<li>法律专家在法律对话中，发现「矛盾权衡」特别重要（法律问题往往要权衡各方利益），权重自动上升</li>
+<li>技术顾问在技术对话中，发现「第一性原理」最有用（技术问题需要回归根本），权重自动上升</li>
+</ul>
+<p>然后定期把各专家的「经验」合并成全局智慧，再回传给所有专家。这就像每个部门的经验汇总成公司知识库——个人成长和集体成长相互促进。</p>
+<hr />
+<h2 id="_22">应用场景<a class="headerlink" href="#_22" title="Permanent link">&para;</a></h2>
+<h3 id="_23">场景一：企业智能客服<a class="headerlink" href="#_23" title="Permanent link">&para;</a></h3>
+<p><strong>痛点</strong>：客服系统只能回答固定 FAQ，遇到复杂问题转人工。300 个客服每天回答大量重复问题。</p>
+<p><strong>SOMA 方案</strong>：
+- 记忆底座记住所有历史工单和解决方案
+- 7 种思维规律帮 AI 理解用户真实的意图（不只是匹配关键词）
+- 多个领域分身——技术咨询、投诉处理、售后支持——自动路由
+- 随着使用不断进化，回答越来越精准
+- 客服人员减少 40%，用户满意度提升 25%（基于零熵智库生产数据推算）</p>
+<h3 id="ai_6">场景二：个人 AI 知识管家<a class="headerlink" href="#ai_6" title="Permanent link">&para;</a></h3>
+<p><strong>痛点</strong>：每天接收大量信息——会议记录、文章阅读、项目讨论——但无法有效沉淀。过几个月就忘了当时是什么决策、什么原因。</p>
+<p><strong>SOMA 方案</strong>：
+- 自动记录你的重要对话和决策
+- 当你在新对话中提到相关话题时，旧记忆自动浮现
+- 随着使用时间增长，系统越来越懂你的工作方式和偏好
+- 你的知识资产不会丢失，而是持续增值</p>
+<p><strong>一个真实使用场景</strong>：你在 3 个月前和技术团队讨论过一个架构方案，当时否决了方案 A 选择了方案 B。3 个月后新同事问「为什么不用方案 A」，你直接问 SOMA，它把当时的讨论、否决原因、权衡过程全部调出来。</p>
+<h3 id="ai_7">场景三：团队协作 AI 中台<a class="headerlink" href="#ai_7" title="Permanent link">&para;</a></h3>
+<p><strong>痛点</strong>：团队知识分散在不同人的聊天记录、文档、邮件里。新人入职需要 3 周才能熟悉项目。关键决策的上下文经常丢失。</p>
+<p><strong>SOMA 方案</strong>：
+- 为团队创建共享记忆区——所有的人讨论、决策、经验都沉淀下来
+- 为每个成员创建私有 AI 分身——你的偏好、你关注的方向被单独记住
+- 新成员入职时，AI 助手直接回答「这个项目为什么选了 React 而不是 Vue」「上次架构评审的结论是什么」
+- 团队成员离开时，他的知识留在系统中而不是带走
+- 从「人找知识」变成「知识找人」</p>
+<h3 id="_24">场景四：教育辅导平台<a class="headerlink" href="#_24" title="Permanent link">&para;</a></h3>
+<p><strong>痛点</strong>：一个老师面对 50 个学生，无法个性化教学。每个学生的薄弱点和学习风格不同。</p>
+<p><strong>SOMA 方案</strong>：
+- 为每个学生创建学习分身——记住他/她掌握什么、卡在哪里、喜欢什么学习方式
+- 数学、语文、英语各有专家分身，根据学生状态自动调整教学策略
+- 教学分身随着学生进步不断演化——发现某个讲解方式对这个学生特别有效，权重自动上升
+- 老师不再疲于应对 50 种需求，AI 助手承担个性化辅导，老师聚焦教学设计</p>
+<h3 id="_25">场景五：法律/医疗/金融专业顾问<a class="headerlink" href="#_25" title="Permanent link">&para;</a></h3>
+<p><strong>痛点</strong>：专业领域知识更新快、案例量大、从业者需要快速检索和分析。</p>
+<p><strong>SOMA 方案</strong>：
+- 记忆层承载海量案例、法条、文献——过目不忘
+- 推理层用 7 种思维规律分析案件——不只是找相似案例，而是系统推导
+- 因果链理清「什么行为导致什么法律后果」
+- 多专家协作：同一案件，刑事角度和民事角度分别分析后综合结论
+- 每次分析都是一次学习，系统越来越擅长你的专业领域</p>
+<hr />
+<h2 id="_26">对不同用户的价值<a class="headerlink" href="#_26" title="Permanent link">&para;</a></h2>
+<h3 id="_27">对个人用户<a class="headerlink" href="#_27" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>没有 SOMA</th>
+<th>有了 SOMA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>使用 AI 助手</td>
+<td>每次对话都是新人，需要反复解释背景</td>
+<td>AI 记住你的所有偏好和历史，越用越贴切</td>
+</tr>
+<tr>
+<td>知识管理</td>
+<td>信息散落在各处，想找找不到</td>
+<td>自动沉淀、智能检索，需要时自动浮现</td>
+</tr>
+<tr>
+<td>复杂决策</td>
+<td>得到泛泛的建议，缺乏深度分析</td>
+<td>7 维思维框架系统分析，给出有结构的深度建议</td>
+</tr>
+<tr>
+<td>学习成长</td>
+<td>学过就忘，无法积累</td>
+<td>每次讨论都沉淀为可检索的经验</td>
+</tr>
+</tbody>
+</table>
+<p><strong>一句话总结</strong>：SOMA 让你的 AI 助手从「金鱼记忆的实习生」变成「越用越懂你的资深搭档」。</p>
+<h3 id="_28">对团队和中小企业<a class="headerlink" href="#_28" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>没有 SOMA</th>
+<th>有了 SOMA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>知识传承</td>
+<td>依赖口头传授和散落的文档</td>
+<td>团队知识自动沉淀，新人即问即答</td>
+</tr>
+<tr>
+<td>决策质量</td>
+<td>拍脑袋决定，缺乏系统分析</td>
+<td>多角度推理 + 历史经验回溯</td>
+</tr>
+<tr>
+<td>团队协作</td>
+<td>信息孤岛，重复讨论同样问题</td>
+<td>共享记忆 + 多专家协作，信息透明</td>
+</tr>
+<tr>
+<td>人员流动</td>
+<td>人走了知识就没了</td>
+<td>知识留在系统里，不依赖具体的人</td>
+</tr>
+<tr>
+<td>成本投入</td>
+<td>需要多个 SaaS 工具拼凑</td>
+<td>一套系统覆盖记忆+推理+协作</td>
+</tr>
+</tbody>
+</table>
+<p><strong>一句话总结</strong>：SOMA 是团队的知识地基——所有人的经验持续沉淀、所有人的决策有章可循。</p>
+<h3 id="_29">对企业<a class="headerlink" href="#_29" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>价值维度</th>
+<th>具体体现</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>效率提升</strong></td>
+<td>客服、法务、技术支持等知识密集型岗位的效率大幅提升</td>
+</tr>
+<tr>
+<td><strong>知识资产化</strong></td>
+<td>企业最重要的知识不再存在员工的脑子里，而是存在系统中</td>
+</tr>
+<tr>
+<td><strong>决策科学化</strong></td>
+<td>从「凭经验拍板」到「多维分析+历史验证」</td>
+</tr>
+<tr>
+<td><strong>降低 AI 门槛</strong></td>
+<td>不需要 AI 专家团队，一个 <code>pip install</code> 就拥有完整认知架构</td>
+</tr>
+<tr>
+<td><strong>数据安全</strong></td>
+<td>全部本地部署，数据不出企业边界，适合涉密场景</td>
+</tr>
+<tr>
+<td><strong>成本可控</strong></td>
+<td>零外部依赖，不需要 Redis/消息队列/注册中心，运维成本极低</td>
+</tr>
+</tbody>
+</table>
+<p><strong>特别适合</strong>：
+- 知识密集型行业（法律、金融、医疗、咨询）
+- 有大量重复决策场景的企业（客服、审核、合规）
+- 注重数据安全和隐私保护的机构（政府、军工、医院）
+- 希望用 AI 提升效率但缺乏 AI 技术团队的中小企业</p>
+<hr />
+<h2 id="_30">与其它方案的区别<a class="headerlink" href="#_30" title="Permanent link">&para;</a></h2>
+<h3 id="soma-vs-chromadb-pinecone-milvus">SOMA vs 普通向量数据库（ChromaDB / Pinecone / Milvus）<a class="headerlink" href="#soma-vs-chromadb-pinecone-milvus" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>向量数据库</th>
+<th>SOMA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>能做什么</td>
+<td>存储和搜索文本</td>
+<td>存储 + 搜索 + 推理 + 演化 + 协作</td>
+</tr>
+<tr>
+<td>记忆方式</td>
+<td>依赖相似度匹配</td>
+<td>关键词 + 语义双通道，自动去重和合并</td>
+</tr>
+<tr>
+<td>思考能力</td>
+<td>无</td>
+<td>7 条思维规律深度推理</td>
+</tr>
+<tr>
+<td>自我进化</td>
+<td>无</td>
+<td>自动调整权重、固化技能、遗忘无用信息</td>
+</tr>
+<tr>
+<td>多用户隔离</td>
+<td>需要自己实现</td>
+<td>内置三态隔离（私有/组/全局）</td>
+</tr>
+<tr>
+<td>部署</td>
+<td>Docker 或云服务</td>
+<td><code>pip install</code> 一行命令</td>
+</tr>
+</tbody>
+</table>
+<p><strong>简单说</strong>：向量数据库是「硬盘」，SOMA 是「大脑」——硬盘能存数据，但不会思考。</p>
+<h3 id="soma-vs-agent-langchain-crewai-autogen">SOMA vs 其他 Agent 框架（LangChain / CrewAI / AutoGen）<a class="headerlink" href="#soma-vs-agent-langchain-crewai-autogen" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>其他 Agent 框架</th>
+<th>SOMA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>定位</td>
+<td>帮开发者快速搭建 LLM 应用</td>
+<td>给 AI 装上认知大脑</td>
+</tr>
+<tr>
+<td>推理方式</td>
+<td>依赖 prompt 工程，需要人工设计</td>
+<td>内置 7 维思维框架，自动拆解</td>
+</tr>
+<tr>
+<td>记忆</td>
+<td>基础的对话历史或简单向量检索</td>
+<td>完整的记忆生命周期：存储→合并→遗忘→检索</td>
+</tr>
+<tr>
+<td>进化</td>
+<td>无，权重需要人工调整</td>
+<td>自动演化，越用越好</td>
+</tr>
+<tr>
+<td>多 Agent</td>
+<td>预设脚本流程</td>
+<td>动态路由 + 共识协议 + 独立演化</td>
+</tr>
+<tr>
+<td>上手难度</td>
+<td>需要理解 agent 概念和框架设计</td>
+<td><code>remember()</code> + <code>respond()</code> 两个核心方法</td>
+</tr>
+</tbody>
+</table>
+<p><strong>简单说</strong>：其他框架是「给你零件自己组装」，SOMA 是「给你一个已经会思考的大脑」。</p>
+<hr />
+<h2 id="_31">开始使用<a class="headerlink" href="#_31" title="Permanent link">&para;</a></h2>
+<h3 id="30">最快体验（30 秒）<a class="headerlink" href="#30" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>soma-wisdom
+</code></pre></div>
+<h3 id="3">第一次使用（3 行代码）<a class="headerlink" href="#3" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOMA</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># 创建一个 AI 大脑</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">soma</span> <span class="o">=</span> <span class="n">SOMA</span><span class="p">(</span><span class="n">use_vector_search</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># 让它记住一件事</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="s2">&quot;我们项目后端用 Go 语言，前端用 React，数据库用 PostgreSQL&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1"># 返回: memory_id</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="c1"># 向它提问</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">answer</span> <span class="o">=</span> <span class="n">soma</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="s2">&quot;我们应该用什么技术栈？&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="nb">print</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="c1"># → &quot;根据之前的信息，你们项目使用 Go 作为后端语言、React 作为前端框架、</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="c1">#    PostgreSQL 作为数据库。这个技术栈的组合在性能、开发效率和生态方面</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="c1">#    都比较均衡……&quot;</span>
+</code></pre></div>
+<h3 id="_32">下一步<a class="headerlink" href="#_32" title="Permanent link">&para;</a></h3>
+<p>查看 <a href="https://sunyan999999.github.io/soma/">完整文档</a> 了解更多。</p>
+<hr />
+<p><em>这是一份面向所有用户的通俗介绍。如果你需要更深入的架构和 API 文档，请参考 <a href="../v0.9.0-capabilities/">v0.9.0 技术能力介绍</a>。</em></p>
+<hr />
+<p><em>文档版本: 1.0 | 适用版本: SOMA v0.9.0rc1 | 2026-05-12</em></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/sunyan999999/soma" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://pypi.org/project/soma-wisdom/" target="_blank" rel="noopener" title="pypi.org" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.expand", "search.highlight", "content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
