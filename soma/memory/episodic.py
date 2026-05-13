@@ -42,13 +42,18 @@ class EpisodicStore(BaseMemoryStore):
             # 维度迁移：清除嵌入模型变更导致的不兼容旧向量
             stale = self._vector_index.clear_incompatible_vectors(self._conn)
             if stale > 0:
-                # 重新生成所有缺失的向量
                 rebuilt = self.rebuild_vectors()
                 if rebuilt > 0:
-                    import logging
-                    logging.getLogger("soma").info(
-                        f"向量维度迁移: 清除 {stale} 条旧向量, 重建 {rebuilt} 条"
-                    )
+                    _log.info("向量维度迁移: 清除 %d 条旧向量, 重建 %d 条", stale, rebuilt)
+
+            # v0.9.0: 向量健康检查 — 历史记忆可能缺少向量（向量搜索后启用场景）
+            total = self.count()
+            indexed = self._vector_index.count_indexed(self._conn)
+            if total > 10 and indexed < total * 0.5:
+                _log.info("向量健康检查: %d/%d 条记忆缺少向量，开始重建...", total - indexed, total)
+                rebuilt = self.rebuild_vectors()
+                if rebuilt > 0:
+                    _log.info("向量健康检查完成: 已重建 %d 条向量", rebuilt)
 
     def _create_table(self):
         # WAL 模式 + 性能 PRAGMA
@@ -70,7 +75,9 @@ class EpisodicStore(BaseMemoryStore):
                 context_json TEXT DEFAULT '{}',
                 memory_type TEXT DEFAULT 'episodic',
                 user_id TEXT NOT NULL DEFAULT '',
-                session_id TEXT NOT NULL DEFAULT ''
+                session_id TEXT NOT NULL DEFAULT '',
+                agent_id TEXT NOT NULL DEFAULT '',
+                shared_group_id TEXT NOT NULL DEFAULT ''
             )
             """
         )
@@ -82,6 +89,8 @@ class EpisodicStore(BaseMemoryStore):
             ("content_hash", "TEXT NOT NULL DEFAULT ''"),
             ("user_id", "TEXT NOT NULL DEFAULT ''"),
             ("session_id", "TEXT NOT NULL DEFAULT ''"),
+            ("agent_id", "TEXT NOT NULL DEFAULT ''"),
+            ("shared_group_id", "TEXT NOT NULL DEFAULT ''"),
         ]:
             try:
                 self._conn.execute(
@@ -94,6 +103,12 @@ class EpisodicStore(BaseMemoryStore):
         )
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_episodic_user ON episodic_memories(user_id)"
+        )
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_episodic_agent ON episodic_memories(agent_id)"
+        )
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_episodic_group ON episodic_memories(shared_group_id)"
         )
         self._create_fts5()
         self._conn.commit()
@@ -148,13 +163,16 @@ class EpisodicStore(BaseMemoryStore):
         importance: float = 0.5,
         user_id: str = "",
         session_id: str = "",
+        agent_id: str = "",
+        shared_group_id: str = "",
     ) -> str:
         content_hash = self._compute_hash(content)
 
-        # 去重检查：同用户 + 同内容不重复插入
+        # 去重检查：同用户 + 同agent + 同内容不重复插入
         existing = self._conn.execute(
-            "SELECT id FROM episodic_memories WHERE user_id = ? AND content_hash = ? LIMIT 1",
-            (user_id, content_hash),
+            "SELECT id FROM episodic_memories WHERE user_id = ? AND agent_id = ? "
+            "AND content_hash = ? LIMIT 1",
+            (user_id, agent_id, content_hash),
         ).fetchone()
         if existing:
             return existing["id"]
@@ -165,10 +183,12 @@ class EpisodicStore(BaseMemoryStore):
 
         self._conn.execute(
             """
-            INSERT INTO episodic_memories (id, content, content_hash, timestamp, importance, context_json, user_id, session_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO episodic_memories (id, content, content_hash, timestamp, importance,
+                context_json, user_id, session_id, agent_id, shared_group_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (memory_id, content, content_hash, now, importance, context_json, user_id, session_id),
+            (memory_id, content, content_hash, now, importance, context_json,
+             user_id, session_id, agent_id, shared_group_id),
         )
         self._conn.commit()
 
@@ -185,6 +205,8 @@ class EpisodicStore(BaseMemoryStore):
     def query_by_keywords(
         self, keywords: List[str], top_k: int = 5,
         user_id: str = "",
+        agent_id: str = "",
+        group_id: str = "",
         max_age_days: Optional[float] = None,
     ) -> List[MemoryUnit]:
         if not keywords:
@@ -206,18 +228,24 @@ class EpisodicStore(BaseMemoryStore):
             top_k=top_k,
             user_id=user_id,
             max_age_days=max_age_days,
+            agent_col="agent_id" if agent_id else "",
+            agent_id=agent_id,
+            group_col="shared_group_id" if group_id else "",
+            group_id=group_id,
         )
 
     def query_by_vector(
         self, query_vec, top_k: int = 5, user_id: str = "",
+        agent_id: str = "",
+        group_id: str = "",
         max_age_days: Optional[float] = None,
     ) -> List[MemoryUnit]:
-        """向量语义搜索（可选用 user_id 隔离 + 时间窗口过滤）"""
+        """向量语义搜索（支持 user_id + agent/group 隔离 + 时间窗口过滤）"""
         if self._vector_index is None:
             return []
 
-        # 过取候选，后续在后处理中过滤
-        fetch_k = top_k * 3 if user_id else top_k
+        filter_count = sum(1 for x in (user_id, agent_id) if x)
+        fetch_k = top_k * (3 if filter_count else 1)
         results = self._vector_index.similarity_search(
             self._conn, query_vec, fetch_k
         )
@@ -229,10 +257,14 @@ class EpisodicStore(BaseMemoryStore):
             mem = self.get(mid)
             if mem is None:
                 continue
-            # user_id 过滤
-            if user_id and mem.user_id and mem.user_id != user_id:
+            # user_id 过滤（空user_id的记忆在指定user_id时被过滤）
+            if user_id and mem.user_id != user_id:
                 continue
-            # 时间窗口过滤：仅当显式传入 max_age_days 时启用
+            # agent/group 过滤：agent自己的 + 组共享的（空agent_id的记忆在指定agent_id时被过滤）
+            if agent_id and mem.agent_id != agent_id:
+                if not (group_id and mem.shared_group_id == group_id):
+                    continue
+            # 时间窗口过滤
             if min_ts is not None and mem.timestamp < min_ts:
                 continue
             mem.context["_vector_score"] = score
@@ -296,6 +328,8 @@ class EpisodicStore(BaseMemoryStore):
             memory_type=mem_type,
             user_id=row["user_id"] if "user_id" in row.keys() else "",
             session_id=row["session_id"] if "session_id" in row.keys() else "",
+            agent_id=row["agent_id"] if "agent_id" in row.keys() else "",
+            shared_group_id=row["shared_group_id"] if "shared_group_id" in row.keys() else "",
         )
 
     @property

@@ -50,6 +50,10 @@ class SOMAConfig(BaseModel):
     vector_dim: int = 512  # BAAI/bge-small-zh-v1.5 实际输出512维
     embedder_device: str = "cpu"  # "cpu" | "cuda"
 
+    # 框架锚定检测（v0.9.1+）
+    enable_frame_detection: bool = False
+    frame_detection_window: int = 5
+
     # Lazily loaded framework config
     framework: Optional[FrameworkConfig] = None
 

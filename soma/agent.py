@@ -132,8 +132,10 @@ class SOMA_Agent:
         ),
     }
 
-    def __init__(self, config: SOMAConfig):
+    def __init__(self, config: SOMAConfig, agent_id: str = "", group_id: str = ""):
         self.config = config
+        self.agent_id = agent_id
+        self.group_id = group_id
 
         # 嵌入器（需在引擎之前创建，供语义匹配兜底使用）
         self.embedder = None
@@ -181,12 +183,28 @@ class SOMA_Agent:
         # 保存最近一次推理框架（v0.6.0 推理引擎）
         self._last_reasoning: List[Dict] = []
 
+        # v0.9.1: 框架锚定检测 — 跟踪最近用户输入
+        self._recent_user_turns: List[str] = []
+        self._last_frame_anchoring: Optional[dict] = None
+
     def respond(self, problem: str, user_id: str = "") -> str:
         """完整管道：拆解 → 双向激活 → 合成 → 应答"""
         import time
 
         # Step 0: 评估问题复杂度
         complexity = self._assess_complexity(problem)
+
+        # v0.9.1: 记录用户输入用于框架锚定检测
+        if self.config.enable_frame_detection:
+            self._recent_user_turns.append(problem)
+            max_window = self.config.frame_detection_window * 2
+            if len(self._recent_user_turns) > max_window:
+                self._recent_user_turns = self._recent_user_turns[-max_window:]
+            self._last_frame_anchoring = self.hub.detect_frame_anchoring(
+                self._recent_user_turns
+            )
+        else:
+            self._last_frame_anchoring = None
 
         # Step 1: 问题拆解
         foci = self.engine.decompose(problem)
@@ -203,13 +221,18 @@ class SOMA_Agent:
         elif complexity == 1:
             self.hub.top_k = max(original_top_k // 2, 2)
         try:
-            activated = self.hub.activate(foci, user_id=user_id, laws=self.engine.laws)
+            activated = self.hub.activate(
+                foci, user_id=user_id, laws=self.engine.laws,
+                agent_id=self.agent_id, group_id=self.group_id,
+            )
         finally:
             self.hub.top_k = original_top_k
 
         # Step 2.5: 确认偏误检测 — L2/L3 问题检索反视角证据
         if complexity >= 2:
-            self._last_anti_memories = self.hub.anti_confirmation_search(foci, user_id=user_id)
+            self._last_anti_memories = self.hub.anti_confirmation_search(
+                foci, user_id=user_id, agent_id=self.agent_id, group_id=self.group_id,
+            )
         else:
             self._last_anti_memories = []
 
@@ -480,6 +503,13 @@ class SOMA_Agent:
                 + "\n\n".join(conflict_parts)
             )
 
+        # ── v0.9.1 框架锚定觉察提示（脚注形式，低干扰） ────
+        anchoring_text = ""
+        if self.config.enable_frame_detection and self._last_frame_anchoring:
+            anchoring_text = (
+                "\n> " + self._last_frame_anchoring.get("reflection", "")
+            )
+
         prompt = f"""你是一位**智者**，善于运用多种思维框架深入分析问题。
 
 ## 结构化推理框架
@@ -507,7 +537,7 @@ class SOMA_Agent:
 重要：
 - **不要在回答中提及任何规律、理论或框架的名称**，将思考方式自然融入分析
 - 用日常交流的语言表达，像一位智者在自然交谈
-- 当支持证据和反对证据都存在时，权衡两者而非选择性使用"""
+- 当支持证据和反对证据都存在时，权衡两者而非选择性使用{anchoring_text}"""
 
         self._last_prompt = prompt
         return prompt
@@ -601,10 +631,33 @@ class SOMA_Agent:
         importance: float = 0.5,
         user_id: str = "",
         session_id: str = "",
+        share_to_group: bool = False,
     ) -> str:
-        """存储情节记忆"""
-        return self.memory.remember(content, context, importance,
-                                    user_id=user_id, session_id=session_id)
+        """存储情节记忆。share_to_group=True 时写入公共记忆区。"""
+        if share_to_group and self.group_id:
+            return self.memory.share_to_group(
+                content, context, importance,
+                user_id=user_id, group_id=self.group_id, session_id=session_id,
+            )
+        return self.memory.remember(
+            content, context, importance,
+            user_id=user_id, session_id=session_id,
+            agent_id=self.agent_id, shared_group_id="",
+        )
+
+    def share_to_group(
+        self,
+        content: str,
+        context: Optional[Dict[str, Any]] = None,
+        importance: float = 0.5,
+        user_id: str = "",
+        session_id: str = "",
+    ) -> str:
+        """显式将记忆共享到本agent所在组的公共记忆区"""
+        return self.memory.share_to_group(
+            content, context, importance,
+            user_id=user_id, group_id=self.group_id, session_id=session_id,
+        )
 
     def remember_semantic(
         self,
@@ -633,7 +686,10 @@ class SOMA_Agent:
         original_top_k = self.hub.top_k
         self.hub.top_k = top_k
         try:
-            activated = self.hub.activate([focus], user_id=user_id)
+            activated = self.hub.activate(
+                [focus], user_id=user_id,
+                agent_id=self.agent_id, group_id=self.group_id,
+            )
         finally:
             self.hub.top_k = original_top_k
         return [self.hub.explain_activation(am) for am in activated]

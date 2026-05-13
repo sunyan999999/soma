@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.9.1] — 2026-05-13
+
+### 零熵觉察层 — 从"解决问题"到"看见自己在怎么想"
+
+**设计原则**: 100%向后兼容，所有新功能默认关闭。v0.8.0/v0.9.0 存量代码零改动升级。
+
+v0.9.1 新增一个维度：**觉察**。在 v0.9.0 多Agent协作的基础上，SOMA 现在能察觉用户的认知框架锁定——当你连续从单一视角分析问题时，系统以脚注形式温和提醒，不强制、不阻断、不改变管道。
+
+### Added
+
+- **框架锚定检测器 (`soma/hub/_frame_detector.py`)**: `FrameAnchoringDetector` — 纯关键词匹配（零 LLM/嵌入器依赖），8对认知框架（技术/商业/管理/法律/短期/长期/内求/外求），对立框架自动建议。检测阈值：window=5轮，同一框架占比≥60%触发，冷却3600秒去重。
+- **觉察提示注入 (`soma/agent.py`)**: `_build_prompt()` 在管道末尾以 blockquote 脚注形式注入觉察提示（修复前为 `##` 级标题插入问题前，干扰LLM输出——已修正为低干扰脚注格式）
+- **ActivationHub 集成 (`soma/hub/_core.py`)**: 新增 `detect_frame_anchoring()` 方法，带 G1 错误隔离（try/except 包裹，异常绝不传播到核心管道）
+- **SOMAConfig 新字段**: `enable_frame_detection: bool = False`（默认关闭）、`frame_detection_window: int = 5`
+- **SOMA 门面集成 (`soma/__init__.py`)**: `respond()` 和 `chat()` 双路径均支持框架检测（仅在 config flag 开启时生效）
+- **审核标准文档 (`docs/contribution-audit-standards.md`)**: 4类禁止内容 + 5柱接受量表（善行/善人/善心/善史/善修），审核员操作流程与10个边界案例
+
+### Changed
+
+- `ActivationHub.__init__` 新增可选 `frame_detector` 参数（末尾追加，不影响现有传参）
+- `SOMA_Agent.__init__` 新增 `_recent_user_turns` 和 `_last_frame_anchoring` 实例变量
+- `soma/hub/__init__.py` 导出 `FrameAnchoringDetector`
+
+### Fixed
+
+- **觉察提示干扰 LLM 输出质量**: 初版觉察提示以 `##` 级标题插入 `## 当前问题` 之前，且明确写出框架名称，与核心 prompt "不要在回答中提及任何规律/理论/框架的名称"产生指令矛盾，导致基准测试各项分数显著下降。修复：降级为 blockquote `>` 脚注、移至 prompt 最末尾（"重要"说明之后），视觉权重从核心段落级降为附注级。
+
+### Compatibility
+
+- 30+ 公开 API 签名零变更
+- `SOMA()`, `SOMA.respond()`, `SOMA.chat()` 等所有公开方法行为不变（检测默认关闭）
+- `pip install soma-wisdom==0.9.1` 直接替换 0.8.0/0.9.0，无需修改任何代码
+
+---
+
+## [0.9.0] — 2026-05-11
+
+### 多智能体协作 — 从"单智者思考"到"多智者协作"
+
+**生产验证**: 473项测试全通过。4个新模块（registry/router/evolve/consensus），~1,200行新增代码，零外部依赖增加。
+
+v0.9.0 实现了从个体到群体的范式跃迁。多个 SOMA Agent 以团队形式协作，各自拥有独立记忆、独立进化路径和专长领域，通过专家路由、分布式演化和共识协议形成超越个体的集体智能。
+
+### Added
+
+- **Agent 注册表 (`soma/multi_agent/registry.py`)**: `AgentRegistry` — 专家注册/注销、专长标签匹配（精确1.0/模糊0.7/不匹配0.0）、会话统计自动追踪。纯内存字典+dataclass，零外部依赖。
+- **专家路由器 (`soma/multi_agent/router.py`)**: `ExpertRouter` — 三层路由策略（L1关键词匹配8大领域80+关键词毫秒级 → L2语义匹配余弦相似度 → L3默认回退），零 LLM 参与路由决策。支持单专家路由和多专家路由（`route_multi()`）。
+- **共识协议 (`soma/multi_agent/consensus.py`)**: `ConsensusProtocol` — 三层策略（L1加权投票/L2 LLM仲裁/L3辩证综合），输出带置信度的共识结果。支持无 LLM 的纯规则模式。
+- **分布式演化 (`soma/multi_agent/evolve.py`)**: `DistributedEvolver` — 各Agent独立演化、定期合并全局权重（加权平均，样本量加权）、冲突仲裁（分歧>0.2时标记）。保留个体专长同时共享群体经验。
+- **记忆三态隔离 (`soma/memory/core.py`)**: agent_id + group_id 维度的三态隔离——私有记忆（agent_id=自己）、组共享（shared_group_id）、全局记忆（agent_id=""）。所有检索路径透传隔离参数。
+- **记忆检索增强**: `MemoryCore.query()` 新增跨域类比回退、图谱扩展BFS（O(1)哈希查找）、FTS5双路径（trigram + LIKE自动降级）
+
+### Changed
+
+- `SOMA.__init__` 新增 `agent_id` 和 `group_id` 参数（可选，默认""）
+- `SOMA_Agent.__init__` 新增 `agent_id` 和 `group_id` 参数
+- `MemoryCore` 所有检索方法支持 `agent_id`/`group_id` 隔离
+- `ActivationHub` 管道新增反向传播（高激活记忆→建议焦点）
+- 基准测试引擎支持多轮统计（均值±标准差/95%置信区间/CV%/稳定性评级）
+
+### Compatibility
+
+- 所有 v0.8.0 API 签名不变
+- `agent_id` 和 `group_id` 为可选参数，不传则行为与 v0.8.0 一致
+
+---
+
 ## [0.8.0] — 2026-05-09
 
 ### 知识图谱与推理引擎 — 从"记忆检索"到"认知推理"

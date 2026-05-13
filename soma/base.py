@@ -22,6 +22,8 @@ class MemoryUnit:
     id: str = field(default_factory=lambda: uuid.uuid4().hex)
     user_id: str = ""
     session_id: str = ""
+    agent_id: str = ""
+    shared_group_id: str = ""
 
     def relevance_potential(self) -> float:
         """关联潜力 = 指数近因衰减 × 重要性 × 使用频次因子

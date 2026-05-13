@@ -34,9 +34,31 @@ class MemoryCore:
         importance: float = 0.5,
         user_id: str = "",
         session_id: str = "",
+        agent_id: str = "",
+        shared_group_id: str = "",
     ) -> str:
         """存储情节记忆"""
-        return self.episodic.add(content, context, importance, user_id=user_id, session_id=session_id)
+        return self.episodic.add(
+            content, context, importance,
+            user_id=user_id, session_id=session_id,
+            agent_id=agent_id, shared_group_id=shared_group_id,
+        )
+
+    def share_to_group(
+        self,
+        content: str,
+        context: Optional[Dict[str, Any]] = None,
+        importance: float = 0.5,
+        user_id: str = "",
+        group_id: str = "",
+        session_id: str = "",
+    ) -> str:
+        """将记忆共享到公共记忆区——同组所有agent可见"""
+        return self.episodic.add(
+            content, context, importance,
+            user_id=user_id, session_id=session_id,
+            agent_id="", shared_group_id=group_id,
+        )
 
     def remember_semantic(
         self,
@@ -64,6 +86,8 @@ class MemoryCore:
     def _hybrid_search(
         self, focus: Focus, top_k: int,
         user_id: str = "",
+        agent_id: str = "",
+        group_id: str = "",
         graph_keywords: Optional[List[str]] = None,
     ) -> List[ActivatedMemory]:
         """混合搜索：加权 RRF 融合 + 时间衰减因子 + 图谱扩展关键词"""
@@ -73,14 +97,20 @@ class MemoryCore:
         rrf_k = 60
         now_ts = _time.time()
 
-        # 1. 向量语义搜索（更多候选，带用户隔离）
+        # 1. 向量语义搜索（更多候选，带用户+agent/group隔离）
         query_vec = self._embedder.encode(focus.dimension)
-        vec_results = self.episodic.query_by_vector(query_vec, top_k * 3, user_id=user_id)
+        vec_results = self.episodic.query_by_vector(
+            query_vec, top_k * 3, user_id=user_id,
+            agent_id=agent_id, group_id=group_id,
+        )
         vec_rank = {mem.id: i + 1 for i, mem in enumerate(vec_results)}
         vec_mem = {mem.id: mem for mem in vec_results}
 
-        # 2. 关键词精确匹配（带用户隔离和时间窗口）
-        kw_results = self.episodic.query_by_keywords(keywords, top_k * 3, user_id=user_id)
+        # 2. 关键词精确匹配（带用户+agent/group隔离）
+        kw_results = self.episodic.query_by_keywords(
+            keywords, top_k * 3, user_id=user_id,
+            agent_id=agent_id, group_id=group_id,
+        )
         kw_rank = {mem.id: i + 1 for i, mem in enumerate(kw_results)}
         kw_mem = {mem.id: mem for mem in kw_results}
 
@@ -90,6 +120,7 @@ class MemoryCore:
         if graph_keywords:
             gk_results = self.episodic.query_by_keywords(
                 graph_keywords, top_k * 2, user_id=user_id,
+                agent_id=agent_id, group_id=group_id,
             )
             graph_kw_rank = {mem.id: i + 1 for i, mem in enumerate(gk_results)}
             graph_kw_mem = {mem.id: mem for mem in gk_results}
@@ -155,10 +186,14 @@ class MemoryCore:
     def query(
         self, focus: Focus, top_k: int = 5,
         user_id: str = "",
+        agent_id: str = "",
+        group_id: str = "",
     ) -> List[ActivatedMemory]:
         """对单个 Focus 跨三个子库查询，返回 ActivatedMemory 列表
 
-        支持可选 user_id 隔离：传入时仅检索该用户的记忆，不传入时检索全部（向后兼容）。
+        支持多层隔离：
+        - user_id: 用户级隔离
+        - agent_id + group_id: agent级隔离（agent自己的 OR 组共享的）
 
         v0.8.0: 通过语义图谱扩展关键词，打破检索孤岛。
         """
@@ -171,12 +206,15 @@ class MemoryCore:
         # 查询情节记忆 — 混合搜索或关键词
         if self.episodic.use_vector and self._embedder is not None:
             activated = self._hybrid_search(
-                focus, top_k, user_id=user_id, graph_keywords=graph_keywords,
+                focus, top_k, user_id=user_id,
+                agent_id=agent_id, group_id=group_id,
+                graph_keywords=graph_keywords,
             )
         else:
             activated: List[ActivatedMemory] = []
             episodic_results = self.episodic.query_by_keywords(
                 all_keywords, top_k, user_id=user_id,
+                agent_id=agent_id, group_id=group_id,
             )
             for mem in episodic_results:
                 matched = [kw for kw in all_keywords if kw.lower() in mem.content.lower()]
@@ -189,9 +227,10 @@ class MemoryCore:
                     )
                 )
 
-        # 查询语义记忆（namespace = user_id 实现隔离）
+        # 查询语义记忆（namespace 编码隔离: agent_id 或 user_id）
+        sem_namespace = agent_id or user_id
         semantic_results = self.semantic.query_by_keywords(
-            all_keywords, top_k, namespace=user_id,
+            all_keywords, top_k, namespace=sem_namespace,
         )
         for mem in semantic_results:
             matched = [kw for kw in all_keywords if kw.lower() in mem.content.lower()]
@@ -204,8 +243,11 @@ class MemoryCore:
                 )
             )
 
-        # 查询技能记忆（user_id 隔离）
-        skill_results = self.skill.query_by_keywords(all_keywords, top_k, user_id=user_id)
+        # 查询技能记忆（user_id + agent/group 隔离）
+        skill_results = self.skill.query_by_keywords(
+            all_keywords, top_k, user_id=user_id,
+            agent_id=agent_id, group_id=group_id,
+        )
         for mem in skill_results:
             activated.append(
                 ActivatedMemory(
@@ -223,6 +265,7 @@ class MemoryCore:
             if analogy_kw:
                 analogy_results = self.episodic.query_by_keywords(
                     analogy_kw, top_k=3, user_id=user_id,
+                    agent_id=agent_id, group_id=group_id,
                 )
                 for mem in analogy_results:
                     activated.append(

@@ -29,12 +29,20 @@ def fts5_keyword_search(
     top_k: int = 5,
     user_id: str = "",
     max_age_days: Optional[float] = None,
+    agent_col: str = "",
+    agent_id: str = "",
+    group_col: str = "",
+    group_id: str = "",
 ) -> List[Any]:
     """FTS5 trigram + LIKE 降级的双路径关键词搜索。
 
     路径1: FTS5 MATCH（≥3字关键词，毫秒级）
     路径2: LIKE 兜底（1-2字短关键词）
     路径3: 纯 LIKE 回退（无FTS关键词时）
+
+    支持三层隔离过滤：
+    - user_id: 用户级隔离（精确匹配）
+    - agent_id + group_id: agent级隔离（agent自己的 OR 组共享的）
 
     search_cols 指定 LIKE 搜索的目标列，例如 ["content", "context_json"]。
     FTS 搜索使用 fts_table MATCH，列已在 FTS 虚拟表定义中固定。
@@ -53,7 +61,7 @@ def fts5_keyword_search(
     if importance_col is not None:
         order_clause += f", t.{importance_col} DESC"
 
-    # ── 时间窗口 / 用户过滤 ────────────────────────────
+    # ── 时间窗口 / 用户 / Agent 过滤 ──────────────────
     time_clause = ""
     time_params: list = []
     if max_age_days is not None:
@@ -67,18 +75,27 @@ def fts5_keyword_search(
         user_clause = f"AND t.{user_col} = ?"
         user_params = [user_id]
 
+    agent_clause = ""
+    agent_params: list = []
+    if agent_id and group_id:
+        agent_clause = f"AND (t.{agent_col} = ? OR t.{group_col} = ?)"
+        agent_params = [agent_id, group_id]
+    elif agent_id:
+        agent_clause = f"AND t.{agent_col} = ?"
+        agent_params = [agent_id]
+
     # ── 路径1: FTS5 trigram 全文搜索 ──────────────────
     if fts_keywords:
         fts_query = " OR ".join(
             '"' + kw.replace('"', '""') + '"' for kw in fts_keywords
         )
         try:
-            params = [fts_query] + time_params + user_params + [top_k]
+            params = [fts_query] + time_params + user_params + agent_params + [top_k]
             sql = f"""
                 SELECT t.* FROM {table_name} t
                 INNER JOIN {fts_table} fts ON t.rowid = fts.rowid
                 WHERE {fts_table} MATCH ?
-                {time_clause} {user_clause}
+                {time_clause} {user_clause} {agent_clause}
                 ORDER BY {order_clause}
                 LIMIT ?
             """
@@ -104,6 +121,12 @@ def fts5_keyword_search(
         if user_id:
             conditions.append(f"{user_col} = ?")
             params.append(user_id)
+        if agent_id and group_id:
+            conditions.append(f"({agent_col} = ? OR {group_col} = ?)")
+            params.extend([agent_id, group_id])
+        elif agent_id:
+            conditions.append(f"{agent_col} = ?")
+            params.append(agent_id)
         if seen_ids:
             placeholders = ",".join("?" * len(seen_ids))
             conditions.append(f"{id_col} NOT IN ({placeholders})")
@@ -150,6 +173,10 @@ def fts5_keyword_search(
             top_k=top_k,
             user_id=user_id,
             max_age_days=max_age_days,
+            agent_col=agent_col,
+            agent_id=agent_id,
+            group_col=group_col,
+            group_id=group_id,
         )
 
     return results
@@ -169,6 +196,10 @@ def _like_only(
     top_k: int,
     user_id: str,
     max_age_days: Optional[float],
+    agent_col: str = "",
+    agent_id: str = "",
+    group_col: str = "",
+    group_id: str = "",
 ) -> List[Any]:
     """纯 LIKE 搜索（无 FTS5 可用时）。"""
     conditions: List[str] = []
@@ -180,6 +211,12 @@ def _like_only(
     if user_id:
         conditions.append(f"{user_col} = ?")
         params.append(user_id)
+    if agent_id and group_id:
+        conditions.append(f"({agent_col} = ? OR {group_col} = ?)")
+        params.extend([agent_id, group_id])
+    elif agent_id:
+        conditions.append(f"{agent_col} = ?")
+        params.append(agent_id)
     for kw in keywords:
         pattern = f"%{kw}%"
         col_conds = " OR ".join(f"{col} LIKE ?" for col in search_cols)

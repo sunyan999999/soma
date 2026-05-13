@@ -30,17 +30,19 @@ answer = soma.respond("How to analyze our growth bottleneck?")
 | Causal reasoning | ✗ | ✗ | **✓ graph chain inference** |
 | Cross-domain analogy | ✗ | ✗ | **✓ structural pattern matching** |
 | Conflict detection | ✗ | ✗ | **✓ contradiction flagging** |
+| Multi-agent collaboration | ✗ | ✗ | **✓ expert routing + consensus** |
+| Frame anchoring awareness | ✗ | ✗ | **✓ cognitive bias nudge** |
 | Offline / zero infra | varies | ✗ (OpenAI) | **✓ ONNX, SQLite** |
 
 <p align="center">
   <a href="https://github.com/sunyan999999/soma"><img src="https://img.shields.io/github/stars/sunyan999999/soma?style=social" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-0.8.0-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-0.9.1-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/python-3.10%2B-green" alt="Python"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/semantic_recall-100%25-brightgreen" alt="Semantic Recall"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/overall_score-80.5%2F100-blue" alt="Overall Score"></a>
-  <a href="#"><img src="https://img.shields.io/badge/tests-422%2F422-brightgreen" alt="Tests"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v0.8.0-success" alt="Changelog"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-485%2F486-brightgreen" alt="Tests"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v0.9.1-success" alt="Changelog"></a>
 </p>
 
 📖 **[中文文档](README_zh.md)** | **[Docs](https://sunyan999999.github.io/soma/)** | **[Demo](https://github.com/sunyan999999/soma-demo)** | **[Roadmap](ROADMAP.md)** | **[Changelog](CHANGELOG.md)** | **[Contributing](CONTRIBUTING.md)**
@@ -53,7 +55,18 @@ answer = soma.respond("How to analyze our growth bottleneck?")
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                           SOMA Agent (v0.8)                                   │
+│                         SOMA Agent (v0.9.1)                                    │
+│                                                                                │
+│  ┌──────────────────────────────────────────────────────────────────┐        │
+│  │  v0.9.1 Sunyata Awareness Layer ⚡ — 零熵觉察层                    │        │
+│  │  FrameAnchoringDetector · 框架锁定检测 · 觉察提示（脚注式低干扰） │        │
+│  └──────────────────────────────────────────────────────────────────┘        │
+│                                                                                │
+│  ┌──────────────────────────────────────────────────────────────────┐        │
+│  │  v0.9.0 Multi-Agent Collaboration ⚡ — 多智能体协作                │        │
+│  │  AgentRegistry · ExpertRouter · ConsensusProtocol · DistributedEvolver │   │
+│  └──────────────────────────────────────────────────────────────────┘        │
+│                                                                                │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────────────┐    │
 │  │ WisdomEngine  │→│ActivationHub │→│           MemoryCore               │    │
 │  │ · 关键词匹配  │  │ · 双向激活   │  │ · episodic/semantic/skill         │    │
@@ -77,10 +90,10 @@ answer = soma.respond("How to analyze our growth bottleneck?")
 │  └──────────────────────────────────────────────────────────────────┘       │
 └──────────────────────────────────────────────────────────────────────────────┘
 
-Twelve-Stage Wisdom Pipeline:
+Thirteen-Stage Wisdom Pipeline:
   Assess → Decompose → Chain → Combine → Semantic-fallback
-         → Context-sort → Activate → Conflict-detect⚡ → Anti-bias → Reason
-         → Synthesize → Causal-extract → Backward-propagate⚡ → Evolve
+         → Context-sort → Activate → Conflict-detect⚡ → Frame-anchoring⚡ → Anti-bias
+         → Reason → Synthesize → Causal-extract → Backward-propagate⚡ → Evolve
 ```
 
 ## Screenshots
@@ -194,6 +207,35 @@ Six new capabilities that upgrade SOMA from a memory store to a reasoning system
 
 > **Performance**: v0.8.0 query latency 209ms (v0.7.0: 33ms baseline, 1098ms pre-optimization). The 6x increase over v0.7.0 buys graph expansion + causal chains + conflict detection + cross-domain analogy — all in a single query path. For raw speed, use `query_memory()` which skips framework overhead.
 
+### 6. v0.9.0 — Multi-Agent Collaboration
+
+Four new modules that upgrade SOMA from a single thinking agent to a collaborative team:
+
+**Agent Registry** — `AgentRegistry` formalizes agent expertise. Each agent registers with domain tags (e.g., "法律/合同/诉讼"), and `find_experts()` matches queries to specialists via exact (1.0) or fuzzy (0.7) tag matching. Zero external dependencies — pure in-memory dict + dataclass.
+
+**Expert Router** — `ExpertRouter` uses a 3-tier routing strategy: L1 keyword match (8 domains × 80+ keywords, sub-ms), L2 semantic match (cosine similarity via ONNX), L3 default fallback. Zero LLM calls in routing decisions. Supports single-expert and multi-expert routing.
+
+**Consensus Protocol** — `ConsensusProtocol` synthesizes multiple expert opinions through 3 strategies: L1 weighted voting (success-rate weighted), L2 LLM arbitration (for high-stakes decisions), L3 dialectic synthesis (thesis + antithesis → synthesis). Works without LLM in pure-rule mode.
+
+**Distributed Evolution** — `DistributedEvolver` lets each agent evolve independently while periodically merging global weights (sample-count-weighted average). Conflict arbitration kicks in when weight divergence exceeds 0.2, preserving individual specialization while sharing collective experience.
+
+**Memory Isolation** — Three-state memory isolation via `agent_id` + `group_id`: private (agent_id=self), group-shared (shared_group_id), and global (agent_id=""). All retrieval paths transparently respect isolation boundaries.
+
+### 7. v0.9.1 — Sunyata Awareness Layer
+
+A new dimension: **awareness**. SOMA now detects when you're over-anchored to a single cognitive frame and gently nudges — without blocking, forcing, or changing the pipeline.
+
+**Frame Anchoring Detector** — `FrameAnchoringDetector` with 8 cognitive frame pairs (技术/商业/管理/法律/短期/长期/内求/外求). Pure keyword matching — zero LLM/embedder dependency. Detects when ≥60% of recent 5 turns fall into the same frame, then suggests neglected opposite frames as a blockquote footnote at the prompt's end.
+
+**Backward Compatible by Design** — All new features controlled by `enable_frame_detection: bool = False`. Existing code upgrades with zero changes. The awareness nudge uses low-interference blockquote formatting at the prompt's end — it won't dominate the reasoning flow.
+
+```python
+soma = SOMA()
+soma._agent.config.enable_frame_detection = True  # opt-in
+# SOMA now notices when you're stuck in one perspective
+# and adds a gentle footnote: "您已连续5轮从「技术视角」分析..."
+```
+
 ## API Reference
 
 ### SOMA Facade (Python SDK)
@@ -208,6 +250,8 @@ soma = SOMA(
     persist_dir="soma_data",      # persistence directory
     recall_threshold=0.01,        # minimum activation score
     top_k=5,                      # default recall count
+    agent_id="",                  # v0.9.0: agent identity for multi-agent
+    group_id="",                  # v0.9.0: group for shared memory
 )
 
 # Wisdom pipeline
@@ -228,6 +272,9 @@ soma.adjust_weight(law_id, new_weight)   # manual override
 soma.discover_laws() -> dict | None      # autonomous law discovery
 soma.approve_law(candidate) -> bool      # approve a discovered law
 soma.stats -> dict                       # memory store statistics
+
+# v0.9.1: opt-in frame anchoring awareness
+# soma._agent.config.enable_frame_detection = True
 ```
 
 ### REST API (Language-Agnostic)
@@ -316,7 +363,7 @@ SOMA has been used in production across two distinct codebases — a Go-based CL
 
 ## Benchmarks
 
-SOMA v0.8.0 — benchmarked with 1,752 real production memories from 零熵智库:
+SOMA v0.9.1 — benchmarked with production memories from 零熵智库:
 
 ### Overall Score: 80.5/100
 
@@ -372,7 +419,7 @@ git clone https://github.com/soma-project/soma-core.git
 cd soma-core
 pip install -e ".[dev]"
 
-pytest -v --cov=soma --cov-report=term    # 422 tests, ~97% coverage
+pytest -v --cov=soma --cov-report=term    # 485+ tests, ~97% coverage
 
 python -m soma                              # quickstart verification
 
@@ -386,13 +433,13 @@ soma-core/
 ├── soma/                  # Core library
 │   ├── __init__.py        # SOMA facade (zero-config entry)
 │   ├── __main__.py        # python -m soma quickstart
-│   ├── agent.py           # SOMA_Agent: pipeline orchestrator
+│   ├── agent.py           # SOMA_Agent: pipeline orchestrator + awareness ⚡
 │   ├── engine.py          # WisdomEngine: problem decomposition
 │   ├── hub.py             # ActivationHub: bidirectional activation
 │   ├── evolve.py          # MetaEvolver: reflection + auto-evolution
 │   ├── embedder.py        # SOMAEmbedder: fastembed + ONNX encoding
 │   ├── vector_store.py    # NumpyVectorIndex: faiss ANN search
-│   ├── config.py          # Pydantic configuration models
+│   ├── config.py          # Pydantic configuration models + frame detection ⚡
 │   ├── base.py            # Data models (Focus, MemoryUnit, etc.)
 │   ├── abc.py             # Abstract base classes
 │   ├── langchain_tool.py  # LangChain BaseTool wrapper
@@ -406,13 +453,19 @@ soma-core/
 │   ├── benchmarks.py      # 5D benchmark engine (memory/wisdom/evolution/scalability/overall)
 │   ├── wisdom_laws.yaml   # Default thinking framework (bundled)
 │   ├── hub/
-│   │   ├── _core.py       # ActivationHub: bidirectional activation
+│   │   ├── _core.py       # ActivationHub: bidirectional activation + frame detection ⚡
 │   │   ├── _conflict.py   # ConflictDetector: contradiction detection ⚡
-│   │   ├── _retrieve.py   # MemoryRetriever: multi-path recall
-│   │   ├── _score.py      # RelevanceScorer: weighted scoring
-│   │   └── _rank.py       # MMRRanker: diversity re-ranking
+│   │   ├── _frame_detector.py  # FrameAnchoringDetector: cognitive bias nudge ⚡
+│   │   ├── _retriever.py  # MemoryRetriever: multi-path recall
+│   │   ├── _scorer.py     # RelevanceScorer: weighted scoring
+│   │   └── _ranker.py     # MMRRanker: diversity re-ranking
+│   ├── multi_agent/       # v0.9.0 Multi-Agent Collaboration ⚡
+│   │   ├── registry.py    # AgentRegistry: expert registration + matching
+│   │   ├── router.py      # ExpertRouter: 3-tier routing (keyword/semantic/fallback)
+│   │   ├── consensus.py   # ConsensusProtocol: vote/LLM/dialectic synthesis
+│   │   └── evolve.py      # DistributedEvolver: independent evolution + weight merge
 │   └── memory/
-│       ├── core.py        # MemoryCore: unified memory facade
+│       ├── core.py        # MemoryCore: unified memory facade + 3-state isolation ⚡
 │       ├── episodic.py    # EpisodicStore: SQLite + vector BLOB
 │       ├── semantic.py    # SemanticStore: knowledge triples + causal graph ⚡
 │       ├── skill.py       # SkillStore: learned patterns
@@ -426,9 +479,12 @@ soma-core/
 │   ├── providers.py       # LLM provider manager
 │   └── frontend/          # Vue 3 dashboard UI (i18n: EN/ZH)
 ├── docs/                  # Documentation (EN + ZH bilingual)
-├── tests/                 # 422 tests, ~97% coverage
+│   ├── contribution-audit-standards.md  # Law contribution audit standards (D4) ⚡
+│   ├── v0.9.0-capabilities.md           # v0.9.0 capability overview
+│   └── v0.9.1-零熵整合方案.md            # v0.9.1 integration plan
+├── tests/                 # 485+ tests, ~97% coverage
 ├── examples/              # Usage examples
-└── pyproject.toml         # Build config
+└── pyproject.toml         # Build config (version auto-detect)
 ```
 
 ## Citation

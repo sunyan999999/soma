@@ -30,7 +30,7 @@ def _get_package_version() -> str:
         from importlib.metadata import version
         return version("soma-wisdom")
     except Exception:
-        return "0.8.0"
+        return "0.9.0"
 
 
 app = FastAPI(title="SOMA API", version=_get_package_version())

@@ -2,6 +2,7 @@ from typing import Dict, List, Optional, Tuple
 
 from soma.base import ActivatedMemory, Focus
 from soma.hub._conflict import ConflictDetector
+from soma.hub._frame_detector import FrameAnchoringDetector
 from soma.hub._retriever import MemoryRetriever
 from soma.hub._scorer import RelevanceScorer
 from soma.hub._ranker import MMRRanker
@@ -24,6 +25,7 @@ class ActivationHub:
         scorer=None,
         ranker=None,
         conflict_detector=None,
+        frame_detector=None,
     ):
         self.top_k = top_k
         self.threshold = threshold
@@ -34,10 +36,14 @@ class ActivationHub:
         self.conflict_detector = conflict_detector or ConflictDetector(
             memory_core._embedder,
         )
+        self.frame_detector = frame_detector or FrameAnchoringDetector(
+            window=5,
+        )
         # 最近一次激活检测到的冲突对
         self.last_conflicts: List[Tuple[ActivatedMemory, ActivatedMemory, float]] = []
 
-    def activate(self, foci: List[Focus], user_id: str = "", laws=None) -> List[ActivatedMemory]:
+    def activate(self, foci: List[Focus], user_id: str = "", laws=None,
+                 agent_id: str = "", group_id: str = "") -> List[ActivatedMemory]:
         """
         双向激活：对每个 Focus 查询 MemoryCore，全局合并排序。
 
@@ -51,7 +57,10 @@ class ActivationHub:
         candidates: Dict[str, list] = {}
 
         for focus in foci:
-            results = self.retriever.retrieve(focus, top_k=self.top_k * 2, user_id=user_id)
+            results = self.retriever.retrieve(
+                focus, top_k=self.top_k * 2, user_id=user_id,
+                agent_id=agent_id, group_id=group_id,
+            )
 
             for am in results:
                 mid = am.memory.id
@@ -130,6 +139,7 @@ class ActivationHub:
 
     def anti_confirmation_search(
         self, foci: List[Focus], user_id: str = "",
+        agent_id: str = "", group_id: str = "",
     ) -> List[ActivatedMemory]:
         """确认偏误检测：为每个聚焦点构造反视角查询，检索反对证据。
 
@@ -157,6 +167,7 @@ class ActivationHub:
                 )
                 for am in self.retriever.retrieve(
                     anti_focus, top_k=2, user_id=user_id,
+                    agent_id=agent_id, group_id=group_id,
                 ):
                     mid = am.memory.id
                     if mid not in anti_memories:
@@ -241,3 +252,20 @@ class ActivationHub:
                 "rationale": sf.rationale,
             }
         return info
+
+    def detect_frame_anchoring(self, recent_turns: List[str]) -> Optional[dict]:
+        """检测用户是否过度锁定在单一认知框架中（v0.9.1）。
+
+        Args:
+            recent_turns: 最近 N 轮用户输入文本列表（最新的在末尾）
+
+        Returns:
+            None 或 {"dominant_frame": str, "ratio": float, "reflection": str}
+        """
+        if self.frame_detector is None:
+            return None
+        try:
+            return self.frame_detector.detect(recent_turns)
+        except Exception:
+            # G1: 错误隔离 — 检测器异常不得传播到核心管道
+            return None

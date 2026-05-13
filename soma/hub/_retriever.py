@@ -9,6 +9,8 @@ class MemoryRetriever:
     def __init__(self, memory_core):
         self.memory = memory_core
 
-    def retrieve(self, focus: Focus, top_k: int, user_id: str = "") -> List[ActivatedMemory]:
+    def retrieve(self, focus: Focus, top_k: int, user_id: str = "",
+                 agent_id: str = "", group_id: str = "") -> List[ActivatedMemory]:
         """对单个 Focus 执行跨三库（情节/语义/技能）查询"""
-        return self.memory.query(focus, top_k=top_k, user_id=user_id)
+        return self.memory.query(focus, top_k=top_k, user_id=user_id,
+                                 agent_id=agent_id, group_id=group_id)

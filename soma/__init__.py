@@ -55,6 +55,8 @@ class SOMA:
         persist_dir: str = None,
         recall_threshold: float = 0.01,
         top_k: int = 5,
+        agent_id: str = "",
+        group_id: str = "",
     ):
         if persist_dir is None:
             persist_dir = os.environ.get("SOMA_DATA_DIR", "soma_data")
@@ -73,7 +75,7 @@ class SOMA:
             recall_threshold=recall_threshold,
             default_top_k=top_k,
         )
-        self._agent = SOMA_Agent(self._config)
+        self._agent = SOMA_Agent(self._config, agent_id=agent_id, group_id=group_id)
         self._session_count = 0
 
     def __getattr__(self, name):
@@ -110,6 +112,21 @@ class SOMA:
     def chat(self, problem: str, user_id: str = "") -> dict:
         """完整对话接口，返回结构化结果（供 API / Agent 使用）"""
         complexity = self._agent._assess_complexity(problem)
+
+        # v0.9.1: 记录用户输入用于框架锚定检测
+        if self._agent.config.enable_frame_detection:
+            self._agent._recent_user_turns.append(problem)
+            max_window = self._agent.config.frame_detection_window * 2
+            if len(self._agent._recent_user_turns) > max_window:
+                self._agent._recent_user_turns = (
+                    self._agent._recent_user_turns[-max_window:]
+                )
+            self._agent._last_frame_anchoring = (
+                self._agent.hub.detect_frame_anchoring(
+                    self._agent._recent_user_turns
+                )
+            )
+
         foci = self._agent.decompose(problem)
         if complexity == 1 and len(foci) > 2:
             foci = foci[:2]
@@ -122,6 +139,7 @@ class SOMA:
         try:
             activated = self._agent.hub.activate(
                 foci, user_id=user_id, laws=self._agent.engine.laws,
+                agent_id=self._agent.agent_id, group_id=self._agent.group_id,
             )
         finally:
             self._agent.hub.top_k = original_top_k
@@ -138,6 +156,7 @@ class SOMA:
         if complexity >= 2:
             self._agent._last_anti_memories = self._agent.hub.anti_confirmation_search(
                 foci, user_id=user_id,
+                agent_id=self._agent.agent_id, group_id=self._agent.group_id,
             )
         else:
             self._agent._last_anti_memories = []
