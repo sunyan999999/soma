@@ -60,7 +60,7 @@ def _normalize_score(raw_value: float, data_count: int, metric: str) -> float:
 
 ### 背景
 
-SOMA 服务器 (47.94.149.121) 运行 uvicorn + FastAPI。当前问题：
+SOMA 生产服务器运行 uvicorn + FastAPI。当前问题：
 - 多 worker 导致 WAL 文件冲突
 - top_k / recall_threshold 未按数据量调整
 - LLM 调用无重试机制

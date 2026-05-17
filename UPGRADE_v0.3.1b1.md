@@ -167,11 +167,11 @@ Agent auto-adjusts parameters based on current memory count at init time, elimin
 
 ## 服务器升级指南 / Server Upgrade Guide
 
-### 零熵智库服务器 (47.94.149.121)
+### 零熵智库服务器
 
 ```bash
 # 1. SSH 登录
-ssh root@47.94.149.121
+ssh root@<your-server-ip>
 
 # 2. 进入项目目录
 cd /data/DigitalTwinHub
