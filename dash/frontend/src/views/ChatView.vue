@@ -251,6 +251,58 @@ const hasResult = computed(() => result.value !== null)
         <div class="card answer-content" v-html="sanitizeAndRender(result.answer)" />
       </section>
 
+      <!-- v0.9.2: 多Agent编排信息 -->
+      <section v-if="result.orchestration?.enabled">
+        <h2 style="font-size:1.1rem;margin-bottom:12px;">{{ t('chat.orchestration') }}</h2>
+        <div v-if="result.orchestration.agent_count > 0" class="card">
+          <div class="grid-3" style="margin-bottom:16px;">
+            <div style="text-align:center;">
+              <div style="font-size:1.4rem;font-weight:700;color:var(--accent);">
+                {{ result.orchestration.agent_count }}
+              </div>
+              <div style="font-size:0.7rem;color:var(--text-muted);">{{ t('experts.currentExperts') }}</div>
+            </div>
+            <div v-if="result.orchestration.strategy" style="text-align:center;">
+              <div style="font-size:0.9rem;font-weight:600;color:var(--cyan);margin-top:4px;">
+                {{ result.orchestration.strategy }}
+              </div>
+              <div style="font-size:0.7rem;color:var(--text-muted);">{{ t('chat.routingStrategy') }}</div>
+            </div>
+            <div v-if="result.orchestration.consensus_agreement !== undefined && result.orchestration.consensus_agreement !== null" style="text-align:center;">
+              <div style="font-size:1.4rem;font-weight:700;color:var(--amber);">
+                {{ (result.orchestration.consensus_agreement * 100).toFixed(0) }}%
+              </div>
+              <div style="font-size:0.7rem;color:var(--text-muted);">{{ t('chat.consensusAgreement') }}</div>
+            </div>
+          </div>
+          <!-- 参与专家列表 -->
+          <div v-if="result.orchestration.agents_involved?.length" style="margin-top:12px;">
+            <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:6px;">{{ t('chat.agentsInvolved') }}:</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              <span
+                v-for="agentId in result.orchestration.agents_involved"
+                :key="agentId"
+                class="badge badge-accent"
+              >{{ agentId }}</span>
+            </div>
+          </div>
+          <!-- 少数派观点 -->
+          <div v-if="result.orchestration.minority_view" style="margin-top:12px;">
+            <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:4px;">{{ t('chat.minorityView') }}:</div>
+            <p style="font-size:0.82rem;color:var(--text-secondary);font-style:italic;">
+              {{ result.orchestration.minority_view }}
+            </p>
+          </div>
+          <!-- 共识策略 -->
+          <div v-if="result.orchestration.consensus_strategy" style="margin-top:8px;font-size:0.75rem;color:var(--text-muted);">
+            {{ t('chat.consensusStrategy') }}: {{ result.orchestration.consensus_strategy }}
+          </div>
+        </div>
+        <div v-else class="card" style="text-align:center;padding:24px;color:var(--text-muted);">
+          <p>{{ t('chat.noOrchestration') }}</p>
+        </div>
+      </section>
+
       <!-- System Status Sidebar -->
       <div class="grid-3" style="margin-top:32px;">
         <div class="card" style="text-align:center;">

@@ -566,12 +566,17 @@ class SOMA_Agent:
     @llm_retry
     def _do_llm_call(self, prompt: str) -> str:
         """实际 LLM 调用，由 @llm_retry 装饰器自动重试"""
-        response = completion(
-            model=self.config.llm_model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
-            timeout=60,
-        )
+        kwargs = {
+            "model": self.config.llm_model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.7,
+            "timeout": 60,
+        }
+        if self.config.llm_api_key:
+            kwargs["api_key"] = self.config.llm_api_key
+        if self.config.llm_base_url:
+            kwargs["api_base"] = self.config.llm_base_url
+        response = completion(**kwargs)
         return response.choices[0].message.content
 
     # ── v0.6.0 因果抽取 ─────────────────────────────────
@@ -579,12 +584,17 @@ class SOMA_Agent:
     @llm_retry
     def _do_causal_extraction(self, extract_prompt: str) -> str:
         """因果关系抽取 LLM 调用，由 @llm_retry 装饰器自动重试"""
-        response = completion(
-            model=self.config.llm_model,
-            messages=[{"role": "user", "content": extract_prompt}],
-            temperature=0.1,
-            timeout=15,
-        )
+        kwargs = {
+            "model": self.config.llm_model,
+            "messages": [{"role": "user", "content": extract_prompt}],
+            "temperature": 0.1,
+            "timeout": 15,
+        }
+        if self.config.llm_api_key:
+            kwargs["api_key"] = self.config.llm_api_key
+        if self.config.llm_base_url:
+            kwargs["api_base"] = self.config.llm_base_url
+        response = completion(**kwargs)
         return response.choices[0].message.content
 
     def _extract_causal_relations(self, problem: str, answer: str) -> None:

@@ -7,6 +7,7 @@ from soma.multi_agent.registry import AgentRegistry, AgentInfo
 from soma.multi_agent.router import ExpertRouter
 from soma.multi_agent.evolve import DistributedEvolver
 from soma.multi_agent.consensus import ConsensusProtocol, ConsensusResult, AgentOpinion
+from soma.multi_agent.orchestrator import SOMAOrchestrator, OrchestrationResult
 
 __all__ = [
     "AgentRegistry",
@@ -16,4 +17,6 @@ __all__ = [
     "ConsensusProtocol",
     "ConsensusResult",
     "AgentOpinion",
+    "SOMAOrchestrator",
+    "OrchestrationResult",
 ]

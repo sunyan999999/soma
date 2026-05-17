@@ -143,4 +143,20 @@ export const api = {
   // Reports
   reportsList: () => request('/reports'),
   report: (id) => request(`/reports/${id}`),
+
+  // v0.9.2: 多Agent专家管理
+  expertsList: () => request('/experts'),
+
+  expertRegister: (agent_id, expertise, description = '') =>
+    request('/experts', {
+      method: 'POST',
+      body: JSON.stringify({ agent_id, expertise, description }),
+    }),
+
+  expertRemove: (agent_id) =>
+    request(`/experts/${encodeURIComponent(agent_id)}`, {
+      method: 'DELETE',
+    }),
+
+  orchestrationStatus: () => request('/orchestration/status'),
 }

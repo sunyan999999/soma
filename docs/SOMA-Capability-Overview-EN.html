@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SOMA-Capability-Overview-EN</title>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: "Noto Sans SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+    font-size: 14px;
+    line-height: 1.8;
+    color: #3a3a3a;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 50px 40px;
+    background: #fff;
+  }
+
+  h1 {
+    font-size: 28px;
+    color: #193c78;
+    border-bottom: 3px solid #2980b9;
+    padding-bottom: 12px;
+    margin: 20px 0 16px;
+  }
+
+  h2 {
+    font-size: 20px;
+    color: #2980b9;
+    margin: 32px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #d5e8f6;
+  }
+
+  h3 {
+    font-size: 16px;
+    color: #2c3e50;
+    margin: 24px 0 8px;
+  }
+
+  p { margin: 10px 0; }
+
+  blockquote {
+    border-left: 4px solid #2980b9;
+    padding: 8px 16px;
+    margin: 16px 0;
+    background: #f0f6fb;
+    color: #555;
+    font-style: italic;
+  }
+
+  strong { color: #c0392b; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 13px;
+  }
+
+  thead { background: #2980b9; color: #fff; }
+
+  th {
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 700;
+  }
+
+  td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  tr:nth-child(even) td { background: #f5f8fc; }
+
+  ul, ol { margin: 10px 0 10px 24px; }
+  li { margin: 4px 0; }
+
+  code {
+    background: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+    font-size: 13px;
+  }
+
+  pre {
+    background: #f7f7f7;
+    padding: 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 12px 0;
+    border: 1px solid #e5e5e5;
+  }
+
+  pre code { background: none; padding: 0; }
+
+  hr {
+    border: none;
+    border-top: 1px solid #ddd;
+    margin: 28px 0;
+  }
+
+  a { color: #2980b9; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  @media print {
+    body { padding: 20px 30px; font-size: 13px; }
+    h1 { font-size: 24px; }
+    h2 { font-size: 18px; }
+    @page { margin: 1.5cm; }
+  }
+</style>
+
+</head>
+<body>
+<h1 id="soma-v1.0-the-cognitive-kernel-for-ai-agents">SOMA v1.0: The
+Cognitive Kernel for AI Agents</h1>
+<blockquote>
+<p>A comprehensive capability-focused overview, covering v0.1.0 through
+the v1.0.0 milestone.</p>
+</blockquote>
+<hr />
+<h2 id="i.-what-soma-is">I. What SOMA Is</h2>
+<p>SOMA (Somatic Wisdom Architecture) is a long-term memory and
+cognitive reasoning kernel for AI agents. It is not a database. It is
+not a vector store. It is a <strong>cognitive core that remembers,
+reasons, collaborates, self-reflects, and continuously
+evolves</strong>.</p>
+<p>In one line: <strong>If the LLM is the cerebral cortex, SOMA is the
+hippocampus plus the prefrontal cortex.</strong></p>
+<hr />
+<h2 id="ii.-five-capability-lines">II. Five Capability Lines</h2>
+<p>SOMA’s versioning does not chase feature count. It deepens along five
+capability lines, each answering a fundamental question.</p>
+<h3 id="memory-from-store-it-to-make-sense-of-it">2.1 Memory — From
+“Store It” to “Make Sense of It”</h3>
+<p><strong>Core question: How can AI manage memory the way humans
+do?</strong></p>
+<table>
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 20%" />
+<col style="width: 27%" />
+<col style="width: 34%" />
+</colgroup>
+<thead>
+<tr>
+<th>Stage</th>
+<th>Version</th>
+<th>Capability</th>
+<th>What it means</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Store</td>
+<td>v0.1–0.3</td>
+<td>Episodic memory + semantic search</td>
+<td>Remembers conversations, retrieves by meaning</td>
+</tr>
+<tr>
+<td>Curate</td>
+<td>v0.7.0</td>
+<td>Merge + forget + import</td>
+<td>Auto-deduplicates, archives stale info, ingests external
+knowledge</td>
+</tr>
+<tr>
+<td>Connect</td>
+<td>v0.8.0</td>
+<td>Knowledge graph + causal reasoning</td>
+<td>Links memories together, traces “why this happened”</td>
+</tr>
+<tr>
+<td>Layer</td>
+<td>v1.0.0</td>
+<td>Three-tier memory system</td>
+<td>Fragments → Scenes → Profile. From “what you said” to “who you
+are”</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The v1.0.0 three-tier architecture:</strong></p>
+<ul>
+<li><strong>L1 Episodic fragments</strong>: Individual pieces of
+information (the original capability, always present)</li>
+<li><strong>L2 Scene blocks</strong>: Auto-aggregated work contexts
+(“working on a Python data analysis project”)</li>
+<li><strong>L3 User profile</strong>: Traits extracted from multiple
+scenes (preferences, skills, knowledge gaps, goals)</li>
+</ul>
+<p>The entire process is automatic. The user simply uses SOMA normally;
+behind the scenes, it quietly aggregates and distills.</p>
+<hr />
+<h3 id="reasoning-from-find-it-to-understand-it">2.2 Reasoning — From
+“Find It” to “Understand It”</h3>
+<p><strong>Core question: Once you’ve found relevant information, how do
+you use it to think?</strong></p>
+<p>v0.8.0 marks the watershed. Before it, SOMA was an excellent search
+engine — find the most relevant memories and hand them to the LLM. After
+it, SOMA <strong>participates in the reasoning process
+itself</strong>:</p>
+<ul>
+<li><strong>Causal chain tracing</strong>: Not just “this memory is
+relevant,” but tracing the causal graph to root causes. E.g., following
+“user churn is rising” back to “an API change three months ago slowed
+response times”</li>
+<li><strong>Conflict detection</strong>: When memories contain
+contradictory claims (e.g., “lowering prices reduced churn” vs. “service
+quality is what retains users”), flag and down-weight automatically,
+preventing the LLM from being misled</li>
+<li><strong>Cross-domain analogy</strong>: Use knowledge from domain A
+to reason about domain B. E.g., bridge “symbiosis in biology” with
+“corporate partnerships,” building connections between seemingly
+unrelated knowledge</li>
+<li><strong>Reflection quality scoring</strong>: After each reasoning
+output, self-evaluate on three dimensions (consistency, coherence,
+actionability). Below-threshold outputs automatically trigger reflective
+improvement</li>
+</ul>
+<p><strong>Key design principle</strong>: Reasoning results are injected
+into the LLM context as “activated memories.” They do not alter the
+LLM’s own reasoning logic. SOMA prepares the thinking materials; the LLM
+makes the final judgment. Each does its part; neither interferes with
+the other.</p>
+<hr />
+<h3 id="collaboration-from-one-mind-to-many-minds">2.3 Collaboration —
+From “One Mind” to “Many Minds”</h3>
+<p><strong>Core question: A single AI has limits. How do multiple AIs
+work as a team?</strong></p>
+<p>v0.9.0 achieved the paradigm leap from individual to collective.
+Multiple SOMA agents collaborate as a team:</p>
+<ul>
+<li><strong>Expert specialization</strong>: Each agent has an
+independent memory store, independent evolution path, and domain
+expertise. The tech expert accumulates technical memories; the business
+expert accumulates business cases</li>
+<li><strong>Automatic routing</strong>: Incoming problems are dispatched
+to the most suitable expert via keyword matching + semantic similarity.
+<strong>Zero LLM involvement in routing decisions</strong> — completed
+in milliseconds</li>
+<li><strong>Consensus protocols</strong>: When experts disagree,
+three-tier fallback: L1 weighted voting → L2 LLM arbitration → L3
+dialectical synthesis</li>
+<li><strong>Distributed evolution</strong>: Each expert evolves
+independently in their domain (reflect → adjust weights → solidify
+skills), while periodically merging global experience. Individual
+expertise preserved; collective wisdom shared</li>
+</ul>
+<p>v0.9.1 added a special capability on top — <strong>frame anchoring
+awareness</strong>. When the user analyzes problems through the same
+thinking pattern for multiple consecutive rounds, the system gently
+appends a footnote: “Would another angle help?” No force, no
+interruption, no decision alteration — just making cognitive inertia
+visible.</p>
+<hr />
+<h3 id="evolution-from-use-once-to-gets-better-with-use">2.4 Evolution —
+From “Use Once” to “Gets Better with Use”</h3>
+<p><strong>Core question: Can AI learn from its own
+experience?</strong></p>
+<p>SOMA has a built-in, complete evolution loop. This loop is not a set
+of preset rule updates; it is self-optimization driven by actual
+usage:</p>
+<ol type="1">
+<li><strong>Reflect</strong>: After each response, the system reflects
+based on outcomes — was this thinking approach correct? Should the
+weights be adjusted?</li>
+<li><strong>Re-weight</strong>: The seven thinking laws’ weights rise
+and fall with success/failure automatically. Successful laws gain weight
+and get triggered by more problems; failing laws lose weight</li>
+<li><strong>Solidify</strong>: When a law accumulates enough samples
+with stable success rates, it is automatically solidified into a “skill”
+— from a temporary tool to a permanent capability</li>
+<li><strong>Share</strong>: In multi-agent mode, each expert’s evolution
+results are periodically merged. Good experience spreads across the
+team</li>
+</ol>
+<p><strong>Key design point</strong>: Evolution is data-driven, not
+rule-preset. The system doesn’t give “First Principles” high weight
+because it’s philosophically important; it gives it high weight because
+it actually helped solve more problems in practice.</p>
+<hr />
+<h3 id="engineering-from-it-runs-to-its-trustworthy">2.5 Engineering —
+From “It Runs” to “It’s Trustworthy”</h3>
+<p><strong>Core question: How do you prove these capabilities are
+real?</strong></p>
+<p>SOMA has built a complete testing system from unit to integration to
+benchmark:</p>
+<ul>
+<li><strong>511 unit tests</strong>: Covering all modules, full
+regression before every commit</li>
+<li><strong>Five-dimension benchmark engine</strong>: Memory
+(recall/latency/persistence/dedup), Wisdom
+(decomposition/laws/diversity), Evolution (reflection/success
+rate/solidification), Scalability (1K→10K→100K latency curves),
+Overall</li>
+<li><strong>50-question standardized dataset</strong>: Covering
+strategic decision-making, innovative design, cross-domain reasoning,
+deep attribution, and experiential learning</li>
+<li><strong>Competitor comparison framework</strong>: Quantifiable
+comparison data against Mem0, Letta (MemGPT), Zep, Hermis, and
+others</li>
+<li><strong>Multi-run statistical benchmarks</strong>: N independent
+runs, outputting mean ± stddev, 95% confidence intervals, coefficient of
+variation, stability ratings</li>
+</ul>
+<p>v1.0.0 on a medium-scale dataset of 1,050 memories scored: Memory
+97.6 / Wisdom 87.3 / Evolution 60.2 / Scalability 100.0 / Overall
+85.5.</p>
+<hr />
+<h2 id="iii.-architectural-philosophy">III. Architectural
+Philosophy</h2>
+<p>SOMA’s design follows three core principles, consistent across all
+versions:</p>
+<h3 id="memory-first">3.1 Memory First</h3>
+<p>Traditional AI agents follow the pattern “receive question → call
+tools → generate answer.” SOMA’s approach is <strong>everything starts
+from memory</strong>:</p>
+<pre><code>Question → Decompose into core foci → Activate relevant knowledge from memory → Use memory to drive reasoning → Generate answer → Store new experience back into memory</code></pre>
+<p>Memory is not just a database. It is the <strong>contextual
+infrastructure</strong> of the entire system. Every reasoning act is
+memory-driven. Every answer contributes new material back to memory.</p>
+<h3 id="seven-thinking-laws">3.2 Seven Thinking Laws</h3>
+<p>SOMA distills seven universal thinking patterns from human cognition,
+forming the cognitive kernel:</p>
+<table>
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 31%" />
+<col style="width: 51%" />
+</colgroup>
+<thead>
+<tr>
+<th>Law</th>
+<th>Meaning</th>
+<th>Best used for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>First Principles</td>
+<td>Trace back to fundamentals, reason from the bottom up</td>
+<td>Reframing problems, breaking assumptions</td>
+</tr>
+<tr>
+<td>Systems Thinking</td>
+<td>Focus on interconnections and feedback loops</td>
+<td>Complex system analysis</td>
+</tr>
+<tr>
+<td>Contradiction Analysis</td>
+<td>Identify deep dialectical tensions beneath surface issues</td>
+<td>Dilemmas and trade-offs</td>
+</tr>
+<tr>
+<td>Pareto Principle</td>
+<td>A few key factors drive the majority of outcomes</td>
+<td>Resource allocation, prioritization</td>
+</tr>
+<tr>
+<td>Inversion</td>
+<td>Reason backward from the worst-case scenario</td>
+<td>Risk assessment, breakthrough innovation</td>
+</tr>
+<tr>
+<td>Analogical Reasoning</td>
+<td>Use knowledge from one domain to understand another</td>
+<td>Cross-domain innovation</td>
+</tr>
+<tr>
+<td>Evolutionary Lens</td>
+<td>Understand system change through variation, selection,
+retention</td>
+<td>Long-term trends, industry patterns</td>
+</tr>
+</tbody>
+</table>
+<p>These seven laws are not a hardcoded rules engine. Each law has a
+<strong>dynamic weight</strong> that adjusts automatically based on
+success and failure in actual use. A startup team and a large
+enterprise’s SOMA instance will eventually have completely different
+weight distributions.</p>
+<h3 id="backward-compatibility">3.3 Backward Compatibility</h3>
+<p>All new capabilities are <strong>off by default</strong>. Upgrading
+from v0.1.0 to v1.0.0 requires zero code changes. Behavior is identical
+unless new features are explicitly enabled. New capabilities are
+independent of each other; enabling one does not force-enable
+another.</p>
+<hr />
+<h2 id="iv.-version-evolution-at-a-glance">IV. Version Evolution at a
+Glance</h2>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 13%" />
+<col style="width: 37%" />
+<col style="width: 28%" />
+</colgroup>
+<thead>
+<tr>
+<th>Version</th>
+<th>Date</th>
+<th>Core Capability</th>
+<th>In one line</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>v0.1–0.3</td>
+<td>2025.05–2026.04</td>
+<td>Episodic memory + semantic search + basic reasoning</td>
+<td>Store and find</td>
+</tr>
+<tr>
+<td>v0.4–0.6</td>
+<td>2026.05</td>
+<td>Evolution loop + benchmark system</td>
+<td>Gets better with use</td>
+</tr>
+<tr>
+<td>v0.7.0</td>
+<td>2026.05.07</td>
+<td>Memory merging + active forgetting + external import</td>
+<td>Curates itself</td>
+</tr>
+<tr>
+<td>v0.8.0</td>
+<td>2026.05.09</td>
+<td>Knowledge graph + causal reasoning + conflict detection</td>
+<td>Understands connections</td>
+</tr>
+<tr>
+<td>v0.9.0</td>
+<td>2026.05.11</td>
+<td>Multi-agent collaboration + distributed evolution</td>
+<td>Works as a team</td>
+</tr>
+<tr>
+<td>v0.9.1</td>
+<td>2026.05.13</td>
+<td>Frame anchoring awareness</td>
+<td>Notices thinking patterns</td>
+</tr>
+<tr>
+<td>v1.0.0</td>
+<td>2026.05.16</td>
+<td>Five-line convergence — three-tier memory + reasoning + multi-agent
++ awareness + evolution</td>
+<td>Cognitive kernel</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="v.-how-soma-differs-from-alternatives">V. How SOMA Differs from
+Alternatives</h2>
+<p>SOMA is not another vector database or RAG framework. Its
+differentiation operates on three levels:</p>
+<ol type="1">
+<li><p><strong>It doesn’t just retrieve — it reasons</strong>: RAG is
+“find relevant documents → stitch into prompt.” SOMA is “find relevant
+memories → trace causal chains → detect contradictions → draw
+cross-domain analogies → hand processed cognitive material to the LLM.”
+There is an extra layer of <strong>cognitive processing</strong> in
+between.</p></li>
+<li><p><strong>It doesn’t just remember — it evolves</strong>: Most
+memory systems are static — write, retrieve, unchanged. SOMA’s memory is
+alive — similar content auto-merges, low-value information auto-forgets,
+thinking-law weights dynamically adjust with use.</p></li>
+<li><p><strong>It doesn’t just work alone — it collaborates</strong>:
+Multiple SOMA agents can form teams, each with independent memory and
+expertise, forming collective intelligence beyond any individual through
+routing and consensus protocols. This is a native capability most agent
+frameworks lack.</p></li>
+</ol>
+<hr />
+<h2 id="vi.-open-source-ecosystem">VI. Open Source &amp; Ecosystem</h2>
+<ul>
+<li><strong>PyPI</strong>: <code>pip install soma-wisdom</code></li>
+<li><strong>GitHub</strong>: <a
+href="https://github.com/sunyan999999/soma">github.com/sunyan999999/soma</a></li>
+<li><strong>License</strong>: Apache 2.0</li>
+<li><strong>Python</strong>: ≥ 3.10</li>
+<li><strong>Core dependencies</strong>: SQLite + FastEmbed + FAISS +
+NetworkX + LiteLLM</li>
+</ul>
+<hr />
+<p><em>SOMA — Wisdom over Memory.</em></p>
+
+</body>
+</html>
