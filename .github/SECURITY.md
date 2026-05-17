@@ -26,8 +26,10 @@ We will respond within **7 days** with an acknowledgment and a timeline for a fi
 
 | Version | Supported |
 |---------|-----------|
-| 0.3.0b1 | Yes |
-| < 0.3.0 | No |
+| 1.0.0 | Yes (latest) |
+| 0.9.x | Yes |
+| 0.8.x | Security fixes only |
+| < 0.8.0 | No |
 
 ## Best Practices for Users / 用户最佳实践
 

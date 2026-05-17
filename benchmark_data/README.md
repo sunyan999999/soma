@@ -80,3 +80,4 @@
 | test_dataset v1.1 | 2026-05-06 | 新增战略决策(10题)、创新设计(10题)，新增 difficulty 字段 |
 | test_dataset v1.0 | 2026-05-04 | 初始30题：跨域推理/深层归因/经验借鉴 |
 | retrieval_1k v1.0 | 2026-05-06 | 初始1000条段落+50查询，20领域 |
+| v1.0.0 基准 | 2026-05-18 | 五线交汇里程碑：Overall 85.5, Memory 97.6, Wisdom 87.3, Evolution 60.2, Scalability 100.0 |
