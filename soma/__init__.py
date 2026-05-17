@@ -3,6 +3,7 @@ import os
 import time
 import traceback
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from soma.config import SOMAConfig, load_config
 from soma.base import MemoryUnit, Focus, ActivatedMemory
@@ -11,6 +12,10 @@ from soma.evolve import MetaEvolver
 from soma.law_discovery import LawDiscovery
 from soma.embedder import SOMAEmbedder
 from soma.langchain_tool import create_soma_tool
+from soma.multi_agent.orchestrator import OrchestrationResult
+from soma.memory.scene import SceneStore
+from soma.memory.profile import ProfileStore
+from soma.memory.capture import CapturePipeline, CaptureConfig
 
 # 包内置默认思维框架 — 确保 pip install 后在任何目录都能找到
 _PACKAGE_DIR = Path(__file__).parent
@@ -51,12 +56,22 @@ class SOMA:
         self,
         framework_config: str = None,
         llm: str = "deepseek-chat",
+        llm_api_key: str = "",          # v0.9.2: LLM API Key
+        llm_base_url: str = "",         # v0.9.2: LLM 自定义 base_url
         use_vector_search: bool = True,
         persist_dir: str = None,
         recall_threshold: float = 0.01,
         top_k: int = 5,
         agent_id: str = "",
         group_id: str = "",
+        # v0.9.2: 多Agent编排
+        orchestration_mode: str = "single",
+        orchestration_top_k: int = 3,
+        orchestration_consensus: str = "voting",
+        # v0.10.0: 记忆分层
+        scene_extraction_enabled: bool = False,
+        profile_extraction_enabled: bool = False,
+        symbolic_memory_enabled: bool = False,
     ):
         if persist_dir is None:
             persist_dir = os.environ.get("SOMA_DATA_DIR", "soma_data")
@@ -71,12 +86,31 @@ class SOMA:
             framework_path=framework_path,
             episodic_persist_dir=Path(persist_dir),
             llm_model=llm,
+            llm_api_key=llm_api_key,
+            llm_base_url=llm_base_url,
             use_vector_search=use_vector_search,
             recall_threshold=recall_threshold,
             default_top_k=top_k,
+            orchestration_mode=orchestration_mode,
+            orchestration_top_k=orchestration_top_k,
+            orchestration_consensus=orchestration_consensus,
+            scene_extraction_enabled=scene_extraction_enabled,
+            profile_extraction_enabled=profile_extraction_enabled,
         )
-        self._agent = SOMA_Agent(self._config, agent_id=agent_id, group_id=group_id)
+        self._agent = SOMA_Agent(self._config, agent_id=agent_id or "soma", group_id=group_id)
         self._session_count = 0
+
+        # v0.9.2: 多Agent编排器（默认关闭）
+        self._orchestrator = None
+        if orchestration_mode == "multi":
+            from soma.multi_agent.orchestrator import SOMAOrchestrator
+            self._orchestrator = SOMAOrchestrator(self._config)
+            self._orchestrator.set_default(self._agent)
+
+        # v0.10.0: 记忆分层组件（延迟初始化）
+        self._scene_store: Optional[SceneStore] = None
+        self._profile_store: Optional[ProfileStore] = None
+        self._capture_pipeline: Optional[CapturePipeline] = None
 
     def __getattr__(self, name):
         """将未定义的公开属性委托给内部 SOMA_Agent 实例。
@@ -91,7 +125,23 @@ class SOMA:
         return getattr(self._agent, name)
 
     def respond(self, problem: str, user_id: str = "") -> str:
-        """完整智者管道：拆解→激活→合成→反思→进化检测"""
+        """完整智者管道：拆解→激活→合成→反思→进化检测
+
+        v0.9.2: 当 orchestration_mode="multi" 时，走多Agent编排管道。
+        """
+        # v0.9.2: 多Agent编排模式
+        if self._orchestrator is not None and self._orchestrator.agent_count > 0:
+            try:
+                result = self._orchestrator.solve(
+                    problem, strategy=self._config.orchestration_consensus,
+                )
+                # 有共识结果（含单Agent回退）则返回，否则回退单Agent管道
+                if result.consensus is not None:
+                    return result.answer
+            except Exception:
+                _log.error("多Agent编排失败，回退单Agent:\n%s", traceback.format_exc())
+                # 回退到单Agent
+
         mock_fallback = False
         try:
             answer = self._agent.respond(problem, user_id=user_id)
@@ -110,7 +160,41 @@ class SOMA:
         return answer
 
     def chat(self, problem: str, user_id: str = "") -> dict:
-        """完整对话接口，返回结构化结果（供 API / Agent 使用）"""
+        """完整对话接口，返回结构化结果（供 API / Agent 使用）
+
+        v0.9.2: 当 orchestration_mode="multi" 时，返回含orchestration字段。
+        """
+        # v0.9.2: 多Agent编排模式
+        if self._orchestrator is not None and self._orchestrator.agent_count > 0:
+            try:
+                result = self._orchestrator.solve(
+                    problem, strategy=self._config.orchestration_consensus,
+                )
+                # 有共识结果（含单Agent回退）则返回，否则回退单Agent管道
+                if result.consensus is not None:
+                    return {
+                        "problem": problem,
+                        "answer": result.answer,
+                        "orchestration": {
+                            "strategy": result.routing_strategy,
+                            "agents_involved": result.agents_involved,
+                            "consensus_agreement": (
+                                result.consensus.agreement_level if result.consensus else None
+                            ),
+                            "consensus_strategy": (
+                                result.consensus.strategy_used if result.consensus else None
+                            ),
+                            "minority_view": (
+                                result.consensus.minority_view if result.consensus else None
+                            ),
+                        },
+                        "memory_stats": self._agent.memory.stats(),
+                        "weights": self._agent.evolver.get_weights(),
+                    }
+            except Exception:
+                _log.error("多Agent编排失败，回退单Agent:\n%s", traceback.format_exc())
+                # 回退到单Agent管道
+
         complexity = self._agent._assess_complexity(problem)
 
         # v0.9.1: 记录用户输入用于框架锚定检测
@@ -257,9 +341,22 @@ class SOMA:
     def remember(
         self, content: str, context: dict = None, importance: float = 0.5,
         user_id: str = "", session_id: str = "",
+        auto_capture: bool | None = None,
     ) -> str:
-        return self._agent.remember(content, context, importance,
-                                    user_id=user_id, session_id=session_id)
+        """存储一条情节记忆。auto_capture=None 时尊重全局配置。"""
+        memory_id = self._agent.remember(content, context, importance,
+                                         user_id=user_id, session_id=session_id)
+
+        # v0.10.0: 自动捕获触发
+        should_capture = auto_capture
+        if should_capture is None:
+            should_capture = self._config.scene_extraction_enabled
+        if should_capture:
+            self._ensure_layered_memory()
+            if self._capture_pipeline:
+                self._capture_pipeline.on_new_memory(user_id)
+
+        return memory_id
 
     def remember_semantic(
         self, subject: str, predicate: str, object_: str, confidence: float = 1.0,
@@ -332,9 +429,176 @@ class SOMA:
         """获取已挖掘的思维模板（v0.6.0）"""
         return self._agent.evolver.get_thought_templates()
 
+    # ── v0.10.0: 记忆分层方法 ──────────────────────────────────
+
+    def _ensure_layered_memory(self):
+        """延迟初始化分层记忆组件（SceneStore + ProfileStore + CapturePipeline）"""
+        if self._scene_store is None:
+            persist = self._config.episodic_persist_dir
+            self._scene_store = SceneStore(persist)
+            self._profile_store = ProfileStore(persist)
+            cap_cfg = CaptureConfig(
+                scene_warmup=self._config.scene_extraction_warmup,
+                scene_min_interval=self._config.scene_extraction_min_interval,
+                scene_max_interval=self._config.scene_extraction_max_interval,
+                scene_idle_timeout=self._config.scene_extraction_idle_timeout,
+                profile_scene_interval=self._config.profile_extraction_scene_interval,
+                enable_warmup=self._config.scene_extraction_warmup_enabled,
+            )
+            from soma.memory.capture import SceneExtractor, ProfileExtractor
+            self._capture_pipeline = CapturePipeline(
+                self._scene_store, self._profile_store, cap_cfg,
+                scene_extractor=SceneExtractor(
+                    llm_call=lambda prompt: self._agent._call_llm(prompt, "")
+                ) if self._config.llm_model != "mock" else None,
+                profile_extractor=ProfileExtractor(
+                    llm_call=lambda prompt: self._agent._call_llm(prompt, "")
+                ) if self._config.llm_model != "mock" else None,
+            )
+            if not self._config.scene_extraction_enabled:
+                self._capture_pipeline.disable()
+
+            # 注入分层存储到 MemoryCore，参与检索融合
+            self._agent.memory.attach_stores(
+                scene_store=self._scene_store,
+                profile_store=self._profile_store,
+            )
+
+    def enable_layered_memory(
+        self, scene_warmup: int = 5, profile_interval: int = 10,
+    ) -> None:
+        """启用记忆分层（Scene + Profile）。调用后每次 remember() 可触发自动捕获。"""
+        self._ensure_layered_memory()
+        self._config.scene_extraction_enabled = True
+        self._config.profile_extraction_enabled = True
+        self._config.scene_extraction_warmup = scene_warmup
+        self._config.profile_extraction_scene_interval = profile_interval
+        if self._capture_pipeline:
+            self._capture_pipeline.enable()
+
+    def disable_layered_memory(self) -> None:
+        """禁用记忆分层，停止自动捕获。"""
+        self._config.scene_extraction_enabled = False
+        self._config.profile_extraction_enabled = False
+        if self._capture_pipeline:
+            self._capture_pipeline.disable()
+
+    def get_scenes(
+        self, user_id: str = "", top_k: int = 10,
+    ) -> List[Dict]:
+        """获取用户的场景块列表。"""
+        self._ensure_layered_memory()
+        return self._scene_store.get_scenes(user_id=user_id, top_k=top_k)
+
+    def get_scene_markdown(self, scene_id: str) -> str:
+        """获取指定场景的白盒 Markdown 输出。"""
+        self._ensure_layered_memory()
+        return self._scene_store.generate_markdown(scene_id)
+
+    def get_profile(self, user_id: str = "") -> List[Dict]:
+        """获取用户画像条目列表。"""
+        self._ensure_layered_memory()
+        return self._profile_store.get_entries(user_id=user_id)
+
+    def get_profile_markdown(self, user_id: str = "") -> str:
+        """获取用户画像的白盒 Markdown 输出。"""
+        self._ensure_layered_memory()
+        return self._profile_store.generate_markdown(user_id)
+
+    def capture_scenes(
+        self, user_id: str = "", force: bool = False,
+        memories: Optional[List[Dict]] = None,
+    ) -> int:
+        """触发场景提取。force=True 跳过间隔限制。
+        可传入 memories 列表直接提取，不传则从 episodic store 中取。
+        返回新增场景数。
+        """
+        self._ensure_layered_memory()
+        if memories:
+            return self._capture_pipeline.capture_from_memories(
+                memories, user_id=user_id, force=force,
+            )
+        return self._capture_pipeline.capture_scenes(user_id, force=force)
+
+    def update_profile(
+        self, user_id: str = "", force: bool = False,
+    ) -> int:
+        """触发用户画像更新。返回新增/更新条目数。"""
+        self._ensure_layered_memory()
+        return self._capture_pipeline.update_profile(user_id, force=force)
+
+    def get_layered_stats(self) -> Dict[str, Any]:
+        """返回分层记忆统计。"""
+        self._ensure_layered_memory()
+        base = self.stats
+        base["scenes"] = self._scene_store.count()
+        base["profile_entries"] = self._profile_store.count()
+        return base
+
+    # ── v0.9.2: 多Agent编排便利方法 ──────────────────────────
+
+    def register_expert(
+        self, agent_id: str, expertise: List[str],
+        description: str = "", group_id: str = "",
+    ) -> str:
+        """注册一个专家Agent到编排器。
+
+        仅当 orchestration_mode="multi" 时有效。
+        返回 agent_id。
+        """
+        if self._orchestrator is None:
+            raise RuntimeError(
+                "register_expert() 需要在 orchestration_mode='multi' 模式下使用。"
+                ' 请使用 SOMA(orchestration_mode="multi") 初始化。'
+            )
+        ids = self._orchestrator.create_agents([{
+            "agent_id": agent_id,
+            "expertise": expertise,
+            "description": description,
+            "group_id": group_id,
+        }])
+        return ids[0]
+
+    def list_experts(self) -> list:
+        """列出所有已注册的专家Agent信息。"""
+        if self._orchestrator is None:
+            return []
+        infos = self._orchestrator.registry.list_agents()
+        return [
+            {
+                "agent_id": i.agent_id,
+                "expertise": i.expertise,
+                "description": i.description,
+                "session_count": i.session_count,
+                "success_rate": i.success_rate,
+            }
+            for i in infos
+        ]
+
+    def solve_multi(
+        self, problem: str, strategy: str = "voting",
+    ) -> OrchestrationResult:
+        """显式调用多Agent求解管道，返回完整 OrchestrationResult。
+
+        仅当 orchestration_mode="multi" 时有效。
+        """
+        if self._orchestrator is None:
+            raise RuntimeError(
+                "solve_multi() 需要在 orchestration_mode='multi' 模式下使用。"
+            )
+        return self._orchestrator.solve(problem, strategy=strategy)
+
+    # ── 生命周期 ──────────────────────────────────────────────
+
     def close(self) -> None:
         """关闭底层 agent 及所有子组件连接"""
         self._agent.close()
+        if self._capture_pipeline is not None:
+            self._capture_pipeline.close()
+        if self._scene_store is not None:
+            self._scene_store.close()
+        if self._profile_store is not None:
+            self._profile_store.close()
 
     def __enter__(self) -> "SOMA":
         return self
@@ -344,4 +608,11 @@ class SOMA:
 
     @property
     def stats(self) -> dict:
-        return self._agent.memory.stats()
+        base = self._agent.memory.stats()
+        if self._scene_store is not None:
+            base.setdefault("scenes", self._scene_store.count())
+        if self._profile_store is not None:
+            base.setdefault("profile_entries", self._profile_store.count())
+        if self._capture_pipeline is not None:
+            base["capture_state"] = self._capture_pipeline.get_state()
+        return base

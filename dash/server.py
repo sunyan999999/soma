@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from typing import AsyncGenerator, Literal, Optional
+from typing import AsyncGenerator, List, Literal, Optional
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,7 +30,7 @@ def _get_package_version() -> str:
         from importlib.metadata import version
         return version("soma-wisdom")
     except Exception:
-        return "0.9.0"
+        return "1.0.0"
 
 
 app = FastAPI(title="SOMA API", version=_get_package_version())
@@ -167,17 +167,58 @@ _soma: Optional["SOMA"] = None
 _initialized_mock = False
 
 
+def _sync_soma_llm_config(pm: "ProviderManager") -> None:
+    """v0.9.2: 将 ProviderManager 的当前配置同步到 SOMA 实例及所有专家 Agent"""
+    global _soma
+    if _soma is None:
+        return
+    provider = pm.get_current()
+    model = provider.get("model", "deepseek-chat")
+    api_key = provider.get("api_key", "")
+    base_url = provider.get("base_url", "")
+
+    # 主 Agent
+    _soma._config.llm_model = model
+    _soma._config.llm_api_key = api_key
+    _soma._config.llm_base_url = base_url
+
+    # 所有已注册专家 Agent（通过注册表同步）
+    if _soma._orchestrator is not None:
+        orch_config = _soma._orchestrator.config
+        orch_config.llm_model = model
+        orch_config.llm_api_key = api_key
+        orch_config.llm_base_url = base_url
+        for agent_info in _soma._orchestrator.registry.list_agents():
+            agent = _soma._orchestrator.registry.get(agent_info.agent_id)
+            if agent is not None and hasattr(agent, 'config'):
+                agent.config.llm_model = model
+                agent.config.llm_api_key = api_key
+                agent.config.llm_base_url = base_url
+
+
 def get_agent():
-    """返回 SOMA 包装实例（v0.7.0：通过 __getattr__ 暴露 _agent 内部属性）。"""
+    """返回 SOMA 包装实例（v0.9.2：始终以 multi 模式运行，无专家时等价单Agent）。"""
     global _soma, _initialized_mock
     if _soma is None:
         from soma import SOMA, _DEFAULT_FRAMEWORK
+
+        # v0.9.2: 从 ProviderManager 注入当前 LLM 配置
+        pm = get_provider_manager()
+        provider = pm.get_current()
+        model = provider.get("model", "deepseek-chat")
+        api_key = provider.get("api_key", "")
+        base_url = provider.get("base_url", "")
+
         _soma = SOMA(
             framework_config=str(_DEFAULT_FRAMEWORK),
             persist_dir=str(_DATA_DIR),
             top_k=5,
             recall_threshold=0.01,
             use_vector_search=True,
+            orchestration_mode="multi",
+            llm=model,
+            llm_api_key=api_key,
+            llm_base_url=base_url,
         )
 
         if MOCK_MODE and not _initialized_mock:
@@ -335,6 +376,12 @@ class ProviderUpdateRequest(BaseModel):
     base_url: Optional[HttpUrl] = None
 
 
+class ExpertRegisterRequest(BaseModel):
+    agent_id: str = Field(min_length=1, max_length=50)
+    expertise: list[str] = Field(min_length=1)
+    description: str = ""
+
+
 class ReflectRequest(BaseModel):
     """反馈闭环：用户对某次分析的评价"""
     session_id: str
@@ -385,7 +432,7 @@ def _http_get_json(url: str, auth_token: str = "") -> Optional[dict]:
     自动绕过系统代理（DevSidecar 等代理会篡改 HTTPS 导致 500），
     SSL 证书问题自动回退到不验证模式。
     """
-    headers = {"User-Agent": "SOMA/0.4"}
+    headers = {"User-Agent": "SOMA/1.0"}
     if auth_token:
         headers["Authorization"] = f"Bearer {auth_token}"
     req = urllib.request.Request(url, headers=headers)
@@ -419,7 +466,7 @@ def _http_get_contributor_count(repo: str) -> int:
     """通过 GitHub API 获取贡献者总数（解析 Link 头）"""
     url = f"https://api.github.com/repos/{repo}/contributors?per_page=1&anon=true"
     try:
-        headers = {"User-Agent": "SOMA/0.4"}
+        headers = {"User-Agent": "SOMA/1.0"}
         if _GITHUB_TOKEN:
             headers["Authorization"] = f"Bearer {_GITHUB_TOKEN}"
         req = urllib.request.Request(url, headers=headers)
@@ -490,6 +537,8 @@ def community_stats():
         }
 
     # PyPI 下载量（pypistats.org 公开 API）
+    # 优先 overall API；限流/失败时回退到 recent API
+    downloads = 0
     pypi_stats = _http_get_json("https://pypistats.org/api/packages/soma-wisdom/overall")
     if pypi_stats:
         downloads = sum(
@@ -497,13 +546,13 @@ def community_stats():
             for entry in pypi_stats.get("data", [])
             if entry.get("category") == "with_mirrors"
         )
-        # 若 overall API 返回空，回退到 recent API
-        if downloads == 0:
-            pypi_recent = _http_get_json("https://pypistats.org/api/packages/soma-wisdom/recent")
-            if pypi_recent:
-                downloads = pypi_recent.get("data", {}).get("last_month", 0)
-        if result["pypi"]:
-            result["pypi"]["total_downloads"] = downloads
+    # overall 失败或返回0时，用 recent API 兜底
+    if downloads == 0:
+        pypi_recent = _http_get_json("https://pypistats.org/api/packages/soma-wisdom/recent")
+        if pypi_recent:
+            downloads = pypi_recent.get("data", {}).get("last_month", 0)
+    if result["pypi"] and downloads > 0:
+        result["pypi"]["total_downloads"] = downloads
 
     # 仅缓存有效数据，空数据不缓存以允许重试
     if result["github"] or result["pypi"]:
@@ -573,6 +622,7 @@ def config_switch_provider(req: ProviderSwitchRequest):
     ok = pm.switch_provider(req.provider_id)
     if not ok:
         raise HTTPException(404, f"提供商 '{req.provider_id}' 不存在")
+    _sync_soma_llm_config(pm)
     return {
         "current_provider": req.provider_id,
         "provider": pm.get_providers()["providers"][req.provider_id],
@@ -591,6 +641,7 @@ def config_update_provider(req: ProviderUpdateRequest):
     )
     if not ok:
         raise HTTPException(404, f"提供商 '{req.provider_id}' 不存在")
+    _sync_soma_llm_config(pm)
     providers = pm.get_providers()
     return {
         "provider_id": req.provider_id,
@@ -599,7 +650,59 @@ def config_update_provider(req: ProviderUpdateRequest):
     }
 
 
+# ── 多Agent专家管理 (v0.9.2) ──────────────────────────────────
+
+
+@app.get("/api/experts")
+def list_experts():
+    """列出所有已注册的专家Agent"""
+    agent = get_agent()
+    return {"experts": agent.list_experts()}
+
+
+@app.post("/api/experts")
+def register_expert(req: ExpertRegisterRequest):
+    """注册一个专家Agent"""
+    agent = get_agent()
+    try:
+        aid = agent.register_expert(req.agent_id, req.expertise, req.description)
+        return {"agent_id": aid, "status": "registered"}
+    except RuntimeError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.delete("/api/experts/{agent_id}")
+def remove_expert(agent_id: str):
+    """移除一个专家Agent（不能移除默认的soma智者）"""
+    agent = get_agent()
+    if agent._orchestrator is None:
+        raise HTTPException(400, "编排器未启用")
+    if agent_id == getattr(agent._orchestrator.default_agent, 'agent_id', ''):
+        raise HTTPException(400, "不能移除默认的SOMA智者Agent")
+    ok = agent._orchestrator.remove_agent(agent_id)
+    if not ok:
+        raise HTTPException(404, f"Agent '{agent_id}' 不存在")
+    return {"agent_id": agent_id, "status": "removed"}
+
+
+@app.get("/api/orchestration/status")
+def orchestration_status():
+    """获取多Agent编排状态"""
+    agent = get_agent()
+    orch = agent._orchestrator
+    if orch is None:
+        return {"enabled": False, "agent_count": 0, "experts": []}
+    return {
+        "enabled": True,
+        "agent_count": orch.agent_count,
+        "router_stats": orch.router.stats,
+        "consensus_sessions": orch.consensus.session_count,
+        "experts": agent.list_experts(),
+    }
+
+
 # ── Chat ─────────────────────────────────────────────────────
+
 
 # ── /soma 深度分析路由 ───────────────────────────────────────
 
@@ -636,6 +739,49 @@ def chat(req: ChatRequest):
         if twin_agent is not None:
             agent = twin_agent
 
+    # v0.9.2: 多Agent编排模式 — 当有注册专家时走完整编排管道
+    orch_active = (
+        agent._orchestrator is not None
+        and agent._orchestrator.agent_count > 0
+    )
+    if orch_active:
+        try:
+            chat_result = agent.chat(req.problem)
+        except Exception:
+            chat_result = None
+
+        if chat_result is not None:
+            response_time = (time.time() - t0) * 1000
+            # 记录到 AnalyticsStore
+            try:
+                analytics = _get_analytics()
+                analytics.record_session({
+                    "id": f"session_{int(t0)}",
+                    "problem": req.problem,
+                    "mock_mode": False,
+                    "provider_used": "multi_agent",
+                    "response_time_ms": round(response_time, 1),
+                    "foci": chat_result.get("foci", []),
+                    "activated_memories": chat_result.get("activated_memories", []),
+                    "answer": chat_result["answer"],
+                    "memory_stats": chat_result.get("memory_stats", {}),
+                    "weights": chat_result.get("weights", {}),
+                })
+            except Exception:
+                pass
+            return {
+                **chat_result,
+                "mock_mode": False,
+                "deep_mode": False,
+                "provider_used": "multi_agent",
+                # 确保前端期望的字段始终存在
+                "foci": chat_result.get("foci", []),
+                "activated_memories": chat_result.get("activated_memories", []),
+                "prompt": chat_result.get("prompt", ""),
+                "llm_error": None,
+            }
+
+    # 单Agent路径（原有逻辑）
     # /soma 路由：检测深度分析意图，调整参数
     deep_mode = _detect_deep_mode(req.problem)
     if deep_mode:
@@ -733,6 +879,12 @@ def chat(req: ChatRequest):
         "weights": agent.evolver.get_weights(),
         "provider_used": provider_id,
         "llm_error": llm_error,
+        # v0.9.2: 编排状态（单Agent模式下无活跃编排）
+        "orchestration": {
+            "enabled": agent._orchestrator is not None,
+            "agent_count": agent._orchestrator.agent_count if agent._orchestrator else 0,
+            "experts": agent.list_experts(),
+        },
     }
 
     # 记录到 AnalyticsStore

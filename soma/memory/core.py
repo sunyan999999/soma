@@ -1,3 +1,4 @@
+import time as _time_module
 from typing import Any, Dict, List, Optional, Set
 
 from soma.base import RECENCY_HALF_LIFE_DAYS, ActivatedMemory, Focus, MemoryUnit
@@ -15,6 +16,8 @@ class MemoryCore:
         self,
         config: SOMAConfig,
         embedder=None,
+        scene_store=None,
+        profile_store=None,
     ):
         use_vector = config.use_vector_search and embedder is not None
         self.episodic = EpisodicStore(
@@ -26,6 +29,19 @@ class MemoryCore:
         self.skill = SkillStore(config.episodic_persist_dir)
         self._embedder = embedder
         self._analogy_engine = None
+
+        # v0.10.0: 分层记忆存储（可选注入）
+        self.scene_store = scene_store
+        self.profile_store = profile_store
+        self._scene_retrieval_weight = config.scene_retrieval_weight
+        self._profile_retrieval_weight = config.profile_retrieval_weight
+
+    def attach_stores(self, scene_store=None, profile_store=None) -> None:
+        """v0.10.0: 延迟注入分层记忆存储（供 SOMA._ensure_layered_memory 调用）"""
+        if scene_store is not None:
+            self.scene_store = scene_store
+        if profile_store is not None:
+            self.profile_store = profile_store
 
     def remember(
         self,
@@ -277,6 +293,68 @@ class MemoryCore:
                         )
                     )
 
+        # v0.10.0: Scene 检索 — 搜索用户场景块
+        if self.scene_store is not None:
+            scene_results = self.scene_store.get_scenes(
+                user_id=user_id, top_k=max(top_k // 2, 2),
+            )
+            for s in scene_results:
+                content = f"{s.get('title', '')}: {s.get('summary', '')}"
+                if keywords and not any(
+                    kw.lower() in content.lower() for kw in keywords[:5]
+                ):
+                    continue
+                mem = MemoryUnit(
+                    id=s.get("id", ""),
+                    content=content,
+                    memory_type="scene",
+                    importance=s.get("importance", 0.5),
+                    user_id=user_id,
+                )
+                mem.timestamp = s.get("created_at", _time_module.time())
+                activated.append(
+                    ActivatedMemory(
+                        memory=mem,
+                        activation_score=s.get("importance", 0.5) * self._scene_retrieval_weight,
+                        source="scene",
+                        match_rationale=f"场景匹配: {s.get('title', '')}",
+                    )
+                )
+
+        # v0.10.0: Profile 检索 — 匹配用户画像特征
+        if self.profile_store is not None:
+            profile_entries = self.profile_store.get_entries(
+                user_id=user_id, min_confidence=0.3,
+            )
+            for p in profile_entries[:top_k]:
+                content = (
+                    f"[{p.get('trait_type', '')}] {p.get('trait_key', '')}"
+                    f" = {p.get('trait_value', '')}"
+                )
+                if keywords and not any(
+                    kw.lower() in content.lower() for kw in keywords[:5]
+                ):
+                    continue
+                mem = MemoryUnit(
+                    id=p.get("id", ""),
+                    content=content,
+                    memory_type="profile",
+                    importance=p.get("confidence", 0.5),
+                    user_id=user_id,
+                )
+                mem.timestamp = p.get("updated_at", _time_module.time())
+                activated.append(
+                    ActivatedMemory(
+                        memory=mem,
+                        activation_score=p.get("confidence", 0.5) * self._profile_retrieval_weight,
+                        source="profile",
+                        match_rationale=(
+                            f"画像匹配: {p.get('trait_key', '')}"
+                            f"={p.get('trait_value', '')}"
+                        ),
+                    )
+                )
+
         return activated
 
     def get_causal_graph(self) -> CausalGraph:
@@ -305,6 +383,10 @@ class MemoryCore:
         self.episodic.close()
         self.semantic.close()
         self.skill.close()
+        if self.scene_store is not None:
+            self.scene_store.close()
+        if self.profile_store is not None:
+            self.profile_store.close()
 
     def __enter__(self) -> "MemoryCore":
         return self
@@ -313,9 +395,14 @@ class MemoryCore:
         self.close()
 
     def stats(self) -> Dict[str, int]:
-        return {
+        result = {
             "episodic": self.episodic.count(),
             "semantic": self.semantic.count_triples(),
             "skill": self.skill.count(),
             "indexed_vectors": self.episodic.count_indexed(),
         }
+        if self.scene_store is not None:
+            result["scenes"] = self.scene_store.count()
+        if self.profile_store is not None:
+            result["profile_entries"] = self.profile_store.count()
+        return result

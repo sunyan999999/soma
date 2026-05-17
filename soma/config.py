@@ -30,6 +30,8 @@ class SOMAConfig(BaseModel):
     framework_path: Optional[Path] = None
     episodic_persist_dir: Path = Path("soma_data")
     llm_model: str = "deepseek-chat"
+    llm_api_key: str = ""          # v0.9.2: LLM API Key
+    llm_base_url: str = ""         # v0.9.2: LLM 自定义 base_url
     default_top_k: int = 5
     recall_threshold: float = 0.3
 
@@ -53,6 +55,28 @@ class SOMAConfig(BaseModel):
     # 框架锚定检测（v0.9.1+）
     enable_frame_detection: bool = False
     frame_detection_window: int = 5
+
+    # 多Agent编排（v0.9.2+）
+    orchestration_mode: str = "single"      # "single" | "multi"
+    orchestration_top_k: int = 3            # 多Agent下最多参与专家数
+    orchestration_consensus: str = "voting" # "voting" | "llm_arbitration" | "dialectical_synthesis"
+
+    # ═══ v0.10.0: 记忆分层（L2 Scene + L3 Profile） ═══
+    # L2 场景块 — 从多条情节记忆中提取的主题聚合
+    scene_extraction_enabled: bool = False          # 是否启用自动场景提取
+    scene_extraction_warmup: int = 5                # warmup 稳定阈值：N条新记忆后触发
+    scene_extraction_warmup_enabled: bool = True    # 是否启用 warmup 递增（1→2→4→N）
+    scene_extraction_min_interval: int = 300        # 两次捕获最小间隔（秒）
+    scene_extraction_max_interval: int = 3600       # 最大间隔（秒），保底触发
+    scene_extraction_idle_timeout: int = 600        # 无新记忆后空闲超时（秒）
+
+    # L3 用户画像 — 从多个场景块中提取稳定用户特征
+    profile_extraction_enabled: bool = False        # 是否启用自动画像提取
+    profile_extraction_scene_interval: int = 10     # 每N个新场景触发一次画像更新
+
+    # 检索权重 — Scene/Profile 参与 MemoryCore 检索时的 RRF 权重
+    scene_retrieval_weight: float = 0.3             # 场景块检索权重
+    profile_retrieval_weight: float = 0.5           # 画像条目检索权重
 
     # Lazily loaded framework config
     framework: Optional[FrameworkConfig] = None

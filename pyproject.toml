@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "soma-wisdom"
-version = "0.9.1"
+version = "1.0.0"
 description = "SOMA: Somatic Wisdom Architecture — Wisdom over Memory"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -14,7 +14,7 @@ authors = [
 ]
 keywords = ["agent", "memory", "wisdom", "llm", "rag", "cognitive"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: Apache Software License",

@@ -90,6 +90,7 @@ class ExpertRouter:
         self, problem: str, top_k: int = 3, min_confidence: float = 0.2,
     ) -> List[Tuple[object, float, str]]:
         """返回前 K 个匹配的专家 agent（用于多角度分析）"""
+        self.route_count += 1
         results = []
 
         # L1
