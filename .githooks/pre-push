@@ -1,0 +1,8 @@
+#!/bin/bash
+# SOMA 版本一致性检查 — 每次 git push 前自动运行
+# 检查: 标签一致性、目录新鲜度、GitHub Release 存在性
+# 修复: python scripts/version_guard.py --fix
+# 跳过: git push --no-verify
+
+python "$(dirname "$0")/../scripts/version_guard.py"
+exit $?
