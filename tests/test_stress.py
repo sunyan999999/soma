@@ -499,13 +499,19 @@ class TestMultiStoreStress:
                     return
 
         def write_all(thread_id):
-            try:
-                epi = EpisodicStore(tmp_path / "epi", collection_name="multi")
-                sem = SemanticStore(persist_dir=tmp_path / "sem")
-                skill = SkillStore(persist_dir=tmp_path / "skill")
-            except Exception as e:
-                errors.append(f"线程{thread_id}/init: {e}")
-                return
+            # 商店初始化加重试 — 多线程同时建表时可能抢锁
+            for attempt in range(3):
+                try:
+                    epi = EpisodicStore(tmp_path / "epi", collection_name="multi")
+                    sem = SemanticStore(persist_dir=tmp_path / "sem")
+                    skill = SkillStore(persist_dir=tmp_path / "skill")
+                    break
+                except Exception as e:
+                    if "locked" in str(e) and attempt < 2:
+                        _time.sleep(0.3 * (attempt + 1))
+                        continue
+                    errors.append(f"线程{thread_id}/init: {e}")
+                    return
 
             for i in range(50):
                 _retry_store_op(
