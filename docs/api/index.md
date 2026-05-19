@@ -322,3 +322,210 @@ When the server is running (`python dash/server.py` → `http://localhost:8765`)
 | `/api/framework/stats` | GET | Framework state and weights |
 | `/api/framework/log` | GET | Evolution change log |
 | `/docs` | GET | Swagger UI (auto-generated) |
+
+---
+
+## SOMAOrchestrator (v1.1.0)
+
+Multi-agent orchestration: route → **parallel dispatch** → collect → consensus → **evolve**.
+
+v1.1.0 adds parallel agent calling (4.9x speedup) and DistributedEvolver integration.
+
+```python
+from soma import SOMA
+
+soma = SOMA(orchestration_mode="multi")
+
+# Register domain experts
+soma.register_expert("analyst", expertise=["商业分析", "战略"], description="商业战略分析师")
+soma.register_expert("engineer", expertise=["技术", "架构"], description="技术架构师")
+
+# Solve with multi-agent consensus — agents called in parallel since v1.1.0
+result = soma.solve_multi("如何平衡技术投入与业务增长？")
+print(result.answer)
+print(result.consensus.agreement_level)   # float: 0.0–1.0
+print(result.agents_involved)             # ["analyst", "engineer"]
+print(result.routing_strategy)            # "l1" | "l2" | "fallback"
+```
+
+### New in v1.1.0: Parallel Dispatch
+
+5 agents × 100ms each: 502ms (serial) → **102ms (parallel), 4.9x speedup**.
+
+Controlled by `SOMAConfig.orchestration_parallel` (default: `True`). Auto-degrades to serial for single-agent.
+
+### New in v1.1.0: Distributed Evolution
+
+After each `solve()`, agent participation is recorded. Every N solves (default: 10), global weights are merged via `DistributedEvolver.merge_weights()` and pushed back to all agents.
+
+Controlled by:
+- `SOMAConfig.orchestration_evolution_enabled` (default: `True`)
+- `SOMAConfig.orchestration_evolution_interval` (default: `10`)
+
+### `orch.stats` (updated v1.1.0)
+
+```python
+stats = orch.stats
+# {
+#   "agent_count": 3,
+#   "solve_count": 25,
+#   "parallel_enabled": True,
+#   "evolution_enabled": True,
+#   "evolution": {"agent_count": 3, "merge_count": 2, ...}
+# }
+```
+
+### `SOMAOrchestrator(config: SOMAConfig)`
+
+Direct constructor for fine-grained control:
+
+```python
+from soma.multi_agent.orchestrator import SOMAOrchestrator
+
+orch = SOMAOrchestrator(config)
+```
+
+### `orch.create_agents(specs: List[Dict]) -> List[str]`
+
+Batch-create and register agents. Each spec:
+
+| Field | Required | Description |
+|-------|:--:|------|
+| `agent_id` | yes | Unique agent identifier |
+| `expertise` | yes | List of expertise tags |
+| `description` | no | Human-readable description |
+| `group_id` | no | Collaboration group |
+| `persist_dir` | no | Per-agent persistence directory |
+| `is_default` | no | Set as fallback agent |
+
+### `orch.solve(problem, strategy="voting", top_k=3) -> OrchestrationResult`
+
+End-to-end multi-agent pipeline. Strategies:
+
+| Strategy | Description |
+|----------|-------------|
+| `voting` | Weighted majority vote (default, zero LLM cost) |
+| `llm_arbitration` | LLM reviews all opinions and picks the best |
+| `dialectical_synthesis` | LLM synthesizes a new answer from conflicting views |
+
+### `OrchestrationResult`
+
+```python
+@dataclass
+class OrchestrationResult:
+    question: str                    # Original problem
+    answer: str                      # Final consensus answer
+    agents_involved: List[str]       # Participating agent IDs
+    routing_strategy: str            # "l1" | "l2" | "fallback"
+    consensus: ConsensusResult       # Full consensus details
+```
+
+### `ConsensusResult`
+
+```python
+@dataclass
+class ConsensusResult:
+    consensus_answer: str            # Final answer
+    agreement_level: float           # 0.0–1.0 inter-agent agreement
+    disagreements: List[str]         # Points of disagreement
+    minority_view: str               # Minority opinion (if any)
+    opinions: List[AgentOpinion]     # Individual agent responses
+```
+
+---
+
+## SceneStore (v1.0.0 L2)
+
+Scene blocks — topic aggregation from multiple episodic memories.
+
+```python
+from soma.memory.scene import SceneStore
+from pathlib import Path
+
+store = SceneStore(persist_dir=Path("soma_data"), collection_name="scenes")
+```
+
+### `store.store(memory: MemoryUnit) -> str`
+
+Store a scene block. Returns scene ID.
+
+### `store.query(query_text: str, top_k: int = 5) -> List[MemoryUnit]`
+
+Semantic search over scene blocks.
+
+### `store.get_by_user(user_id: str) -> List[MemoryUnit]`
+
+Retrieve all scenes for a specific user.
+
+---
+
+## ProfileStore (v1.0.0 L3)
+
+User profile — stable traits extracted across scene blocks.
+
+```python
+from soma.memory.profile import ProfileStore
+
+store = ProfileStore(persist_dir=Path("soma_data"))
+```
+
+### `store.upsert_trait(user_id, trait_type, trait_key, trait_value, confidence) -> str`
+
+Insert or update a profile trait. Trait types: `preference`, `skill`, `habit`, `knowledge_gap`, `goal`.
+
+### `store.get_profile(user_id: str) -> List[Dict]`
+
+Get all profile entries for a user, grouped by trait type.
+
+---
+
+## CapturePipeline (v1.0.0 Auto-Capture)
+
+Background pipeline that automatically extracts scenes and profiles from episodic memories.
+
+```python
+from soma.memory.capture import CapturePipeline, CaptureConfig
+
+config = CaptureConfig(
+    scene_extraction_enabled=True,
+    profile_extraction_enabled=True,
+    scene_extraction_warmup=5,
+)
+pipeline = CapturePipeline(memory_core, scene_store, profile_store, config)
+
+# Trigger a capture cycle (typically called automatically)
+result = pipeline.capture(user_id="default")
+print(result.scenes_created)
+print(result.profiles_updated)
+```
+
+---
+
+## MCP Server (v1.0.0)
+
+Expose SOMA as an MCP (Model Context Protocol) server for Claude Code and other MCP clients.
+
+```bash
+python -m soma.mcp_server
+```
+
+Claude Code configuration (`~/.claude/settings.json`):
+
+```json
+{
+  "mcpServers": {
+    "soma": {
+      "command": "python",
+      "args": ["-m", "soma.mcp_server"],
+      "env": {
+        "SOMA_DATA_DIR": "~/.soma/claude",
+        "SOMA_LLM": "deepseek-chat"
+      }
+    }
+  }
+}
+```
+
+Exposed tools: `soma_remember`, `soma_recall`, `soma_chat`, `soma_evolve`, `soma_stats`.
+
+Auto-detects installed capabilities and adjusts tool list accordingly. No LLM → memory-only mode. v0.9.0 → no scene/profile tools.

@@ -13,6 +13,21 @@ class SOMAEmbedder(BaseEmbedder):
         self._config = config
         self._model = None
         self._dim = config.vector_dim
+        self._warmed_up = False
+
+    def warmup(self) -> bool:
+        """预热嵌入模型：预下载模型文件，避免首次调用时阻塞。
+
+        返回 True 表示预热成功，False 表示首次下载中（稍后自动重试）。
+        """
+        try:
+            self._ensure_model()
+            # 编码一个短文本验证模型已就绪
+            self.encode("warmup")
+            self._warmed_up = True
+            return True
+        except Exception:
+            return False
 
     def _ensure_model(self):
         if self._model is None:

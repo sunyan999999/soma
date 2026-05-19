@@ -1,6 +1,6 @@
-"""多智能体协作模块 — v0.9.0
+"""多智能体协作模块 — v1.1.1
 
-提供专家注册、问题路由、分布式权重演化、共识形成协议。
+提供专家注册、问题路由、分布式权重演化、共识形成协议、并行编排。
 """
 
 from soma.multi_agent.registry import AgentRegistry, AgentInfo

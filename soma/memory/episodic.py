@@ -198,7 +198,11 @@ class EpisodicStore(BaseMemoryStore):
                 vec = self._embedder.encode(content)
                 self._vector_index.store_vector(self._conn, memory_id, vec)
             except Exception:
-                _log.warning("嵌入向量生成失败，memory_id=%s，记忆已存储但无法语义搜索", memory_id)
+                _log.warning(
+                    "嵌入向量生成失败，memory_id=%s，记忆已存储但无法语义搜索。"
+                    "如果首次启动，可能是嵌入模型正在从 HuggingFace 下载（~66MB），稍后自动恢复。",
+                    memory_id,
+                )
 
         return memory_id
 

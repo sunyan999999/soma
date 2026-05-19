@@ -500,14 +500,15 @@ class TestClearLog:
 class TestV060Pipeline:
     @patch("soma.agent.completion")
     def test_reasoning_injected_in_prompt(self, mock_completion, agent):
-        """推理框架+假设+证据应注入Prompt"""
+        """L2+问题：推理框架+假设+证据应注入Prompt"""
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
         mock_response.choices[0].message.content = "深度分析..."
         mock_completion.return_value = mock_response
 
         agent.remember("第一性原理强调回归基本要素", {"domain": "哲学"}, importance=0.9)
-        agent.respond("什么是第一性原理？")
+        # v1.1.1: 使用L2+问题触发推理框架（含深度词"根本"、"为什么"）
+        agent.respond("什么是第一性原理？为什么它如此根本重要？")
 
         prompt = agent._last_prompt
         assert "结构化推理框架" in prompt
@@ -605,8 +606,9 @@ class TestV060Pipeline:
 
 class TestBuildPrompt:
     def test_build_prompt_fallback_when_no_last_reasoning(self, agent):
-        """_build_prompt在_last_reasoning为空时应回退到直接调用_execute_reasoning"""
+        """_build_prompt在_last_reasoning为空且L2+时应回退到直接调用_execute_reasoning"""
         agent._last_reasoning = []
+        agent._current_complexity = 2  # v1.1.1: L2触发推理框架
         foci = [make_focus("first_principles")]
         activated = [make_activated("第一性原理记忆")]
         # 重置_last_anti_memories避免旧值
@@ -620,7 +622,7 @@ class TestBuildPrompt:
         assert "测试问题" in prompt
 
     def test_build_prompt_with_reasoning(self, agent):
-        """有_last_reasoning时直接使用"""
+        """有_last_reasoning且L2+时直接使用"""
         agent._last_reasoning = [{
             "index": 1,
             "dimension": "测试维度",
@@ -631,6 +633,7 @@ class TestBuildPrompt:
             "counter_evidence": [],
         }]
         agent._last_anti_memories = []
+        agent._current_complexity = 2  # v1.1.1: L2触发推理框架
 
         foci = [make_focus("first_principles")]
         prompt = agent._build_prompt("测试问题", foci, [])
@@ -640,12 +643,13 @@ class TestBuildPrompt:
         assert "证据1" in prompt
 
     def test_build_prompt_with_anti_memories(self, agent):
-        """有反面视角时应有专门段落"""
+        """L2+有反面视角时应有专门段落"""
         agent._last_reasoning = [{
             "index": 1, "dimension": "测试", "weight": 0.9,
             "template": "模板", "hypothesis": "", "evidence": [], "counter_evidence": [],
         }]
         agent._last_anti_memories = [make_activated("反面证据内容", mem_id="anti1")]
+        agent._current_complexity = 2  # v1.1.1: L2触发推理框架
 
         prompt = agent._build_prompt("问题", [], [])
 

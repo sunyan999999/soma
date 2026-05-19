@@ -61,6 +61,11 @@ class SOMAConfig(BaseModel):
     orchestration_top_k: int = 3            # 多Agent下最多参与专家数
     orchestration_consensus: str = "voting" # "voting" | "llm_arbitration" | "dialectical_synthesis"
 
+    # 多Agent并行 + 演化（v1.1.0+）
+    orchestration_parallel: bool = True          # 多Agent是否并行分发（ThreadPoolExecutor）
+    orchestration_evolution_enabled: bool = True # 是否启用分布式权重演化
+    orchestration_evolution_interval: int = 10   # 每N次solve后触发全局权重合并
+
     # ═══ v0.10.0: 记忆分层（L2 Scene + L3 Profile） ═══
     # L2 场景块 — 从多条情节记忆中提取的主题聚合
     scene_extraction_enabled: bool = False          # 是否启用自动场景提取

@@ -12,6 +12,11 @@ from soma.evolve import MetaEvolver
 from soma.law_discovery import LawDiscovery
 from soma.embedder import SOMAEmbedder
 from soma.langchain_tool import create_soma_tool
+from soma.llamaindex_tool import create_soma_llamaindex_tools, SOMALlamaIndexMemory
+from soma.crewai_tool import create_soma_crewai_tools, SOMACrewMemory
+from soma.autogen_tool import create_soma_autogen_tools, SOMAAutoGenMemory
+from soma.audit import AuditLogger
+from soma.rbac import RBACManager
 from soma.multi_agent.orchestrator import OrchestrationResult
 from soma.memory.scene import SceneStore
 from soma.memory.profile import ProfileStore
@@ -30,24 +35,41 @@ __all__ = [
     "LawDiscovery",
     "load_config",
     "create_soma_tool",
+    "create_soma_llamaindex_tools",
+    "SOMALlamaIndexMemory",
+    "create_soma_crewai_tools",
+    "SOMACrewMemory",
+    "create_soma_autogen_tools",
+    "SOMAAutoGenMemory",
+    "AuditLogger",
+    "RBACManager",
     "MemoryUnit",
     "Focus",
     "ActivatedMemory",
+    "OrchestrationResult",
+    "CapturePipeline",
+    "CaptureConfig",
 ]
 
 _log = logging.getLogger("soma")
 
 
 class SOMA:
-    """SOMA 顶层门面 — 供外部 Agent / 应用直接调用
+    """SOMA 顶层门面 — v1.1.1
 
     使用示例::
 
         from soma import SOMA
 
+        # 单Agent模式（默认，v0.1–v1.1兼容）
         soma = SOMA()
         soma.remember("第一性原理：从最基本要素出发推导...")
         answer = soma.respond("如何系统性地分析公司增长瓶颈？")
+
+        # 多Agent模式（v1.0+），v1.1.1支持并行调度+分布式演化
+        soma = SOMA(orchestration_mode="multi")
+        soma.register_expert("analyst", ["商业分析"])
+        result = soma.solve_multi("如何平衡技术投入与业务增长？")
 
     五分钟接入，让你的 Agent 学会智者思维。
     """

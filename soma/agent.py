@@ -141,6 +141,12 @@ class SOMA_Agent:
         self.embedder = None
         if config.use_vector_search:
             self.embedder = SOMAEmbedder(config)
+            # v1.1.1: 预热嵌入模型（后台下载，不阻塞）
+            import threading
+            threading.Thread(
+                target=self.embedder.warmup, daemon=True,
+                name="soma-embedder-warmup",
+            ).start()
 
         # 加载思维框架
         framework = config.framework or load_config(config.framework_path)
@@ -183,6 +189,9 @@ class SOMA_Agent:
         # 保存最近一次推理框架（v0.6.0 推理引擎）
         self._last_reasoning: List[Dict] = []
 
+        # v1.1.1: 当前问题复杂度（供 _build_prompt 自适应）
+        self._current_complexity: int = 1
+
         # v0.9.1: 框架锚定检测 — 跟踪最近用户输入
         self._recent_user_turns: List[str] = []
         self._last_frame_anchoring: Optional[dict] = None
@@ -193,6 +202,7 @@ class SOMA_Agent:
 
         # Step 0: 评估问题复杂度
         complexity = self._assess_complexity(problem)
+        self._current_complexity = complexity
 
         # v0.9.1: 记录用户输入用于框架锚定检测
         if self.config.enable_frame_detection:
@@ -245,9 +255,13 @@ class SOMA_Agent:
             foci = foci + suggested_foci
 
         # Step 2.7: 构建结构化推理框架（v0.6.0 推理引擎）
-        self._last_reasoning = self._execute_reasoning(
-            problem, foci, activated, self._last_anti_memories,
-        )
+        # v1.1.1: L1简单问题跳过推理框架，避免回复膨胀
+        if complexity >= 2:
+            self._last_reasoning = self._execute_reasoning(
+                problem, foci, activated, self._last_anti_memories,
+            )
+        else:
+            self._last_reasoning = []
 
         # Step 3: 合成 Prompt
         prompt = self._build_prompt(problem, foci, activated)
@@ -420,11 +434,48 @@ class SOMA_Agent:
         foci: List[Focus],
         memories: List[ActivatedMemory],
     ) -> str:
-        """构建 LLM Prompt：推理框架 + 假设检验 + 证据对照 + 问题（v0.6.0 推理引擎）"""
-        # ── 结构化推理框架（v0.6.0） ─────────────────────────
+        """构建 LLM Prompt：L1轻量直答 / L2+完整推理框架（v1.1.1 复杂度自适应）"""
+        complexity = getattr(self, '_current_complexity', 2)
+
+        # ── L1 轻量模式：简单问答，遵守用户长度约束 ────────
+        if complexity == 1:
+            # 提取用户长度约束（"50字以内"、"三个要点"等）
+            import re
+            constraint_hints = []
+            word_limit = re.search(r'(\d+)\s*字[以之]?[内下]', problem)
+            if word_limit:
+                constraint_hints.append(f"请严格控制在{word_limit.group(1)}字以内")
+            point_limit = re.search(r'(\d+)\s*[个条点项]\s*(要点|建议|原因|步骤|方面)', problem)
+            if point_limit:
+                constraint_hints.append(f"请只给出{point_limit.group(1)}个{point_limit.group(2)}")
+            constraint_text = "。".join(constraint_hints) if constraint_hints else "请简洁回答，不要展开"
+
+            memory_text = ""
+            if memories:
+                parts = []
+                for i, am in enumerate(memories[:3]):
+                    parts.append(f"[参考{i+1}] {am.memory.content[:200]}")
+                memory_text = "## 参考信息\n" + "\n".join(parts)
+
+            prompt = f"""你是一位智者，善于简洁有力地回答问题。
+
+{memory_text}
+
+## 当前问题
+{problem}
+
+---
+要求：
+- {constraint_text}
+- 用自然交谈的语气回答，不要使用模板化的分析结构
+- 不要提及任何规律、理论或框架的名称
+- 不要使用"### 维度分析"、"基本要素识别"等学术结构"""
+            self._last_prompt = prompt
+            return prompt
+
+        # ── L2/L3 完整推理框架模式 ─────────────────────────
         reasoning_blocks = getattr(self, '_last_reasoning', [])
         if not reasoning_blocks:
-            # 兼容旧路径：无推理框架时回退到简单角度列表
             reasoning_blocks = self._execute_reasoning(
                 problem, foci, memories,
                 getattr(self, '_last_anti_memories', []),

@@ -80,6 +80,7 @@ site/
 # Backup & temp
 *.bak
 _benchmark_tmp/
+tmp/
 dashboard_data_backup/
 soma_data_v070/
 soma_data_backup_*/
@@ -88,3 +89,4 @@ reports/
 # Generated artifacts (not source)
 deploy/
 *.pdf
+!docs/SOMA_v1.1.1_*.pdf

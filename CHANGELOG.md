@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.1] — 2026-05-19
+
+零熵智库本地测试反馈修复版本。核心修复：L1简单问题跳过推理框架（回复膨胀从25倍降至正常），多Agent路由补齐（所有已注册Agent均参与），嵌入模型预热。
+
+### Fixed
+- **回复严重膨胀**：L1简单问题跳过推理框架注入，用户"50字以内"要求从实际返回1268字降至约50字。`_build_prompt` 复杂度自适应（L1轻量/L2+完整框架），自动提取用户长度约束
+- **多Agent仅激活1个**：`_solve_impl` 路由后补齐未匹配的已注册Agent（supplement策略），确保所有专家参与
+- **嵌入模型首次失败**：`SOMAEmbedder.warmup()` 后台预热，`episodic.py` 错误信息增加"首次下载中"提示
+- **Orchestrator API缺失**：新增 `list_agents()` 方法 + `_agents` 实例映射
+
+### Changed
+- `SOMA_Agent` 新增 `_current_complexity` 实例变量，跟踪问题复杂度
+- `_build_prompt` 重构为两分支：L1轻量直答 / L2+完整推理框架
+- `ExpertRouter.route_multi` 结果不足时自动补齐未匹配Agent
+
+## [1.1.0] — 2026-05-19
+
+### 协作深化 — 并行调度 + 分布式权重演化接入
+
+**v1.0.0 的 SOMAOrchestrator 逐个串行问专家，3个专家每个200ms就得等600ms。v1.1.0 改为并行分发，同样3个专家只需等最慢那个。同时将 DistributedEvolver（268行，v1.0.0已写完但零调用）接入编排管道，每次求解自动记录各Agent表现，定期合并全局权重并回写校准。**
+
+### Added
+
+- **并行 Agent 调度 (`orchestrator.py`)**: `_dispatch_parallel` 方法，用 `ThreadPoolExecutor` 同时向所有专家提问。5专家实测加速比 **4.9x**（502ms → 102ms）。自动退化：单专家时不启动线程池。结果按注册顺序重排保证确定性。
+- **分布式演化接入 (`orchestrator.py`)**: `_evolve_after_solve` 在每次 solve 后记录各 Agent 参与次数和成功率，每 N 次（默认10）自动调用 `DistributedEvolver.merge_weights()` + `apply_all()` 进行全局权重合并和回写。
+- **3 个配置项 (`config.py`)**: `orchestration_parallel`（并行开关，默认True）、`orchestration_evolution_enabled`（演化开关，默认True）、`orchestration_evolution_interval`（合并间隔，默认10）。
+- **14 项专项测试 (`tests/test_orchestrator_v1_1.py`)**: 覆盖串行/并行分发、失败隔离、确定性排序、单Agent退化、演化统计更新、定期合并、开关控制、注销清理、stats完整性、向后兼容。
+
+### Changed
+
+- `SOMAOrchestrator.__init__` 新增分布式演化器初始化、会话计数追踪
+- `SOMAOrchestrator.create_agents` 自动注册 agent 到 DistributedEvolver
+- `SOMAOrchestrator.remove_agent` 同步从演化器注销
+- `SOMAOrchestrator.stats` 新增 `solve_count`、`parallel_enabled`、`evolution_enabled`、`evolution` 字段
+
+### Compatibility
+
+- 100% 向后兼容。存量 604 项测试全部通过。所有新功能在默认 `orchestration_mode="single"` 下不触发。
+- SOMAConfig 新增字段均有默认值，现有配置无需修改。
+
+---
+
 ## [1.0.0] — 2026-05-16
 
 ### 🏔️ v1.0 里程碑 — 五线交汇，认知内核成形

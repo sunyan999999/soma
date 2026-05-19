@@ -47,6 +47,8 @@ class TestSOMA_Agent:
         assert "contradiction_analysis" in law_ids  # "矛盾"
 
     def test_build_prompt(self, agent):
+        # v1.1.1: 设置L2复杂度以触发完整推理框架
+        agent._current_complexity = 2
         foci = agent.decompose("增长停滞的根本原因是什么？")
         activated = agent.hub.activate(foci)
         prompt = agent._build_prompt("增长停滞的根本原因是什么？", foci, activated)

@@ -1,4 +1,4 @@
-# SOMA v1.0 — The Cognitive Kernel for AI Agents
+# SOMA v1.1.1 — The Cognitive Kernel for AI Agents
 
 <p align="center">
   <strong>Wisdom over Memory — 智慧超越记忆</strong><br>
@@ -21,7 +21,7 @@ answer = soma.respond("How to analyze our growth bottleneck?")
 
 **Why SOMA instead of a vector database?** Traditional memory (ChromaDB, Mem0) stores and retrieves. SOMA **thinks first**: a 7-law reasoning network decomposes problems *before* fetching memories. The result: agents that systematically analyze, not just pattern-match.
 
-| | Vector DBs | Mem0 | **SOMA v1.0** |
+| | Vector DBs | Mem0 | **SOMA v1.1.1** |
 |---|---|---|---|
 | Stores & retrieves | ✓ | ✓ | ✓ |
 | Reasoning framework | ✗ | ✗ | **✓ 7 thinking laws** |
@@ -38,13 +38,13 @@ answer = soma.respond("How to analyze our growth bottleneck?")
 <p align="center">
   <a href="https://github.com/sunyan999999/soma"><img src="https://img.shields.io/github/stars/sunyan999999/soma?style=social" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-1.0.0-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-1.1.1-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/python-3.10%2B-green" alt="Python"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/semantic_recall-100%25-brightgreen" alt="Semantic Recall"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/overall_score-85.5%2F100-blue" alt="Overall Score"></a>
-  <a href="#"><img src="https://img.shields.io/badge/tests-511%2F511-brightgreen" alt="Tests"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v1.0.0-success" alt="Changelog"></a>
-  <a href="#"><img src="https://img.shields.io/badge/milestone-1.0-ff6b6b" alt="Milestone"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-618%2F618-brightgreen" alt="Tests"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v1.1.1-success" alt="Changelog"></a>
+  <a href="#"><img src="https://img.shields.io/badge/milestone-1.1.1-ff6b6b" alt="Milestone"></a>
 </p>
 
 📖 **[中文文档](README_zh.md)** | **[Docs](https://sunyan999999.github.io/soma/)** | **[Demo](https://github.com/sunyan999999/soma-demo)** | **[Roadmap](ROADMAP.md)** | **[Changelog](CHANGELOG.md)** | **[Contributing](CONTRIBUTING.md)**
@@ -55,9 +55,9 @@ answer = soma.respond("How to analyze our growth bottleneck?")
 
 ---
 
-## v1.0 — The Milestone
+## v1.1.1 — Production Refinement
 
-**v1.0 is not just another version number.** It's the moment when five capability lines — Memory, Reasoning, Collaboration, Evolution, and Engineering — converge into a production-grade cognitive kernel.
+**v1.1.1 is the production-refined release.** After real-world testing in the Zero Entropy Think Tank, five capability lines — Memory, Reasoning, Collaboration, Evolution, and Engineering — now work with L1/L2 complexity gating and fully parallel multi-agent dispatch.
 
 Every capability line that started as a seed in v0.1 has grown into a complete system:
 
@@ -67,7 +67,7 @@ Every capability line that started as a seed in v0.1 has grown into a complete s
 | **Reasoning** | How to use information to think? | Causal chains + conflict detection + cross-domain analogy |
 | **Collaboration** | How do multiple AIs work as a team? | Expert routing + consensus protocols + distributed evolution |
 | **Evolution** | Can AI learn from its own experience? | Reflect → re-weight → solidify → share |
-| **Engineering** | How to prove these capabilities are real? | 511 tests + 5D benchmarks + competitor comparison |
+| **Engineering** | How to prove these capabilities are real? | 618 tests + 5D benchmarks + competitor comparison |
 
 **All new features default to off. Upgrade from any 0.x version with zero code changes.**
 
@@ -77,7 +77,7 @@ Every capability line that started as a seed in v0.1 has grown into a complete s
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                         SOMA v1.0 — Cognitive Kernel                           │
+│                         SOMA v1.1.1 — Cognitive Kernel                           │
 │                                                                                │
 │  ┌──────────────────────────────────────────────────────────────────┐        │
 │  │  L3 User Profile — "Knows who you are"                             │        │
@@ -407,7 +407,7 @@ SOMA v1.0 — benchmarked with 1,050 production memories from 零熵智库 (5 ru
 
 | System | Recall@5 | Reasoning | Three-Tier Memory | Evolution | Multi-Agent | Awareness |
 |--------|:---:|:---:|:---:|:---:|:---:|:---:|
-| **SOMA v1.0** | **100%** | **✓** | **✓** | **✓** | **✓** | **✓** |
+| **SOMA v1.1.1** | **100%** | **✓** | **✓** | **✓** | **✓** | **✓** |
 | ChromaDB | 2.5% | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Mem0 | * | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Zep | * | ✗ | ✗ | ✗ | ✗ | ✗ |
@@ -431,7 +431,7 @@ git clone https://github.com/soma-project/soma-core.git
 cd soma-core
 pip install -e ".[dev]"
 
-pytest -v --cov=soma --cov-report=term    # 511 tests, ~97% coverage
+pytest -v --cov=soma --cov-report=term    # 618 tests, ~97% coverage
 
 python -m soma                              # quickstart verification
 
@@ -494,7 +494,7 @@ soma-core/
 │   ├── providers.py       # LLM provider manager
 │   └── frontend/          # Vue 3 dashboard UI (i18n: EN/ZH)
 ├── docs/                  # Documentation (EN + ZH bilingual)
-├── tests/                 # 511 tests, ~97% coverage
+├── tests/                 # 618 tests, ~97% coverage
 ├── examples/              # Usage examples
 └── pyproject.toml         # Build config
 ```
@@ -508,7 +508,7 @@ soma-core/
   year         = {2026},
   url          = {https://github.com/sunyan999999/soma},
   note         = {Apache 2.0},
-  version      = {1.0.0},
+  version      = {1.1.1},
 }
 ```
 
