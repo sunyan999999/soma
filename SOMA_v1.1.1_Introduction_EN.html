@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SOMA v1.1.1 — Teaching AI to Think Like a Sage</title>
+<style>
+  @page { size: A4; margin: 2.5cm 2cm; @bottom-center { content: "— " counter(page) " —"; font-size: 9pt; color: #999; } }
+  body { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; font-size: 11.5pt; line-height: 1.9; color: #2d2d2d; }
+  .cover { text-align: center; padding: 80px 0 60px 0; page-break-after: always; }
+  .cover h1 { font-size: 30pt; color: #1a1a2e; margin-bottom: 10px; letter-spacing: 3px; }
+  .cover .subtitle { font-size: 15pt; color: #555; margin-bottom: 40px; }
+  .cover .meta { font-size: 11pt; color: #888; margin-top: 50px; }
+  .cover .line { width: 60%; height: 2px; background: linear-gradient(90deg, transparent, #1a1a2e, transparent); margin: 30px auto; }
+  h2 { font-size: 19pt; color: #1a1a2e; border-bottom: 2px solid #e0c36a; padding-bottom: 6px; margin-top: 40px; }
+  h3 { font-size: 13.5pt; color: #333; margin-top: 28px; }
+  p { margin: 12px 0; }
+  ul { margin: 10px 0 10px 2em; }
+  li { margin: 6px 0; }
+  .highlight { background: #fef9e7; border-left: 4px solid #e0c36a; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+  .highlight p { margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  th { background: #1a1a2e; color: white; padding: 10px 14px; text-align: left; font-weight: 500; }
+  td { padding: 10px 14px; border-bottom: 1px solid #e0e0e0; }
+  tr:nth-child(even) td { background: #fafafa; }
+  code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 10pt; }
+  .footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 10pt; color: #999; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>SOMA v1.1.1</h1>
+  <div class="line"></div>
+  <p class="subtitle">Teaching AI to Think Like a Sage</p>
+  <p style="font-size:13pt; color:#666;">— An Open-Source Wisdom Framework for Artificial Intelligence —</p>
+  <div class="meta">
+    <p>May 2026 · soma-wisdom Open Source Project</p>
+    <p>github.com/sunyan999999/soma</p>
+  </div>
+</div>
+
+<h2>1. What Is SOMA? In One Sentence</h2>
+
+<p>SOMA is an <strong>open-source wisdom thinking framework</strong> that equips large language models and AI agents with a set of "thinking methodologies" — just as humans use principles like "first principles thinking," "systems thinking," and "the Pareto principle" to reason better, SOMA enables AI to automatically apply these wisdom laws when analyzing problems.</p>
+
+<p>You don't need to understand the technology. Think of SOMA as giving your AI a "thinking coach" — when you ask a question, this coach works behind the scenes to select and apply the most appropriate thinking frameworks, helping the AI think deeper, broader, and more reliably.</p>
+
+<div class="highlight">
+  <p><strong>An analogy</strong>: Without SOMA, an AI is like a smart but unstructured student. With SOMA, it becomes a trained sage — it examines problems from multiple angles, draws on past experience, and even reflects on and evolves its own thinking.</p>
+</div>
+
+<h2>2. Why Does AI Need a "Thinking Framework"?</h2>
+
+<p>Today's large language models are remarkably capable, but they share a fundamental weakness: <strong>they don't think in a structured way</strong>. Ask "how can I improve my team's productivity?" and you might get a reasonable-sounding answer, but it will lack depth, rely on a single perspective, and likely miss critical factors.</p>
+
+<p>SOMA addresses this exact problem. It comes with seven validated wisdom laws built in:</p>
+
+<table>
+  <tr><th>Wisdom Law</th><th>In Plain English</th><th>What It Does</th></tr>
+  <tr><td>First Principles</td><td>Break things down to their fundamentals and reason up</td><td>Cuts through surface noise to find root causes</td></tr>
+  <tr><td>Systems Thinking</td><td>See everything as an interconnected whole</td><td>Finds leverage points instead of treating symptoms</td></tr>
+  <tr><td>Contradiction Analysis</td><td>Identify deeper tensions beneath surface problems</td><td>Reveals hidden structural conflicts</td></tr>
+  <tr><td>Pareto Principle</td><td>80% of results come from 20% of causes</td><td>Focuses effort on the critical few for maximum impact</td></tr>
+  <tr><td>Inversion</td><td>Think backwards: how would you make it worse? Then avoid that</td><td>Breaks through blind spots and reveals hidden risks</td></tr>
+  <tr><td>Evolutionary Lens</td><td>View things through the lens of time and change</td><td>Understands where things came from and where they're going</td></tr>
+  <tr><td>Analogical Reasoning</td><td>Use what you know to understand what you don't</td><td>Transfers insights across domains</td></tr>
+</table>
+
+<p>When the AI receives a question, SOMA automatically determines which wisdom laws are most relevant, combines them by weight, and applies them — much like an experienced thinker instinctively draws on multiple mental tools when facing a new challenge.</p>
+
+<h2>3. What's New in v1.1.1: Three Breakthroughs</h2>
+
+<p>v1.1.1 is a milestone release. It delivers three critical breakthroughs:</p>
+
+<h3>Breakthrough 1: Knowing When to Go Deep — and When to Keep It Simple</h3>
+
+<p>Previous versions had a glaring issue: whether you asked "What is photosynthesis? Answer in 50 words" or "How should we set our five-year corporate strategy?", the AI would deploy its entire thinking framework and produce a thousand-word essay. It was like going to a convenience store for water and getting a product launch presentation.</p>
+
+<p class="noindent"><strong>What v1.1.1 does</strong>:</p>
+<ul>
+  <li>Automatically assesses question complexity — simple questions take the "fast lane" for a concise, direct answer</li>
+  <li>Automatically detects user length constraints — say "in 50 words" and it actually stays around 50 words</li>
+  <li>Reserves the deep reasoning framework for genuinely complex questions — the right tool for the right job</li>
+</ul>
+
+<div class="highlight">
+  <p><strong>Real results</strong>: In Zero Entropy Think Tank testing, before the fix, a "50 words" request returned 1,268 words. After the fix, it lands precisely around 50 words. Response latency for simple questions dropped from 14–26 seconds to 2–3 seconds.</p>
+</div>
+
+<h3>Breakthrough 2: True Collective Intelligence</h3>
+
+<p>SOMA v1.1.0 introduced multi-agent collaboration — you can register multiple "experts" (like a business strategist, a technical architect, a product manager) and have them discuss problems together. But testing revealed a bug: with three experts registered, only one was actually working.</p>
+
+<p class="noindent"><strong>What v1.1.1 does</strong>:</p>
+<ul>
+  <li>Fixed the expert routing logic — all registered experts are now invited to participate</li>
+  <li>Parallel dispatch lets multiple experts think simultaneously — with 5 experts, speed improves nearly 5x</li>
+  <li>Distributed evolution means each expert's experience feeds back into the entire system</li>
+</ul>
+
+<div class="highlight">
+  <p><strong>Real results</strong>: A complex business problem now gets simultaneous input from a market strategist, a technical feasibility architect, and a user-experience product manager — then a consensus mechanism synthesizes a comprehensive solution.</p>
+</div>
+
+<h3>Breakthrough 3: From "Reset Every Time" to "Gets Smarter With Use"</h3>
+
+<p>Most AI tools start from scratch with every conversation. SOMA is different — it remembers, reflects, and evolves.</p>
+
+<p class="noindent"><strong>v1.1.1's complete evolution loop</strong>:</p>
+<ul>
+  <li><strong>Memory</strong>: Every conversation's important insights are automatically stored and indexed</li>
+  <li><strong>Reflection</strong>: Each analysis undergoes quality self-assessment — good patterns are reinforced, bad ones weakened</li>
+  <li><strong>Evolution</strong>: Wisdom law weights auto-adjust based on real-world effectiveness — if "systems thinking" proves particularly powerful for certain domains, its weight automatically increases</li>
+  <li><strong>Pre-warming</strong>: The embedding model downloads in the background — no more waiting on first launch</li>
+</ul>
+
+<h2>4. What This Means for AI Applications Like the Zero Entropy Think Tank</h2>
+
+<p>The Zero Entropy Think Tank (零熵智库) is one of SOMA's first real-world deployments. SOMA delivers three layers of value for such applications:</p>
+
+<h3>Layer 1: A Quantum Leap in Answer Quality</h3>
+
+<p>Without SOMA, an AI application is a Q&A information retriever. With SOMA, it becomes a thinking partner that analyzes from multiple angles, draws on accumulated experience, and engages in self-reflection. Users no longer need to structure their own thinking — the AI does it automatically.</p>
+
+<h3>Layer 2: An Accumulating Wisdom Asset</h3>
+
+<p>Ordinary AI tools "reset" after every conversation. SOMA's memory system enables continuous accumulation — today's strategic discussion becomes tomorrow's reference for analyzing new problems. A Think Tank used for three months is significantly smarter than one on its first day.</p>
+
+<h3>Layer 3: From Tool to Partner</h3>
+
+<p>This is the most important shift. Without a thinking framework, AI is an "advanced calculator" — you input, it outputs. With SOMA, AI becomes a "thinking partner" — it challenges your assumptions, offers perspectives you hadn't considered, and reminds you of relevant historical cases.</p>
+
+<div class="highlight">
+  <p><strong>A Zero Entropy Think Tank user's reflection</strong>: "Before, chatting with AI felt like consulting a dictionary. Now it feels like talking to a seasoned mentor — it asks questions back, probes deeper, and raises dimensions I never even considered."</p>
+</div>
+
+<h2>5. What This Means for Everyday People</h2>
+
+<p>You might think: I'm not an AI developer — what does SOMA have to do with me? The answer: <strong>it's redefining your relationship with AI</strong>.</p>
+
+<h3>You Don't Need to Become a Prompt Engineer</h3>
+
+<p>There's a hidden barrier with today's AI tools: you have to learn "how to ask questions properly." The same question asked by different people yields vastly different results. SOMA's significance is that it lets the AI learn "how to think properly" — rather than depending on the user's prompting skills. You don't need to study "prompt engineering." SOMA fills in the thinking gap for the AI.</p>
+
+<h3>You Get "Thinking," Not Just "Information"</h3>
+
+<p>When you ask a medical question, a SOMA-powered AI won't just give you a list of symptoms. It will use First Principles to break down the causes, Systems Thinking to reveal connections between lifestyle and symptoms, and Inversion to help rule out misdiagnoses. You get structured analysis, not search results.</p>
+
+<h3>Your AI Gets to Know You</h3>
+
+<p>SOMA's memory and evolution mechanisms mean that over time, the AI gradually understands your thinking preferences, your domain needs, and your preferred analytical angles. It becomes not a cold, generic tool but a growing, personalized intellectual companion.</p>
+
+<h2>6. What This Means for the AI Industry</h2>
+
+<h3>From "Bigger Models" to "Smarter Models"</h3>
+
+<p>For the past two years, the AI industry's main theme has been "go big" — more parameters, more training data, more compute. This path is hitting diminishing returns: the marginal benefit of larger models is declining while costs are skyrocketing.</p>
+
+<p>SOMA represents a different path: <strong>don't change the model itself — change how the model thinks</strong>. It adds a lightweight thinking framework layer that produces qualitative leaps in existing models — just as giving the same person different thinking training dramatically changes their output.</p>
+
+<p>This approach has three advantages:</p>
+<ul>
+  <li><strong>Low cost</strong>: No model retraining needed, no additional GPUs required</li>
+  <li><strong>Explainable</strong>: You can see which wisdom laws the AI used and why it analyzed things that way</li>
+  <li><strong>Evolvable</strong>: Wisdom laws auto-tune based on real-world effectiveness</li>
+</ul>
+
+<h3>The Paradigm Shift: AI From Tool to Sage</h3>
+
+<p>AI development can be viewed in three eras:</p>
+<ul>
+  <li><strong>Era 1.0</strong>: AI can answer questions (ChatGPT emerges)</li>
+  <li><strong>Era 2.0</strong>: AI can use tools and execute tasks (the Agent era)</li>
+  <li><strong>Era 3.0</strong>: AI can think in structured ways and self-evolve (SOMA's vision)</li>
+</ul>
+
+<p>SOMA v1.1.1 is a small but solid milestone in Era 3.0. It proves that <strong>wisdom is not a function of model size — it's a function of how structured your thinking is</strong>.</p>
+
+<h3>Open Source & Local-First</h3>
+
+<p>SOMA adheres to two principles: <strong>fully open source</strong> and <strong>local-first</strong>. This means any developer, any enterprise can deploy SOMA on their own servers with zero cloud dependency and complete data privacy. In an era of growing concern about data sovereignty and AI safety, this choice carries weight.</p>
+
+<h2>7. By the Numbers</h2>
+
+<table>
+  <tr><th>Metric</th><th>Value</th><th>Context</th></tr>
+  <tr><td>Test Cases</td><td>618</td><td>Full coverage of all core features — all passing</td></tr>
+  <tr><td>Wisdom Laws</td><td>7</td><td>Covering causality, systems, contradiction, efficiency, inversion, evolution, and analogy</td></tr>
+  <tr><td>LLM Support</td><td>10+ models</td><td>DeepSeek, Kimi, Qwen, Claude, GPT, Gemini, and more</td></tr>
+  <tr><td>Multi-Agent Speedup</td><td>4.9×</td><td>5 experts: from 502ms to 102ms</td></tr>
+  <tr><td>Vector Search Speed</td><td>0.1 ms</td><td>Pinpoint retrieval across 100K+ memories</td></tr>
+  <tr><td>Memory Capacity</td><td>100K+ entries</td><td>Scalable to hundreds of millions</td></tr>
+  <tr><td>Package Size</td><td>192 KB</td><td>Ultra-lightweight, installs in seconds</td></tr>
+</table>
+
+<h2>8. The Architecture — Five Concentric Layers</h2>
+
+<p>SOMA's architecture can be understood as five concentric layers:</p>
+
+<p><strong>Innermost: Memory Layer</strong> — Episodic memory (what happened) + Semantic memory (knowledge graph relationships) + Scene aggregation + User profiles</p>
+<p><strong>Second: Framework Layer</strong> — 7 wisdom laws + auto weight adjustment + reasoning templates + hypothesis testing</p>
+<p><strong>Third: Reasoning Layer</strong> — Problem decomposition → Memory activation → Anti-bias search → Reasoning framework → Causal extraction</p>
+<p><strong>Fourth: Evolution Layer</strong> — Reflection logging → Quality assessment → Weight auto-tuning → Trigger word discovery → New law mining</p>
+<p><strong>Outermost: Collaboration Layer</strong> — Multi-agent registration → Expert routing → Parallel dispatch → Consensus formation → Distributed evolution</p>
+
+<p>Each layer is an independent, pluggable module. You can use just the memory layer to build a smart knowledge base, or activate all five layers to create a complete AI sage system.</p>
+
+<h2>9. The Name "SOMA"</h2>
+
+<p>SOMA comes from ancient Sanskrit, meaning "wisdom drink" — a sacred beverage in Vedic tradition said to grant insight and enlightenment. In Aldous Huxley's <em>Brave New World</em>, SOMA is a substance that keeps people content and clear-minded. We chose this name hoping the project can become a "wisdom drink" for AI — giving machines the structured thinking capability of human sages.</p>
+
+<p>SOMA also stands for "<strong>S</strong>tructured <strong>O</strong>ntology for <strong>M</strong>etacognitive <strong>A</strong>ugmentation."</p>
+
+<h2>10. The Road Ahead</h2>
+
+<p>SOMA's roadmap is clear and restrained:</p>
+
+<p><strong>Short-term (v1.2.x)</strong>: The Zhongdao Engine — when the AI becomes overly fixated on a particular thinking framework, auto-correct to maintain balanced, flexible thinking.</p>
+<p><strong>Medium-term (v2.0.0)</strong>: Autonomous Cognitive Loop — a full closed loop of "Perceive → Remember → Reason → Evolve → Act," enabling the AI to self-dialogue and think even without an external LLM.</p>
+
+<p>But one bottom line will never change: <strong>SOMA will always be open source, always local-first, and never locked to any specific LLM</strong>. It is a public good for the community, not owned by any single company.</p>
+
+<h2>11. Try It Now</h2>
+
+<div class="highlight">
+  <p><strong>Install (one line)</strong>:</p>
+  <p><code>pip install soma-wisdom</code></p>
+  <p><strong>5-minute quickstart</strong>: <a href="https://github.com/sunyan999999/soma">github.com/sunyan999999/soma</a></p>
+  <p><strong>Already deployed in</strong>: The Zero Entropy Think Tank (零熵智库), providing sage-level thinking assistance to its users.</p>
+</div>
+
+<div class="footer">
+  <p>SOMA v1.1.1 · Open-Source Wisdom Framework · Apache 2.0 License</p>
+  <p>Community-driven. Contributions, feedback, and experience reports are always welcome.</p>
+</div>
+
+</body>
+</html>

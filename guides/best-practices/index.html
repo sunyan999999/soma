@@ -1,0 +1,1354 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="SOMA is a cognitive memory framework for AI agents. 7 thinking laws decompose problems, bidirectional activation retrieves memories, and weights self-evolve over time. pip install soma-wisdom. 智慧超越记忆。">
+      
+      
+        <meta name="author" content="SOMA Project Team">
+      
+      
+        <link rel="canonical" href="https://sunyan999999.github.io/soma/guides/best-practices/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Best Practices - SOMA — Somatic Wisdom Architecture</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#best-practices" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="SOMA — Somatic Wisdom Architecture" class="md-header__button md-logo" aria-label="SOMA — Somatic Wisdom Architecture" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SOMA — Somatic Wisdom Architecture
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Best Practices
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/sunyan999999/soma" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="SOMA — Somatic Wisdom Architecture" class="md-nav__button md-logo" aria-label="SOMA — Somatic Wisdom Architecture" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    SOMA — Somatic Wisdom Architecture
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/sunyan999999/soma" title="前往仓库" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速开始
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../philosophy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    核心理念
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    架构手册
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API 参考
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../customization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    自定义指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    对比分析
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    对比分析
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../articles/soma-vs-mem0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SOMA vs Mem0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../articles/soma-vs-letta/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SOMA vs Letta
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../articles/why-we-built-soma/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Why We Built SOMA
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../case-studies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    案例研究
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常见问题
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    贡献指南
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    变更日志
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-when-to-choose-soma" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. When to Choose SOMA
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-memory-organization" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Memory Organization
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Memory Organization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#episodic-memory-l1-the-raw-feed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Episodic Memory (L1): The Raw Feed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#semantic-memory-the-knowledge-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Semantic Memory: The Knowledge Graph
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#l2-scene-l3-profile-let-the-machine-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        L2 Scene &amp; L3 Profile: Let the Machine Work
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-wisdom-framework-tuning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Wisdom Framework Tuning
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Wisdom Framework Tuning">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#start-with-default-weights" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Start with Default Weights
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-to-intervene" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to Intervene
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-laws-for-domain-specific-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Laws for Domain-Specific Work
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-multi-agent-setup-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Multi-Agent Setup Patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Multi-Agent Setup Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pattern-a-specialist-panel-3-5-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern A: Specialist Panel (3-5 agents)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pattern-b-single-expert-generalist-fallback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pattern B: Single Expert + Generalist Fallback
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#when-not-to-use-multi-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When NOT to Use Multi-Agent
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Performance
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Performance">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#current-baseline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Current Baseline
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optimization-tips" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optimization Tips
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scaling-beyond-100k-memories" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scaling Beyond 100K Memories
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Security
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Security">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#api-key-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API Key Management
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-isolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Isolation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#memory-deletion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Memory Deletion
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-observability" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Observability
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. Observability">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#stats-endpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Stats Endpoint
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reasoning-inspection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reasoning Inspection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#evolution-audit-trail" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evolution Audit Trail
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h1>
+<p>This guide covers patterns that make SOMA work well in production. It draws from real usage across 14 PyPI releases and 1,600+ total downloads.</p>
+<hr />
+<h2 id="1-when-to-choose-soma">1. When to Choose SOMA<a class="headerlink" href="#1-when-to-choose-soma" title="Permanent link">&para;</a></h2>
+<p><strong>SOMA fits when:</strong></p>
+<ul>
+<li>You need memory that self-organizes over time, not just append-only chat history</li>
+<li>Your use case spans many sessions where cross-session context matters</li>
+<li>You want the system to detect its own cognitive biases (frame anchoring)</li>
+<li>Multiple domain experts should collaborate on the same problem</li>
+</ul>
+<p><strong>Plain RAG fits when:</strong></p>
+<ul>
+<li>You need simple FAQ lookup from a static document set</li>
+<li>Latency budget is under 20ms and you cannot afford the wisdom pipeline (~200ms)</li>
+<li>You have no need for memory evolution or multi-session context</li>
+</ul>
+<hr />
+<h2 id="2-memory-organization">2. Memory Organization<a class="headerlink" href="#2-memory-organization" title="Permanent link">&para;</a></h2>
+<h3 id="episodic-memory-l1-the-raw-feed">Episodic Memory (L1): The Raw Feed<a class="headerlink" href="#episodic-memory-l1-the-raw-feed" title="Permanent link">&para;</a></h3>
+<p>Store every meaningful interaction. Don't over-filter — SOMA's L2/L3 layers work better with more raw material.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Good: store with rich context</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="s2">&quot;用户询问了微服务拆分的具体策略，讨论了按领域拆分vs按团队拆分&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;domain&quot;</span><span class="p">:</span> <span class="s2">&quot;architecture&quot;</span><span class="p">,</span> <span class="s2">&quot;topic&quot;</span><span class="p">:</span> <span class="s2">&quot;microservices&quot;</span><span class="p">,</span> <span class="s2">&quot;decision_pending&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">importance</span><span class="o">=</span><span class="mf">0.8</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># Avoid: context-free one-liners</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="s2">&quot;user asked about microservices&quot;</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="p">{},</span> <span class="n">importance</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+</code></pre></div>
+<p>Context keys matter. Consistent keys (<code>domain</code>, <code>topic</code>, <code>decision_pending</code>) make L2 scene aggregation produce coherent themes.</p>
+<h3 id="semantic-memory-the-knowledge-graph">Semantic Memory: The Knowledge Graph<a class="headerlink" href="#semantic-memory-the-knowledge-graph" title="Permanent link">&para;</a></h3>
+<p>Triples should be concrete and falsifiable:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Good</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember_semantic</span><span class="p">(</span><span class="s2">&quot;微服务拆分&quot;</span><span class="p">,</span> <span class="s2">&quot;首选策略&quot;</span><span class="p">,</span> <span class="s2">&quot;按业务领域边界&quot;</span><span class="p">,</span> <span class="n">confidence</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember_semantic</span><span class="p">(</span><span class="s2">&quot;按团队拆分&quot;</span><span class="p">,</span> <span class="s2">&quot;适用于&quot;</span><span class="p">,</span> <span class="s2">&quot;团队技能高度分化的场景&quot;</span><span class="p">,</span> <span class="n">confidence</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="c1"># Avoid: vague or unfalsifiable</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember_semantic</span><span class="p">(</span><span class="s2">&quot;架构&quot;</span><span class="p">,</span> <span class="s2">&quot;是&quot;</span><span class="p">,</span> <span class="s2">&quot;重要的&quot;</span><span class="p">,</span> <span class="n">confidence</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="l2-scene-l3-profile-let-the-machine-work">L2 Scene &amp; L3 Profile: Let the Machine Work<a class="headerlink" href="#l2-scene-l3-profile-let-the-machine-work" title="Permanent link">&para;</a></h3>
+<p>Enable auto-capture, then let it run. Don't micromanage scene extraction — the warmup mechanism exists precisely so you don't have to tune it.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">SOMAConfig</span><span class="p">(</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">scene_extraction_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">profile_extraction_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">scene_extraction_warmup</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>    <span class="c1"># Start extracting after 5 memories</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="p">)</span>
+</code></pre></div>
+<p>The only parameter worth tuning: increase <code>scene_extraction_warmup</code> if your first few memories are unrepresentative (e.g., test data).</p>
+<hr />
+<h2 id="3-wisdom-framework-tuning">3. Wisdom Framework Tuning<a class="headerlink" href="#3-wisdom-framework-tuning" title="Permanent link">&para;</a></h2>
+<h3 id="start-with-default-weights">Start with Default Weights<a class="headerlink" href="#start-with-default-weights" title="Permanent link">&para;</a></h3>
+<p>The 7 default laws ship with weights calibrated on 1,050 production memories. Run at least 50 sessions before manual tuning — let the evolver do its job first.</p>
+<h3 id="when-to-intervene">When to Intervene<a class="headerlink" href="#when-to-intervene" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Check if a law is over/under-active</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">foci</span> <span class="o">=</span> <span class="n">soma</span><span class="o">.</span><span class="n">decompose</span><span class="p">(</span><span class="s2">&quot;your typical problem type&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">foci</span><span class="p">:</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">f</span><span class="o">.</span><span class="n">law_id</span><span class="si">}</span><span class="s2">: weight=</span><span class="si">{</span><span class="n">f</span><span class="o">.</span><span class="n">weight</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">, rationale=</span><span class="si">{</span><span class="n">f</span><span class="o">.</span><span class="n">rationale</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>Adjust only when a law consistently fires when it shouldn't (or never fires when it should):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Dial down over-active law</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">soma</span><span class="o">.</span><span class="n">adjust_weight</span><span class="p">(</span><span class="s2">&quot;pareto_principle&quot;</span><span class="p">,</span> <span class="mf">0.55</span><span class="p">)</span>  <span class="c1"># Was 0.75, fires too often</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># Boost under-used law</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">soma</span><span class="o">.</span><span class="n">adjust_weight</span><span class="p">(</span><span class="s2">&quot;inversion&quot;</span><span class="p">,</span> <span class="mf">0.80</span><span class="p">)</span>  <span class="c1"># Was 0.65, rarely activates</span>
+</code></pre></div>
+<h3 id="custom-laws-for-domain-specific-work">Custom Laws for Domain-Specific Work<a class="headerlink" href="#custom-laws-for-domain-specific-work" title="Permanent link">&para;</a></h3>
+<p>If your use case sits entirely in one domain (e.g., medical diagnosis, legal analysis), add 2-3 domain laws:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;differential_diagnosis&quot;</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;鉴别诊断&quot;</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;系统排除替代解释，评估概率而非确定性&quot;</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="nt">weight</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.85</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">  </span><span class="nt">triggers</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;症状&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;诊断&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;鉴别&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;排除&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;可能性&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;概率&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;假阳性&quot;</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">  </span><span class="nt">relations</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;first_principles&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;contradiction_analysis&quot;</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<p>Keep total laws under 12 — more than that diffuses activation scores and hurts recall quality.</p>
+<hr />
+<h2 id="4-multi-agent-setup-patterns">4. Multi-Agent Setup Patterns<a class="headerlink" href="#4-multi-agent-setup-patterns" title="Permanent link">&para;</a></h2>
+<h3 id="pattern-a-specialist-panel-3-5-agents">Pattern A: Specialist Panel (3-5 agents)<a class="headerlink" href="#pattern-a-specialist-panel-3-5-agents" title="Permanent link">&para;</a></h3>
+<p>Best for problems that benefit from multiple perspectives on the same question.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">soma</span> <span class="o">=</span> <span class="n">SOMA</span><span class="p">(</span><span class="n">orchestration_mode</span><span class="o">=</span><span class="s2">&quot;multi&quot;</span><span class="p">,</span> <span class="n">orchestration_top_k</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">orchestration_consensus</span><span class="o">=</span><span class="s2">&quot;voting&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">soma</span><span class="o">.</span><span class="n">register_expert</span><span class="p">(</span><span class="s2">&quot;business&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;商业分析&quot;</span><span class="p">,</span> <span class="s2">&quot;战略&quot;</span><span class="p">,</span> <span class="s2">&quot;市场&quot;</span><span class="p">],</span> <span class="s2">&quot;商业战略分析师&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">soma</span><span class="o">.</span><span class="n">register_expert</span><span class="p">(</span><span class="s2">&quot;tech&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;技术架构&quot;</span><span class="p">,</span> <span class="s2">&quot;工程&quot;</span><span class="p">,</span> <span class="s2">&quot;性能&quot;</span><span class="p">],</span> <span class="s2">&quot;技术架构师&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">soma</span><span class="o">.</span><span class="n">register_expert</span><span class="p">(</span><span class="s2">&quot;ux&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;用户体验&quot;</span><span class="p">,</span> <span class="s2">&quot;设计&quot;</span><span class="p">,</span> <span class="s2">&quot;交互&quot;</span><span class="p">],</span> <span class="s2">&quot;UX研究员&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="c1"># All three will weigh in, voting produces the consensus</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="n">result</span> <span class="o">=</span> <span class="n">soma</span><span class="o">.</span><span class="n">solve_multi</span><span class="p">(</span><span class="s2">&quot;新功能应该优先移动端还是Web端？&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>Use <code>voting</code> for fast decisions (zero LLM cost for consensus), <code>llm_arbitration</code> for nuanced topics.</p>
+<h3 id="pattern-b-single-expert-generalist-fallback">Pattern B: Single Expert + Generalist Fallback<a class="headerlink" href="#pattern-b-single-expert-generalist-fallback" title="Permanent link">&para;</a></h3>
+<p>Best for mixed workloads where most questions are domain-specific but some are general.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">soma</span><span class="o">.</span><span class="n">register_expert</span><span class="p">(</span><span class="s2">&quot;code_reviewer&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;代码审查&quot;</span><span class="p">,</span> <span class="s2">&quot;安全&quot;</span><span class="p">,</span> <span class="s2">&quot;性能优化&quot;</span><span class="p">])</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">soma</span><span class="o">.</span><span class="n">register_expert</span><span class="p">(</span><span class="s2">&quot;general&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;通用&quot;</span><span class="p">],</span> <span class="n">is_default</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># Domain questions → code_reviewer</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="c1"># Everything else → general (fallback)</span>
+</code></pre></div>
+<h3 id="when-not-to-use-multi-agent">When NOT to Use Multi-Agent<a class="headerlink" href="#when-not-to-use-multi-agent" title="Permanent link">&para;</a></h3>
+<p>Single problems that don't benefit from multiple perspectives. A "what is 2+2" question doesn't need a consensus protocol. Use <code>orchestration_mode="single"</code> for simple factual queries.</p>
+<hr />
+<h2 id="5-performance">5. Performance<a class="headerlink" href="#5-performance" title="Permanent link">&para;</a></h2>
+<h3 id="current-baseline">Current Baseline<a class="headerlink" href="#current-baseline" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Latency</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Memory store (episodic)</td>
+<td>~2ms</td>
+</tr>
+<tr>
+<td>Memory recall (simple, no LLM)</td>
+<td>~30ms</td>
+</tr>
+<tr>
+<td>Full respond() pipeline</td>
+<td>~209ms</td>
+</tr>
+<tr>
+<td>Scene extraction (per cycle)</td>
+<td>~500ms</td>
+</tr>
+<tr>
+<td>Profile update (per cycle)</td>
+<td>~300ms</td>
+</tr>
+</tbody>
+</table>
+<h3 id="optimization-tips">Optimization Tips<a class="headerlink" href="#optimization-tips" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Batch semantic triples</strong>: Store 10-50 triples at once rather than one at a time — each call acquires a write lock.</li>
+<li><strong>WAL mode is default</strong>: SQLite WAL mode is enabled. Don't change it.</li>
+<li><strong>Disable features you don't use</strong>: <code>causal_extraction=False</code>, <code>enable_frame_detection=False</code>, <code>scene_extraction_enabled=False</code> save ~100ms each when off.</li>
+<li><strong>Use CPU embedder</strong>: ONNX on CPU is 2-5x faster than calling an external embedding API for small batches.</li>
+</ol>
+<h3 id="scaling-beyond-100k-memories">Scaling Beyond 100K Memories<a class="headerlink" href="#scaling-beyond-100k-memories" title="Permanent link">&para;</a></h3>
+<p>The current SQLite+FAISS backend performs well to ~100K memories. Beyond that:</p>
+<ol>
+<li>Shard by <code>user_id</code> — each user gets their own SQLite file</li>
+<li>Switch to an external vector store (see customization guide)</li>
+<li>Consider periodic archival of cold memories (importance &lt; 0.2, older than 90 days)</li>
+</ol>
+<hr />
+<h2 id="6-security">6. Security<a class="headerlink" href="#6-security" title="Permanent link">&para;</a></h2>
+<h3 id="api-key-management">API Key Management<a class="headerlink" href="#api-key-management" title="Permanent link">&para;</a></h3>
+<p>Never hardcode API keys. Use environment variables:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Good</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">soma</span> <span class="o">=</span> <span class="n">SOMA</span><span class="p">(</span><span class="n">llm</span><span class="o">=</span><span class="s2">&quot;deepseek-chat&quot;</span><span class="p">)</span>  <span class="c1"># reads DEEPSEEK_API_KEY from env</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># The config field llm_api_key exists for programmatic setups</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="c1"># but prefer env vars for production</span>
+</code></pre></div>
+<h3 id="data-isolation">Data Isolation<a class="headerlink" href="#data-isolation" title="Permanent link">&para;</a></h3>
+<p>Each <code>persist_dir</code> is a self-contained SQLite+FAISS database. Use separate directories for separate projects or users:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">project_a</span> <span class="o">=</span> <span class="n">SOMA</span><span class="p">(</span><span class="n">persist_dir</span><span class="o">=</span><span class="s2">&quot;soma_data/project_a&quot;</span><span class="p">)</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">project_b</span> <span class="o">=</span> <span class="n">SOMA</span><span class="p">(</span><span class="n">persist_dir</span><span class="o">=</span><span class="s2">&quot;soma_data/project_b&quot;</span><span class="p">)</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="c1"># project_a.query_memory(&quot;...&quot;) never returns project_b data</span>
+</code></pre></div>
+<h3 id="memory-deletion">Memory Deletion<a class="headerlink" href="#memory-deletion" title="Permanent link">&para;</a></h3>
+<p>SOMA supports surgical deletion:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Delete a specific memory</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">soma</span><span class="o">.</span><span class="n">_agent</span><span class="o">.</span><span class="n">memory_core</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">memory_id</span><span class="p">)</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># Delete by user (GDPR right-to-erasure)</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="k">for</span> <span class="n">mem</span> <span class="ow">in</span> <span class="n">soma</span><span class="o">.</span><span class="n">_agent</span><span class="o">.</span><span class="n">memory_core</span><span class="o">.</span><span class="n">query_by_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">):</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="n">soma</span><span class="o">.</span><span class="n">_agent</span><span class="o">.</span><span class="n">memory_core</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">mem</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="7-observability">7. Observability<a class="headerlink" href="#7-observability" title="Permanent link">&para;</a></h2>
+<h3 id="stats-endpoint">Stats Endpoint<a class="headerlink" href="#stats-endpoint" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">soma</span><span class="o">.</span><span class="n">stats</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="c1"># {&quot;episodic&quot;: 1050, &quot;semantic&quot;: 234, &quot;skills&quot;: 12, &quot;indexed_vectors&quot;: 1050}</span>
+</code></pre></div>
+<p>Monitor <code>episodic</code> growth rate. If it exceeds 500/day for a single user, consider enabling scene extraction to compress.</p>
+<h3 id="reasoning-inspection">Reasoning Inspection<a class="headerlink" href="#reasoning-inspection" title="Permanent link">&para;</a></h3>
+<p>After each <code>chat()</code>, inspect the reasoning chain:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">result</span> <span class="o">=</span> <span class="n">soma</span><span class="o">.</span><span class="n">chat</span><span class="p">(</span><span class="s2">&quot;如何提升团队效率？&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reasoning&quot;</span><span class="p">,</span> <span class="p">[]):</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">block</span><span class="p">[</span><span class="s1">&#39;dimension&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">block</span><span class="p">[</span><span class="s1">&#39;hypothesis&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  证据: </span><span class="si">{</span><span class="n">block</span><span class="p">[</span><span class="s1">&#39;evidence&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  反证: </span><span class="si">{</span><span class="n">block</span><span class="p">[</span><span class="s1">&#39;counter_evidence&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="evolution-audit-trail">Evolution Audit Trail<a class="headerlink" href="#evolution-audit-trail" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># View weight change history</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="n">changes</span> <span class="o">=</span> <span class="n">soma</span><span class="o">.</span><span class="n">evolve</span><span class="p">()</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="k">for</span> <span class="n">change</span> <span class="ow">in</span> <span class="n">changes</span><span class="p">:</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">change</span><span class="p">)</span>  <span class="c1"># &quot;pareto_principle: 0.75 → 0.77&quot;</span>
+</code></pre></div>
+<hr />
+<h1 id="_1">最佳实践<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
+<h2 id="1-soma">1. 何时选择 SOMA<a class="headerlink" href="#1-soma" title="Permanent link">&para;</a></h2>
+<p><strong>SOMA 适合：</strong></p>
+<ul>
+<li>需要记忆随时间自组织的场景，而非简单的聊天记录堆积</li>
+<li>跨会话上下文重要的场景</li>
+<li>希望系统检测自身认知偏差（框架锚定）</li>
+<li>需要多个领域专家协作解决同一问题</li>
+</ul>
+<p><strong>传统 RAG 适合：</strong></p>
+<ul>
+<li>静态文档集的简单 FAQ 查找</li>
+<li>延迟预算低于 20ms，不能接受智慧管道 (~200ms)</li>
+<li>不需要记忆演化或跨会话上下文</li>
+</ul>
+<h2 id="2">2. 记忆组织<a class="headerlink" href="#2" title="Permanent link">&para;</a></h2>
+<h3 id="l1">情节记忆 (L1)：原始素材<a class="headerlink" href="#l1" title="Permanent link">&para;</a></h3>
+<p>存储每次有意义的交互。不要过度过滤——SOMA 的 L2/L3 层需要充足的原始素材。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># 好的做法：带丰富上下文</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="s2">&quot;用户询问了微服务拆分的具体策略，讨论了按领域拆分vs按团队拆分&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>    <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;domain&quot;</span><span class="p">:</span> <span class="s2">&quot;architecture&quot;</span><span class="p">,</span> <span class="s2">&quot;topic&quot;</span><span class="p">:</span> <span class="s2">&quot;microservices&quot;</span><span class="p">,</span> <span class="s2">&quot;decision_pending&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>    <span class="n">importance</span><span class="o">=</span><span class="mf">0.8</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="p">)</span>
+</code></pre></div>
+<h3 id="_2">语义记忆：知识图谱<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h3>
+<p>三元组应该具体且可证伪。一致性高的 key 让 L2 场景聚合产生连贯的主题。</p>
+<h3 id="l2-l3">L2 场景 &amp; L3 画像：让机器自己工作<a class="headerlink" href="#l2-l3" title="Permanent link">&para;</a></h3>
+<p>开启自动捕获，然后让它运行。不要微调场景提取——warmup 机制的存在就是为了让你不必手动调整。</p>
+<h2 id="3">3. 思维框架调优<a class="headerlink" href="#3" title="Permanent link">&para;</a></h2>
+<p>50 次会话后再考虑手动调权重。让进化机制先发挥作用。</p>
+<h2 id="4-agent">4. 多Agent模式<a class="headerlink" href="#4-agent" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>专家面板模式</strong>（3-5个Agent）：同一问题多视角</li>
+<li><strong>单专家+通用回退</strong>：混合工作负载</li>
+<li><strong>简单问题不需要多Agent</strong>："2+2等于几"不需要共识协议</li>
+</ul>
+<h2 id="5">5. 性能<a class="headerlink" href="#5" title="Permanent link">&para;</a></h2>
+<p>当前基线：存储 ~2ms，简单召回 ~30ms，完整管道 ~209ms。</p>
+<p>关闭不用的功能（因果抽取、框架检测、场景提取）每个节省 ~100ms。</p>
+<h2 id="6">6. 安全<a class="headerlink" href="#6" title="Permanent link">&para;</a></h2>
+<ul>
+<li>永远不硬编码 API Key，用环境变量</li>
+<li>不同项目/用户用不同 <code>persist_dir</code> 隔离数据</li>
+<li>支持精确删除单条记忆（GDPR 合规）</li>
+</ul>
+<h2 id="7">7. 可观测性<a class="headerlink" href="#7" title="Permanent link">&para;</a></h2>
+<p>监控 <code>soma.stats</code>、检查推理链 (<code>chat()</code> 的 <code>reasoning</code> 字段)、审计进化轨迹 (<code>evolve()</code>)。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/sunyan999999/soma" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://pypi.org/project/soma-wisdom/" target="_blank" rel="noopener" title="pypi.org" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.expand", "search.highlight", "content.code.copy"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

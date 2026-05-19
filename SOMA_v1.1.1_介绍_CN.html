@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>SOMA v1.1.1 — 让 AI 学会像智者一样思考</title>
+<style>
+  @page { size: A4; margin: 2.5cm 2cm; @bottom-center { content: "— " counter(page) " —"; font-size: 9pt; color: #999; } }
+  body { font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif; font-size: 12pt; line-height: 2; color: #2d2d2d; }
+  .cover { text-align: center; padding: 80px 0 60px 0; page-break-after: always; }
+  .cover h1 { font-size: 32pt; color: #1a1a2e; margin-bottom: 10px; letter-spacing: 4px; }
+  .cover .subtitle { font-size: 16pt; color: #555; margin-bottom: 40px; }
+  .cover .meta { font-size: 11pt; color: #888; margin-top: 50px; }
+  .cover .line { width: 60%; height: 2px; background: linear-gradient(90deg, transparent, #1a1a2e, transparent); margin: 30px auto; }
+  h2 { font-size: 20pt; color: #1a1a2e; border-bottom: 2px solid #e0c36a; padding-bottom: 6px; margin-top: 40px; }
+  h3 { font-size: 14pt; color: #333; margin-top: 28px; }
+  p { margin: 12px 0; text-indent: 2em; }
+  p.noindent { text-indent: 0; }
+  ul { margin: 10px 0 10px 2em; }
+  li { margin: 6px 0; }
+  .highlight { background: #fef9e7; border-left: 4px solid #e0c36a; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+  .highlight p { text-indent: 0; margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  th { background: #1a1a2e; color: white; padding: 10px 14px; text-align: left; font-weight: normal; }
+  td { padding: 10px 14px; border-bottom: 1px solid #e0e0e0; }
+  tr:nth-child(even) td { background: #fafafa; }
+  .footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 10pt; color: #999; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>SOMA v1.1.1</h1>
+  <div class="line"></div>
+  <p class="subtitle">让 AI 学会像智者一样思考</p>
+  <p style="font-size:13pt; color:#666;">—— 智慧思维框架的完整介绍 ——</p>
+  <div class="meta">
+    <p>2026 年 5 月 · soma-wisdom 开源项目</p>
+    <p>github.com/sunyan999999/soma</p>
+  </div>
+</div>
+
+<h2>一、一句话讲清楚 SOMA 是什么</h2>
+
+<p>SOMA 是一个<strong>开源的智慧思维框架</strong>，它给大模型和 AI 智能体装上了一套"思考的方法论"——就像人类有"第一性原理""系统思维""二八法则"这些思考工具一样，SOMA 让 AI 也能自动运用这些思维规律来分析问题。</p>
+
+<p>你不需要懂技术。你可以把 SOMA 想象成给 AI 配了一位"思维教练"——当你向 AI 提问时，这位教练会在后台自动调取最合适的思考框架，帮 AI 想得更深、更全面、更靠谱。</p>
+
+<div class="highlight">
+  <p><strong>打个比方</strong>：没有 SOMA 的 AI 像一个聪明但随心所欲的学生；有了 SOMA 的 AI 像一个经过系统思维训练的智者——它会从多个角度审视问题，调用过往经验，甚至自我反思和进化。</p>
+</div>
+
+<h2>二、为什么 AI 需要"思维框架"？</h2>
+
+<p>今天的大语言模型非常强大，但它们有一个共同的问题：<strong>不会结构化思考</strong>。你问它"如何提升团队效率"，它可能给你一段看似合理的回答，但缺乏深度、角度单一、容易遗漏关键因素。</p>
+
+<p>SOMA 解决的正是这个根本问题。它内置了七条经过验证的思维规律：</p>
+
+<table>
+  <tr><th>思维规律</th><th>通俗解释</th><th>实际作用</th></tr>
+  <tr><td>第一性原理</td><td>回到事物最基本的要素，从头推导</td><td>不被表面现象迷惑，直击本质</td></tr>
+  <tr><td>系统思维</td><td>把所有要素看成一个相互关联的整体</td><td>避免头痛医头，找到真正杠杆点</td></tr>
+  <tr><td>矛盾分析</td><td>识别表面问题下的深层对立</td><td>发现隐藏的结构性冲突</td></tr>
+  <tr><td>二八法则</td><td>80% 的结果来自 20% 的原因</td><td>聚焦关键少数，事半功倍</td></tr>
+  <tr><td>逆向思考</td><td>反过来想：如何让问题更糟？然后避免</td><td>突破思维盲区，发现隐藏风险</td></tr>
+  <tr><td>进化视角</td><td>从时间维度看事物的演变</td><td>理解现状从何而来、将往哪去</td></tr>
+  <tr><td>类比推理</td><td>用已知领域的经验理解未知领域</td><td>跨领域知识迁移，触类旁通</td></tr>
+</table>
+
+<p>每当 AI 收到一个问题，SOMA 会自动判断哪些思维规律最适用，按权重组合调用，就像一位经验丰富的智者面对新问题时，本能地调动多种思维工具。</p>
+
+<h2>三、v1.1.1 的核心突破</h2>
+
+<p>v1.1.1 是 SOMA 发展历程中的里程碑版本。它完成了三个关键突破：</p>
+
+<h3>突破一：让 AI 学会"看人下菜碟"</h3>
+
+<p>之前的版本有一个明显问题：无论你问的是"什么是光合作用？请用 50 字回答"还是"如何制定公司五年战略？"，AI 都会搬出全套思维框架，给你写一篇千字论文。这就像你去便利店买瓶水，店员非要给你做一场产品发布会。</p>
+
+<p class="noindent"><strong>v1.1.1 的解决之道</strong>：</p>
+<ul>
+  <li>自动判断问题复杂度——简单问题走"快速通道"，直接简洁回答</li>
+  <li>自动识别用户的长度约束——你说"50字以内"，它就真的控制在50字左右</li>
+  <li>复杂问题才启用深度推理框架——好钢用在刀刃上</li>
+</ul>
+
+<div class="highlight">
+  <p><strong>实际效果</strong>：零熵智库测试显示，修复前用户要求"50字以内"返回了 1,268 字；修复后精确控制在约 50 字。回复延迟也从 14-26 秒降至 2-3 秒（简单问题）。</p>
+</div>
+
+<h3>突破二：真正的"群策群力"</h3>
+
+<p>SOVA v1.1.0 引入了多智能体协作——你可以注册多个"专家"（比如商业分析师、技术架构师、产品经理），让它们一起讨论问题。但测试发现一个 bug：注册了三个专家，实际只有一个在干活。</p>
+
+<p class="noindent"><strong>v1.1.1 的解决之道</strong>：</p>
+<ul>
+  <li>修复了专家路由逻辑——所有已注册的专家都会被邀请参与讨论</li>
+  <li>并行调度让多个专家同时思考——5 个专家并行，速度提升近 5 倍</li>
+  <li>分布式演化让每个专家的经验都会反馈给整个系统</li>
+</ul>
+
+<div class="highlight">
+  <p><strong>实际效果</strong>：一个复杂商业问题，商业分析师从市场角度、技术架构师从可行性角度、产品经理从用户体验角度同时给出意见，最后由共识机制整合为一个综合方案。</p>
+</div>
+
+<h3>突破三：从"用完即忘"到"越用越聪明"</h3>
+
+<p>大多数 AI 工具每次对话都是"从零开始"。SOMA 则不同——它有记忆、会反思、能进化。</p>
+
+<p class="noindent"><strong>v1.1.1 的完整进化闭环</strong>：</p>
+<ul>
+  <li><strong>记忆</strong>：每一次对话中的重要信息都会被自动存储和索引</li>
+  <li><strong>反思</strong>：对每次分析结果进行质量自评，好的经验强化，坏的削弱</li>
+  <li><strong>进化</strong>：思维规律的权重会根据实际效果自动调整——比如发现"系统思维"在解决某个领域问题时特别有效，它的权重就会自动提升</li>
+  <li><strong>预热</strong>：嵌入模型后台预下载，首次启动不再等待</li>
+</ul>
+
+<h2>四、对零熵智库这样的 AI 应用意味着什么</h2>
+
+<p>零熵智库是 SOMA 的首批实际应用场景之一。SOMA 为这类 AI 应用提供了三层核心价值：</p>
+
+<h3>第一层：回答质量质的飞跃</h3>
+
+<p>不装 SOMA 的 AI 应用是"一问一答"的信息检索器。装了 SOMA 之后，它变成了一个会多角度分析、调用历史经验、自我反思的思维伙伴。用户不再需要自己组织思考框架——AI 自动帮你做了。</p>
+
+<h3>第二层：持续积累的智慧资产</h3>
+
+<p>普通 AI 工具每次对话结束就"清零"了。SOMA 的记忆系统让零熵智库能持续积累——今天讨论的战略思考，明天会成为分析新问题的参考依据。一个用了三个月的智库，比第一天的智库聪明得多。</p>
+
+<h3>第三层：从工具到伙伴</h3>
+
+<p>这是最关键的变化。没有思维框架的 AI 是一个"高级计算器"——你输入，它输出。有了 SOMA 的 AI 更像一个"思考伙伴"——它会质疑你的假设、提供你没想到的角度、提醒你历史上的类似案例。</p>
+
+<div class="highlight">
+  <p><strong>一位零熵智库用户的感受</strong>："以前我和 AI 聊天像是在查字典，现在像是在和一位阅历丰富的导师对话——它会反问、会追问、会提出我根本没想到的维度。"</p>
+</div>
+
+<h2>五、对普通人的意义</h2>
+
+<p>你可能会想：我不搞 AI 开发，SOMA 和我有什么关系？答案是：<strong>它正在重新定义你和 AI 的关系</strong>。</p>
+
+<h3>你不需要成为提示词工程师</h3>
+
+<p>现在的 AI 工具有一个隐藏门槛：你得学会"如何正确地提问"。同样的问题，不同的人问出来的效果天差地别。SOMA 的意义在于——它让 AI 自己学会"如何正确地思考"，而不是依赖用户掌握提问技巧。你不用学习"提示词工程"，SOMA 帮 AI 补上了思考能力这一环。</p>
+
+<h3>你得到的是"思考"而不只是"信息"</h3>
+
+<p>当你问一个医疗问题，SOMA 驱动的 AI 不会只给你一堆症状列表。它会用第一性原理帮你拆解病因、用系统思维帮你看到生活习惯与症状的关联、用逆向思考帮你排除误诊可能。你得到的不是搜索结果，而是一次结构化的分析。</p>
+
+<h3>你的 AI 会越来越懂你</h3>
+
+<p>SOMA 的记忆和进化机制意味着，随着使用时间的增加，AI 会逐渐理解你的思维偏好、你的领域需求、你的常用分析角度。它不是冷冰冰的通用工具，而是一个会成长的个性化智囊。</p>
+
+<h2>六、对 AI 行业的意义</h2>
+
+<h3>从"更大的模型"到"更聪明的模型"</h3>
+
+<p>过去两年，AI 行业的主旋律是"做大做强"——更大的参数量、更多的训练数据、更强的算力。这条路正在遇到瓶颈：模型规模的边际收益在递减，成本在飙升。</p>
+
+<p>SOMA 代表了另一条路：<strong>不改变模型本身，而是改变模型思考的方式</strong>。它用一个轻量级的思维框架层，让现有模型产生质的飞跃——就像给同一个人配了不同的思维训练，他的产出会完全不同。</p>
+
+<p>这条路有三个优势：</p>
+<ul>
+  <li><strong>低成本</strong>：不需要重新训练模型，不需要更多 GPU</li>
+  <li><strong>可解释</strong>：你能看到 AI 用了哪些思维规律、为什么这样分析</li>
+  <li><strong>可进化</strong>：思维规律可以根据实际效果自动调优</li>
+</ul>
+
+<h3>AI 从"工具"到"智者"的范式转变</h3>
+
+<p>如果把 AI 的发展分为三个阶段：</p>
+<ul>
+  <li><strong>1.0 时代</strong>：AI 会回答问题（ChatGPT 出现）</li>
+  <li><strong>2.0 时代</strong>：AI 会用工具、会执行任务（Agent 时代）</li>
+  <li><strong>3.0 时代</strong>：AI 会结构化思考、会自我进化（SOMA 的愿景）</li>
+</ul>
+
+<p>SOMA v1.1.1 是 3.0 时代的一个小而坚实的里程碑。它证明了：<strong>智慧不是模型大小的函数，而是思维方式的结构化程度</strong>。</p>
+
+<h3>开源与本地优先</h3>
+
+<p>SOMA 坚持两个原则：<strong>完全开源</strong>和<strong>本地优先</strong>。这意味着任何开发者、任何企业都可以在自己的服务器上部署 SOMA，不依赖任何云服务，数据完全私有。在一个越来越关注数据主权和 AI 安全的时代，这个选择意义重大。</p>
+
+<h2>七、数字说话</h2>
+
+<table>
+  <tr><th>指标</th><th>数据</th><th>说明</th></tr>
+  <tr><td>测试用例</td><td>618 项</td><td>覆盖所有核心功能，全量通过</td></tr>
+  <tr><td>思维规律</td><td>7 条</td><td>覆盖因果、系统、矛盾、效率、逆向、进化、类比</td></tr>
+  <tr><td>支持 LLM</td><td>10+ 种</td><td>DeepSeek / Kimi / Qwen / Claude / GPT / Gemini 等</td></tr>
+  <tr><td>多Agent并行加速</td><td>4.9 倍</td><td>5 专家从 502ms 降至 102ms</td></tr>
+  <tr><td>向量搜索速度</td><td>0.1 毫秒</td><td>10 万条记忆中精确定位</td></tr>
+  <tr><td>记忆容量</td><td>10 万+ 条</td><td>支持亿级扩展</td></tr>
+  <tr><td>安装包大小</td><td>192KB</td><td>极轻量，秒级安装</td></tr>
+</table>
+
+<h2>八、架构之美</h2>
+
+<p>SOMA 的整体架构可以用一个五层同心圆来理解：</p>
+
+<p class="noindent"><strong>最内层：记忆层</strong> —— 情景记忆（发生过什么）+ 语义记忆（知识图谱关系）+ 场景聚合 + 用户画像</p>
+<p class="noindent"><strong>第二层：框架层</strong> —— 7 条思维规律 + 自动权重调节 + 推理模板 + 假设检验</p>
+<p class="noindent"><strong>第三层：推理层</strong> —— 问题拆解 → 记忆激活 → 反偏见搜索 → 推理框架 → 因果抽取</p>
+<p class="noindent"><strong>第四层：进化层</strong> —— 反思记录 → 质量评估 → 权重自调 → 触发词发现 → 新规律挖掘</p>
+<p class="noindent"><strong>最外层：协作层</strong> —— 多Agent注册 → 专家路由 → 并行分发 → 共识达成 → 分布式演化</p>
+
+<p>每一层都是独立可拔插的模块，你可以只用记忆层做一个智能知识库，也可以五层全开打造一个完整的 AI 智者系统。</p>
+
+<h2>九、SOMA 名字的由来</h2>
+
+<p>SOMA 源自古印度梵语，意为"智慧之饮"——传说中能让人获得启迪和洞见的神圣饮品。在赫胥黎的《美丽新世界》中，SOMA 是一种让人保持愉悦和清醒的药物。我们取这个名字，是希望这个项目能成为 AI 的"智慧之饮"——让机器也能拥有人类智者般的结构化思考能力。</p>
+
+<p>同时，SOMA 也是"<strong>S</strong>tructured <strong>O</strong>ntology for <strong>M</strong>etacognitive <strong>A</strong>ugmentation"的缩写——结构化本体论用于元认知增强。</p>
+
+<h2>十、未来之路</h2>
+
+<p>SOMA 的路线图清晰而克制：</p>
+
+<p class="noindent"><strong>短期（v1.2.x）</strong>：中道引擎——当 AI 过度锁定在某个思维框架时，自动校正，保持思考的平衡和灵活性。</p>
+<p class="noindent"><strong>中期（v2.0.0）</strong>：自主认知循环——让 AI 实现"感知→记忆→推理→进化→行动"的全闭环，甚至在无外部 LLM 的情况下也能自我对话和思考。</p>
+
+<p>但有一条底线永远不会变：<strong>SOMA 永远开源、永远本地优先、永远不会绑定任何特定的大模型</strong>。它是属于社区的公共品，不属于任何一家公司。</p>
+
+<h2>十一、立即体验</h2>
+
+<div class="highlight">
+  <p><strong>安装（仅需一行命令）</strong>：</p>
+  <p><code>pip install soma-wisdom</code></p>
+  <p><strong>5 分钟上手指南</strong>：<a href="https://github.com/sunyan999999/soma">github.com/sunyan999999/soma</a></p>
+  <p><strong>在零熵智库中使用</strong>：SOMA 已深度集成到零熵智库的 AI 对话系统中，为零熵用户提供智者级的思考辅助。</p>
+</div>
+
+<div class="footer">
+  <p>SOMA v1.1.1 · 开源智慧思维框架 · Apache 2.0 License</p>
+  <p>本项目由社区驱动，欢迎贡献代码、反馈建议、分享使用体验</p>
+</div>
+
+</body>
+</html>
