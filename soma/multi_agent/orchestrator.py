@@ -1,4 +1,4 @@
-"""多Agent编排器 — v1.1.1
+"""多Agent编排器 — v1.1.2
 
 SOMAOrchestrator 将已有的 Registry、Router、ConsensusProtocol、DistributedEvolver
 串联为完整的多Agent求解管道。v1.1.0 新增并行分发与分布式权重演化，v1.1.1 补齐路由与Agent映射。

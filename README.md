@@ -1,4 +1,4 @@
-# SOMA v1.1.1 — The Cognitive Kernel for AI Agents
+# SOMA v1.1.2 — The Cognitive Kernel for AI Agents
 
 <p align="center">
   <strong>Wisdom over Memory — 智慧超越记忆</strong><br>
@@ -21,7 +21,7 @@ answer = soma.respond("How to analyze our growth bottleneck?")
 
 **Why SOMA instead of a vector database?** Traditional memory (ChromaDB, Mem0) stores and retrieves. SOMA **thinks first**: a 7-law reasoning network decomposes problems *before* fetching memories. The result: agents that systematically analyze, not just pattern-match.
 
-| | Vector DBs | Mem0 | **SOMA v1.1.1** |
+| | Vector DBs | Mem0 | **SOMA v1.1.2** |
 |---|---|---|---|
 | Stores & retrieves | ✓ | ✓ | ✓ |
 | Reasoning framework | ✗ | ✗ | **✓ 7 thinking laws** |
@@ -33,6 +33,7 @@ answer = soma.respond("How to analyze our growth bottleneck?")
 | Conflict detection | ✗ | ✗ | **✓ contradiction flagging** |
 | Multi-agent collaboration | ✗ | ✗ | **✓ expert routing + consensus** |
 | Frame anchoring awareness | ✗ | ✗ | **✓ cognitive bias nudge** |
+| Real-time bias correction | ✗ | ✗ | **✓ Zhongdao Engine (NEW)** |
 | Offline / zero infra | varies | ✗ (OpenAI) | **✓ ONNX, SQLite** |
 
 <p align="center">
@@ -42,8 +43,8 @@ answer = soma.respond("How to analyze our growth bottleneck?")
   <a href="#"><img src="https://img.shields.io/badge/python-3.10%2B-green" alt="Python"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/semantic_recall-100%25-brightgreen" alt="Semantic Recall"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/overall_score-85.5%2F100-blue" alt="Overall Score"></a>
-  <a href="#"><img src="https://img.shields.io/badge/tests-618%2F618-brightgreen" alt="Tests"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v1.1.1-success" alt="Changelog"></a>
+  <a href="#"><img src="https://img.shields.io/badge/tests-639%2F639-brightgreen" alt="Tests"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v1.1.2-success" alt="Changelog"></a>
   <a href="#"><img src="https://img.shields.io/badge/milestone-1.1.1-ff6b6b" alt="Milestone"></a>
 </p>
 
@@ -55,19 +56,29 @@ answer = soma.respond("How to analyze our growth bottleneck?")
 
 ---
 
-## v1.1.1 — Production Refinement
+## v1.1.2 — The Zhongdao Engine
 
-**v1.1.1 is the production-refined release.** After real-world testing in the Zero Entropy Think Tank, five capability lines — Memory, Reasoning, Collaboration, Evolution, and Engineering — now work with L1/L2 complexity gating and fully parallel multi-agent dispatch.
+**v1.1.2 introduces the Zhongdao Engine (中道引擎)** — session-internal, real-time law usage bias detection and auto-correction. When a single thinking law dominates >40% of a session (min 5 samples), SOMA now automatically detects the imbalance, temporarily penalizes the overused law (×0.80), and injects neglected related laws (×1.15 boost, max 2) — keeping reasoning diverse and balanced.
+
+SOMA's three-layer cognitive correction system:
+
+| Layer | Mechanism | Scope | Persistence |
+|---|---|---|---|
+| FrameAnchoringDetector | User-side frame lock detection | Per-turn | None (nudge only) |
+| **ZhongdaoEngine (NEW)** | **AI-side law overuse correction** | **Per-session** | **Temporary (per-call)** |
+| MetaEvolver | Cross-session trend correction | Batch (every 5 sessions) | SQLite (persistent) |
+
+**Benchmark validated** on 零熵智库 (Runs #38 vs #39): Wisdom +1.4, gini coefficient 0.2498→0.2226 (more balanced thinking). Zero LLM dependency, default off, 100% backward compatible.
 
 Every capability line that started as a seed in v0.1 has grown into a complete system:
 
-| Capability Line | Core Question | v1.0 Answer |
+| Capability Line | Core Question | v1.1.2 Answer |
 |---|---|---|
 | **Memory** | How can AI manage memory like humans do? | Three-tier: fragments → scenes → profile |
 | **Reasoning** | How to use information to think? | Causal chains + conflict detection + cross-domain analogy |
 | **Collaboration** | How do multiple AIs work as a team? | Expert routing + consensus protocols + distributed evolution |
-| **Evolution** | Can AI learn from its own experience? | Reflect → re-weight → solidify → share |
-| **Engineering** | How to prove these capabilities are real? | 618 tests + 5D benchmarks + competitor comparison |
+| **Evolution** | Can AI learn from its own experience? | Reflect → re-weight → solidify → share (3-layer correction) |
+| **Engineering** | How to prove these capabilities are real? | 639 tests + 5D benchmarks + competitor comparison |
 
 **All new features default to off. Upgrade from any 0.x version with zero code changes.**
 
@@ -77,7 +88,7 @@ Every capability line that started as a seed in v0.1 has grown into a complete s
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                         SOMA v1.1.1 — Cognitive Kernel                           │
+│                         SOMA v1.1.2 — Cognitive Kernel                           │
 │                                                                                │
 │  ┌──────────────────────────────────────────────────────────────────┐        │
 │  │  L3 User Profile — "Knows who you are"                             │        │
@@ -407,7 +418,7 @@ SOMA v1.0 — benchmarked with 1,050 production memories from 零熵智库 (5 ru
 
 | System | Recall@5 | Reasoning | Three-Tier Memory | Evolution | Multi-Agent | Awareness |
 |--------|:---:|:---:|:---:|:---:|:---:|:---:|
-| **SOMA v1.1.1** | **100%** | **✓** | **✓** | **✓** | **✓** | **✓** |
+| **SOMA v1.1.2** | **100%** | **✓** | **✓** | **✓** | **✓** | **✓** |
 | ChromaDB | 2.5% | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Mem0 | * | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Zep | * | ✗ | ✗ | ✗ | ✗ | ✗ |
@@ -431,7 +442,7 @@ git clone https://github.com/soma-project/soma-core.git
 cd soma-core
 pip install -e ".[dev]"
 
-pytest -v --cov=soma --cov-report=term    # 618 tests, ~97% coverage
+pytest -v --cov=soma --cov-report=term    # 639 tests, ~97% coverage
 
 python -m soma                              # quickstart verification
 
@@ -494,7 +505,7 @@ soma-core/
 │   ├── providers.py       # LLM provider manager
 │   └── frontend/          # Vue 3 dashboard UI (i18n: EN/ZH)
 ├── docs/                  # Documentation (EN + ZH bilingual)
-├── tests/                 # 618 tests, ~97% coverage
+├── tests/                 # 639 tests, ~97% coverage
 ├── examples/              # Usage examples
 └── pyproject.toml         # Build config
 ```

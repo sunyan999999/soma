@@ -10,7 +10,7 @@ Welcome to the SOMA documentation. SOMA (Somatic Wisdom Architecture) is a light
 
 ## Reference
 
-- **[API Reference](api/)** — Complete method signatures and examples (updated for v1.1.1)
+- **[API Reference](api/)** — Complete method signatures and examples (updated for v1.1.2)
 - **[Customization Guide](guides/customization.md)** — Custom frameworks, storage backends, LLM config
 - **[Best Practices](guides/best-practices.md)** — Production patterns, tuning, security, observability
 - **[Integrations](guides/integrations.md)** — LangChain, LlamaIndex, CrewAI, AutoGen, MCP
@@ -20,6 +20,12 @@ Welcome to the SOMA documentation. SOMA (Somatic Wisdom Architecture) is a light
 
 - **[Contributing Guide](contributing.md)** — How to contribute
 - **[Changelog](changelog.md)** — Version history
+
+## v1.1.2 — Zhongdao Engine
+
+- **[v1.1.2 介绍 (中文)](SOMA_v1.1.2_介绍_CN.html)** — 中道引擎：会话内实时规律使用偏差检测与自校正
+- **[v1.1.2 Introduction (EN)](SOMA_v1.1.2_Introduction_EN.html)** — The Zhongdao Engine: session-internal real-time law bias correction
+- **[中道引擎测试报告](zhongdao_report.md)** — Qoder 零熵智库部署测试报告
 
 ## Papers
 
@@ -40,7 +46,7 @@ Welcome to the SOMA documentation. SOMA (Somatic Wisdom Architecture) is a light
 
 ## 参考
 
-- **[API 参考](api/)** — 完整方法签名与示例（已更新至 v1.1.1）
+- **[API 参考](api/)** — 完整方法签名与示例（已更新至 v1.1.2）
 - **[自定义指南](guides/customization.md)** — 自定义框架、存储后端、LLM 配置
 - **[最佳实践](guides/best-practices.md)** — 生产模式、调优、安全、可观测性
 - **[集成指南](guides/integrations.md)** — LangChain、LlamaIndex、CrewAI、AutoGen、MCP
@@ -50,6 +56,12 @@ Welcome to the SOMA documentation. SOMA (Somatic Wisdom Architecture) is a light
 
 - **[贡献指南](contributing.md)** — 如何贡献
 - **[变更日志](changelog.md)** — 版本历史
+
+## v1.1.2 — 中道引擎
+
+- **[v1.1.2 介绍 (中文)](SOMA_v1.1.2_介绍_CN.html)** — 中道引擎：会话内实时规律使用偏差检测与自校正
+- **[v1.1.2 Introduction (EN)](SOMA_v1.1.2_Introduction_EN.html)** — The Zhongdao Engine
+- **[中道引擎测试报告](zhongdao_report.md)** — Qoder 零熵智库部署测试报告
 
 ## 论文
 

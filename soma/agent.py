@@ -15,6 +15,9 @@ from soma.hub import ActivationHub
 from soma.memory.core import MemoryCore
 from soma.quality import QualityEvaluator
 from soma.retry import llm_retry
+from soma.zhongdao import ZhongdaoEngine
+
+_log = logging.getLogger(__name__)
 
 
 class SOMA_Agent:
@@ -196,6 +199,11 @@ class SOMA_Agent:
         self._recent_user_turns: List[str] = []
         self._last_frame_anchoring: Optional[dict] = None
 
+        # v1.1.2: 中道引擎 — 会话内实时偏差检测与自校正
+        self.zhongdao: Optional[ZhongdaoEngine] = None
+        if config.enable_zhongdao:
+            self.zhongdao = ZhongdaoEngine(config)
+
     def respond(self, problem: str, user_id: str = "") -> str:
         """完整管道：拆解 → 双向激活 → 合成 → 应答"""
         import time
@@ -253,6 +261,37 @@ class SOMA_Agent:
                 suggested_foci.append(am.suggested_focus)
         if suggested_foci:
             foci = foci + suggested_foci
+
+        # v1.1.2: 中道引擎 — 会话内实时偏差检测与校正
+        if self.zhongdao is not None:
+            self.zhongdao.track(foci)
+            usage_snapshot = dict(self.zhongdao._session_usage)
+            foci, zhongdao_corrections = self.zhongdao.detect_and_correct(
+                foci, self.engine.laws,
+            )
+            if zhongdao_corrections:
+                total = sum(usage_snapshot.values())
+                overuse_info = ", ".join(
+                    f"{lid}={c}/{total}({c/total:.0%})"
+                    for lid, c in usage_snapshot.items()
+                )
+                _log.info(
+                    "中道校正触发: 总采样=%d, 使用分布=[%s], 校正项=%d",
+                    total, overuse_info, len(zhongdao_corrections),
+                )
+                for c in zhongdao_corrections:
+                    if c["type"] == "overuse_penalty":
+                        _log.info(
+                            "  └ 降权: %s(%s) %.4f→%.4f (使用率%.0%%)",
+                            c["law_name"], c["law_id"],
+                            c["old_weight"], c["new_weight"],
+                            c["usage_ratio"] * 100,
+                        )
+                    elif c["type"] == "neglect_boost":
+                        _log.info(
+                            "  └ 提权注入: %s(%s) 权重=%.4f",
+                            c["law_name"], c["law_id"], c["weight"],
+                        )
 
         # Step 2.7: 构建结构化推理框架（v0.6.0 推理引擎）
         # v1.1.1: L1简单问题跳过推理框架，避免回复膨胀
@@ -760,7 +799,9 @@ class SOMA_Agent:
         return self.engine.decompose(problem)
 
     def close(self) -> None:
-        """关闭所有子组件连接（memory + evolver）"""
+        """关闭所有子组件连接（memory + evolver + zhongdao）"""
+        if self.zhongdao is not None:
+            self.zhongdao.reset()
         self.memory.close()
         self.evolver.close()
 

@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.2] — 2026-05-23
+
+### 中道引擎 — 会话内实时规律使用偏差检测与自校正 (Zhongdao Engine)
+
+**v1.1.2 引入中道引擎**，补齐 SOMA 认知校正体系最后一块拼图。SOMA 现拥有三层偏差校正：
+
+| 层级 | 机制 | 作用域 | 持久化 |
+|---|---|---|---|
+| FrameAnchoringDetector | 用户侧框架锁定检测 | 每轮 | 无（仅提醒） |
+| **ZhongdaoEngine (NEW)** | **AI侧规律过度使用校正** | **每会话** | **临时（单次调用）** |
+| MetaEvolver | 跨会话趋势校正 | 批量（每5次会话） | SQLite（持久化） |
+
+### Added
+
+- **中道引擎 (`soma/zhongdao.py`)**: `ZhongdaoEngine` — 会话内实时规律使用偏差检测与自校正（~177行）。`track()` 记录每次 respond() 的规律使用，`detect_and_correct()` 当单条规律使用率 >40%（最少5次采样）触发：过度使用降权 ×0.80 + 被忽略关联规律提权注入 ×1.15（最多2条）。纯规则匹配，零 LLM 依赖，默认关闭。`reset()` 清空会话统计，`last_corrections` 暴露最近校正记录。
+- **SOMAConfig 新字段 (`soma/config.py`)**: `enable_zhongdao: bool = False` — 默认关闭，100% 向后兼容。
+- **SOMA_Agent 集成 (`soma/agent.py`)**: respond() 管道在 decompose() 之后插入中道校正（~10行），含详细日志输出（使用分布/降权详情/提权详情三行格式）。
+- **SOMA 门面集成 (`soma/__init__.py`)**: `SOMA(enable_zhongdao=True)` 开启，chat() 返回字典含 zhongdao 校正信息。新增 `__version__` 属性。
+- **12 项测试 (`tests/test_zhongdao.py`)**: 默认关闭/track累计/采样不足不触发/单条>40%触发降权/被忽略规律提权注入/权重打折加成/reset清空/last_corrections/端到端开启关闭/与FrameAnchoringDetector共存/rationale标记。
+
+### Changed
+
+- `__main__.py` 版本号 v0.6.0→v1.1.2（跨越5个版本未更新）
+- `multi_agent/` 模块版本号 v1.1.1→v1.1.2
+- `.github/SECURITY.md` 支持版本表：1.0.0→1.1.2 为 latest
+- `docs/index.md` API 参考版本标注更新
+
+### Benchmark (零熵智库验证)
+
+- Run#38 (OFF) vs Run#39 (ON): Wisdom +1.4, gini 0.2498→0.2226, contradiction_analysis -9, pareto_principle +9, scalability 100.0 不变
+
+---
+
 ## [1.1.1] — 2026-05-19
 
 零熵智库本地测试反馈修复版本。核心修复：L1简单问题跳过推理框架（回复膨胀从25倍降至正常），多Agent路由补齐（所有已注册Agent均参与），嵌入模型预热。

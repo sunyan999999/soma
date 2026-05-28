@@ -442,7 +442,8 @@ def _http_get_json(url: str, auth_token: str = "") -> Optional[dict]:
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
-    opener = urllib.request.build_opener(proxy_handler)
+    https_handler = urllib.request.HTTPSHandler(context=ctx)
+    opener = urllib.request.build_opener(proxy_handler, https_handler)
 
     try:
         with opener.open(req, timeout=10) as resp:
@@ -475,7 +476,8 @@ def _http_get_contributor_count(repo: str) -> int:
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
-        opener = urllib.request.build_opener(proxy_handler)
+        https_handler = urllib.request.HTTPSHandler(context=ctx)
+        opener = urllib.request.build_opener(proxy_handler, https_handler)
         with opener.open(req, timeout=10) as resp:
             link_header = resp.headers.get("Link", "")
             raw = resp.read().decode("utf-8")

@@ -5,6 +5,12 @@ import traceback
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+try:
+    from importlib.metadata import version as _get_version
+    __version__ = _get_version("soma-wisdom")
+except Exception:
+    __version__ = "1.1.2"
+
 from soma.config import SOMAConfig, load_config
 from soma.base import MemoryUnit, Focus, ActivatedMemory
 from soma.agent import SOMA_Agent
@@ -55,7 +61,7 @@ _log = logging.getLogger("soma")
 
 
 class SOMA:
-    """SOMA 顶层门面 — v1.1.1
+    """SOMA 顶层门面 — v1.1.2
 
     使用示例::
 
@@ -66,7 +72,7 @@ class SOMA:
         soma.remember("第一性原理：从最基本要素出发推导...")
         answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 
-        # 多Agent模式（v1.0+），v1.1.1支持并行调度+分布式演化
+        # 多Agent模式（v1.0+），v1.1.2支持并行调度+分布式演化+中道引擎
         soma = SOMA(orchestration_mode="multi")
         soma.register_expert("analyst", ["商业分析"])
         result = soma.solve_multi("如何平衡技术投入与业务增长？")
@@ -90,6 +96,8 @@ class SOMA:
         orchestration_mode: str = "single",
         orchestration_top_k: int = 3,
         orchestration_consensus: str = "voting",
+        # v1.1.2: 中道引擎
+        enable_zhongdao: bool = False,
         # v0.10.0: 记忆分层
         scene_extraction_enabled: bool = False,
         profile_extraction_enabled: bool = False,
@@ -118,6 +126,7 @@ class SOMA:
             orchestration_consensus=orchestration_consensus,
             scene_extraction_enabled=scene_extraction_enabled,
             profile_extraction_enabled=profile_extraction_enabled,
+            enable_zhongdao=enable_zhongdao,
         )
         self._agent = SOMA_Agent(self._config, agent_id=agent_id or "soma", group_id=group_id)
         self._session_count = 0
@@ -257,6 +266,37 @@ class SOMA:
                 suggested_foci.append(am.suggested_focus)
         if suggested_foci:
             foci = foci + suggested_foci
+
+        # v1.1.2: 中道引擎 — 会话内实时偏差检测与校正
+        if self._agent.zhongdao is not None:
+            self._agent.zhongdao.track(foci)
+            usage_snapshot = dict(self._agent.zhongdao._session_usage)
+            foci, zhongdao_corrections = self._agent.zhongdao.detect_and_correct(
+                foci, self._agent.engine.laws,
+            )
+            if zhongdao_corrections:
+                total = sum(usage_snapshot.values())
+                overuse_info = ", ".join(
+                    f"{lid}={c}/{total}({c/total:.0%})"
+                    for lid, c in usage_snapshot.items()
+                )
+                _log.info(
+                    "中道校正触发: 总采样=%d, 使用分布=[%s], 校正项=%d",
+                    total, overuse_info, len(zhongdao_corrections),
+                )
+                for c in zhongdao_corrections:
+                    if c["type"] == "overuse_penalty":
+                        _log.info(
+                            "  └ 降权: %s(%s) %.4f→%.4f (使用率%.0f%%)",
+                            c["law_name"], c["law_id"],
+                            c["old_weight"], c["new_weight"],
+                            c["usage_ratio"] * 100,
+                        )
+                    elif c["type"] == "neglect_boost":
+                        _log.info(
+                            "  └ 提权注入: %s(%s) 权重=%.4f",
+                            c["law_name"], c["law_id"], c["weight"],
+                        )
 
         # 确认偏误检测
         if complexity >= 2:

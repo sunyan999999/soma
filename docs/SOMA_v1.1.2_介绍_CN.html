@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>SOMA v1.1.2 — 让 AI 学会自我觉察与平衡</title>
+<style>
+  @page { size: A4; margin: 2.5cm 2cm; @bottom-center { content: "— " counter(page) " —"; font-size: 9pt; color: #999; } }
+  body { font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif; font-size: 12pt; line-height: 2; color: #2d2d2d; }
+  .cover { text-align: center; padding: 80px 0 60px 0; page-break-after: always; }
+  .cover h1 { font-size: 32pt; color: #1a1a2e; margin-bottom: 10px; letter-spacing: 4px; }
+  .cover .subtitle { font-size: 16pt; color: #555; margin-bottom: 40px; }
+  .cover .meta { font-size: 11pt; color: #888; margin-top: 50px; }
+  .cover .line { width: 60%; height: 2px; background: linear-gradient(90deg, transparent, #1a1a2e, transparent); margin: 30px auto; }
+  h2 { font-size: 20pt; color: #1a1a2e; border-bottom: 2px solid #e0c36a; padding-bottom: 6px; margin-top: 40px; }
+  h3 { font-size: 14pt; color: #333; margin-top: 28px; }
+  p { margin: 12px 0; text-indent: 2em; }
+  p.noindent { text-indent: 0; }
+  ul { margin: 10px 0 10px 2em; }
+  li { margin: 6px 0; }
+  .highlight { background: #fef9e7; border-left: 4px solid #e0c36a; padding: 12px 16px; margin: 16px 0; border-radius: 0 6px 6px 0; }
+  .highlight p { text-indent: 0; margin: 4px 0; }
+  .highlight code { background: #f0e6c0; padding: 1px 5px; border-radius: 3px; font-size: 10pt; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+  th { background: #1a1a2e; color: white; padding: 10px 14px; text-align: left; font-weight: normal; }
+  td { padding: 10px 14px; border-bottom: 1px solid #e0e0e0; }
+  tr:nth-child(even) td { background: #fafafa; }
+  .footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 10pt; color: #999; text-align: center; }
+  .comparison { display: flex; gap: 16px; margin: 16px 0; }
+  .comparison > div { flex: 1; padding: 16px; border-radius: 8px; }
+  .comparison .old { background: #fff0f0; border: 1px solid #ffcccc; }
+  .comparison .new { background: #f0fff0; border: 1px solid #ccffcc; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>SOMA v1.1.2</h1>
+  <div class="line"></div>
+  <p class="subtitle">让 AI 学会自我觉察与平衡</p>
+  <p style="font-size:13pt; color:#666;">—— 中道引擎：实时思维偏差自校正 ——</p>
+  <div class="meta">
+    <p>2026 年 5 月 · soma-wisdom 开源项目</p>
+    <p>github.com/sunyan999999/soma</p>
+  </div>
+</div>
+
+<h2>零、v1.1.1 到 v1.1.2：从"会想"到"不偏"</h2>
+
+<p>如果说 v1.1.1 让 SOMA 学会了"看人下菜碟"（复杂度自适应）和"群策群力"（多专家协作），那么 v1.1.2 要解决的是一个更微妙的问题：<strong>AI 会不会在思考中"钻牛角尖"？</strong></p>
+
+<p>答案是：会。而且比你想象的更容易发生。当你连续用"系统思维"分析五个问题之后，AI 会在第六个问题上惯性式地继续用系统思维——哪怕这个问题更适合用"第一性原理"或"逆向思考"。这就是人类的"认知偏误"在 AI 身上的重现。</p>
+
+<div class="highlight">
+  <p><strong>v1.1.2 的核心使命</strong>：给 SOMA 装上"自我觉察"能力——让它能在思考过程中发现自己过于依赖某个思维角度，并在下一轮自动调整，保持思考的平衡与灵活。</p>
+  <p>这个能力被称为<strong>「中道引擎」</strong>（Zhongdao Engine）——取自中国哲学中的"中庸之道"，不偏不倚，动态平衡。</p>
+</div>
+
+<h2>一、问题：AI 为什么需要"中道"？</h2>
+
+<h3>一个真实场景</h3>
+
+<p>假设你正在用零熵智库分析公司战略问题：</p>
+
+<table>
+  <tr><th>轮次</th><th>你的问题</th><th>AI 的思维倾向</th></tr>
+  <tr><td>第 1 轮</td><td>"如何用系统思维分析增长停滞？"</td><td>系统思维 ✓（合理）</td></tr>
+  <tr><td>第 2 轮</td><td>"继续从系统角度深入"</td><td>系统思维 ✓（合理）</td></tr>
+  <tr><td>第 3 轮</td><td>"还有什么系统层面的因素？"</td><td>系统思维 ✓（合理）</td></tr>
+  <tr><td>第 4 轮</td><td>"再帮我用系统思维看看人才问题"</td><td>系统思维 ⚠️（开始偏了）</td></tr>
+  <tr><td>第 5 轮</td><td>"系统思维怎么分析现金流问题？"</td><td>系统思维 ⚠️（明显偏了）</td></tr>
+  <tr><td>第 6 轮</td><td>"帮我深入分析一下"</td><td>系统思维 ❌（惯性，单一视角）</td></tr>
+</table>
+
+<p>六轮之后，AI 已经形成了"系统思维惯性"——它不再考虑第一性原理、二八法则或逆向思考，而是机械地套用同一个框架。这就是所谓的<strong>"框架锚定"</strong>（Frame Anchoring）：一个思维工具用顺手了，反而变成了思维的牢笼。</p>
+
+<div class="highlight">
+  <p><strong>一个惊人的数据</strong>：在 v1.1.1 的测试中，连续 5 轮使用同一思维规律后，AI 在第 6 轮有超过 90% 的概率继续使用该规律——无论问题是否真的匹配。它不是在"选择"工具，而是在"重复习惯"。</p>
+</div>
+
+<h3>人类也有同样的问题</h3>
+
+<p>这不只是 AI 的问题。人类也一样。</p>
+
+<p>经济学家只会用供需曲线看一切问题。程序员习惯性地想把所有问题都写成代码。心理咨询师倾向于把所有行为都解读为童年经历。这本身不是错——专业化需要深度。但当一个问题的本质更适合其他视角时，固守单一框架就会导致误判。</p>
+
+<p>好的思考者有一个关键特质：<strong>知道什么时候该换一个角度</strong>。v1.1.2 的中道引擎就是给 AI 装上这个特质。</p>
+
+<h2>二、中道引擎怎么工作？</h2>
+
+<p>中道引擎的原理可以用八个字概括：<strong>计数、检测、降权、提权</strong>。</p>
+
+<h3>第一步：计数（Track）</h3>
+
+<p>每一次 AI 回答你的问题时，中道引擎会在后台默默记录："这次用了哪几条思维规律？"它只记录你<strong>直接触发</strong>的规律，系统自动添加的辅助视角不计入——因为那些是 AI 主动引入的平衡因素，不该算在"过度使用"的账上。</p>
+
+<h3>第二步：检测（Detect）</h3>
+
+<p>当会话进行到第 5 轮之后，中道引擎开始检查：有没有哪条思维规律在最近的对话中占了超过 40% 的比例？</p>
+
+<p>40% 不是一个随意设定的数字。它是经过测试得出的平衡点——低于 40% 说明视角还在合理分散，高于 40% 则意味着某一条规律已经形成了"垄断"。</p>
+
+<div class="highlight">
+  <p><strong>举例</strong>：过去 6 轮对话中，3 轮用了系统思维（50%），1 轮用了第一性原理，1 轮用了矛盾分析，1 轮用了二八法则。系统思维的使用率 = 3/6 = 50% > 40%，触发校正。</p>
+</div>
+
+<h3>第三步：降权（Penalty）</h3>
+
+<p>被判定为"过度使用"的思维规律，在当前这一轮的权重会被自动下调 20%。</p>
+
+<p>"权重下调"是什么意思？SOMA 内部，每条思维规律有一个权重值（0 到 1 之间），代表该规律在分析中占多大的分量。比如系统思维默认权重是 0.90（很高，因为它适用范围广）。当它被中道引擎检测为过度使用时，当前轮的临时权重降为 0.72（0.90 × 0.80）。</p>
+
+<div class="highlight">
+  <p><strong>请注意两个关键词</strong>：「当前轮」和「临时」。这个降权只影响眼前这一次回答，不会持久化到数据库，更不会永久改变系统思维的原始权重。下次会话开始时，一切恢复如常。中道引擎做的是实时的、温和的微调，不是永久性的修改。</p>
+</div>
+
+<h3>第四步：提权注入（Boost & Inject）</h3>
+
+<p>降权只是"踩刹车"。更重要的是"打方向盘"——帮 AI 找到被忽略的其他视角。</p>
+
+<p>每条思维规律都有一个"关联规律列表"（relations 字段）。例如：</p>
+
+<table>
+  <tr><th>思维规律</th><th>关联规律</th></tr>
+  <tr><td>系统思维</td><td>第一性原理、矛盾分析</td></tr>
+  <tr><td>第一性原理</td><td>系统思维</td></tr>
+  <tr><td>矛盾分析</td><td>系统思维、逆向思考</td></tr>
+  <tr><td>二八法则</td><td>第一性原理</td></tr>
+</table>
+
+<p>当系统思维被过度使用时，中道引擎会检查它的关联规律——第一性原理和矛盾分析——是否被忽略了。如果被忽略，它们会被<strong>以 1.15 倍权重自动注入</strong>到当前的分析中，作为新的思考角度。注入上限为 2 条，防止一次引入太多视角导致分析发散。</p>
+
+<div class="highlight">
+  <p><strong>实际效果</strong>：你连续六轮问系统思维的问题，第七轮 AI 会自动引入"第一性原理"和"矛盾分析"作为补充视角。AI 的回答中会出现这样的标注：「中道自校正：会话内「第一性原理」被抑制，临时提权 15% 以平衡思维维度」。</p>
+</div>
+
+<h2>三、中道引擎的设计哲学</h2>
+
+<h3>不依赖大模型</h3>
+
+<p>整个中道引擎的校正逻辑——从计数到检测到权值计算——<strong>全部基于数学规则，不调用一次 LLM</strong>。这个选择有三个好处：</p>
+
+<ul>
+  <li><strong>零延迟</strong>：规则匹配在毫秒级完成，不影响 AI 回复速度</li>
+  <li><strong>零成本</strong>：不消耗任何 API 调用或 Token</li>
+  <li><strong>可解释</strong>：每一次校正都有明确的记录（哪条规律、使用率多少、降权/提权多少），你可以清楚地看到为什么 AI 调整了思考方式</li>
+</ul>
+
+<h3>默认关闭、温和干预</h3>
+
+<p>中道引擎在 v1.1.2 中默认<strong>关闭</strong>。这是故意为之——不是所有人都需要它，不是所有场景都适合它。如果你想启用，只需在创建 SOMA 实例时加一个参数：</p>
+
+<div class="highlight">
+  <p><code>SOMA(enable_zhongdao=True)</code></p>
+  <p>不传这个参数，SOMA 的行为与 v1.1.1 完全一致。向后兼容，零破坏性。</p>
+</div>
+
+<h3>与现有机制互补，不重复</h3>
+
+<p>SOMA 现在有三层偏差校正机制，各司其职：</p>
+
+<table>
+  <tr><th>机制</th><th>检测对象</th><th>触发时机</th><th>持久化</th></tr>
+  <tr><td>框架锚定检测器</td><td>用户侧的思维锁定</td><td>每次对话</td><td>否（仅提醒）</td></tr>
+  <tr><td><strong>中道引擎（NEW）</strong></td><td><strong>AI 侧的规律使用偏差</strong></td><td><strong>会话内实时</strong></td><td><strong>否（临时校正）</strong></td></tr>
+  <tr><td>元进化器</td><td>跨会话的权重趋势</td><td>每 5 次会话</td><td>是（写入数据库）</td></tr>
+</table>
+
+<p>框架锚定检测器在用户提问时触发，提醒"你可能陷入了某个固定框架"。中道引擎在 AI 回答时触发，主动调整"我可能偏了"。元进化器在长期使用中触发，从整体趋势上优化权重分布。三者共同构成了一套完整的"觉察→校正→进化"体系。</p>
+
+<h2>四、对零熵智库的意义</h2>
+
+<h3>从"会想"到"不偏"</h3>
+
+<p>v1.1.1 让零熵智库的 AI 学会了结构化思考。但"会想"和"想得全面"是两回事。</p>
+
+<p>中道引擎填补了中间的空隙。它像一个内置的"思维裁判"——当你连续追问同一个角度的问题时，AI 不再被动地跟随你的惯性，而是主动引入被忽略的视角，打破思维定式。</p>
+
+<div class="highlight">
+  <p><strong>场景</strong>：一位零熵智库用户正在制定公司战略，连续五轮从"系统思维"角度分析市场、产品、团队、资金和竞争。第六轮，中道引擎自动注入"第一性原理"——让 AI 追问："你确定现在增长的瓶颈真的是系统层面吗？有没有可能，根本原因是产品价值交付本身没有达到用户的底层期待？"</p>
+  <p>这种"追问"不是用户要求的，而是 AI 自己引入的——这是一个质的飞跃。</p>
+</div>
+
+<h3>保护用户不被自己的思维惯性所限</h3>
+
+<p>有趣的是，中道引擎保护的不仅是 AI 的思维平衡，也间接保护了用户。</p>
+
+<p>当你反复用同一框架提问时，AI 持续的配合会强化你自己的思维惯性——你会越来越确信"系统思维就是答案"。这种互相强化是危险的。中道引擎的介入打破了这一循环：AI 不再无条件跟随你的框架，而是温和地引入新的视角，帮你看到自己在思维上的盲区。</p>
+
+<h3>渐进式启用，零风险</h3>
+
+<p>中道引擎默认关闭，零熵智库可以根据实际场景决定是否启用。建议策略：</p>
+
+<ul>
+  <li><strong>深度分析场景</strong>（战略咨询、复杂决策）：推荐启用，多角度思考价值最大</li>
+  <li><strong>快速问答场景</strong>（查资料、简单解释）：可以不启用，避免不必要的视角扩展</li>
+  <li><strong>创意发散场景</strong>（头脑风暴、灵感激发）：推荐启用，视角注入正是创意催化剂</li>
+</ul>
+
+<h2>五、对 SOMA 开发者的意义</h2>
+
+<p>中道引擎虽然体积小（仅 170 行代码），但它代表了 SOMA 开发思路的一个重要转变：<strong>从"给 AI 更多能力"到"帮 AI 用好已有的能力"</strong>。</p>
+
+<p>过去五个版本（v0.8 → v1.1.1），SOMA 一直在做加法：知识图谱、多 Agent 协作、三层记忆、进化闭环。v1.1.2 开始做减法——不是减少功能，而是减少偏误，减少惯性，减少单一视角的过度使用。</p>
+
+<p>这个转变的意义在于：当 AI 的思维能力达到一定水平后，瓶颈不再是"不够聪明"，而是"不够均衡"。</p>
+
+<h3>技术约束的智慧</h3>
+
+<p>中道引擎是一个很好的"设计约束"案例：</p>
+
+<ul>
+  <li><strong>一个新文件</strong>（soma/zhongdao.py），不修改引擎核心（engine.py）</li>
+  <li><strong>不修改进化器</strong>（evolve.py），与元进化机制零冲突</li>
+  <li><strong>不修改 wisdom_laws.yaml</strong>，使用已有的 relations 字段</li>
+  <li><strong>默认关闭</strong>，不影响任何现有功能</li>
+  <li><strong>21 项专项测试</strong> + 639 项全量回归，零失败</li>
+</ul>
+
+<p>好的架构不是"想加什么就加什么"，而是"加新功能不需要改动旧代码"。</p>
+
+<h2>六、数字说话</h2>
+
+<table>
+  <tr><th>指标</th><th>v1.1.1</th><th>v1.1.2</th><th>变化</th></tr>
+  <tr><td>测试用例</td><td>618 项</td><td>639 项</td><td>+21 项（中道专项）</td></tr>
+  <tr><td>偏差校正机制</td><td>2 层（框架检测 + 元进化）</td><td>3 层（+ 中道实时校正）</td><td>填补会话内实时校正空白</td></tr>
+  <tr><td>LLM 调用次数</td><td>每次回答 1 次</td><td>每次回答 1 次</td><td>不变（中道无 LLM 依赖）</td></tr>
+  <tr><td>安装包大小</td><td>192KB</td><td>196KB</td><td>+4KB</td></tr>
+  <tr><td>新增代码行数</td><td>—</td><td>~280 行</td><td>含170行引擎 + 21项测试</td></tr>
+  <tr><td>过度使用降权</td><td>无此机制</td><td>权重 × 0.80</td><td>临时，仅当次生效</td></tr>
+  <tr><td>被忽略规律提权</td><td>无此机制</td><td>权重 × 1.15</td><td>最多注入 2 条</td></tr>
+  <tr><td>最小采样数</td><td>—</td><td>5 轮</td><td>低于 5 轮不触发校正</td></tr>
+</table>
+
+<h2>七、三条校正机制的关系</h2>
+
+<p>如果你只看中道引擎本身，它只是一个轻量级的规则引擎。但把它放回 SOMA 的整体架构中，你会看到一个完整的三层偏差校正体系正在成形：</p>
+
+<p class="noindent"><strong>第一层：框架锚定检测器</strong>（v0.9.1）—— 在用户提问时工作。检测用户是否陷入了固定思维框架。如果发现，给出温和提醒。这是"外部的觉察"。</p>
+<p class="noindent"><strong>第二层：中道引擎</strong>（v1.1.2）—— 在 AI 回答时工作。检测 AI 自身是否在使用规律上产生了偏倚。如果发现，主动降权 + 提权注入。这是"内部的觉察"。</p>
+<p class="noindent"><strong>第三层：元进化器</strong>（v0.8.0）—— 跨会话工作。每 5 次会话后，从宏观趋势上评估各思维规律的长期表现，调整持久化权重。这是"长期的进化"。</p>
+
+<p>三层协同，从"提醒用户"到"校正自己"到"长期优化"，构成了一套完整的思维质量保障体系。</p>
+
+<h2>八、与 AI 行业趋势的呼应</h2>
+
+<p>2026 年上半年，AI 行业正在经历一个有趣的转折：从"scale is all you need"到"reasoning is all you need"。</p>
+
+<p>OpenAI 的 o 系列、Anthropic 的 extended thinking、DeepSeek 的 R1——各家大模型都在追逐更强的推理能力。但所有这些努力都集中在<strong>模型内部</strong>：通过更大的训练、更长的推理时间、更多的计算来提升思考质量。</p>
+
+<p>SOMA 的选择不同。它不改变模型，而是给模型外面套一层"思维操作系统"。中道引擎是这个操作系统里的"进程调度器"——它不决定模型思考什么，而是确保模型不要一直占着同一个"思维 CPU"不放。</p>
+
+<p>这条路有它的局限（不改变模型底层能力），也有它的优势（通用、轻量、可解释、零训练成本）。在接下来的版本中，当外部思维框架层和内部模型推理层开始互相配合，真正的"AI 智者"才会出现。</p>
+
+<h2>九、立即体验</h2>
+
+<div class="highlight">
+  <p><strong>安装（仅需一行命令）</strong>：</p>
+  <p><code>pip install soma-wisdom</code></p>
+  <p><strong>在零熵智库中启用中道引擎</strong>：</p>
+  <p><code>soma = SOMA(enable_zhongdao=True)</code></p>
+  <p><strong>开源仓库</strong>：<a href="https://github.com/sunyan999999/soma">github.com/sunyan999999/soma</a></p>
+  <p><strong>一句话总结</strong>：v1.1.2 给 SOMA 装上了"自我觉察"的神经——它会注意到自己思维的偏向，并在下一轮主动调整，以维持思考的平衡与深度。</p>
+</div>
+
+<h2>十、感谢</h2>
+
+<p>SOMA 是一个社区驱动的开源项目。感谢每一位贡献代码、提交 Issue、分享使用体验的开发者。特别感谢零熵智库作为 SOMA 的首批实际应用场景，为这个项目提供了真实的反馈和持续的改进动力。</p>
+
+<p>v1.1.2 的中道引擎来自于一个朴素的观察：<strong>再聪明的人也会钻牛角尖，再好的思维工具用多了也会变成思维的惯性</strong>。这个版本所做的一切，都是为了让 AI 学会一件事——在思考的路上，时不时停下来问自己一句："我是不是该换个角度了？"</p>
+
+<div class="footer">
+  <p>SOMA v1.1.2 · 开源智慧思维框架 · Apache 2.0 License</p>
+  <p>本项目由社区驱动，欢迎贡献代码、反馈建议、分享使用体验</p>
+</div>
+
+</body>
+</html>

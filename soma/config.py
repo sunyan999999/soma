@@ -56,6 +56,9 @@ class SOMAConfig(BaseModel):
     enable_frame_detection: bool = False
     frame_detection_window: int = 5
 
+    # 中道引擎（v1.1.2+）
+    enable_zhongdao: bool = False  # 会话内实时规律使用偏差检测与自校正
+
     # 多Agent编排（v0.9.2+）
     orchestration_mode: str = "single"      # "single" | "multi"
     orchestration_top_k: int = 3            # 多Agent下最多参与专家数

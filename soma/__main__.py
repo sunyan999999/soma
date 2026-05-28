@@ -12,7 +12,7 @@ warnings.filterwarnings("ignore", message=".*pkg_resources.*")
 
 def main():
     print("=" * 56)
-    print("  🧠 SOMA — Somatic Wisdom Architecture v0.6.0")
+    print("  🧠 SOMA — Somatic Wisdom Architecture v1.1.2")
     print("  五分钟接入，让你的 Agent 学会智者思维")
     print("=" * 56)
 
