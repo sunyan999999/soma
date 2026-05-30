@@ -531,5 +531,127 @@ class AnalyticsStore:
             "multi_run_stats": json.loads(row["multi_run_stats_json"] or "{}"),
         }
 
+    # ── 中道引擎校正日志 (v1.1.3) ──────────────────────────
+
+    def _create_zhongdao_tables(self):
+        """创建中道校正日志表"""
+        self._conn.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS zhongdao_corrections (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp REAL NOT NULL,
+                session_id TEXT NOT NULL DEFAULT '',
+                agent_id TEXT NOT NULL DEFAULT '',
+                type TEXT NOT NULL,
+                law_id TEXT NOT NULL,
+                law_name TEXT NOT NULL DEFAULT '',
+                usage_ratio REAL DEFAULT 0,
+                old_weight REAL DEFAULT 0,
+                new_weight REAL DEFAULT 0,
+                details_json TEXT DEFAULT '{}'
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_zhongdao_time
+                ON zhongdao_corrections(timestamp DESC);
+            CREATE INDEX IF NOT EXISTS idx_zhongdao_type
+                ON zhongdao_corrections(type);
+            CREATE INDEX IF NOT EXISTS idx_zhongdao_law
+                ON zhongdao_corrections(law_id);
+            """
+        )
+        self._conn.commit()
+
+    def record_zhongdao_correction(
+        self,
+        correction: Dict[str, Any],
+        session_id: str = "",
+        agent_id: str = "",
+    ) -> int:
+        """记录一次中道校正事件，返回行ID"""
+        self._create_zhongdao_tables()
+        self._conn.execute(
+            """
+            INSERT INTO zhongdao_corrections
+            (timestamp, session_id, agent_id, type, law_id, law_name,
+             usage_ratio, old_weight, new_weight, details_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                time.time(),
+                session_id,
+                agent_id,
+                correction.get("type", ""),
+                correction.get("law_id", ""),
+                correction.get("law_name", ""),
+                correction.get("usage_ratio", 0),
+                correction.get("old_weight", 0),
+                correction.get("new_weight", correction.get("weight", 0)),
+                json.dumps(correction, ensure_ascii=False),
+            ),
+        )
+        self._conn.commit()
+        return self._conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+    def get_zhongdao_history(
+        self,
+        limit: int = 50,
+        law_id: Optional[str] = None,
+        correction_type: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """查询中道校正历史"""
+        self._create_zhongdao_tables()
+        conditions = []
+        params: List[Any] = []
+        if law_id:
+            conditions.append("law_id = ?")
+            params.append(law_id)
+        if correction_type:
+            conditions.append("type = ?")
+            params.append(correction_type)
+
+        where = ""
+        if conditions:
+            where = "WHERE " + " AND ".join(conditions)
+
+        sql = f"""
+            SELECT * FROM zhongdao_corrections
+            {where}
+            ORDER BY timestamp DESC
+            LIMIT ?
+        """
+        params.append(limit)
+        rows = self._conn.execute(sql, params).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_zhongdao_summary(self) -> Dict[str, Any]:
+        """中道校正汇总统计"""
+        self._create_zhongdao_tables()
+        total = self._conn.execute(
+            "SELECT COUNT(*) FROM zhongdao_corrections"
+        ).fetchone()[0]
+
+        by_type = {}
+        rows = self._conn.execute(
+            "SELECT type, COUNT(*) as cnt FROM zhongdao_corrections GROUP BY type"
+        ).fetchall()
+        for r in rows:
+            by_type[r["type"]] = r["cnt"]
+
+        by_law = {}
+        rows = self._conn.execute(
+            "SELECT law_id, law_name, COUNT(*) as cnt FROM zhongdao_corrections GROUP BY law_id ORDER BY cnt DESC LIMIT 10"
+        ).fetchall()
+        for r in rows:
+            by_law[r["law_id"]] = {
+                "name": r["law_name"],
+                "count": r["cnt"],
+            }
+
+        return {
+            "total_corrections": total,
+            "by_type": by_type,
+            "by_law": by_law,
+        }
+
     def close(self):
         self._conn.close()

@@ -703,6 +703,56 @@ def orchestration_status():
     }
 
 
+# ── 中道引擎 ────────────────────────────────────────────────
+
+@app.get("/api/zhongdao/status")
+def zhongdao_status():
+    """v1.1.3: 获取中道引擎状态（会话内规律使用分布与校正历史）"""
+    agent = get_agent()
+    z = agent._agent.zhongdao if hasattr(agent, '_agent') else None
+
+    if z is None or not z.enabled:
+        return {"enabled": False}
+
+    return {
+        "enabled": True,
+        "config": {
+            "threshold_ratio": z.threshold_ratio,
+            "penalty_factor": z.penalty_factor,
+            "boost_factor": z.boost_factor,
+            "min_samples": z.min_samples,
+        },
+        "session_usage": z._session_usage,
+        "total_samples": sum(z._session_usage.values()),
+        "last_corrections": z.last_corrections,
+    }
+
+
+@app.post("/api/zhongdao/reset")
+def zhongdao_reset():
+    """v1.1.3: 重置中道引擎会话统计"""
+    agent = get_agent()
+    z = agent._agent.zhongdao if hasattr(agent, '_agent') else None
+    if z is not None and z.enabled:
+        z.reset()
+        return {"status": "reset"}
+    return {"status": "not_enabled"}
+
+
+@app.get("/api/zhongdao/history")
+def zhongdao_history(limit: int = 50, law_id: str = "", type: str = ""):
+    """v1.1.3: 查询中道校正历史"""
+    from soma.analytics import AnalyticsStore
+    store = AnalyticsStore(_DATA_DIR)
+    history = store.get_zhongdao_history(
+        limit=limit,
+        law_id=law_id if law_id else None,
+        correction_type=type if type else None,
+    )
+    summary = store.get_zhongdao_summary()
+    return {"history": history, "summary": summary}
+
+
 # ── Chat ─────────────────────────────────────────────────────
 
 

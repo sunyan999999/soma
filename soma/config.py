@@ -59,6 +59,12 @@ class SOMAConfig(BaseModel):
     # 中道引擎（v1.1.2+）
     enable_zhongdao: bool = False  # 会话内实时规律使用偏差检测与自校正
 
+    # 中道引擎可调参数（v1.1.3+）
+    zhongdao_threshold_ratio: float = 0.40   # 单条规律使用率超过此值触发校正
+    zhongdao_penalty_factor: float = 0.20    # 过度使用规律的临时降权比例
+    zhongdao_boost_factor: float = 0.15      # 被忽略规律的临时提权比例
+    zhongdao_min_samples: int = 5            # 最少采样数才触发校正
+
     # 多Agent编排（v0.9.2+）
     orchestration_mode: str = "single"      # "single" | "multi"
     orchestration_top_k: int = 3            # 多Agent下最多参与专家数

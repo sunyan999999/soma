@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "1.1.2"
+    __version__ = "1.1.3"
 
 from soma.config import SOMAConfig, load_config
 from soma.base import MemoryUnit, Focus, ActivatedMemory
@@ -98,6 +98,11 @@ class SOMA:
         orchestration_consensus: str = "voting",
         # v1.1.2: 中道引擎
         enable_zhongdao: bool = False,
+        # v1.1.3: 中道引擎可调参数
+        zhongdao_threshold_ratio: float = 0.40,
+        zhongdao_penalty_factor: float = 0.20,
+        zhongdao_boost_factor: float = 0.15,
+        zhongdao_min_samples: int = 5,
         # v0.10.0: 记忆分层
         scene_extraction_enabled: bool = False,
         profile_extraction_enabled: bool = False,
@@ -127,6 +132,10 @@ class SOMA:
             scene_extraction_enabled=scene_extraction_enabled,
             profile_extraction_enabled=profile_extraction_enabled,
             enable_zhongdao=enable_zhongdao,
+            zhongdao_threshold_ratio=zhongdao_threshold_ratio,
+            zhongdao_penalty_factor=zhongdao_penalty_factor,
+            zhongdao_boost_factor=zhongdao_boost_factor,
+            zhongdao_min_samples=zhongdao_min_samples,
         )
         self._agent = SOMA_Agent(self._config, agent_id=agent_id or "soma", group_id=group_id)
         self._session_count = 0

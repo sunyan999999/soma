@@ -110,6 +110,12 @@ class SOMAOrchestrator:
                 default_top_k=self.config.default_top_k,
                 enable_frame_detection=self.config.enable_frame_detection,
                 frame_detection_window=self.config.frame_detection_window,
+                # v1.1.3: 中道引擎配置透传
+                enable_zhongdao=self.config.enable_zhongdao,
+                zhongdao_threshold_ratio=self.config.zhongdao_threshold_ratio,
+                zhongdao_penalty_factor=self.config.zhongdao_penalty_factor,
+                zhongdao_boost_factor=self.config.zhongdao_boost_factor,
+                zhongdao_min_samples=self.config.zhongdao_min_samples,
             )
             agent = SOMA_Agent(agent_config, agent_id=agent_id, group_id=group_id)
 
@@ -259,6 +265,22 @@ class SOMAOrchestrator:
             problem, opinions, strategy=strategy,
         )
 
+        # ── 3.5: 跨Agent中道协调（v1.1.3）检测群体趋同 ──
+        cross_convergence = self._detect_cross_agent_convergence(opinions)
+        if cross_convergence:
+            _log.info(
+                "跨Agent中道: 检测到群体趋同 law=%s agents=%s",
+                cross_convergence["law_id"],
+                cross_convergence["agents"],
+            )
+            # 在共识回答末尾附加多样性提醒（脚注格式，低干扰）
+            diversity_note = (
+                f"\n\n> ⚠️ *中道协调提示*：{len(cross_convergence['agents'])}位专家"
+                f"均侧重「{cross_convergence['law_name']}」，"
+                f"请注意从{cross_convergence['suggested_laws']}等互补视角重新审视。"
+            )
+            consensus_result.consensus_answer += diversity_note
+
         # ── 4. 演化：记录结果 + 定期全局合并（v1.1.0） ──
         self._evolve_after_solve(opinions)
 
@@ -332,6 +354,80 @@ class SOMAOrchestrator:
                     ordered.append(op)
                     break
         return ordered, agents_involved, routing_strategies
+
+    # ── 跨Agent中道协调（v1.1.3） ───────────────────────────
+
+    def _detect_cross_agent_convergence(
+        self, opinions: List[AgentOpinion],
+    ) -> Optional[dict]:
+        """检测多Agent群体趋同：≥2个Agent在同一规律上过度使用。
+
+        Returns:
+            None 表示无趋同，dict 含 law_id/law_name/agents/suggested_laws。
+        """
+        if len(opinions) < 2:
+            return None
+
+        # 收集各Agent的中道使用统计
+        agent_usage: Dict[str, Dict[str, int]] = {}
+        for op in opinions:
+            agent = self._agents.get(op.agent_id)
+            if agent is None:
+                continue
+            z = getattr(agent, 'zhongdao', None)
+            if z is None or not z.enabled or not z._session_usage:
+                continue
+            agent_usage[op.agent_id] = dict(z._session_usage)
+
+        if len(agent_usage) < 2:
+            return None
+
+        # 统计每条规律被多少个Agent过度使用
+        law_agent_count: Dict[str, List[str]] = {}
+        for agent_id, usage in agent_usage.items():
+            total = sum(usage.values())
+            if total < 5:
+                continue
+            for law_id, count in usage.items():
+                ratio = count / total
+                if ratio > 0.40:  # 与 zhongdao 阈值一致
+                    if law_id not in law_agent_count:
+                        law_agent_count[law_id] = []
+                    law_agent_count[law_id].append(agent_id)
+
+        # 筛选≥2个Agent共同过度使用的规律
+        for law_id, agents in law_agent_count.items():
+            if len(agents) >= 2:
+                law_name = law_id
+                suggested = []
+                # 从任意一个Agent的engine中查找规律信息
+                for agent in self._agents.values():
+                    eng = getattr(agent, 'engine', None)
+                    if eng is None:
+                        continue
+                    for law in getattr(eng, 'laws', []):
+                        if law.id == law_id:
+                            law_name = law.name
+                            # 从 relations 找未被使用的互补规律
+                            all_used = set()
+                            for usage in agent_usage.values():
+                                all_used.update(usage.keys())
+                            unused = [rid for rid in law.relations if rid not in all_used]
+                            for rl in eng.laws:
+                                if rl.id in unused[:2]:
+                                    suggested.append(rl.name)
+                            break
+                    if law_name != law_id:
+                        break
+
+                return {
+                    "law_id": law_id,
+                    "law_name": law_name,
+                    "agents": agents,
+                    "suggested_laws": "、".join(suggested) if suggested else "其他维度",
+                }
+
+        return None
 
     # ── 分布式演化 ───────────────────────────────────────────────
 

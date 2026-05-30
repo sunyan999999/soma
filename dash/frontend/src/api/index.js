@@ -159,4 +159,8 @@ export const api = {
     }),
 
   orchestrationStatus: () => request('/orchestration/status'),
+
+  // v1.1.3: 中道引擎
+  zhongdaoStatus: () => request('/zhongdao/status'),
+  zhongdaoReset: () => request('/zhongdao/reset', { method: 'POST' }),
 }

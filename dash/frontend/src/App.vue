@@ -50,6 +50,7 @@ function formatDownloads(n) {
 
 const navItems = computed(() => [
   { path: '/', icon: '💬', label: t('nav.chat') },
+  { path: '/zhongdao', icon: '☯️', label: t('nav.zhongdao') },
   { path: '/reports', icon: '📋', label: t('nav.reports') },
   { path: '/benchmarks', icon: '📐', label: t('nav.benchmarks') },
   { path: '/analytics', icon: '📊', label: t('nav.analytics') },

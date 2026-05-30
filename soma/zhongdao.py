@@ -28,10 +28,10 @@ class ZhongdaoEngine:
 
     def __init__(self, config: SOMAConfig):
         self.enabled = config.enable_zhongdao
-        self.threshold_ratio = 0.40    # 单条规律使用率超过此值触发校正
-        self.penalty_factor = 0.20     # 过度使用规律的临时降权比例
-        self.boost_factor = 0.15       # 被忽略规律的临时提权比例
-        self.min_samples = 5           # 最少采样数才触发
+        self.threshold_ratio = config.zhongdao_threshold_ratio
+        self.penalty_factor = config.zhongdao_penalty_factor
+        self.boost_factor = config.zhongdao_boost_factor
+        self.min_samples = config.zhongdao_min_samples
         self._session_usage: Dict[str, int] = {}
         self._corrections: List[dict] = []
 

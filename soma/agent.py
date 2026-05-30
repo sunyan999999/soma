@@ -448,8 +448,9 @@ class SOMA_Agent:
         try:
             from soma.analytics import AnalyticsStore
             store = AnalyticsStore(self.config.episodic_persist_dir)
+            sid = f"session_{int(time.time())}"
             store.record_session({
-                "id": f"session_{int(time.time())}",
+                "id": sid,
                 "problem": problem,
                 "mock_mode": False,
                 "provider_used": self.config.llm_model or "unknown",
@@ -463,6 +464,16 @@ class SOMA_Agent:
                 "memory_stats": self.memory.stats(),
                 "weights": self.evolver.get_weights(),
             })
+
+            # v1.1.3: 中道校正持久化日志
+            if self.zhongdao is not None and self.zhongdao.enabled:
+                corrections = self.zhongdao.last_corrections
+                if corrections:
+                    agent_id = getattr(self, 'agent_id', '')
+                    for c in corrections:
+                        store.record_zhongdao_correction(
+                            c, session_id=sid, agent_id=agent_id,
+                        )
         except Exception as e:
             print(f"[soma] 录制会话失败 (dir={self.config.episodic_persist_dir}): {e}",
                   file=sys.stderr)
