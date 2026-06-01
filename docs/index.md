@@ -21,10 +21,11 @@ Welcome to the SOMA documentation. SOMA (Somatic Wisdom Architecture) is a light
 - **[Contributing Guide](contributing.md)** — How to contribute
 - **[Changelog](changelog.md)** — Version history
 
-## v1.1.2 — Zhongdao Engine
+## v1.1.3 — Zhongdao Engine Deepening
 
-- **[v1.1.2 介绍 (中文)](SOMA_v1.1.2_介绍_CN.html)** — 中道引擎：会话内实时规律使用偏差检测与自校正
-- **[v1.1.2 Introduction (EN)](SOMA_v1.1.2_Introduction_EN.html)** — The Zhongdao Engine: session-internal real-time law bias correction
+- **[v1.1.2 介绍 (中文)](SOMA_v1.1.2_介绍_CN.html)** — 中道引擎（v1.1.2 原版）
+- **[v1.1.2 Introduction (EN)](SOMA_v1.1.2_Introduction_EN.html)** — The Zhongdao Engine (v1.1.2 original)
+- **[v1.1.3 测试说明 (中文)](../SOMA_v1.1.3_测试说明.md)** — 中道引擎深化：参数可配+可视化+跨Agent协调+持久化
 - **[中道引擎测试报告](zhongdao_report.md)** — Qoder 零熵智库部署测试报告
 
 ## Papers
@@ -57,10 +58,11 @@ Welcome to the SOMA documentation. SOMA (Somatic Wisdom Architecture) is a light
 - **[贡献指南](contributing.md)** — 如何贡献
 - **[变更日志](changelog.md)** — 版本历史
 
-## v1.1.2 — 中道引擎
+## v1.1.3 — 中道引擎深化
 
-- **[v1.1.2 介绍 (中文)](SOMA_v1.1.2_介绍_CN.html)** — 中道引擎：会话内实时规律使用偏差检测与自校正
-- **[v1.1.2 Introduction (EN)](SOMA_v1.1.2_Introduction_EN.html)** — The Zhongdao Engine
+- **[v1.1.2 介绍 (中文)](SOMA_v1.1.2_介绍_CN.html)** — 中道引擎（v1.1.2 原版）
+- **[v1.1.2 Introduction (EN)](SOMA_v1.1.2_Introduction_EN.html)** — The Zhongdao Engine (v1.1.2 original)
+- **[v1.1.3 测试说明 (中文)](../SOMA_v1.1.3_测试说明.md)** — 中道引擎深化：参数可配+可视化+跨Agent协调+持久化
 - **[中道引擎测试报告](zhongdao_report.md)** — Qoder 零熵智库部署测试报告
 
 ## 论文

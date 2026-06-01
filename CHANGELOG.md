@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.3] — 2026-06-01
+
+### 中道引擎深化 — 参数可配+可视化+跨Agent协调+持久化日志 (Zhongdao Deepening)
+
+**v1.1.3 深化中道引擎**，基于零熵智库 v1.1.2 线上验证反馈（Wisdom +1.4, gini 0.2498→0.2226）进行四项升级。
+
+### Added
+
+- **A1 参数可配置化 (`soma/config.py`, `soma/__init__.py`)**: 中道引擎四个参数暴露为 `SOMAConfig` 字段：`zhongdao_threshold_ratio`(0.40)、`zhongdao_penalty_factor`(0.20)、`zhongdao_boost_factor`(0.15)、`zhongdao_min_samples`(5)。`SOMA(enable_zhongdao=True, zhongdao_threshold_ratio=0.30)` 一行配置。
+- **A2 Dash 仪表盘可视化 (`dash/frontend/src/views/ZhongdaoView.vue`, `dash/server.py`)**: 侧边栏新增 ☯️ 中道引擎视图 — 规律热力图 + 校正时间线。3个API端点：`GET /api/zhongdao/status`、`GET /api/zhongdao/history`、`POST /api/zhongdao/reset`。支持中英双语。
+- **A3 跨Agent趋同检测 (`soma/multi_agent/orchestrator.py`)**: `_detect_cross_agent_convergence` — ≥2个Agent在同一规律上过度使用>40%时自动标记，共识回答末尾附带中道协调提示脚注。中道配置通过 orchestrator 透传到各Agent。
+- **A4 持久化校正日志 (`soma/analytics.py`)**: 新增 `zhongdao_corrections` SQLite表 + `record_zhongdao_correction`/`get_zhongdao_history`/`get_zhongdao_summary` 三个方法。每次校正事件写入数据库，支持按规律/类型过滤查询。
+- **22项新测试 (`tests/test_zhongdao.py` +292行)**: 跨Agent趋同/持久化/参数化全覆盖。
+- **安装脚本** (`scripts/install_v1.1.3.bat`, `scripts/install_v1.1.3.sh`, `scripts/verify_install.py`): Windows/Linux 一键安装 + 4项验证。
+
+### Changed
+
+- `soma/__init__.py` `__version__` → 1.1.3
+- `pyproject.toml` version → 1.1.3
+- `docs/index.md` API 参考版本标注更新
+- `.github/SECURITY.md` 支持版本表：1.1.3 为 latest
+
+---
+
 ## [1.1.2] — 2026-05-23
 
 ### 中道引擎 — 会话内实时规律使用偏差检测与自校正 (Zhongdao Engine)
