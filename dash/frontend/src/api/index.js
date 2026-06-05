@@ -163,4 +163,8 @@ export const api = {
   // v1.1.3: 中道引擎
   zhongdaoStatus: () => request('/zhongdao/status'),
   zhongdaoReset: () => request('/zhongdao/reset', { method: 'POST' }),
+  // v1.1.4
+  zhongdaoEffectiveness: (days = 30) => request(`/zhongdao/effectiveness?days=${days}`),
+  zhongdaoSuggest: (days = 30) => request(`/zhongdao/suggest?days=${days}`),
+  zhongdaoArchive: (days = 90) => request(`/zhongdao/archive?days=${days}`, { method: 'POST' }),
 }

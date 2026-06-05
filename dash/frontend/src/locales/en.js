@@ -5,6 +5,7 @@ export default {
     countUnit: '',
     timesUnit: 'x',
     itemsUnit: '',
+    days: 'd',
   },
   lang: {
     switchToEn: 'Switch to English',
@@ -359,5 +360,15 @@ export default {
     neglectBoost: 'Boost',
     weight: 'Weight',
     resetSession: 'Reset Session',
+    // v1.1.4
+    suggestTitle: 'Parameter Suggestions',
+    current: 'Current',
+    recommended: 'Recommended',
+    paramsOptimal: 'Parameters are optimal. No adjustment needed.',
+    trendTitle: 'Correction Trend',
+    lawFreqTitle: 'Correction Frequency by Law',
+    archiveOld: 'Archive Old',
+    archiveConfirm: 'Archive correction records older than {days} days?',
+    archivedCount: '{count} records archived',
   },
 }

@@ -753,6 +753,31 @@ def zhongdao_history(limit: int = 50, law_id: str = "", type: str = ""):
     return {"history": history, "summary": summary}
 
 
+@app.get("/api/zhongdao/effectiveness")
+def zhongdao_effectiveness(days: int = 30):
+    """v1.1.4 B1: 中道校正效果追踪 — 趋势数据与各规律统计"""
+    from soma.analytics import AnalyticsStore
+    store = AnalyticsStore(_DATA_DIR)
+    return store.get_correction_effectiveness(days=days)
+
+
+@app.get("/api/zhongdao/suggest")
+def zhongdao_suggest(days: int = 30):
+    """v1.1.4 B2: 基于历史数据推荐最优中道参数"""
+    from soma.analytics import AnalyticsStore
+    store = AnalyticsStore(_DATA_DIR)
+    return store.suggest_optimal_params(days=days)
+
+
+@app.post("/api/zhongdao/archive")
+def zhongdao_archive(days: int = 90):
+    """v1.1.4 B4: 归档旧校正记录"""
+    from soma.analytics import AnalyticsStore
+    store = AnalyticsStore(_DATA_DIR)
+    count = store.archive_old_corrections(days=days)
+    return {"archived_count": count, "cutoff_days": days}
+
+
 # ── Chat ─────────────────────────────────────────────────────
 
 

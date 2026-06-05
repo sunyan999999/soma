@@ -653,5 +653,195 @@ class AnalyticsStore:
             "by_law": by_law,
         }
 
+    # ── v1.1.4: 校正效果追踪 + 自动调参 + 归档 ──────────────
+
+    def get_correction_effectiveness(self, days: int = 30) -> Dict[str, Any]:
+        """B1: 分析中道校正前后效果对比
+
+        返回每日校正次数、各规律被校正频率、平均权重变化幅度。
+        """
+        self._create_zhongdao_tables()
+        cutoff = time.time() - days * 86400
+
+        # 每日校正次数趋势
+        daily = self._conn.execute(
+            """
+            SELECT date(timestamp, 'unixepoch', 'localtime') as day,
+                   COUNT(*) as cnt
+            FROM zhongdao_corrections
+            WHERE timestamp > ?
+            GROUP BY day ORDER BY day
+            """,
+            (cutoff,),
+        ).fetchall()
+        daily_trend = [{"day": r["day"], "count": r["cnt"]} for r in daily]
+
+        # 各规律被校正频率
+        law_freq = self._conn.execute(
+            """
+            SELECT law_id, law_name, type, COUNT(*) as cnt,
+                   AVG(ABS(new_weight - old_weight)) as avg_delta
+            FROM zhongdao_corrections
+            WHERE timestamp > ?
+            GROUP BY law_id, type
+            ORDER BY cnt DESC
+            """,
+            (cutoff,),
+        ).fetchall()
+        law_stats = {}
+        for r in law_freq:
+            lid = r["law_id"]
+            if lid not in law_stats:
+                law_stats[lid] = {
+                    "law_name": r["law_name"],
+                    "overuse_penalty": 0,
+                    "neglect_boost": 0,
+                    "avg_weight_delta": 0,
+                }
+            law_stats[lid][r["type"]] = r["cnt"]
+            law_stats[lid]["avg_weight_delta"] = round(r["avg_delta"], 4)
+
+        # 汇总
+        total = self._conn.execute(
+            "SELECT COUNT(*) FROM zhongdao_corrections WHERE timestamp > ?",
+            (cutoff,),
+        ).fetchone()[0]
+
+        avg_ratio = self._conn.execute(
+            "SELECT AVG(usage_ratio) FROM zhongdao_corrections WHERE timestamp > ? AND type='overuse_penalty'",
+            (cutoff,),
+        ).fetchone()[0] or 0
+
+        return {
+            "period_days": days,
+            "total_corrections": total,
+            "avg_overuse_ratio": round(avg_ratio, 4),
+            "daily_trend": daily_trend,
+            "law_stats": law_stats,
+        }
+
+    def suggest_optimal_params(self, days: int = 30) -> Dict[str, Any]:
+        """B2: 基于历史校正数据推荐最优中道参数
+
+        分析思路：如果某规律被频繁过度使用（阈值太高错过校正），
+        建议降低 threshold_ratio；如果校正后权重变化过大导致思维震荡，
+        建议减小 penalty/boost。
+        """
+        self._create_zhongdao_tables()
+        cutoff = time.time() - days * 86400
+
+        # 当前阈值下被校正的频率
+        total = self._conn.execute(
+            "SELECT COUNT(*) FROM zhongdao_corrections WHERE timestamp > ?",
+            (cutoff,),
+        ).fetchone()[0]
+
+        # 各类型校正占比
+        overuse = self._conn.execute(
+            "SELECT COUNT(*) FROM zhongdao_corrections WHERE timestamp > ? AND type='overuse_penalty'",
+            (cutoff,),
+        ).fetchone()[0]
+
+        # 平均权重变化
+        avg_delta = self._conn.execute(
+            "SELECT AVG(ABS(new_weight - old_weight)) FROM zhongdao_corrections WHERE timestamp > ?",
+            (cutoff,),
+        ).fetchone()[0] or 0.1
+
+        # 建议逻辑
+        suggestions = []
+        ratio = overuse / max(total, 1)
+
+        if ratio > 0.7:
+            suggestions.append("过载校正占比>70%，建议降低 threshold_ratio 从 0.40 → 0.35")
+            rec_ratio = 0.35
+        elif ratio < 0.2 and total > 10:
+            suggestions.append("校正触发较少，建议提高 threshold_ratio 从 0.40 → 0.45")
+            rec_ratio = 0.45
+        else:
+            rec_ratio = 0.40
+
+        if avg_delta > 0.1:
+            suggestions.append(f"权重变化幅度较大({avg_delta:.3f})，建议减小 penalty_factor 从 0.20 → 0.15")
+            rec_penalty = 0.15
+        else:
+            rec_penalty = 0.20
+
+        if total < 5 and days > 7:
+            suggestions.append("校正数据量较少，建议减小 min_samples 从 5 → 3 以提高灵敏度")
+            rec_samples = 3
+        else:
+            rec_samples = 5
+
+        rec_boost = 0.15  # boost 因子通常保持稳定
+
+        return {
+            "based_on_days": days,
+            "total_corrections": total,
+            "current_params": {
+                "threshold_ratio": 0.40,
+                "penalty_factor": 0.20,
+                "boost_factor": 0.15,
+                "min_samples": 5,
+            },
+            "recommended_params": {
+                "threshold_ratio": rec_ratio,
+                "penalty_factor": rec_penalty,
+                "boost_factor": rec_boost,
+                "min_samples": rec_samples,
+            },
+            "suggestions": suggestions,
+        }
+
+    def archive_old_corrections(self, days: int = 90) -> int:
+        """B4: 归档旧校正记录，返回归档数量"""
+        self._create_zhongdao_tables()
+        cutoff = time.time() - days * 86400
+
+        # 创建归档表
+        self._conn.executescript(
+            """
+            CREATE TABLE IF NOT EXISTS zhongdao_corrections_archive (
+                id INTEGER PRIMARY KEY,
+                timestamp REAL NOT NULL,
+                session_id TEXT NOT NULL DEFAULT '',
+                agent_id TEXT NOT NULL DEFAULT '',
+                type TEXT NOT NULL,
+                law_id TEXT NOT NULL,
+                law_name TEXT NOT NULL DEFAULT '',
+                usage_ratio REAL DEFAULT 0,
+                old_weight REAL DEFAULT 0,
+                new_weight REAL DEFAULT 0,
+                details_json TEXT DEFAULT '{}',
+                archived_at REAL NOT NULL
+            );
+            """
+        )
+        self._conn.commit()
+
+        # 迁移旧数据
+        now = time.time()
+        archived = self._conn.execute(
+            """
+            INSERT INTO zhongdao_corrections_archive
+            (id, timestamp, session_id, agent_id, type, law_id, law_name,
+             usage_ratio, old_weight, new_weight, details_json, archived_at)
+            SELECT id, timestamp, session_id, agent_id, type, law_id, law_name,
+                   usage_ratio, old_weight, new_weight, details_json, ?
+            FROM zhongdao_corrections
+            WHERE timestamp < ?
+            """,
+            (now, cutoff),
+        ).rowcount
+
+        if archived > 0:
+            self._conn.execute(
+                "DELETE FROM zhongdao_corrections WHERE timestamp < ?",
+                (cutoff,),
+            )
+            self._conn.commit()
+
+        return archived
+
     def close(self):
         self._conn.close()

@@ -739,3 +739,136 @@ class TestCrossAgentZhongdaoConvergence:
             assert result["law_id"] == "systems_thinking"
             assert len(result["agents"]) >= 2
 
+
+# ── v1.1.4: 校正效果追踪 + 自动调参 + 归档 ──────────────
+
+class TestCorrectionEffectiveness:
+    """B1: 校正效果追踪"""
+
+    def test_get_effectiveness_empty(self):
+        """无数据时不崩溃"""
+        from soma.analytics import AnalyticsStore
+        import tempfile, os
+        d = tempfile.mkdtemp()
+        try:
+            store = AnalyticsStore(d)
+            result = store.get_correction_effectiveness(days=30)
+            assert result["total_corrections"] == 0
+            assert result["daily_trend"] == []
+            assert result["law_stats"] == {}
+        finally:
+            store.close()
+            import shutil; shutil.rmtree(d, ignore_errors=True)
+
+    def test_get_effectiveness_with_data(self):
+        """有校正数据时正常返回趋势"""
+        from soma.analytics import AnalyticsStore
+        import tempfile, shutil
+        d = tempfile.mkdtemp()
+        try:
+            store = AnalyticsStore(d)
+            store.record_zhongdao_correction({
+                "type": "overuse_penalty", "law_id": "systems_thinking",
+                "law_name": "系统思维", "usage_ratio": 0.5,
+                "old_weight": 0.8, "new_weight": 0.64,
+            })
+            store.record_zhongdao_correction({
+                "type": "neglect_boost", "law_id": "pareto_principle",
+                "law_name": "二八法则", "usage_ratio": 0.05,
+                "old_weight": 0.5, "new_weight": 0.575,
+            })
+            result = store.get_correction_effectiveness(days=30)
+            assert result["total_corrections"] == 2
+            assert len(result["daily_trend"]) >= 1
+            assert "systems_thinking" in result["law_stats"]
+        finally:
+            store.close()
+            shutil.rmtree(d, ignore_errors=True)
+
+
+class TestSuggestParams:
+    """B2: 自动调参建议"""
+
+    def test_suggest_without_data(self):
+        """无数据时仍返回默认推荐"""
+        from soma.analytics import AnalyticsStore
+        import tempfile, shutil
+        d = tempfile.mkdtemp()
+        try:
+            store = AnalyticsStore(d)
+            result = store.suggest_optimal_params(days=30)
+            assert "recommended_params" in result
+            assert result["recommended_params"]["threshold_ratio"] == 0.40
+        finally:
+            store.close()
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_suggest_with_overuse(self):
+        """过载校正较多时建议降低阈值"""
+        from soma.analytics import AnalyticsStore
+        import tempfile, shutil
+        d = tempfile.mkdtemp()
+        try:
+            store = AnalyticsStore(d)
+            for _ in range(10):
+                store.record_zhongdao_correction({
+                    "type": "overuse_penalty", "law_id": "systems_thinking",
+                    "law_name": "系统思维", "usage_ratio": 0.55,
+                    "old_weight": 0.8, "new_weight": 0.64,
+                })
+            result = store.suggest_optimal_params(days=30)
+            # 过载占比高，建议降低阈值
+            assert result["total_corrections"] == 10
+            assert len(result["suggestions"]) >= 1
+        finally:
+            store.close()
+            shutil.rmtree(d, ignore_errors=True)
+
+
+class TestArchiveCorrections:
+    """B4: 归档清理"""
+
+    def test_archive_empty(self):
+        """空表归档返回0"""
+        from soma.analytics import AnalyticsStore
+        import tempfile, shutil
+        d = tempfile.mkdtemp()
+        try:
+            store = AnalyticsStore(d)
+            count = store.archive_old_corrections(days=90)
+            assert count == 0
+        finally:
+            store.close()
+            shutil.rmtree(d, ignore_errors=True)
+
+    def test_archive_old_records(self):
+        """归档旧记录后活动表变少"""
+        from soma.analytics import AnalyticsStore
+        import tempfile, shutil, time
+        d = tempfile.mkdtemp()
+        try:
+            store = AnalyticsStore(d)
+            # 插入一条旧记录（时间戳设为100天前）
+            old_ts = time.time() - 100 * 86400
+            store._create_zhongdao_tables()
+            store._conn.execute(
+                "INSERT INTO zhongdao_corrections (timestamp, type, law_id, law_name) VALUES (?, ?, ?, ?)",
+                (old_ts, "overuse_penalty", "test_law", "测试"),
+            )
+            store._conn.commit()
+            # 插入一条新记录
+            store.record_zhongdao_correction({
+                "type": "neglect_boost", "law_id": "systems_thinking",
+                "law_name": "系统思维",
+            })
+            count = store.archive_old_corrections(days=90)
+            assert count == 1  # 只有旧记录被归档
+            # 活动表剩1条
+            remaining = store._conn.execute(
+                "SELECT COUNT(*) FROM zhongdao_corrections"
+            ).fetchone()[0]
+            assert remaining == 1
+        finally:
+            store.close()
+            shutil.rmtree(d, ignore_errors=True)
+

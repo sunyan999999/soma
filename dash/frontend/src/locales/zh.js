@@ -5,6 +5,7 @@ export default {
     countUnit: '个',
     timesUnit: '次',
     itemsUnit: '条',
+    days: '天',
   },
   lang: {
     switchToEn: 'Switch to English',
@@ -359,5 +360,15 @@ export default {
     neglectBoost: '提权注入',
     weight: '权重',
     resetSession: '重置会话',
+    // v1.1.4
+    suggestTitle: '智能调参建议',
+    current: '当前',
+    recommended: '推荐',
+    paramsOptimal: '当前参数已处于最优区间，无需调整。',
+    trendTitle: '校正趋势',
+    lawFreqTitle: '各规律校正频率',
+    archiveOld: '归档清理',
+    archiveConfirm: '将 {days} 天前的校正记录归档，是否继续？',
+    archivedCount: '已归档 {count} 条记录',
   },
 }

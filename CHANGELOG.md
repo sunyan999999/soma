@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.4] — 2026-06-04
+
+### 中道引擎闭环与智能化 — Correction Effectiveness + Auto-Tuning + Archiving
+
+**v1.1.4 闭合中道引擎反馈环路**，让校正从"执行"到"验证"到"优化"形成完整闭环。
+
+### Added
+
+- **B1 校正效果追踪 (`soma/analytics.py`)**: `get_correction_effectiveness(days)` — 返回每日校正次数趋势、各规律被校正频率分布、平均权重变化幅度。Dash 中道视图新增趋势柱状图和各规律校正频率面板。
+- **B2 自动调参建议 (`soma/analytics.py`)**: `suggest_optimal_params(days)` — 基于历史校正数据智能推荐最优 threshold_ratio/penalty_factor/boost_factor/min_samples。Dash 中道视图新增调参建议卡片（当前 vs 推荐参数对比 + 文字建议）。
+- **B3 Dash 趋势可视化 (`dash/frontend/src/views/ZhongdaoView.vue`)**: 新增校正趋势柱状图（14天）、各规律校正频率分布、智能调参建议卡片、归档清理按钮、时间范围选择器（7/14/30/90天）。
+- **B4 自动归档清理 (`soma/analytics.py`)**: `archive_old_corrections(days=90)` — 将旧校正记录迁移到 `zhongdao_corrections_archive` 表，防止 DB 膨胀。Dash 提供一键归档按钮。
+- **B5 零熵反馈修复**: Dash 移动端适配优化、API 端点冷却保护、中道视图 i18n 完善。
+- **6 项新测试 (`tests/test_zhongdao.py`)**: 校正效果追踪/空数据/有数据、调参建议/无数据/过载场景、归档清理/空表/旧记录。
+- **3 个新 API 端点** (`dash/server.py`): `GET /api/zhongdao/effectiveness`、`GET /api/zhongdao/suggest`、`POST /api/zhongdao/archive`。
+
+### Changed
+
+- `soma/__init__.py` `__version__` → 1.1.4
+- `pyproject.toml` version → 1.1.4
+- 测试从 644 → 650
+
+---
+
 ## [1.1.3] — 2026-06-01
 
 ### 中道引擎深化 — 参数可配+可视化+跨Agent协调+持久化日志 (Zhongdao Deepening)
