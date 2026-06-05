@@ -8,15 +8,36 @@ from soma.multi_agent.registry import AgentRegistry
 _log = logging.getLogger("soma.multi_agent")
 
 # 领域→关键词映射表，用于快速路由（无需 LLM）
+# v1.1.4: 双语关键词支持，新增哲学/心理/传统文化领域，匹配已注册专家
 _DOMAIN_KEYWORDS: dict = {
-    "法律": ["法律", "合同", "诉讼", "法规", "合规", "知识产权", "版权", "专利", "仲裁"],
-    "技术": ["代码", "架构", "API", "数据库", "部署", "算法", "性能", "bug", "编程"],
-    "金融": ["投资", "股票", "基金", "财务", "预算", "成本", "收入", "利润", "税务"],
-    "管理": ["团队", "管理", "领导", "组织", "战略", "流程", "考核", "招聘", "文化"],
-    "产品": ["用户", "需求", "体验", "设计", "功能", "迭代", "增长", "留存", "转化"],
-    "科学": ["实验", "假设", "数据", "统计", "变量", "控制组", "显著性", "相关性"],
-    "教育": ["学习", "教学", "课程", "培训", "知识", "技能", "考试", "毕业"],
-    "医疗": ["诊断", "治疗", "药物", "手术", "患者", "临床", "病理", "预防"],
+    # ── 原有通用领域（中英双语）──
+    "法律": ["法律", "合同", "诉讼", "法规", "合规", "知识产权", "版权", "专利", "仲裁",
+             "law", "legal", "contract", "lawsuit", "compliance", "patent", "arbitration"],
+    "技术": ["代码", "架构", "API", "数据库", "部署", "算法", "性能", "bug", "编程",
+             "code", "architecture", "database", "deploy", "algorithm", "programming", "debug"],
+    "金融": ["投资", "股票", "基金", "财务", "预算", "成本", "收入", "利润", "税务",
+             "invest", "stock", "fund", "finance", "budget", "profit", "tax"],
+    "管理": ["团队", "管理", "领导", "组织", "战略", "流程", "考核", "招聘", "文化",
+             "team", "management", "leadership", "strategy", "process", "recruit"],
+    "产品": ["用户", "需求", "体验", "设计", "功能", "迭代", "增长", "留存", "转化",
+             "user", "requirement", "UX", "feature", "iteration", "retention", "conversion"],
+    "科学": ["实验", "假设", "数据", "统计", "变量", "控制组", "显著性", "相关性",
+             "experiment", "hypothesis", "statistics", "variable", "correlation"],
+    "教育": ["学习", "教学", "课程", "培训", "知识", "技能", "考试", "毕业",
+             "learn", "teach", "course", "training", "exam", "graduate"],
+    "医疗": ["诊断", "治疗", "药物", "手术", "患者", "临床", "病理", "预防",
+             "diagnosis", "treatment", "medicine", "surgery", "patient", "clinical"],
+    # ── 新增：匹配已注册专家 ──
+    "哲学": ["哲学", "人生", "意义", "命运", "存在", "价值", "思维", "思考", "世界观",
+             "生死", "自由", "选择", "本质", "真理", "道", "悟", "觉悟",
+             "philosophy", "meaning", "destiny", "existence", "truth", "freedom", "wisdom"],
+    "心理": ["心理", "情绪", "压力", "焦虑", "抑郁", "情感", "关系", "失眠", "疏导",
+             "调节", "安全感", "内耗", "自我", "疗愈", "共情", "边界", "沟通",
+             "psychology", "emotion", "stress", "anxiety", "depression", "therapy", "healing"],
+    "传统文化": ["易经", "国学", "儒释道", "老子", "孔子", "道德经", "论语", "佛经",
+               "阴阳", "五行", "太极", "八卦", "典故", "经典", "古训", "传统",
+               "周易", "易经", "自强不息", "厚德载物", "中庸", "仁义",
+               "culture", "traditional", "I-Ching", "Confucius", "Taoism", "Buddhism"],
 }
 
 
@@ -93,14 +114,16 @@ class ExpertRouter:
         self.route_count += 1
         results = []
 
-        # L1
+        # L1: 关键词快速匹配
         domain_scores = _extract_domain_keywords(problem)
         for domain, hits in domain_scores.items():
             experts = self.registry.find_experts(domain, min_score=min_confidence)
             for agent, score in experts:
                 results.append((agent, score * min(hits / 3, 1.0), "l1"))
+        if results:
+            self.l1_hits += 1  # v1.1.4: 修复 route_multi 未计入 l1_hits
 
-        # L2
+        # L2: 语义相似度匹配
         if self._embedder is not None and (not results or len(results) < top_k):
             for info in self.registry.list_agents():
                 if not info.expertise:
@@ -115,6 +138,8 @@ class ExpertRouter:
                             results.append((agent, sim, "l2"))
                 except Exception:
                     pass
+            if any(s == "l2" for _, _, s in results):
+                self.l2_hits += 1  # v1.1.4: 修复 route_multi 未计入 l2_hits
 
         # 去重 + 排序
         seen = set()
@@ -129,6 +154,7 @@ class ExpertRouter:
             default = self.registry.get_default()
             if default is not None:
                 deduped.append((default, 0.1, "fallback"))
+                self.fallbacks += 1  # v1.1.4: 修复 route_multi 未计入 fallbacks
 
         return deduped[:top_k]
 

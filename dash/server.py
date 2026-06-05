@@ -219,6 +219,7 @@ def get_agent():
             llm=model,
             llm_api_key=api_key,
             llm_base_url=base_url,
+            enable_zhongdao=True,  # v1.1.4: 启用中道引擎
         )
 
         if MOCK_MODE and not _initialized_mock:

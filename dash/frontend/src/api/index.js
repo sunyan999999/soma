@@ -1,4 +1,5 @@
-const BASE = '/api'
+// 自动检测 base path：生产环境 nginx 反向代理使用 /soma-dash/api，开发环境直接 /api
+const BASE = window.location.pathname.startsWith('/soma-dash') ? '/soma-dash/api' : '/api'
 
 // API Key 存储在 sessionStorage 中，由应用启动时通过 /api/auth/status 检测后提示输入
 let API_KEY = sessionStorage.getItem('soma_api_key') || ''
