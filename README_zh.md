@@ -9,6 +9,13 @@
 pip install soma-wisdom     # 五分钟，从零到会思考的 Agent
 ```
 
+<p align="center">
+  <a href="https://codespaces.new/sunyan999999/soma">
+    <img src="https://github.com/codespaces/badge.svg" alt="Open in GitHub Codespaces" height="40">
+  </a>
+  <br><strong>👆 点击即可在浏览器中体验 SOMA 面板 — 无需安装，一分钟启动</strong>
+</p>
+
 ```python
 from soma import SOMA
 

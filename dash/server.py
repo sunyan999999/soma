@@ -1543,6 +1543,21 @@ async def spa_fallback(full_path: str):
 
 # ── Entrypoint ───────────────────────────────────────────────
 
+def main():
+    """CLI 入口: soma-dash 命令"""
+    import uvicorn
+    is_prod = os.environ.get("SOMA_PROD", "").lower() in ("1", "true", "yes")
+    print(f"\n  SOMA Dashboard v{app.version}")
+    print(f"  模式: {'生产' if is_prod else '开发'}")
+    print(f"  地址: http://localhost:8765")
+    if is_prod:
+        uvicorn.run("dash.server:app", host="0.0.0.0", port=8765,
+                    reload=False, workers=1, log_level="warning")
+    else:
+        uvicorn.run("dash.server:app", host="0.0.0.0", port=8765,
+                    reload=True, reload_dirs=[str(Path(__file__).parent)])
+
+
 if __name__ == "__main__":
     import uvicorn
 

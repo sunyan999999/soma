@@ -1,0 +1,24 @@
+{
+    "name": "SOMA Demo",
+    "image": "mcr.microsoft.com/devcontainers/python:3.10",
+    "forwardPorts": [8765],
+    "portsAttributes": {
+        "8765": {
+            "label": "SOMA Dashboard",
+            "onAutoForward": "openBrowser"
+        }
+    },
+    "postCreateCommand": "pip install -e . && echo '✅ SOMA 已安装' && echo '' && echo '🖥️  终端输入 soma-dash 启动面板' && echo '📖 访问 http://localhost:8765'",
+    "postStartCommand": "SOMA_MOCK=1 SOMA_API_KEY=demo-key python dash/server.py &",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-toolsai.jupyter"
+            ]
+        }
+    },
+    "features": {
+        "ghcr.io/devcontainers/features/python:1": {}
+    }
+}

@@ -59,6 +59,7 @@ PyPI = "https://pypi.org/project/soma-wisdom/"
 
 [project.scripts]
 soma-quickstart = "soma.__main__:main"
+soma-dash = "dash.server:main"
 
 [project.entry-points."soma.plugins"]
 retriever = "soma.hub._retriever:MemoryRetriever"
