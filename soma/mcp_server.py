@@ -33,7 +33,7 @@ import sys
 from importlib.metadata import version as _pkg_version
 from pathlib import Path
 
-MCP_SERVER_VERSION = "1.0.0"
+MCP_SERVER_VERSION = "1.1.0"
 
 
 def _get_soma_version() -> str:
@@ -109,21 +109,32 @@ def _new_mcp():
         name="SOMA 智慧记忆引擎",
         instructions=f"""SOMA v{soma_ver} — 多维度记忆与智慧推理系统。
 
-核心能力:
-- 语义记忆搜索: soma_recall — 按关键词检索历史记忆
+编程决策辅助 (v1.1.0):
+- 问题拆解: soma_decompose — 用7条思维规律多角度拆解问题，纯本地零LLM
+- 深度分析: soma_analyze — 完整管道：拆解→激活记忆→推理→合成，附风险分析
+- 方案对比: soma_compare — 多方案多维度结构化对比，自动综合推荐
+
+记忆管理:
+- 语义搜索: soma_recall — 按关键词检索历史记忆
 - 记忆记录: soma_save — 持久化开发决策、Bug修复、约束发现
 - 记忆列表: soma_list — 浏览最近的记忆条目
 - 统计概览: soma_stats — 记忆库规模、SOMA版本、可用能力
-- 深度分析: soma_chat — 多维度问题拆解+记忆激活+智慧合成
 
-v1.0.0 记忆分层:
+深度分析:
+- soma_chat — 多维度问题拆解+记忆激活+智慧合成
+
+记忆分层 (v1.0+):
 - 场景块: soma_scenes — 搜索用户场景块（主题聚合）
 - 用户画像: soma_profile — 查看用户特征画像
 - 场景捕获: soma_capture — 手动触发场景提取
 - 分层统计: soma_layered_stats — 含Scene/Profile的完整统计
 - 白盒输出: soma_scene_markdown — 场景的Markdown可读文档
 
-记忆类型: 情景记忆(文本) / 语义记忆(三元组) / 技能记忆 / 因果图谱 / 场景块 / 用户画像
+使用场景:
+- 遇到技术决策时: 先用 soma_decompose 多角度审视 → 再用 soma_analyze 深度分析
+- 多方案对比时: 用 soma_compare 结构化评估 → 按综合推荐决策
+- 每次决策后: 用 soma_save 记录决策和理由，下次类似问题可检索
+
 进化机制: 权值自动调整 / 记忆合并 / 主动遗忘 / 规律发现""",
     )
     return mcp
@@ -461,6 +472,150 @@ def _register_tools():
             return "\n".join(lines)
         except Exception as exc:
             return f"[SOMA layered_stats 错误] {exc}"
+
+    # ── v1.1.5: 编程决策辅助工具 ──
+
+    @mcp.tool()
+    def soma_decompose(problem: str) -> str:
+        """问题多维度拆解——用7条思维规律分解问题，不调用LLM，纯本地推理。
+
+        返回每个维度的分析方向和建议聚焦点。
+        用于: 编程方案制定前先多角度审视问题，避免单一视角决策。
+        """
+        try:
+            soma = _get_soma()
+            if not _capabilities().get("decompose"):
+                return "[SOMA decompose 不可用] 当前版本不支持"
+
+            foci = soma.decompose(problem)
+            if not foci:
+                return "(拆解失败 — 尝试提供更具体的问题描述)"
+
+            lines = [f"问题拆解 ({len(foci)} 个维度):\n"]
+            for i, f in enumerate(foci, 1):
+                law_id = f.get("law_id", "?")
+                law_name = f.get("law_name", law_id)
+                dimension = f.get("dimension", "")[:200]
+                weight = f.get("weight", 0)
+                lines.append(f"--- 维度 {i}: {law_name} (权重: {weight:.2f}) ---")
+                lines.append(f"  分析方向: {dimension}")
+                lines.append("")
+            return "\n".join(lines)
+        except Exception as exc:
+            return f"[SOMA decompose 错误] {exc}"
+
+    @mcp.tool()
+    def soma_analyze(problem: str, context: str = "") -> str:
+        """深度分析——完整SOMA管道：拆解→激活记忆→推理框架→合成答案。
+
+        与 soma_chat 不同，此工具专门为编程/技术决策场景优化：
+        - 自动检索相关历史决策记忆
+        - 注入假设检验框架
+        - 提供多角度风险分析
+
+        context 参数可附带项目背景、技术栈、约束条件等上下文。
+        需要 LLM 支持（设置 SOMA_LLM 环境变量）。
+        """
+        try:
+            soma = _get_soma()
+            full_problem = problem
+            if context:
+                full_problem = f"[背景] {context}\n[问题] {problem}"
+
+            if _capabilities().get("chat"):
+                result = soma.chat(full_problem)
+            else:
+                result = soma.respond(full_problem)
+
+            answer = result.get("answer", result.get("response", str(result)))
+            foci = result.get("foci", [])
+            memories = result.get("activated_memories", [])
+
+            lines = ["══════════════════════"]
+            lines.append(f"问题: {problem[:200]}")
+            if context:
+                lines.append(f"背景: {context[:200]}")
+            lines.append("══════════════════════\n")
+
+            if foci:
+                lines.append(f"▶ 拆解维度 ({len(foci)} 个):")
+                for f in foci:
+                    lines.append(f"  [{f.get('law_id','?')}] {f.get('dimension','')[:120]}")
+                lines.append("")
+
+            if memories:
+                lines.append(f"▶ 激活记忆 ({len(memories)} 条):")
+                for m in memories[:5]:
+                    lines.append(f"  [{m.get('source','?')}] score={m.get('activation_score',0):.3f}")
+                lines.append("")
+
+            lines.append(f"▶ 分析结论:\n{answer[:3000]}")
+            return "\n".join(lines)
+        except Exception as exc:
+            return f"[SOMA analyze 错误] {exc}"
+
+    @mcp.tool()
+    def soma_compare(options: str, criteria: str = "") -> str:
+        """多方案对比分析——对多个方案从多个维度进行结构化对比。
+
+        options: 多个方案描述，用 '|' 分隔。例如 "微服务架构|单体优先|模块化单体"
+        criteria: 评估维度，用 ',' 分隔。例如 "扩展性,开发效率,运维成本,数据一致性"
+
+        返回每个方案在各维度的评分、权重和综合排名。
+        用于: 技术选型、架构决策等需要多方案对比的场景。
+        """
+        try:
+            soma = _get_soma()
+            opts = [o.strip() for o in options.split("|") if o.strip()]
+            crits = [c.strip() for c in criteria.split(",") if c.strip()] if criteria else [
+                "可行性", "扩展性", "维护成本", "实施难度", "风险控制"
+            ]
+
+            if len(opts) < 2:
+                return "至少需要 2 个方案进行对比（用 | 分隔）"
+
+            lines = ["══════════════════════"]
+            lines.append(f"方案对比 ({len(opts)} 个方案 × {len(crits)} 个维度)")
+            lines.append("══════════════════════\n")
+
+            # 对每个方案单独分析
+            scores = {}
+            for opt in opts:
+                problem = f"评估以下技术方案: {opt}。评估维度: {', '.join(crits)}。给出每个维度的评分(0-10)和理由。"
+                try:
+                    if _capabilities().get("chat"):
+                        result = soma.chat(problem)
+                    else:
+                        result = soma.respond(problem)
+                    answer = result.get("answer", result.get("response", str(result)))
+                except Exception:
+                    answer = f"(分析出错: {opt})"
+                scores[opt] = answer
+
+            lines.append("▶ 各方案分析:\n")
+            for i, (opt, analysis) in enumerate(scores.items(), 1):
+                lines.append(f"── 方案 {i}: {opt} ──")
+                lines.append(analysis[:800])
+                lines.append("")
+
+            # 综合建议
+            all_opts_str = " vs ".join(opts)
+            summary_problem = f"综合对比以下方案: {all_opts_str}。评估维度: {', '.join(crits)}。给出最终推荐和理由。"
+            try:
+                if _capabilities().get("chat"):
+                    summary = soma.chat(summary_problem)
+                else:
+                    summary = soma.respond(summary_problem)
+                final = summary.get("answer", summary.get("response", ""))
+            except Exception:
+                final = "(综合建议生成失败)"
+
+            lines.append("▶ 综合推荐:\n")
+            lines.append(final[:1500])
+
+            return "\n".join(lines)
+        except Exception as exc:
+            return f"[SOMA compare 错误] {exc}"
 
     @mcp.tool()
     def soma_scene_markdown(scene_id: str) -> str:
