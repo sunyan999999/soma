@@ -40,9 +40,9 @@ def cmd_decompose(problem: str) -> None:
         return
     print(f"\n问题: {problem}\n")
     for i, f in enumerate(foci, 1):
-        law_id = getattr(f, 'law_id', f.get('law_id', '?'))
-        weight = getattr(f, 'weight', f.get('weight', 0))
-        dim = getattr(f, 'dimension', f.get('dimension', ''))
+        law_id = getattr(f, 'law_id', '?')
+        weight = getattr(f, 'weight', 0)
+        dim = getattr(f, 'dimension', '')
         print(f"{i}. [{law_id}] (权重 {weight:.2f})")
         print(f"   {dim[:200]}\n")
 
@@ -69,8 +69,8 @@ def cmd_analyze(problem: str, context: str = "") -> None:
     if foci:
         print(f"\n▶ 拆解维度 ({len(foci)} 个):")
         for f in foci:
-            lid = f.get('law_id', '?')
-            dim = f.get('dimension', '')[:120]
+            lid = '?'
+            dim = ''[:120]
             print(f"  [{lid}] {dim}")
 
     if memories:
