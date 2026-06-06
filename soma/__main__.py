@@ -1,79 +1,171 @@
-"""SOMA 快速验证 — python -m soma"""
+"""SOMA CLI — 任何 Agent 通过 shell 命令即可调用 SOMA 智慧分析
+
+用法:
+    python -m soma                       快速验证
+    python -m soma decompose <问题>       多角度拆解（零 LLM）
+    python -m soma analyze <问题>         深度分析
+    python -m soma compare <方案1|方案2>  多方案对比
+
+示例:
+    python -m soma decompose "如何设计消息队列"
+    python -m soma analyze "微服务还是单体" --context "电商日均100万订单"
+    python -m soma compare "自建MQ|云MQ|事件流" --criteria "成本,运维,扩展性"
+"""
 import os
 import sys
+import json
 import warnings
 
-# 抑制第三方库噪音，提升首次体验
 os.environ.setdefault("LITELLM_LOG", "ERROR")
 warnings.filterwarnings("ignore", category=UserWarning, module="jieba")
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", message=".*pkg_resources.*")
 
 
-def main():
-    print("=" * 56)
-    print("  🧠 SOMA — Somatic Wisdom Architecture v1.1.2")
-    print("  五分钟接入，让你的 Agent 学会智者思维")
-    print("=" * 56)
+def _get_soma():
+    from soma import SOMA
+    return SOMA(
+        persist_dir=os.environ.get("SOMA_DATA_DIR", str(__import__('pathlib').Path.home() / ".soma" / "cli")),
+        llm=os.environ.get("SOMA_LLM", "mock"),
+        top_k=5,
+    )
+
+
+def cmd_decompose(problem: str) -> None:
+    """多维度问题拆解 — 纯本地，零 LLM 调用"""
+    soma = _get_soma()
+    foci = soma.decompose(problem)
+    if not foci:
+        print("(拆解失败)")
+        return
+    print(f"\n问题: {problem}\n")
+    for i, f in enumerate(foci, 1):
+        law_id = getattr(f, 'law_id', f.get('law_id', '?'))
+        weight = getattr(f, 'weight', f.get('weight', 0))
+        dim = getattr(f, 'dimension', f.get('dimension', ''))
+        print(f"{i}. [{law_id}] (权重 {weight:.2f})")
+        print(f"   {dim[:200]}\n")
+
+
+def cmd_analyze(problem: str, context: str = "") -> None:
+    """深度分析 — 完整 SOMA 管道"""
+    soma = _get_soma()
+    full = f"[背景] {context}\n[问题] {problem}" if context else problem
 
     try:
-        from soma import SOMA
+        result = soma.chat(full)
+    except Exception:
+        result = soma.respond(full)
 
-        print("\n⏳ 初始化中...")
-        soma = SOMA()
+    foci = result.get("foci", [])
+    answer = result.get("answer", result.get("response", str(result)))
+    memories = result.get("activated_memories", [])
 
-        stats = soma.stats
-        print(f"✅ 初始化完成")
-        print(f"   思维框架: 7 条智慧规律")
-        print(f"   记忆库: {stats['episodic']} 条情节 / {stats['semantic']} 条语义")
-        print(f"   向量索引: {stats.get('indexed_vectors', 0)} 条")
+    print(f"\n═══ SOMA 深度分析 ═══\n")
+    print(f"问题: {problem}")
+    if context:
+        print(f"背景: {context}")
 
-        # 冷启动：注入示例记忆
-        if stats["episodic"] == 0:
-            print("\n📝 注入示例记忆...")
-            soma.remember(
-                "第一性原理：回归事物最基本的要素，从底层逻辑出发推导。"
-                "在商业中，关注客户的根本需求而非竞争对手的行为。",
-                context={"domain": "哲学", "type": "理论"},
-                importance=0.95,
-            )
-            soma.remember(
-                "系统思维：增长是一个系统行为，涉及产品、市场、团队"
-                "等多个要素的相互作用。增长停滞往往是负反馈回路。",
-                context={"domain": "思维", "type": "方法论"},
-                importance=0.9,
-            )
-            print("   已注入 2 条示例记忆")
-
-        # 语义搜索
-        print("\n🔍 测试语义搜索...")
-        results = soma.query_memory("如何找到问题的最根本原因", top_k=3)
-        for r in results:
-            print(f"   [{r['activation_score']:.3f}] {r['content_preview'][:60]}...")
-
-        # 问题拆解
-        print("\n💡 测试问题拆解...")
-        foci = soma.decompose("为什么公司增长停滞？")
+    if foci:
+        print(f"\n▶ 拆解维度 ({len(foci)} 个):")
         for f in foci:
-            print(f"   [{f.law_id}] (权重 {f.weight:.2f}) {f.dimension[:80]}")
+            lid = f.get('law_id', '?')
+            dim = f.get('dimension', '')[:120]
+            print(f"  [{lid}] {dim}")
 
-        # 当前权重
-        print(f"\n📊 当前规律权重: {soma.get_weights()}")
-        print(f"\n{'=' * 56}")
-        print("接入就绪！现在可以在代码中使用:")
+    if memories:
+        print(f"\n▶ 激活记忆 ({len(memories)} 条):")
+        for m in memories[:5]:
+            src = m.get('source', '?')
+            score = m.get('activation_score', 0)
+            print(f"  [{src}] score={score:.3f}")
+
+    print(f"\n▶ 分析结论:\n{answer[:3000]}\n")
+
+
+def cmd_compare(options: str, criteria: str = "") -> None:
+    """多方案结构化对比"""
+    soma = _get_soma()
+    opts = [o.strip() for o in options.split("|") if o.strip()]
+    crits = [c.strip() for c in criteria.split(",") if c.strip()] if criteria else [
+        "可行性", "扩展性", "维护成本", "实施难度", "风险控制"
+    ]
+
+    if len(opts) < 2:
+        print("至少需要 2 个方案（用 | 分隔）")
+        return
+
+    print(f"\n═══ SOMA 方案对比 ═══")
+    print(f"方案 ({len(opts)}): {', '.join(opts)}")
+    print(f"维度 ({len(crits)}): {', '.join(crits)}\n")
+
+    for i, opt in enumerate(opts, 1):
+        problem = f"评估方案: {opt}。维度: {', '.join(crits)}。给每个维度打分(0-10)并给理由。"
+        try:
+            result = soma.chat(problem)
+        except Exception:
+            result = soma.respond(problem)
+        answer = result.get("answer", result.get("response", ""))
+        print(f"── 方案 {i}: {opt} ──")
+        print(answer[:600])
         print()
-        print("  from soma import SOMA")
-        print("  soma = SOMA()")
-        print("  answer = soma.respond(\"你的问题\")")
-        print()
-        print("详细文档: https://github.com/soma-project/soma-core")
-        print(f"{'=' * 56}")
 
-    except Exception as e:
-        print(f"\n❌ 启动失败: {e}")
-        print("请确认依赖安装完整: pip install soma-core[dev]")
-        sys.exit(1)
+    # 综合推荐
+    summary = f"综合对比: {' vs '.join(opts)}。评估维度: {', '.join(crits)}。给出最终推荐。"
+    try:
+        result = soma.chat(summary)
+    except Exception:
+        result = soma.respond(summary)
+    final = result.get("answer", result.get("response", ""))
+    print(f"▶ 综合推荐:\n{final[:1200]}\n")
 
 
-if __name__ == "__main__":
-    main()
+def cmd_quickstart() -> None:
+    """快速验证模式（默认）"""
+    from soma import SOMA
+    import soma
+    ver = getattr(soma, '__version__', '?')
+    print(f"SOMA v{ver} — 编程决策辅助 CLI")
+    print(f"用法: python -m soma <命令> [参数]")
+    print(f"命令: decompose | analyze | compare")
+
+
+def main():
+    if len(sys.argv) < 2:
+        cmd_quickstart()
+        return
+
+    cmd = sys.argv[1]
+    # 收集剩余参数，支持 --context / --criteria
+    args = " ".join(sys.argv[2:])
+    context = ""
+    criteria = ""
+
+    if "--context" in args:
+        parts = args.split("--context")
+        args = parts[0].strip()
+        ctx_part = parts[1].strip()
+        if "--criteria" in ctx_part:
+            cp = ctx_part.split("--criteria")
+            context = cp[0].strip()
+            criteria = cp[1].strip()
+        else:
+            context = ctx_part
+    elif "--criteria" in args:
+        parts = args.split("--criteria")
+        args = parts[0].strip()
+        criteria = parts[1].strip()
+
+    problem = args.strip()
+
+    if cmd == "decompose":
+        cmd_decompose(problem)
+    elif cmd == "analyze":
+        cmd_analyze(problem, context)
+    elif cmd == "compare":
+        cmd_compare(problem, criteria)
+    elif cmd in ("help", "--help", "-h"):
+        print(__doc__)
+    else:
+        # 未知命令时，作为问题直接分析
+        cmd_analyze(" ".join(sys.argv[1:]))
