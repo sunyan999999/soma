@@ -1,38 +1,63 @@
 # Reasonix SOMA 集成指南
 
-Reasonix 是 CodeMonitor 服务端，无需额外安装。直接通过 HTTP API 调用 SOMA。
+## 1. 安装 SOMA
 
-## 调用方式（HTTP API）
+```bash
+pip install soma-wisdom>=1.1.4 --force-reinstall
+python -m soma  # 确认安装成功
+```
 
-SOMA Dash 运行在 `http://localhost:8765`：
+## 2. 调用方式（CLI subprocess — 不依赖 Dash 服务）
 
 ```python
-import requests
+import subprocess
 
-# 深度分析
-resp = requests.post("http://localhost:8765/api/chat", json={
-    "problem": "微服务还是单体架构"
-})
-analysis = resp.json()
+def soma_analyze(problem: str, context: str = "") -> str:
+    """深度分析 — 完整 SOMA 管道"""
+    cmd = ["python", "-m", "soma", "analyze", problem]
+    if context:
+        cmd += ["--context", context]
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    return r.stdout
 
-# 记忆搜索
-resp = requests.get("http://localhost:8765/api/memory/search", params={
-    "q": "消息队列", "top_k": 5
-})
+def soma_decompose(problem: str) -> str:
+    """多角度拆解 — 零 LLM，纯本地推理"""
+    r = subprocess.run(
+        ["python", "-m", "soma", "decompose", problem],
+        capture_output=True, text=True, timeout=30,
+    )
+    return r.stdout
 
-# 中道引擎建议
-resp = requests.get("http://localhost:8765/api/zhongdao/suggest", params={"days": 30})
+def soma_compare(options: str, criteria: str = "") -> str:
+    """多方案对比"""
+    cmd = ["python", "-m", "soma", "compare", options]
+    if criteria:
+        cmd += ["--criteria", criteria]
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    return r.stdout
 ```
 
-## 自动触发规则
+## 3. 自动触发规则
 
-在 Reasonix 的系统 prompt 中增加:
+在 Reasonix 系统 prompt 中增加:
 
 ```
-当被问到技术决策类问题时，自动调用 SOMA HTTP API 获取多维度分析:
-- POST /api/chat — 深度分析
-- GET /api/memory/search — 检索历史决策
-- GET /api/zhongdao/suggest — 获取参数建议
+遇到以下场景时必须自动调用 SOMA:
+
+1. 技术架构/方案设计 → subprocess.run(["python", "-m", "soma", "analyze", ...])
+2. 多个可选方案对比 → subprocess.run(["python", "-m", "soma", "compare", ...])
+3. 复杂问题多维度审视 → subprocess.run(["python", "-m", "soma", "decompose", ...])
+
+CLI 方式不依赖 Dash 服务，只要 SOMA 包已安装即可使用。
+
+每次技术决策后记录到 SOMA:
+  from soma import SOMA
+  SOMA(llm="deepseek-chat").remember("决定: X, 理由: Y", importance=0.9)
 ```
 
-HTTP API 比 CLI 更适合 Reasonix——无需 subprocess，直接 requests 调用。
+## 4. 对比
+
+| 方式 | 依赖 | 适合 |
+|------|------|------|
+| CLI (推荐) | 仅需 pip install | 随时可用，无需服务运行 |
+| HTTP API | 需要 Dash 运行 | Dash 在线时可用 |
