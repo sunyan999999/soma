@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import yaml
 from pydantic import BaseModel, Field
@@ -56,8 +56,8 @@ class SOMAConfig(BaseModel):
     enable_frame_detection: bool = False
     frame_detection_window: int = 5
 
-    # 中道引擎（v1.1.2+）
-    enable_zhongdao: bool = False  # 会话内实时规律使用偏差检测与自校正
+    # 中道引擎（v1.1.2+）v1.1.5: 支持 "auto" 模式，根据问题复杂度自动激活
+    enable_zhongdao: Union[bool, str] = False  # True=强制开启 / False=关闭 / "auto"=智能激活（L2+问题自动启用）
 
     # 中道引擎可调参数（v1.1.3+）
     zhongdao_threshold_ratio: float = 0.40   # 单条规律使用率超过此值触发校正

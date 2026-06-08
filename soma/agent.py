@@ -200,9 +200,12 @@ class SOMA_Agent:
         self._last_frame_anchoring: Optional[dict] = None
 
         # v1.1.2: 中道引擎 — 会话内实时偏差检测与自校正
+        # v1.1.5: 支持 "auto" 模式 — L2+ 问题自动激活，L1 跳过
         self.zhongdao: Optional[ZhongdaoEngine] = None
-        if config.enable_zhongdao:
+        self._zhongdao_mode: str = "off"
+        if config.enable_zhongdao is True or config.enable_zhongdao == "auto":
             self.zhongdao = ZhongdaoEngine(config)
+            self._zhongdao_mode = "auto" if config.enable_zhongdao == "auto" else "on"
 
     def respond(self, problem: str, user_id: str = "") -> str:
         """完整管道：拆解 → 双向激活 → 合成 → 应答"""
@@ -263,7 +266,11 @@ class SOMA_Agent:
             foci = foci + suggested_foci
 
         # v1.1.2: 中道引擎 — 会话内实时偏差检测与校正
-        if self.zhongdao is not None:
+        # v1.1.5: auto 模式下，L1 简单问题跳过中道（节省开销）
+        _use_zhongdao = self.zhongdao is not None
+        if _use_zhongdao and self._zhongdao_mode == "auto" and complexity <= 1:
+            _use_zhongdao = False
+        if _use_zhongdao:
             self.zhongdao.track(foci)
             usage_snapshot = dict(self.zhongdao._session_usage)
             foci, zhongdao_corrections = self.zhongdao.detect_and_correct(

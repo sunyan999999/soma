@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.5] — 2026-06-08
+
+### 中道引擎智能激活 — Zhongdao Auto-Activation
+
+**v1.1.5 引入中道引擎智能激活模式**，不再需要手动判断是否开启。
+
+### Changed
+
+- **智能激活 (`soma/config.py`)**: `enable_zhongdao` 新增 `"auto"` 选项。设为 `"auto"` 时，SOMA 根据问题复杂度自动决定：L1 简单问题跳过中道（零开销），L2+ 复杂问题自动启用偏差校正。
+- **Agent 自适应 (`soma/agent.py`)**: `respond()` 和 `chat()` 管道在 auto 模式下自动跳过 L1 问题的中道校正步骤，节省不必要的开销。
+- **SOMA 门面 (`soma/__init__.py`)**: `SOMA(enable_zhongdao="auto")` 一行配置即可启用智能模式。
+- **Dash 默认 (`dash/server.py`)**: 生产环境默认使用 `"auto"` 模式。
+- 100% 向后兼容：`True`/`False` 行为不变。
+
+---
+
 ## [1.1.4] — 2026-06-04
 
 ### 中道引擎闭环与智能化 — Correction Effectiveness + Auto-Tuning + Archiving

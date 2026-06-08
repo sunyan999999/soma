@@ -3,13 +3,13 @@ import os
 import time
 import traceback
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "1.1.4"
+    __version__ = "1.1.5"
 
 from soma.config import SOMAConfig, load_config
 from soma.base import MemoryUnit, Focus, ActivatedMemory
@@ -61,7 +61,7 @@ _log = logging.getLogger("soma")
 
 
 class SOMA:
-    """SOMA 顶层门面 — v1.1.4
+    """SOMA 顶层门面 — v1.1.5
 
     使用示例::
 
@@ -96,8 +96,8 @@ class SOMA:
         orchestration_mode: str = "single",
         orchestration_top_k: int = 3,
         orchestration_consensus: str = "voting",
-        # v1.1.2: 中道引擎
-        enable_zhongdao: bool = False,
+        # v1.1.2: 中道引擎  v1.1.5: 支持 "auto" 智能激活
+        enable_zhongdao: Union[bool, str] = False,
         # v1.1.3: 中道引擎可调参数
         zhongdao_threshold_ratio: float = 0.40,
         zhongdao_penalty_factor: float = 0.20,
@@ -277,7 +277,11 @@ class SOMA:
             foci = foci + suggested_foci
 
         # v1.1.2: 中道引擎 — 会话内实时偏差检测与校正
-        if self._agent.zhongdao is not None:
+        # v1.1.5: auto 模式下 L1 问题跳过中道
+        _use_zd = self._agent.zhongdao is not None
+        if _use_zd and self._agent._zhongdao_mode == "auto" and complexity <= 1:
+            _use_zd = False
+        if _use_zd:
             self._agent.zhongdao.track(foci)
             usage_snapshot = dict(self._agent.zhongdao._session_usage)
             foci, zhongdao_corrections = self._agent.zhongdao.detect_and_correct(
