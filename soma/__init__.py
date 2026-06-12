@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "1.1.5"
+    __version__ = "1.1.6"
 
 from soma.config import SOMAConfig, load_config
 from soma.base import MemoryUnit, Focus, ActivatedMemory
@@ -139,6 +139,13 @@ class SOMA:
         )
         self._agent = SOMA_Agent(self._config, agent_id=agent_id or "soma", group_id=group_id)
         self._session_count = 0
+
+        # v1.1.6: 跨会话参数自适应 — 从历史校正数据自动初始化最优中道参数
+        if enable_zhongdao in (True, "auto") and persist_dir:
+            try:
+                self._auto_tune_from_history(persist_dir)
+            except Exception:
+                pass  # 分析数据库不可用时静默跳过
 
         # v0.9.2: 多Agent编排器（默认关闭）
         self._orchestrator = None
@@ -446,7 +453,100 @@ class SOMA:
     def decompose(self, problem: str) -> list:
         return self._agent.decompose(problem)
 
-    def reflect(self, task_id: str, outcome: str) -> None:
+    # ── v1.1.6: 跨会话参数自适应 ──────────────────────────────
+
+    def _auto_tune_from_history(self, persist_dir: str) -> None:
+        """从历史校正数据自动加载最优中道参数（在__init__中调用）"""
+        from soma.analytics import AnalyticsStore
+        try:
+            store = AnalyticsStore(persist_dir)
+            suggestion = store.suggest_optimal_params(days=30)
+            rec = suggestion.get("recommended_params", {})
+            if suggestion.get("total_corrections", 0) < 5:
+                return  # 数据太少，跳过
+
+            # 应用推荐参数到当前配置
+            old = (self._config.zhongdao_threshold_ratio, self._config.zhongdao_penalty_factor)
+            self._config.zhongdao_threshold_ratio = rec.get("threshold_ratio", 0.40)
+            self._config.zhongdao_penalty_factor = rec.get("penalty_factor", 0.20)
+            self._config.zhongdao_boost_factor = rec.get("boost_factor", 0.15)
+            self._config.zhongdao_min_samples = rec.get("min_samples", 5)
+            new = (self._config.zhongdao_threshold_ratio, self._config.zhongdao_penalty_factor)
+
+            # 同步到 agent
+            if self._agent.zhongdao:
+                self._agent.zhongdao.threshold_ratio = self._config.zhongdao_threshold_ratio
+                self._agent.zhongdao.penalty_factor = self._config.zhongdao_penalty_factor
+                self._agent.zhongdao.boost_factor = self._config.zhongdao_boost_factor
+                self._agent.zhongdao.min_samples = self._config.zhongdao_min_samples
+
+            _log.info("v1.1.6 自动调参: threshold=%.2f→%.2f penalty=%.2f→%.2f (%d条历史数据)",
+                      old[0], new[0], old[1], new[1],
+                      suggestion.get("total_corrections", 0))
+        except Exception:
+            pass  # 数据库不可用时跳过
+
+    def auto_tune(self, days: int = 30) -> dict:
+        """手动触发参数优化 — 返回推荐参数和当前参数对比"""
+        from soma.analytics import AnalyticsStore
+        store = AnalyticsStore(self._config.persist_dir)
+        suggestion = store.suggest_optimal_params(days=days)
+        rec = suggestion.get("recommended_params", {})
+        if suggestion.get("total_corrections", 0) > 0:
+            self._config.zhongdao_threshold_ratio = rec.get("threshold_ratio", 0.40)
+            self._config.zhongdao_penalty_factor = rec.get("penalty_factor", 0.20)
+            self._config.zhongdao_boost_factor = rec.get("boost_factor", 0.15)
+            self._config.zhongdao_min_samples = rec.get("min_samples", 5)
+        return suggestion
+
+    # ── v1.1.6: 反思闭环 ───────────────────────────────────────
+
+    def reflect(self, task_id: str = "", outcome: str = "") -> dict:
+        """反思闭环 — 复盘近期操作、识别模式、生成改进建议。
+        无参数时自动从记忆库提取最近7天的决策进行反思。"""
+        if task_id and outcome:
+            # 单任务反思（原有逻辑）
+            return self._agent.reflect(task_id, outcome)
+
+        # 批量反思：检索近期决策记忆
+        recent = self.query_memory("决策 复盘 策略 交易 方案", top_k=20)
+        if not recent:
+            return {"status": "empty", "suggestions": [], "message": "记忆库中暂无决策记录"}
+
+        decisions_text = "\n".join(
+            f"- {m.get('content_preview', str(m))[:200]}"
+            for m in recent[:15]
+        )
+
+        prompt = (
+            f"以下是你最近的决策记录:\n{decisions_text}\n\n"
+            f"请完成以下反思:\n"
+            f"1. 识别高频错误模式（重复出现的问题）\n"
+            f"2. 识别成功模式（哪些策略有效）\n"
+            f"3. 生成 3 条具体改进建议\n"
+            f"4. 如果发现新的规律或规则，请列出\n\n"
+            f"用结构化格式回复。"
+        )
+
+        try:
+            result = self.chat(prompt)
+        except Exception:
+            result = self._agent.respond(prompt)
+
+        answer = result.get("answer", result.get("response", str(result)))
+
+        # 将反思结论写入记忆
+        self.remember(
+            f"反思结论: {answer[:500]}",
+            importance=0.85,
+            context={"type": "reflection_loop"},
+        )
+
+        return {
+            "status": "done",
+            "decisions_reviewed": len(recent),
+            "analysis": answer[:3000],
+        }
         self._agent.reflect(task_id, outcome)
 
     def evolve(self) -> list:

@@ -779,6 +779,50 @@ def zhongdao_archive(days: int = 90):
     return {"archived_count": count, "cutoff_days": days}
 
 
+# v1.1.6: SSE 实时事件队列（中道校正推送）
+import asyncio as _asyncio
+_zhongdao_event_queue: list = []
+_MAX_EVENTS = 100
+
+
+def _push_zhongdao_event(event: dict) -> None:
+    """向 SSE 队列推送中道校正事件"""
+    event["_ts"] = time.time()
+    _zhongdao_event_queue.append(event)
+    if len(_zhongdao_event_queue) > _MAX_EVENTS:
+        _zhongdao_event_queue.pop(0)
+
+
+@app.get("/api/zhongdao/events")
+async def zhongdao_events():
+    """v1.1.6 D: SSE 实时推送中道校正事件。
+    前端 EventSource 连接此端点，有新校正时自动推送。
+    """
+    from starlette.responses import StreamingResponse
+
+    async def event_generator():
+        last_idx = len(_zhongdao_event_queue)
+        # 发送已有事件
+        for evt in _zhongdao_event_queue:
+            yield f"data: {_json.dumps(evt, ensure_ascii=False)}\n\n"
+        while True:
+            await _asyncio.sleep(2)
+            current = len(_zhongdao_event_queue)
+            if current > last_idx:
+                for evt in _zhongdao_event_queue[last_idx:current]:
+                    yield f"data: {_json.dumps(evt, ensure_ascii=False)}\n\n"
+                last_idx = current
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
 # ── Chat ─────────────────────────────────────────────────────
 
 
@@ -982,6 +1026,22 @@ def chat(req: ChatRequest):
         })
     except Exception:
         pass  # analytics 异常不阻塞主流程
+
+    # v1.1.6: 推送中道校正事件到 SSE
+    try:
+        zd = getattr(getattr(agent, '_agent', None), 'zhongdao', None)
+        if zd and zd.last_corrections:
+            for c in zd.last_corrections[-3:]:  # 最近3条
+                _push_zhongdao_event({
+                    "type": c.get("type", "correction"),
+                    "law_id": c.get("law_id", ""),
+                    "law_name": c.get("law_name", ""),
+                    "usage_ratio": c.get("usage_ratio", 0),
+                    "old_weight": c.get("old_weight", 0),
+                    "new_weight": c.get("new_weight", c.get("weight", 0)),
+                })
+    except Exception:
+        pass
 
     return response_data
 
