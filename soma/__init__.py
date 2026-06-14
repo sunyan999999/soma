@@ -489,7 +489,7 @@ class SOMA:
     def auto_tune(self, days: int = 30) -> dict:
         """手动触发参数优化 — 返回推荐参数和当前参数对比"""
         from soma.analytics import AnalyticsStore
-        store = AnalyticsStore(self._config.persist_dir)
+        store = AnalyticsStore(self._config.episodic_persist_dir)
         suggestion = store.suggest_optimal_params(days=days)
         rec = suggestion.get("recommended_params", {})
         if suggestion.get("total_corrections", 0) > 0:

@@ -1,8 +1,11 @@
 // 自动检测 base path：生产环境 nginx 反向代理使用 /soma-dash/api，开发环境直接 /api
 const BASE = window.location.pathname.startsWith('/soma-dash') ? '/soma-dash/api' : '/api'
 
-// API Key 存储在 sessionStorage 中，由应用启动时通过 /api/auth/status 检测后提示输入
-let API_KEY = sessionStorage.getItem('soma_api_key') || ''
+// 默认 API Key（管理员面板，Key 与服务器环境变量一致）
+const DEFAULT_API_KEY = 'lszk-soma-dash-2026'
+
+// API Key 优先从 sessionStorage 读取，否则使用默认值
+let API_KEY = sessionStorage.getItem('soma_api_key') || DEFAULT_API_KEY
 
 /**
  * 初始化认证：检测是否需要 API Key，如需要则提示用户输入
