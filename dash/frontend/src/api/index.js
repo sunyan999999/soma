@@ -171,4 +171,8 @@ export const api = {
   zhongdaoEffectiveness: (days = 30) => request(`/zhongdao/effectiveness?days=${days}`),
   zhongdaoSuggest: (days = 30) => request(`/zhongdao/suggest?days=${days}`),
   zhongdaoArchive: (days = 90) => request(`/zhongdao/archive?days=${days}`, { method: 'POST' }),
+  // v1.1.7: 记忆库管理
+  memoryList: (limit = 50, offset = 0, query = '') => request(`/memory/list?limit=${limit}&offset=${offset}&query=${encodeURIComponent(query)}`),
+  memoryDelete: (id) => request(`/memory/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  memoryTiers: () => request('/memory/tiers'),
 }

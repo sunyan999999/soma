@@ -1259,6 +1259,82 @@ def memory_add_semantic(req: SemanticAddRequest):
     return {"status": "saved"}
 
 
+# ── v1.1.7: 记忆库管理面板 ───────────────────────────────────
+
+@app.get("/api/memory/list")
+def memory_list(limit: int = 50, offset: int = 0, query: str = ""):
+    """分页列出记忆，支持关键词过滤"""
+    agent = get_agent()
+    results = agent.query_memory(query or "", top_k=limit)
+    total = agent.memory.stats().get("episodic", len(results))
+    return {
+        "items": [
+            {
+                "id": m.get("id", m.get("memory_id", str(i))),
+                "content": m.get("content", m.get("content_preview", str(m)))[:500],
+                "score": m.get("activation_score", 0),
+                "source": m.get("source", "episodic"),
+            }
+            for i, m in enumerate(results)
+        ],
+        "total": total,
+        "offset": offset,
+        "limit": limit,
+    }
+
+@app.put("/api/memory/{memory_id}")
+def memory_update(memory_id: str, content: str = "", importance: float = 0.7):
+    """更新一条记忆的内容或重要性"""
+    agent = get_agent()
+    try:
+        agent.memory.update(memory_id, content=content, importance=importance)
+        return {"status": "updated", "id": memory_id}
+    except Exception as e:
+        raise HTTPException(404, f"更新失败: {e}")
+
+
+@app.delete("/api/memory/{memory_id}")
+def memory_delete(memory_id: str):
+    """删除一条记忆"""
+    agent = get_agent()
+    try:
+        agent.memory.delete(memory_id)
+        return {"status": "deleted", "id": memory_id}
+    except Exception as e:
+        raise HTTPException(404, f"删除失败: {e}")
+
+
+@app.get("/api/memory/tiers")
+def memory_tiers():
+    """v1.1.7: 三层记忆体系可视化数据"""
+    agent = get_agent()
+    stats = agent.memory.stats()
+    layers = {
+        "L1_episodic": {
+            "label": "L1 情节碎片 / Episodic Fragments",
+            "count": stats.get("episodic", 0),
+            "description": "原始交易记录、决策、对话碎片",
+        },
+        "L2_scenes": {
+            "label": "L2 场景块 / Scene Blocks",
+            "count": stats.get("scenes", 0),
+            "description": "自动聚合的主题场景（如同类交易模式）",
+        },
+        "L3_profile": {
+            "label": "L3 用户画像 / User Profile",
+            "count": stats.get("profile_entries", 0),
+            "description": "从场景提炼的长期特征（偏好、风险倾向等）",
+        },
+    }
+    return {
+        "tiers": layers,
+        "total": sum(v["count"] for v in layers.values()),
+        "semantic": stats.get("semantic", 0),
+        "skill": stats.get("skill", 0),
+        "indexed_vectors": stats.get("indexed_vectors", 0),
+    }
+
+
 # ── Framework ────────────────────────────────────────────────
 
 @app.get("/api/framework/weights")

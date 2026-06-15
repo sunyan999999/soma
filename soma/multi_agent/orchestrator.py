@@ -431,6 +431,152 @@ class SOMAOrchestrator:
 
     # ── 分布式演化 ───────────────────────────────────────────────
 
+    # ── v1.1.7: 多Agent深度协作 ─────────────────────────────
+
+    def cross_validate(self, problem: str, agent_ids: list = None) -> dict:
+        """交叉验证: 让多个Agent独立回答同一问题，然后互相审查对方的回答。
+
+        返回每个Agent的独立分析 + 交叉评审矩阵 + 综合结论。
+        """
+        ids = agent_ids or list(self._agents.keys())[:3]
+        if len(ids) < 2:
+            return {"error": "需要至少2个Agent进行交叉验证"}
+
+        # 各Agent独立分析
+        independent = {}
+        for aid in ids:
+            agent = self._agents.get(aid)
+            if agent is None:
+                continue
+            try:
+                ans = agent.respond(problem)
+            except Exception:
+                ans = f"[{aid} 分析失败]"
+            independent[aid] = ans
+
+        # 互相审查
+        cross_reviews = {}
+        for reviewer in ids:
+            reviews = {}
+            for target in ids:
+                if target == reviewer:
+                    continue
+                review_prompt = (
+                    f"请审查以下Agent的分析:\n"
+                    f"[{target}的分析]: {independent.get(target, '')}\n\n"
+                    f"评估: 逻辑是否自洽？有无明显漏洞？评分(1-10)？"
+                )
+                try:
+                    rev = self._agents[reviewer].respond(review_prompt) if self._agents.get(reviewer) else ""
+                except Exception:
+                    rev = ""
+                reviews[target] = rev[:300]
+            cross_reviews[reviewer] = reviews
+
+        # 综合
+        summary_prompt = (
+            f"问题: {problem}\n\n各Agent分析:\n" +
+            "\n".join(f"[{aid}]: {ans[:200]}" for aid, ans in independent.items()) +
+            "\n\n请综合各Agent的分析和相互审查，给出最终结论。"
+        )
+        primary = self._agents.get(ids[0])
+        try:
+            final = primary.respond(summary_prompt) if primary else ""
+        except Exception:
+            final = ""
+
+        return {
+            "problem": problem,
+            "independent_analyses": independent,
+            "cross_reviews": cross_reviews,
+            "final_conclusion": final[:2000],
+        }
+
+    def share_law_discovery(self) -> dict:
+        """跨Agent规律共享: 收集各Agent发现的规律，汇总去重，回写进各Agent的思维框架。"""
+        discovered = {}
+        for aid, agent in self._agents.items():
+            try:
+                laws = agent.discover_laws() if hasattr(agent, 'discover_laws') else []
+            except Exception:
+                laws = []
+            if laws:
+                discovered[aid] = laws
+
+        if not discovered:
+            return {"shared_laws": [], "agents_contributed": 0}
+
+        # 去重: 按规律ID合并
+        merged = {}
+        for aid, laws in discovered.items():
+            for law in (laws if isinstance(laws, list) else [laws]):
+                lid = law.get("id", law.get("law_id", "")) if isinstance(law, dict) else str(law)
+                if lid and lid not in merged:
+                    merged[lid] = {"law": law, "discovered_by": [aid]}
+                elif lid:
+                    merged[lid]["discovered_by"].append(aid)
+
+        shared = list(merged.values())
+
+        # 回写到所有Agent
+        for aid, agent in self._agents.items():
+            for item in shared:
+                if aid not in item["discovered_by"]:
+                    try:
+                        if hasattr(agent, 'approve_law'):
+                            agent.approve_law(item["law"])
+                    except Exception:
+                        pass
+
+        return {
+            "shared_laws": shared,
+            "agents_contributed": len(discovered),
+            "total_unique_laws": len(shared),
+        }
+
+    def consensus_evolve(self) -> dict:
+        """共识进化: 收集各Agent的权重，计算共识权重，回写到所有Agent。
+
+        仅在各Agent都有 evolve 能力时执行。
+        """
+        all_weights = {}
+        for aid, agent in self._agents.items():
+            try:
+                w = agent.get_weights() if hasattr(agent, 'get_weights') else {}
+            except Exception:
+                w = {}
+            if w:
+                all_weights[aid] = w
+
+        if len(all_weights) < 2:
+            return {"status": "insufficient_data", "agents": len(all_weights)}
+
+        # 计算共识权重: 对各规律取均值
+        law_ids = set()
+        for w in all_weights.values():
+            law_ids.update(w.keys())
+
+        consensus = {}
+        for lid in law_ids:
+            vals = [all_weights[aid].get(lid, 0) for aid in all_weights if lid in all_weights[aid]]
+            if vals:
+                consensus[lid] = round(sum(vals) / len(vals), 4)
+
+        # 回写
+        for aid, agent in self._agents.items():
+            try:
+                for lid, w in consensus.items():
+                    agent.adjust_weight(lid, w)
+            except Exception:
+                pass
+
+        return {
+            "status": "evolved",
+            "agents": len(all_weights),
+            "laws_updated": len(consensus),
+            "consensus_weights": consensus,
+        }
+
     def _evolve_after_solve(self, opinions: List[AgentOpinion]) -> None:
         """每次 solve 后记录各 Agent 参与情况，定期触发全局权重合并"""
         if self._evolver is None:
