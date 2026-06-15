@@ -1,6 +1,6 @@
-# Changelog
+# Changelog / 变更日志
 
-All notable changes to SOMA will be documented in this file.
+All notable changes to SOMA will be documented in this file. / 本文档记录 SOMA 所有重要变更。
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -9,21 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.1.6] — 2026-06-11
 
-### 跨会话自适应 + 反思闭环 + SSE实时推送
+### 跨会话自适应 + 反思闭环 + SSE实时推送 / Cross-Session Auto-Tuning + Reflection + SSE Push
 
 **v1.1.6 让中道引擎从单会话优化升级为跨会话持续进化。**
+**v1.1.6 upgrades Zhongdao from single-session optimization to cross-session continuous evolution.**
 
-### Added
+### Added / 新增
 
-- **A 跨会话参数自适应 (`soma/__init__.py`)**: 启动时自动从历史校正数据加载最优中道参数（≥5条数据时生效）。`auto_tune(days)` 手动触发。
-- **B 反思闭环 (`soma/__init__.py`)**: `soma.reflect()` 无参数时复盘最近20条决策记忆，自动识别高频错误模式和成功模式，生成改进建议并写入记忆库。
-- **D SSE实时推送 (`dash/server.py`)**: `GET /api/zhongdao/events` SSE端点，chat接口自动推送最近3条校正事件到前端。
+- **A 跨会话参数自适应 / Cross-Session Auto-Tuning**: 启动时自动从历史校正数据加载最优中道参数（≥5条时生效）。`auto_tune(days)` 手动触发。 / Auto-loads optimal Zhongdao params from history (>=5 corrections). Manual trigger available.
+- **B 反思闭环 / Reflection Loop**: `soma.reflect()` 无参数时复盘最近20条决策记忆，识别模式+生成建议并写入记忆库。 / Batch reviews 20 recent decisions, identifies error/success patterns, generates suggestions, writes to memory.
+- **D SSE实时推送 / SSE Push**: `GET /api/zhongdao/events` SSE端点，chat接口自动推送最近3条校正事件。 / SSE endpoint for real-time correction events, auto-pushes last 3 to frontend.
 
-### Changed
+### Changed / 变更
 
 - `soma/__init__.py` `__version__` → 1.1.6
 - `pyproject.toml` version → 1.1.6
-- `.github/SECURITY.md` 支持版本表：1.1.6 为 latest
+- `.github/SECURITY.md` supported versions: 1.1.6 is latest
 
 ---
 
