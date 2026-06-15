@@ -61,7 +61,7 @@ _log = logging.getLogger("soma")
 
 
 class SOMA:
-    """SOMA 顶层门面 — v1.1.5
+    """SOMA 顶层门面 — v1.1.6
 
     使用示例::
 

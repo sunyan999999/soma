@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.6] — 2026-06-11
+
+### 跨会话自适应 + 反思闭环 + SSE实时推送
+
+**v1.1.6 让中道引擎从单会话优化升级为跨会话持续进化。**
+
+### Added
+
+- **A 跨会话参数自适应 (`soma/__init__.py`)**: 启动时自动从历史校正数据加载最优中道参数（≥5条数据时生效）。`auto_tune(days)` 手动触发。
+- **B 反思闭环 (`soma/__init__.py`)**: `soma.reflect()` 无参数时复盘最近20条决策记忆，自动识别高频错误模式和成功模式，生成改进建议并写入记忆库。
+- **D SSE实时推送 (`dash/server.py`)**: `GET /api/zhongdao/events` SSE端点，chat接口自动推送最近3条校正事件到前端。
+
+### Changed
+
+- `soma/__init__.py` `__version__` → 1.1.6
+- `pyproject.toml` version → 1.1.6
+- `.github/SECURITY.md` 支持版本表：1.1.6 为 latest
+
+---
+
 ## [1.1.5] — 2026-06-08
 
 ### 中道引擎智能激活 — Zhongdao Auto-Activation
