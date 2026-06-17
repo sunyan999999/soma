@@ -147,11 +147,12 @@ class SOMA:
             except Exception:
                 pass  # 分析数据库不可用时静默跳过
 
-        # v1.1.7-fix: 自适应召回阈值 — 大数据量时自动降低阈值
+        # v1.1.7-final: 保守自适应 — 仅在大数据量+高相关度时调整
         mem_count = self._agent.memory.stats().get("episodic", 0)
-        if mem_count > 5000:
-            adaptive_threshold = max(0.001, recall_threshold * (1000 / mem_count))
-            self._agent.hub.threshold = adaptive_threshold
+        if mem_count > 10000:
+            # 仅微调，避免引入噪声（P1 fix: 从 0.2x 改为 0.5x 乘数）
+            safe_threshold = max(0.005, recall_threshold * 0.5)
+            self._agent.hub.threshold = safe_threshold
 
         # v0.9.2: 多Agent编排器（默认关闭）
         self._orchestrator = None
@@ -212,7 +213,8 @@ class SOMA:
         self._session_count += 1
         outcome = "failure" if mock_fallback else "success"
         self._agent.reflect(f"soma_{self._session_count}", outcome)
-        if self._session_count > 0 and self._session_count % 5 == 0:
+        # v1.1.7-final: 批量进化 — 每20次会话才触发一次，积累更多数据后深度进化
+        if self._session_count > 0 and self._session_count % 20 == 0:
             self._agent.evolver.evolve()
         return answer
 
