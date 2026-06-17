@@ -147,6 +147,12 @@ class SOMA:
             except Exception:
                 pass  # 分析数据库不可用时静默跳过
 
+        # v1.1.7-fix: 自适应召回阈值 — 大数据量时自动降低阈值
+        mem_count = self._agent.memory.stats().get("episodic", 0)
+        if mem_count > 5000:
+            adaptive_threshold = max(0.001, recall_threshold * (1000 / mem_count))
+            self._agent.hub.threshold = adaptive_threshold
+
         # v0.9.2: 多Agent编排器（默认关闭）
         self._orchestrator = None
         if orchestration_mode == "multi":

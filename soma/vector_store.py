@@ -123,9 +123,13 @@ class NumpyVectorIndex:
             index = faiss.IndexFlatIP(self._vector_dim)
             self._index_type = "flat"
         else:
-            index = faiss.IndexHNSWFlat(self._vector_dim, 32)
+            # v1.1.7-fix: HNSW M=32 for up to 50K, M=64 for larger
+            m = 64 if n > 30000 else 32
+            index = faiss.IndexHNSWFlat(self._vector_dim, m)
             index.hnsw.efConstruction = 200
-            self._index_type = f"hnsw(n={n})"
+            # v1.1.7-fix: 设置 efSearch 加速查询（默认 16，提高到 64）
+            index.hnsw.efSearch = 64
+            self._index_type = f"hnsw(n={n},M={m})"
 
         index.add(vecs.astype(np.float32))
         self._faiss_index = index

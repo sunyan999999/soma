@@ -492,8 +492,14 @@ class SOMAOrchestrator:
             "final_conclusion": final[:2000],
         }
 
-    def share_law_discovery(self) -> dict:
-        """跨Agent规律共享: 收集各Agent发现的规律，汇总去重，回写进各Agent的思维框架。"""
+    def share_law_discovery(self, force: bool = False) -> dict:
+        """跨Agent规律共享: 收集各Agent发现的规律，汇总去重，回写进各Agent的思维框架。
+
+        v1.1.7-fix: 默认每10次solve才触发一次（可force=True强制）
+        """
+        self._solve_count = getattr(self, '_solve_count', 0)
+        if not force and self._solve_count % 10 != 0:
+            return {"status": "throttled", "solve_count": self._solve_count}
         discovered = {}
         for aid, agent in self._agents.items():
             try:
@@ -535,11 +541,15 @@ class SOMAOrchestrator:
             "total_unique_laws": len(shared),
         }
 
-    def consensus_evolve(self) -> dict:
+    def consensus_evolve(self, force: bool = False) -> dict:
         """共识进化: 收集各Agent的权重，计算共识权重，回写到所有Agent。
 
         仅在各Agent都有 evolve 能力时执行。
+        v1.1.7-fix: 默认每10次solve才触发一次（可force=True强制）
         """
+        self._solve_count = getattr(self, '_solve_count', 0)
+        if not force and self._solve_count % 10 != 0:
+            return {"status": "throttled", "solve_count": self._solve_count}
         all_weights = {}
         for aid, agent in self._agents.items():
             try:
