@@ -125,6 +125,7 @@ class NumpyVectorIndex:
         else:
             index = faiss.IndexHNSWFlat(self._vector_dim, 32)
             index.hnsw.efConstruction = 200
+            index.hnsw.efSearch = 64        # v1.1.7-clean: recall提升0.7→0.9
             self._index_type = f"hnsw(n={n})"
 
         index.add(vecs.astype(np.float32))
