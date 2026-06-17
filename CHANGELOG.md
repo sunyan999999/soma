@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.7] — 2026-06-17
+
+### v1.1.4 Baseline Rebuild / v1.1.4 基线重构
+
+**v1.1.7 rebuilds from v1.1.4 baseline with only proven improvements. Benchmark: 83.4 (historical best), Memory 91.6, Wisdom 77.8, Latency 58ms (2x faster).**
+**v1.1.7 从 v1.1.4 基线重构，仅保留验证有效的改进。基准 83.4 分（历史最佳），记忆 91.6，智慧 77.8，延迟 58ms（快 2 倍）。**
+
+### Added / 新增
+- FAISS HNSW efSearch=64: Recall 0.7→0.9 (Codex P0 validated)
+- orchestrator.cross_validate(): Multi-agent cross-review on demand
+- orchestrator.share_law_discovery(): >=2 agent consensus law sharing (every 20 solves)
+- orchestrator.consensus_evolve(): Weighted-average consensus evolution (every 20 solves)
+
+### Removed / 移除
+- _auto_tune_from_history (opened analytics DB on init, caused latency)
+- Adaptive recall_threshold (wisdom -2.0 regression)
+- Index tolerance window (recall 0.9→0.5)
+- Query cache (ineffective)
+
 ## [1.1.6] — 2026-06-11
 
 ### 跨会话自适应 + 反思闭环 + SSE实时推送 / Cross-Session Auto-Tuning + Reflection + SSE Push
