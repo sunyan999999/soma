@@ -636,6 +636,41 @@ def _register_tools():
             return f"[SOMA scene_markdown 错误] {exc}"
 
 
+    # ── v1.1.8: 深度进化 ──
+
+    @mcp.tool()
+    def soma_force_evolve() -> str:
+        """强制深度进化 — 降低阈值确保大数据集下触发有效的权重调整。
+
+        适用于: 记忆库 > 5000 条后手动触发，或基准测试前调用。
+        返回: 权重变更详情。
+        """
+        try:
+            soma = _get_soma()
+            if not hasattr(soma._agent, 'evolver'):
+                return "[SOMA evolve 不可用]"
+
+            changes = soma._agent.evolver.evolve(force=True)
+            weights = soma._agent.evolver.get_weights()
+
+            lines = [f"SOMA 深度进化完成\n"]
+            if changes:
+                lines.append(f"权重变更 ({len(changes)} 项):")
+                for c in changes:
+                    arrow = "↓" if c["new_weight"] < c["old_weight"] else "↑"
+                    lines.append(
+                        f"  [{c['law_id']}] {c['old_weight']} {arrow} {c['new_weight']} "
+                        f"— {c['reason']}"
+                    )
+            else:
+                lines.append("无变更 — 当前权重已处于最优区间")
+
+            lines.append(f"\n当前权重: {weights}")
+            return "\n".join(lines)
+        except Exception as exc:
+            return f"[SOMA force_evolve 错误] {exc}"
+
+
 # ── 入口 ──
 
 
