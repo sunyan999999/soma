@@ -516,9 +516,10 @@ class SOMAOrchestrator:
                 elif lid:
                     merged[lid]["discovered_by"].append(aid)
 
-        shared = list(merged.values())
+        # v1.1.7-fix: 质量过滤 — 只共享被 >=2 个 Agent 发现的规律（共识阈值）
+        shared = [item for item in merged.values() if len(item["discovered_by"]) >= 2]
 
-        # 回写到所有Agent
+        # 回写到所有Agent（仅写入共识规律）
         for aid, agent in self._agents.items():
             for item in shared:
                 if aid not in item["discovered_by"]:
@@ -551,16 +552,24 @@ class SOMAOrchestrator:
         if len(all_weights) < 2:
             return {"status": "insufficient_data", "agents": len(all_weights)}
 
-        # 计算共识权重: 对各规律取均值
+        # v1.1.7-fix: 加权共识 — 按各Agent的会话数加权，而非简单平均
+        # 经验更多的Agent权重更大，避免优质权重被稀释
+        total_sessions = sum(self._agent_session_counts.values()) or 1
         law_ids = set()
         for w in all_weights.values():
             law_ids.update(w.keys())
 
         consensus = {}
         for lid in law_ids:
-            vals = [all_weights[aid].get(lid, 0) for aid in all_weights if lid in all_weights[aid]]
-            if vals:
-                consensus[lid] = round(sum(vals) / len(vals), 4)
+            weighted_sum = 0.0
+            weight_total = 0.0
+            for aid in all_weights:
+                if lid in all_weights[aid]:
+                    agent_weight = self._agent_session_counts.get(aid, 1) / total_sessions
+                    weighted_sum += all_weights[aid][lid] * agent_weight
+                    weight_total += agent_weight
+            if weight_total > 0:
+                consensus[lid] = round(weighted_sum / weight_total, 4)
 
         # 回写
         for aid, agent in self._agents.items():

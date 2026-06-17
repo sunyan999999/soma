@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "1.1.7"
+    __version__ = "1.1.7"  # fix: weighted consensus + quality filter + memory cache
 
 from soma.config import SOMAConfig, load_config
 from soma.base import MemoryUnit, Focus, ActivatedMemory
@@ -158,6 +158,10 @@ class SOMA:
         self._scene_store: Optional[SceneStore] = None
         self._profile_store: Optional[ProfileStore] = None
         self._capture_pipeline: Optional[CapturePipeline] = None
+
+        # v1.1.7-fix: 查询缓存 — 避免重复语义搜索（最多缓存 20 条）
+        self._query_cache: dict = {}
+        self._cache_max = 20
 
     def __getattr__(self, name):
         """将未定义的公开属性委托给内部 SOMA_Agent 实例。
@@ -448,7 +452,16 @@ class SOMA:
                                       namespace=namespace)
 
     def query_memory(self, query: str, top_k: int = 5, user_id: str = "") -> list:
-        return self._agent.query_memory(query, top_k, user_id=user_id)
+        # v1.1.7-fix: 查询缓存 — 相同 query 直接返回缓存结果
+        cache_key = f"{query}:{top_k}"
+        if cache_key in self._query_cache:
+            return self._query_cache[cache_key]
+        result = self._agent.query_memory(query, top_k, user_id=user_id)
+        if len(self._query_cache) >= self._cache_max:
+            # LRU: 删除最旧的条目
+            self._query_cache.pop(next(iter(self._query_cache)))
+        self._query_cache[cache_key] = result
+        return result
 
     def decompose(self, problem: str) -> list:
         return self._agent.decompose(problem)
@@ -457,9 +470,20 @@ class SOMA:
 
     def _auto_tune_from_history(self, persist_dir: str) -> None:
         """从历史校正数据自动加载最优中道参数（在__init__中调用）"""
+        # v1.1.7-fix: 预检 — 快速判断 analytics.db 是否存在且有数据，避免不必要的 DB 打开
+        db_path = Path(persist_dir) / "analytics.db"
+        if not db_path.exists() or db_path.stat().st_size < 4096:
+            return  # 数据库不存在或为空，跳过
+
         from soma.analytics import AnalyticsStore
         try:
             store = AnalyticsStore(persist_dir)
+            # v1.1.7-fix: 先用 count 快速判断，再加载建议（避免大数据量下的全表扫描）
+            count = store._conn.execute(
+                "SELECT COUNT(*) FROM zhongdao_corrections"
+            ).fetchone()[0]
+            if count < 5:
+                return
             suggestion = store.suggest_optimal_params(days=30)
             rec = suggestion.get("recommended_params", {})
             if suggestion.get("total_corrections", 0) < 5:
