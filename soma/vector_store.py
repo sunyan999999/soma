@@ -123,13 +123,10 @@ class NumpyVectorIndex:
             index = faiss.IndexFlatIP(self._vector_dim)
             self._index_type = "flat"
         else:
-            # v1.1.7-fix: HNSW M=32 for up to 50K, M=64 for larger
-            m = 64 if n > 30000 else 32
-            index = faiss.IndexHNSWFlat(self._vector_dim, m)
+            index = faiss.IndexHNSWFlat(self._vector_dim, 32)
             index.hnsw.efConstruction = 200
-            # v1.1.7-fix: 设置 efSearch 加速查询（默认 16，提高到 64）
-            index.hnsw.efSearch = 64
-            self._index_type = f"hnsw(n={n},M={m})"
+            index.hnsw.efSearch = 64        # v1.1.7-clean: recall提升0.7→0.9
+            self._index_type = f"hnsw(n={n})"
 
         index.add(vecs.astype(np.float32))
         self._faiss_index = index
@@ -223,17 +220,13 @@ class NumpyVectorIndex:
                 self._build_faiss_index(ids, vecs)
                 self._cached_count = current_count
 
-        # v1.1.7-final: 容差窗口 — 仅在大幅变化时重建索引
+        # 缓存失效（向量数变化但磁盘已有较新索引或需要重建）
         if current_count != self._cached_count and self._faiss_index is not None:
-            delta = abs(current_count - self._faiss_index.ntotal)
-            pct = delta / max(self._faiss_index.ntotal, 1)
-            if delta == 0:
+            if current_count == self._faiss_index.ntotal:
+                # 仅计数未同步，更新即可
                 self._cached_count = current_count
-            elif pct < 0.05 and delta < 200:
-                # 小变化（<5%且<200条）：仅更新计数，不重建
-                self._cached_count = current_count
-            else:
-                # 大变化：全量重建
+            elif current_count > self._faiss_index.ntotal:
+                # 有增量未更新到 FAISS → 全量重建（增量已在 store_vector 中处理）
                 ids, vecs = self.get_all_vectors(conn)
                 if len(ids) > 0:
                     self._build_faiss_index(ids, vecs)

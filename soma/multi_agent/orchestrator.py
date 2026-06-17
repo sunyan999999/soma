@@ -355,6 +355,129 @@ class SOMAOrchestrator:
                     break
         return ordered, agents_involved, routing_strategies
 
+    # ── v1.1.7-clean: 多Agent深度协作 ─────────────────────────
+
+    def cross_validate(self, problem: str, agent_ids: list = None) -> dict:
+        """交叉验证: 多Agent独立分析→互相审查→综合结论。按需调用，不自动触发。"""
+        ids = agent_ids or list(self._agents.keys())[:3]
+        if len(ids) < 2:
+            return {"error": "至少需要2个Agent"}
+
+        independent = {}
+        for aid in ids:
+            agent = self._agents.get(aid)
+            if agent is None:
+                continue
+            try:
+                independent[aid] = agent.respond(problem)
+            except Exception:
+                independent[aid] = f"[{aid} 分析失败]"
+
+        cross_reviews = {}
+        for reviewer in ids:
+            reviews = {}
+            for target in ids:
+                if target == reviewer:
+                    continue
+                try:
+                    rev = self._agents[reviewer].respond(
+                        f"审查以下分析:\n[{target}]: {independent.get(target,'')[:300]}\n评分(1-10)?"
+                    ) if self._agents.get(reviewer) else ""
+                except Exception:
+                    rev = ""
+                reviews[target] = rev[:200]
+            cross_reviews[reviewer] = reviews
+
+        primary = self._agents.get(ids[0])
+        try:
+            final = primary.respond(
+                f"综合各Agent分析:\n" +
+                "\n".join(f"[{a}]: {independent.get(a,'')[:200]}" for a in ids) +
+                "\n给出最终结论。"
+            ) if primary else ""
+        except Exception:
+            final = ""
+        return {"independent": independent, "cross_reviews": cross_reviews, "final": final[:2000]}
+
+    def share_law_discovery(self, force: bool = False) -> dict:
+        """跨Agent规律共享（>=2 Agent发现的规律才共享）。每20次solve触发一次。"""
+        if not force:
+            sc = getattr(self, '_solve_count', 0)
+            if sc % 20 != 0 or sc == 0:
+                return {"status": "throttled", "solve_count": sc}
+
+        discovered = {}
+        for aid, agent in self._agents.items():
+            try:
+                laws = agent.discover_laws() if hasattr(agent, 'discover_laws') else []
+            except Exception:
+                laws = []
+            if laws:
+                discovered[aid] = laws
+        if not discovered:
+            return {"shared_laws": [], "agents_contributed": 0}
+
+        merged = {}
+        for aid, laws in discovered.items():
+            for law in (laws if isinstance(laws, list) else [laws]):
+                lid = law.get("id", law.get("law_id", "")) if isinstance(law, dict) else str(law)
+                if lid not in merged:
+                    merged[lid] = {"law": law, "by": [aid]}
+                else:
+                    merged[lid]["by"].append(aid)
+
+        # 质量过滤：仅共享 >=2 Agent 发现的规律
+        shared = [v for v in merged.values() if len(v["by"]) >= 2]
+        for aid, agent in self._agents.items():
+            for item in shared:
+                if aid not in item["by"] and hasattr(agent, 'approve_law'):
+                    try:
+                        agent.approve_law(item["law"])
+                    except Exception:
+                        pass
+        return {"shared": shared, "agents": len(discovered), "unique": len(shared)}
+
+    def consensus_evolve(self, force: bool = False) -> dict:
+        """共识进化: 加权平均权重回写。每20次solve触发一次。"""
+        if not force:
+            sc = getattr(self, '_solve_count', 0)
+            if sc % 20 != 0 or sc == 0:
+                return {"status": "throttled", "solve_count": sc}
+
+        all_weights = {}
+        for aid, agent in self._agents.items():
+            try:
+                all_weights[aid] = agent.get_weights() if hasattr(agent, 'get_weights') else {}
+            except Exception:
+                pass
+        if len(all_weights) < 2:
+            return {"status": "insufficient_data", "agents": len(all_weights)}
+
+        law_ids = set()
+        for w in all_weights.values():
+            law_ids.update(w.keys())
+
+        total_sessions = sum(getattr(self, '_agent_session_counts', {}).values()) or 1
+        consensus = {}
+        for lid in law_ids:
+            weighted_sum = 0.0
+            weight_total = 0.0
+            for aid in all_weights:
+                if lid in all_weights[aid]:
+                    aw = self._agent_session_counts.get(aid, 1) / total_sessions
+                    weighted_sum += all_weights[aid][lid] * aw
+                    weight_total += aw
+            if weight_total > 0:
+                consensus[lid] = round(weighted_sum / weight_total, 4)
+
+        for aid, agent in self._agents.items():
+            try:
+                for lid, w in consensus.items():
+                    agent.adjust_weight(lid, w)
+            except Exception:
+                pass
+        return {"status": "evolved", "agents": len(all_weights), "laws": len(consensus)}
+
     # ── 跨Agent中道协调（v1.1.3） ───────────────────────────
 
     def _detect_cross_agent_convergence(

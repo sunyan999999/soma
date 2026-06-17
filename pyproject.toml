@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "soma-wisdom"
-version = "1.1.7"
+version = "1.1.7.post1"
 description = "SOMA: Somatic Wisdom Architecture — Wisdom over Memory"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -59,7 +59,6 @@ PyPI = "https://pypi.org/project/soma-wisdom/"
 
 [project.scripts]
 soma-quickstart = "soma.__main__:main"
-soma-dash = "dash.server:main"
 
 [project.entry-points."soma.plugins"]
 retriever = "soma.hub._retriever:MemoryRetriever"
