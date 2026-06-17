@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "1.1.7"
+    __version__ = "1.1.8"
 
 from soma.config import SOMAConfig, load_config
 from soma.base import MemoryUnit, Focus, ActivatedMemory
@@ -61,7 +61,7 @@ _log = logging.getLogger("soma")
 
 
 class SOMA:
-    """SOMA 顶层门面 — v1.1.7
+    """SOMA 顶层门面 — v1.1.8
 
     使用示例::
 

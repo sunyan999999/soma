@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "soma-wisdom"
-version = "1.1.7"
+version = "1.1.8"
 description = "SOMA: Somatic Wisdom Architecture — Wisdom over Memory"
 readme = "README.md"
 license = {file = "LICENSE"}
