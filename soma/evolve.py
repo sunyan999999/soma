@@ -421,14 +421,22 @@ class MetaEvolver:
 
     # ── 自动进化 ────────────────────────────────────────────
 
-    def evolve(self) -> List[Dict[str, Any]]:
+    def evolve(self, force: bool = False) -> List[Dict[str, Any]]:
+        """自动进化：偏差纠正 + 成功率调权。
+        v1.1.8: force=True 时降低阈值，确保大数据集下也能触发进化。
+        """
         changes: List[Dict[str, Any]] = []
+
+        min_uses = 10 if force else 20
+        min_samples = 2 if force else 3
+        penalty = 0.07 if force else 0.05   # v1.1.8: 更显著的调整
+        boost = 0.05 if force else 0.03
 
         # ── 阶段0: 偏差检测与纠正 ─────────────────────────────
         total_uses = sum(
             (s["successes"] + s["failures"]) for s in self._law_stats.values()
         )
-        if total_uses >= 20:
+        if total_uses >= min_uses:
             for law_id, stats in self._law_stats.items():
                 usage = stats["successes"] + stats["failures"]
                 usage_rate = usage / total_uses if total_uses > 0 else 0
@@ -439,26 +447,22 @@ class MetaEvolver:
                     old = law.weight
 
                     if usage_rate > 0.40 and old > 0.20:
-                        # 过度使用 → 降权
-                        law.weight = round(max(0.1, old - 0.05), 4)
+                        law.weight = round(max(0.1, old - penalty), 4)
                         changes.append({
-                            "law_id": law_id,
-                            "old_weight": round(old, 4),
+                            "law_id": law_id, "old_weight": round(old, 4),
                             "new_weight": round(law.weight, 4),
                             "reason": "偏差纠正：使用频率过高",
                             "usage_rate": round(usage_rate, 3),
                         })
                     elif usage_rate < 0.03:
                         total = stats["successes"] + stats["failures"]
-                        if total < 3:
+                        if total < min_samples:
                             break
                         rate = stats["successes"] / total if total > 0 else 0
                         if rate > 0.6 and old < 0.90:
-                            # 很少使用但效果好的规律 → 提权
-                            law.weight = round(min(0.95, old + 0.03), 4)
+                            law.weight = round(min(0.95, old + boost), 4)
                             changes.append({
-                                "law_id": law_id,
-                                "old_weight": round(old, 4),
+                                "law_id": law_id, "old_weight": round(old, 4),
                                 "new_weight": round(law.weight, 4),
                                 "reason": "偏差纠正：优质规律使用不足",
                                 "usage_rate": round(usage_rate, 3),
@@ -468,7 +472,7 @@ class MetaEvolver:
         # ── 阶段1: 成功率驱动的自动调权 ──────────────────────
         for law_id, stats in list(self._law_stats.items()):
             total = stats["successes"] + stats["failures"]
-            if total < 3:
+            if total < min_samples:
                 continue
 
             rate = stats["successes"] / total

@@ -195,8 +195,9 @@ class SOMA:
         self._session_count += 1
         outcome = "failure" if mock_fallback else "success"
         self._agent.reflect(f"soma_{self._session_count}", outcome)
-        if self._session_count > 0 and self._session_count % 5 == 0:
-            self._agent.evolver.evolve()
+        # v1.1.8: 每10次普通进化，每30次强制深度进化
+        if self._session_count > 0 and self._session_count % 10 == 0:
+            self._agent.evolver.evolve(force=(self._session_count % 30 == 0))
         return answer
 
     def chat(self, problem: str, user_id: str = "") -> dict:
