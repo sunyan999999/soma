@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "1.1.8"
+    __version__ = "1.1.9"
 
 from soma.config import SOMAConfig, load_config
 from soma.base import MemoryUnit, Focus, ActivatedMemory
@@ -61,7 +61,7 @@ _log = logging.getLogger("soma")
 
 
 class SOMA:
-    """SOMA 顶层门面 — v1.1.8
+    """SOMA 顶层门面 — v1.1.9
 
     使用示例::
 
@@ -392,6 +392,116 @@ class SOMA:
 
         self._agent.record_session(problem, answer, foci, activated)
         return result
+
+    # ── v1.1.9: 自主推理（无需 LLM） ──────────────────────────
+
+    def reason(self, problem: str, user_id: str = "") -> dict:
+        """自主推理管道 — 用 SOMA 内部引擎完成推理，不调用外部 LLM。
+
+        管道: 拆解(7规律) → 激活(记忆) → 推理(因果链+类比+假设检验) → 合成(模板+证据)
+
+        返回: {answer, foci, memories, confidence, reasoning_steps, tokens_saved}
+        tokens_saved 估算此调用避免的 LLM token 消耗。
+        """
+        t0 = time.time()
+
+        # Step 1: 拆解（零 LLM）
+        foci = self._agent.decompose(problem)
+        if not foci:
+            foci = self._agent.decompose(problem)  # retry once
+
+        # Step 2: 激活记忆（零 LLM）
+        try:
+            activated = self._agent.hub.activate(foci)
+        except Exception:
+            activated = []
+
+        # Step 3: 推理框架（零 LLM — 因果链+类比+假设检验+矛盾分析）
+        reasoning_steps = []
+        agent = self._agent
+        engine = agent.engine if hasattr(agent, 'engine') else None
+
+        for f in foci[:4]:  # 最多4个维度
+            law_id = getattr(f, 'law_id', str(f))
+            step = {"law_id": law_id, "dimension": getattr(f, 'dimension', '')[:120]}
+            reasoning = []
+
+            # 因果链
+            try:
+                if hasattr(agent, '_execute_causal_chain'):
+                    causal = agent._execute_causal_chain(problem, law_id)
+                    if causal:
+                        reasoning.append(f"[因果分析] {causal[:200]}")
+            except Exception:
+                pass
+
+            # 跨域类比
+            try:
+                from soma.analogy import cross_domain_analogy
+                analogy = cross_domain_analogy(problem, law_id, activated[:5] if activated else [])
+                if analogy:
+                    reasoning.append(f"[类比洞察] {analogy[:200]}")
+            except Exception:
+                pass
+
+            # 假设检验
+            try:
+                if hasattr(agent, '_test_hypothesis'):
+                    hypo = agent._test_hypothesis(f"假设: 从{law_id}角度看{problem[:50]}")
+                    if hypo:
+                        reasoning.append(f"[假设检验] {hypo[:200]}")
+            except Exception:
+                pass
+
+            step["reasoning"] = reasoning
+            reasoning_steps.append(step)
+
+        # Step 4: 合成答案（模板 + 记忆证据，不调 LLM）
+        answer_parts = [f"## 问题分析\n\n{problem}\n"]
+
+        # 各维度分析
+        for step in reasoning_steps:
+            law_name = step["law_id"]
+            for law in (engine.laws if engine else []):
+                if law.id == law_name:
+                    law_name = law.name
+                    break
+            answer_parts.append(f"### 从「{law_name}」出发\n")
+            answer_parts.append(f"{step['dimension']}\n")
+            for r in step["reasoning"]:
+                answer_parts.append(f"{r}\n")
+            answer_parts.append("")
+
+        # 记忆证据
+        if activated:
+            answer_parts.append("## 相关记忆证据\n")
+            for am in activated[:5]:
+                content = getattr(am.memory, 'content', str(am))[:150] if hasattr(am, 'memory') else str(am)[:150]
+                score = getattr(am, 'activation_score', 0)
+                answer_parts.append(f"- (关联度 {score:.3f}) {content}\n")
+
+        # 综合判断
+        confidence = min(0.95, 0.4 + 0.1 * len(reasoning_steps) + 0.05 * len(activated))
+        answer_parts.append(f"\n> 置信度: {confidence:.0%} | 推理维度: {len(reasoning_steps)} | 证据: {len(activated)} 条")
+
+        elapsed_ms = (time.time() - t0) * 1000
+        answer = "\n".join(answer_parts)
+
+        # 估算节省的 token
+        estimated_prompt_tokens = len(problem) // 3 + 500  # 保守估算
+        estimated_answer_tokens = len(answer) // 3
+        tokens_saved = estimated_prompt_tokens + estimated_answer_tokens
+
+        return {
+            "answer": answer,
+            "foci": [{"law_id": getattr(f, 'law_id', str(f)), "dimension": getattr(f, 'dimension', '')[:120]}
+                     for f in foci],
+            "memories": len(activated),
+            "confidence": round(confidence, 3),
+            "reasoning_steps": reasoning_steps,
+            "tokens_saved": tokens_saved,
+            "elapsed_ms": round(elapsed_ms, 1),
+        }
 
     def _mock_respond(self, problem, foci=None, activated=None):
         """无 LLM 时的 mock 响应"""

@@ -636,6 +636,36 @@ def _register_tools():
             return f"[SOMA scene_markdown 错误] {exc}"
 
 
+    # ── v1.1.9: 自主推理（零 LLM） ──
+
+    @mcp.tool()
+    def soma_reason(problem: str) -> str:
+        """自主推理 — 不调用外部 LLM，用 SOMA 内部引擎完成推理。
+
+        管道: 7规律拆解 → 记忆激活 → 因果链+类比+假设检验 → 模板合成
+        返回: 多维度分析 + 记忆证据 + 置信度 + 估算节省的token数
+
+        用于: 快速分析、隐私敏感场景、离线环境、高频率调用。
+        比 soma_chat 快 10-100x（无网络延迟），零 token 成本。
+        """
+        try:
+            soma = _get_soma()
+            if not hasattr(soma, 'reason'):
+                return "[SOMA reason 不可用] 请升级 soma-wisdom >= v1.1.9"
+
+            result = soma.reason(problem)
+            lines = [
+                f"═══ SOMA 自主推理 ═══",
+                f"置信度: {result['confidence']:.0%}",
+                f"推理维度: {len(result['reasoning_steps'])} | 证据: {result['memories']} 条",
+                f"耗时: {result['elapsed_ms']:.0f}ms | 节省 token: ~{result['tokens_saved']}",
+                f"",
+                result['answer'][:3000],
+            ]
+            return "\n".join(lines)
+        except Exception as exc:
+            return f"[SOMA reason 错误] {exc}"
+
     # ── v1.1.8: 深度进化 ──
 
     @mcp.tool()
