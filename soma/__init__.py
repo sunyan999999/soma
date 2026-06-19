@@ -405,10 +405,17 @@ class SOMA:
         """
         t0 = time.time()
 
-        # Step 1: 拆解（零 LLM）
-        foci = self._agent.decompose(problem)
+        # Step 1: 拆解（零 LLM，零网络）
+        # v1.1.9-fix: 保存原始向量搜索设置，避免 ONNX 下载 HuggingFace 模型
+        orig_vector = self._agent.hub._use_vector if hasattr(self._agent.hub, '_use_vector') else True
+        orig_embedder = self._agent.engine.embedder
+        try:
+            self._agent.engine.embedder = None  # 禁用 embedder，纯关键词拆解
+            foci = self._agent.decompose(problem)
+        finally:
+            self._agent.engine.embedder = orig_embedder  # 恢复
         if not foci:
-            foci = self._agent.decompose(problem)  # retry once
+            foci = self._agent.decompose(problem)
 
         # Step 2: 激活记忆（零 LLM）
         try:
