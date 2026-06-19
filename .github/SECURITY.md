@@ -26,7 +26,8 @@ We will respond within **7 days** with an acknowledgment and a timeline for a fi
 
 | Version | Supported |
 |---------|-----------|
-| 1.1.8 | Yes (latest) |
+| 1.1.9 | Yes (latest) |
+| 1.1.8 | Yes |
 | 1.1.7 | Yes |
 | 0.9.x | Yes |
 | 0.8.x | Security fixes only |
