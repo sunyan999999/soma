@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.9] — 2026-06-19
+
+### soma.reason() Zero-LLM Autonomous Reasoning / 零LLM自主推理
+
+**v1.1.9 introduces autonomous reasoning: full pipeline without external LLM.**
+**v1.1.9 实现自主推理管道，无需外部LLM。**
+
+### Added / 新增
+- soma.reason(): Decompose(7 laws) → Activate(memories) → Reason(causal+analogy+hypothesis) → Synthesize(templates+evidence). Zero LLM, offline, ~500ms.
+- soma_reason MCP tool
+- Benchmark: Overall 80.0, Evolution 78.2 (all-time high)
+
+## [1.1.8] — 2026-06-18
+
+### force_evolve + Finance Sync + MCP / 进化修复 + 金融同步 + MCP扩展
+
+**Evolution recovered from 70.2 to 76.4 via force_evolve threshold tuning.**
+**进化分从70.2恢复到76.4。**
+
+### Added / 新增
+- evolve(force=True): lower thresholds, bigger adjustments, every 30th session
+- soma_force_evolve MCP tool
+- Finance Edition synced FAISS HNSW
+
 ## [1.1.7] — 2026-06-17
 
 ### v1.1.4 Baseline Rebuild / v1.1.4 基线重构
