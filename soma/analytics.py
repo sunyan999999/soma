@@ -43,7 +43,9 @@ class AnalyticsStore:
                 answer_length INTEGER DEFAULT 0,
                 weights_json TEXT DEFAULT '{}',
                 memory_stats_json TEXT DEFAULT '{}',
-                raw_response_json TEXT DEFAULT '{}'
+                raw_response_json TEXT DEFAULT '{}',
+                user_name TEXT DEFAULT '',
+                twin_name TEXT DEFAULT ''
             );
 
             CREATE INDEX IF NOT EXISTS idx_sessions_time ON sessions(created_at DESC);
@@ -51,6 +53,15 @@ class AnalyticsStore:
             CREATE INDEX IF NOT EXISTS idx_sessions_mock ON sessions(mock_mode);
             """
         )
+        # 迁移：为旧数据库补加 user_name / twin_name 列
+        try:
+            self._conn.execute("ALTER TABLE sessions ADD COLUMN user_name TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            self._conn.execute("ALTER TABLE sessions ADD COLUMN twin_name TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
         self._conn.commit()
 
     def record_session(self, session_data: Dict[str, Any]) -> str:
@@ -83,8 +94,9 @@ class AnalyticsStore:
             (id, problem, problem_preview, created_at, provider, mock_mode,
              response_time_ms, foci_count, foci_json, activated_count,
              activated_sources_json, activated_scores_json,
-             answer_preview, answer_length, weights_json, memory_stats_json, raw_response_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             answer_preview, answer_length, weights_json, memory_stats_json, raw_response_json,
+             user_name, twin_name)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 sid, problem, problem_preview, now,
@@ -99,6 +111,8 @@ class AnalyticsStore:
                 json.dumps(weights, ensure_ascii=False),
                 json.dumps(memory_stats, ensure_ascii=False),
                 json.dumps(session_data, ensure_ascii=False, default=str),
+                session_data.get("user_name", ""),
+                session_data.get("twin_name", ""),
             ),
         )
         self._conn.commit()
@@ -126,7 +140,7 @@ class AnalyticsStore:
             where = "WHERE " + " AND ".join(conditions)
 
         sql = f"""
-            SELECT id, problem_preview, created_at, provider, mock_mode,
+            SELECT id, problem_preview, created_at, provider, mock_mode, user_name, twin_name,
                    response_time_ms, foci_count, activated_count,
                    answer_preview, answer_length, weights_json, memory_stats_json,
                    foci_json, activated_sources_json, activated_scores_json
@@ -145,6 +159,8 @@ class AnalyticsStore:
                 "problem_preview": r["problem_preview"],
                 "created_at": r["created_at"],
                 "provider": r["provider"],
+                "user_name": r["user_name"] or "",
+                "twin_name": r["twin_name"] or "",
                 "mock_mode": bool(r["mock_mode"]),
                 "response_time_ms": r["response_time_ms"],
                 "foci_count": r["foci_count"],
@@ -222,7 +238,7 @@ class AnalyticsStore:
     def get_weight_timeline(self, limit: int = 20) -> List[Dict]:
         """返回权重随时间变化的序列（用于图表）"""
         rows = self._conn.execute(
-            "SELECT created_at, weights_json, provider FROM sessions"
+            "SELECT created_at, weights_json, provider, user_name, twin_name FROM sessions"
             " ORDER BY created_at ASC LIMIT ?",
             (limit * 2,),
         ).fetchall()
@@ -233,6 +249,8 @@ class AnalyticsStore:
                 "timestamp": r["created_at"],
                 "weights": json.loads(r["weights_json"]),
                 "provider": r["provider"],
+                "user_name": r["user_name"] or "",
+                "twin_name": r["twin_name"] or "",
             })
         return timeline
 
@@ -380,7 +398,7 @@ class AnalyticsStore:
         """获取最近一次基准测试结果"""
         self._create_benchmark_tables()
         row = self._conn.execute(
-            "SELECT * FROM benchmark_runs ORDER BY timestamp DESC LIMIT 1"
+            "SELECT * FROM benchmark_runs WHERE (report_type IS NULL OR report_type != 'weekly') ORDER BY timestamp DESC LIMIT 1"
         ).fetchone()
         if row is None:
             return None
@@ -418,7 +436,7 @@ class AnalyticsStore:
         rows = self._conn.execute(
             "SELECT id, version, timestamp, score_memory, score_wisdom,"
             " score_evolution, score_overall, score_scalability"
-            " FROM benchmark_runs ORDER BY timestamp DESC LIMIT ?",
+            " FROM benchmark_runs WHERE (report_type IS NULL OR report_type != 'weekly') ORDER BY timestamp DESC LIMIT ?",
             (limit,),
         ).fetchall()
         return [
