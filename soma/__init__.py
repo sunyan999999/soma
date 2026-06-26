@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "1.1.9"
+    __version__ = "2.0.0"
 
 from soma.config import SOMAConfig, load_config
 from soma.base import MemoryUnit, Focus, ActivatedMemory
@@ -61,7 +61,7 @@ _log = logging.getLogger("soma")
 
 
 class SOMA:
-    """SOMA 顶层门面 — v1.1.9
+    """SOMA 顶层门面 — v2.0.0
 
     使用示例::
 
@@ -508,6 +508,218 @@ class SOMA:
             "reasoning_steps": reasoning_steps,
             "tokens_saved": tokens_saved,
             "elapsed_ms": round(elapsed_ms, 1),
+        }
+
+    # ── v2.0: 深度自主推理（多轮自我对话） ──────────────────
+
+    def reason_deep(self, problem: str, rounds: int = 2) -> dict:
+        """深度自主推理 — 多轮自我对话，模拟"苏格拉底式追问"。
+
+        每轮: 回答 → 反方质疑 → 回应质疑 → 提炼修正。
+        rounds=2 时: 初轮推理 + 反方辩论 + 综合结论。
+
+        返回: {answer, confidence, rounds_detail, evolution_insights}
+        """
+        t0 = time.time()
+        round_details = []
+
+        # Round 1: 基础推理
+        r1 = self.reason(problem)
+        round_details.append({"round": 1, "role": "initial", "answer": r1["answer"][:500]})
+
+        # Round 2: 反方辩论（自我质疑）
+        devil_prompt = (
+            f"对以下分析提出三点质疑或反驳:\n{r1['answer'][:800]}\n\n"
+            f"质疑时考虑: 1)逻辑漏洞 2)遗漏的维度 3)过度自信的风险"
+        )
+        try:
+            devil = self.reason(devil_prompt)
+            round_details.append({"round": 2, "role": "devil_advocate", "answer": devil["answer"][:500]})
+        except Exception:
+            devil = {"answer": "", "confidence": 0}
+
+        # Round 3: 综合修正（如果rounds>=2且devil有效）
+        if rounds >= 2 and devil.get("answer", "").strip():
+            synthesis_prompt = (
+                f"原始问题: {problem}\n\n"
+                f"初始分析: {r1['answer'][:500]}\n\n"
+                f"反方质疑: {devil['answer'][:300]}\n\n"
+                f"请综合双方观点，给出修正后的最终分析。"
+            )
+            try:
+                final = self.reason(synthesis_prompt)
+                round_details.append({"round": 3, "role": "synthesis", "answer": final["answer"][:500]})
+            except Exception:
+                final = r1
+        else:
+            final = r1
+
+        # 计算跨轮置信度
+        base_conf = r1.get("confidence", 0.5)
+        if devil.get("answer", "").strip():
+            base_conf = max(0.5, base_conf - 0.1)  # 有质疑时略微降低
+        if rounds >= 2:
+            base_conf = min(0.95, base_conf + 0.1)  # 多轮推理提升置信度
+
+        elapsed_ms = (time.time() - t0) * 1000
+
+        # 进化洞察：提取可学习的经验教训
+        evolution_insights = []
+        try:
+            insight_prompt = (
+                f"从以下推理过程中，提炼一条可复用的经验教训或规律:\n"
+                f"问题: {problem}\n"
+                f"结论: {final.get('answer', '')[:300]}"
+            )
+            insight = self.reason(insight_prompt)
+            if insight.get("answer"):
+                evolution_insights.append(insight["answer"][:200])
+                # 记录到记忆
+                self.remember(
+                    f"推理洞察: {insight['answer'][:200]}",
+                    importance=0.7,
+                    context={"type": "reasoning_insight", "problem": problem[:100]},
+                )
+        except Exception:
+            pass
+
+        return {
+            "answer": final.get("answer", r1.get("answer", "")),
+            "confidence": round(base_conf, 3),
+            "rounds_detail": round_details,
+            "evolution_insights": evolution_insights,
+            "elapsed_ms": round(elapsed_ms, 1),
+            "dimensions": len(r1.get("reasoning_steps", [])),
+            "memories_used": r1.get("memories", 0),
+        }
+
+    # ── v2.0: 自主认知循环 ────────────────────────────────────
+
+    def perceive(self, problem: str) -> dict:
+        """感知阶段: 评估问题是否需要 SOMA 介入、复杂度和记忆相关性。
+
+        返回: {should_engage, complexity, memory_relevance, suggested_mode}
+        - should_engage: SOMA 是否应该介入
+        - suggested_mode: "reason" / "reason_deep" / "chat" / "skip"
+        """
+        complexity = self._agent._assess_complexity(problem)
+        # 快速记忆相关性检查
+        try:
+            mem_results = self.query_memory(problem, top_k=3)
+            mem_count = len(mem_results) if mem_results else 0
+            max_score = max((m.get("activation_score", 0) for m in mem_results), default=0)
+        except Exception:
+            mem_count = 0
+            max_score = 0
+
+        # 判断是否介入
+        should_engage = complexity >= 2 or max_score > 0.3
+        if complexity >= 3:
+            mode = "reason_deep"  # 复杂问题 → 多轮深度推理
+        elif complexity >= 2 or max_score > 0.5:
+            mode = "reason"  # 中等复杂或有强相关记忆 → 推理
+        else:
+            mode = "skip"  # 简单问题 → 跳过
+
+        return {
+            "should_engage": should_engage,
+            "complexity": complexity,
+            "memory_relevance": round(max_score, 3),
+            "memory_count": mem_count,
+            "suggested_mode": mode,
+        }
+
+    def act(self, problem: str, analysis: str = "") -> dict:
+        """行动阶段: 基于分析生成具体的可执行建议。
+
+        返回: {actions, priorities, risks, next_step}
+        """
+        if not analysis:
+            reason_result = self.reason(problem)
+            analysis = reason_result.get("answer", "")
+
+        action_prompt = (
+            f"基于以下分析，生成3-5条具体可执行的行动建议:\n"
+            f"问题: {problem}\n分析: {analysis[:800]}\n\n"
+            f"每条建议包含: 做什么、为什么、预期效果。按优先级排序。"
+        )
+        try:
+            action_result = self.reason(action_prompt)
+            actions_text = action_result.get("answer", "")
+        except Exception:
+            actions_text = analysis[:500]
+
+        # 提取风险提示
+        risk_prompt = f"对于以下行动方案，列出2-3个关键风险:\n{actions_text[:500]}"
+        try:
+            risk_result = self.reason(risk_prompt)
+            risks_text = risk_result.get("answer", "")
+        except Exception:
+            risks_text = ""
+
+        return {
+            "actions": actions_text[:2000],
+            "risks": risks_text[:500],
+            "next_step": actions_text.split("\n")[0] if actions_text else "无",
+            "confidence": action_result.get("confidence", 0.5) if 'action_result' in dir() else 0.5,
+        }
+
+    def loop(self, problem: str, max_cycles: int = 3) -> dict:
+        """自主认知循环: 感知→推理→行动→反馈→进化 完整闭环
+
+        max_cycles: 最大循环次数（每次循环都会自我质疑并修正）
+        返回: {final_answer, actions, cycle_log, tokens_saved, insights_recorded}
+        """
+        t0 = time.time()
+        cycle_log = []
+
+        # Phase 1: 感知
+        perception = self.perceive(problem)
+        cycle_log.append({"phase": "perceive", "data": perception})
+        if not perception["should_engage"]:
+            return {"final_answer": "(SOMA 判断此问题无需深度介入)", "actions": {}, "cycle_log": cycle_log}
+
+        # Phase 2: 推理
+        mode = perception["suggested_mode"]
+        if mode == "reason_deep":
+            reasoning = self.reason_deep(problem)
+        else:
+            reasoning = self.reason(problem)
+        cycle_log.append({"phase": "reason", "confidence": reasoning.get("confidence", 0)})
+
+        # Phase 3: 行动
+        actions = self.act(problem, reasoning.get("answer", ""))
+        cycle_log.append({"phase": "act", "action_count": len(actions.get("actions", "").split("\n"))})
+
+        # Phase 4: 反馈（记录结果到记忆）
+        self.remember(
+            f"自主推理: {problem[:100]} → 结论: {reasoning.get('answer','')[:200]}",
+            importance=0.7,
+            context={"type": "autonomous_loop", "complexity": perception["complexity"]},
+        )
+        cycle_log.append({"phase": "feedback", "recorded": True})
+
+        # Phase 5: 进化（如有洞察则触发进化）
+        evo_changes = []
+        if reasoning.get("evolution_insights"):
+            try:
+                self._agent.reflect(f"loop_{int(time.time())}", "success")
+                if self._session_count % 5 == 0:
+                    evo_changes = self._agent.evolver.evolve()
+            except Exception:
+                pass
+        cycle_log.append({"phase": "evolve", "changes": len(evo_changes)})
+
+        elapsed_ms = (time.time() - t0) * 1000
+        tokens_saved = reasoning.get("tokens_saved", 0) + 500  # 行动+反馈的估算
+
+        return {
+            "final_answer": reasoning.get("answer", ""),
+            "actions": actions,
+            "cycle_log": cycle_log,
+            "tokens_saved": tokens_saved,
+            "elapsed_ms": round(elapsed_ms, 1),
+            "insights_recorded": len(reasoning.get("evolution_insights", [])),
         }
 
     def _mock_respond(self, problem, foci=None, activated=None):

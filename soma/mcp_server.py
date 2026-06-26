@@ -636,6 +636,36 @@ def _register_tools():
             return f"[SOMA scene_markdown 错误] {exc}"
 
 
+    # ── v2.0: 自主认知循环 ──
+
+    @mcp.tool()
+    def soma_loop(problem: str) -> str:
+        """自主认知循环 — 感知→推理→行动→反馈→进化 完整闭环。
+
+        自动判断问题是否需要深度介入，选择最优推理模式，
+        生成可执行建议，记录结果到记忆，触发进化。
+
+        用于: 复杂决策、需要行动方案的场景、完整的自主工作流。
+        """
+        try:
+            soma = _get_soma()
+            if not hasattr(soma, 'loop'):
+                return "[SOMA loop 不可用] 请升级 soma-wisdom >= v2.0.0"
+            result = soma.loop(problem)
+            lines = [
+                f"═══ SOMA 自主认知循环 ═══",
+                f"耗时: {result['elapsed_ms']:.0f}ms | 节省token: ~{result['tokens_saved']}",
+                f"推理置信度: {result.get('cycle_log',[{}])[1].get('confidence','N/A') if len(result.get('cycle_log',[]))>1 else 'N/A'}",
+                f"记录洞察: {result['insights_recorded']} 条",
+                f"",
+                result['final_answer'][:2500],
+                f"",
+                f"行动建议: {result.get('actions',{}).get('actions','')[:1000]}",
+            ]
+            return "\n".join(lines)
+        except Exception as exc:
+            return f"[SOMA loop 错误] {exc}"
+
     # ── v1.1.9: 自主推理（零 LLM） ──
 
     @mcp.tool()
