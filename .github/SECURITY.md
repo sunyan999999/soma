@@ -26,7 +26,8 @@ We will respond within **7 days** with an acknowledgment and a timeline for a fi
 
 | Version | Supported |
 |---------|-----------|
-| 2.0.0 | Yes (latest) |
+| 2.0.1 | Yes (latest) |
+| 2.0.0 | Yes |
 | 1.1.9 | Yes |
 | 1.1.8 | Yes |
 | 1.1.7 | Yes |
