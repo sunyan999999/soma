@@ -423,14 +423,29 @@ class MetaEvolver:
 
     def evolve(self, force: bool = False) -> List[Dict[str, Any]]:
         """自动进化：偏差纠正 + 成功率调权。
-        v1.1.8: force=True 时降低阈值，确保大数据集下也能触发进化。
+        v2.0.1: 自适应阈值 — 根据数据量自动调整，大数据集自动降低阈值。
         """
         changes: List[Dict[str, Any]] = []
 
-        min_uses = 10 if force else 20
-        min_samples = 2 if force else 3
-        penalty = 0.07 if force else 0.05   # v1.1.8: 更显著的调整
-        boost = 0.05 if force else 0.03
+        # v2.0.1: 自适应阈值 — 数据越多，阈值越低（更容易触发有意义的进化）
+        total_samples = sum(s["successes"] + s["failures"] for s in self._law_stats.values())
+        active_laws = sum(1 for s in self._law_stats.values() if (s["successes"] + s["failures"]) > 0)
+
+        if active_laws == 0:
+            return changes  # 无数据，跳过
+
+        # 自适应因子: 0-500样本→保守, 500-2000→适中, 2000+→激进
+        if total_samples < 500:
+            adaptive_factor = 1.0
+        elif total_samples < 2000:
+            adaptive_factor = 0.7
+        else:
+            adaptive_factor = 0.4
+
+        min_uses = max(5, int((10 if force else 20) * adaptive_factor))
+        min_samples = max(1, int((2 if force else 3) * adaptive_factor))
+        penalty = min(0.10, (0.07 if force else 0.05) / adaptive_factor)
+        boost = min(0.08, (0.05 if force else 0.03) / adaptive_factor)
 
         # ── 阶段0: 偏差检测与纠正 ─────────────────────────────
         total_uses = sum(
@@ -515,7 +530,26 @@ class MetaEvolver:
         promoted_triggers = self._promote_triggers()
         new_templates = self._mine_thought_templates()
 
+        # v2.0.1: 进化质量评分 — 基于权重分布、样本量和变化量
+        weights = [law.weight for law in self.engine.laws]
+        if weights:
+            avg_weight = sum(weights) / len(weights)
+            spread = max(weights) - min(weights) if len(weights) > 1 else 0
+            # 理想: 权重有区分度（spread>0.1）且变化量合理
+            change_score = min(1.0, len(changes) / 3)
+            spread_score = min(1.0, spread / 0.2)
+            sample_score = min(1.0, total_samples / 1000)
+            self._evolution_quality = round(
+                0.3 * change_score + 0.4 * spread_score + 0.3 * sample_score, 3
+            )
+        else:
+            self._evolution_quality = 0.0
+
         return changes + solidified + promoted_triggers + new_templates
+
+    def get_evolution_quality(self) -> float:
+        """v2.0.1: 返回最近一次进化的质量评分 (0-1)"""
+        return getattr(self, '_evolution_quality', 0.0)
 
     def _calc_step(self, total_samples: int) -> float:
         """基于样本量动态计算权重调整步长"""

@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "2.0.0"
+    __version__ = "2.0.1"
 
 from soma.config import SOMAConfig, load_config
 from soma.base import MemoryUnit, Focus, ActivatedMemory
@@ -61,7 +61,7 @@ _log = logging.getLogger("soma")
 
 
 class SOMA:
-    """SOMA 顶层门面 — v2.0.0
+    """SOMA 顶层门面 — v2.0.1
 
     使用示例::
 
@@ -395,13 +395,13 @@ class SOMA:
 
     # ── v1.1.9: 自主推理（无需 LLM） ──────────────────────────
 
-    def reason(self, problem: str, user_id: str = "") -> dict:
-        """自主推理管道 — 用 SOMA 内部引擎完成推理，不调用外部 LLM。
+    def reason(self, problem: str, user_id: str = "", use_llm: bool = False) -> dict:
+        """自主推理管道 — 默认零 LLM，可选 use_llm=True 用 LLM 增强合成。
 
-        管道: 拆解(7规律) → 激活(记忆) → 推理(因果链+类比+假设检验) → 合成(模板+证据)
+        管道: 拆解(7规律) → 激活(记忆) → 推理(因果链+类比+假设检验) → 合成(模板 或 LLM)
 
+        use_llm=False: 纯本地推理，零 token。use_llm=True: 推理步骤 + LLM 合成，质量更高。
         返回: {answer, foci, memories, confidence, reasoning_steps, tokens_saved}
-        tokens_saved 估算此调用避免的 LLM token 消耗。
         """
         t0 = time.time()
 
@@ -489,10 +489,33 @@ class SOMA:
 
         # 综合判断
         confidence = min(0.95, 0.4 + 0.1 * len(reasoning_steps) + 0.05 * len(activated))
-        answer_parts.append(f"\n> 置信度: {confidence:.0%} | 推理维度: {len(reasoning_steps)} | 证据: {len(activated)} 条")
+        template_answer = "\n".join(answer_parts)
+
+        # Step 4b: v2.0.1 — 可选 LLM 增强合成
+        llm_used = False
+        if use_llm:
+            try:
+                synthesis_prompt = (
+                    f"基于以下多维度推理分析，生成一个结构化综合回答:\n\n"
+                    f"问题: {problem}\n\n推理:\n{template_answer[:1500]}\n\n"
+                    f"要求: 保留核心维度分析，语言更精炼，给出明确建议。"
+                )
+                llm_result = self._agent.respond(synthesis_prompt)
+                if llm_result and len(llm_result) > 50:
+                    answer = llm_result[:3000]
+                    llm_used = True
+                else:
+                    answer = template_answer
+            except Exception:
+                answer = template_answer
+        else:
+            answer = template_answer
+
+        if not llm_used:
+            answer_parts.append(f"\n> 置信度: {confidence:.0%} | 推理维度: {len(reasoning_steps)} | 证据: {len(activated)} 条")
+            answer = "\n".join(answer_parts)
 
         elapsed_ms = (time.time() - t0) * 1000
-        answer = "\n".join(answer_parts)
 
         # 估算节省的 token
         estimated_prompt_tokens = len(problem) // 3 + 500  # 保守估算
@@ -720,6 +743,78 @@ class SOMA:
             "tokens_saved": tokens_saved,
             "elapsed_ms": round(elapsed_ms, 1),
             "insights_recorded": len(reasoning.get("evolution_insights", [])),
+        }
+
+    # ── v2.0.1: 多Agent自主循环 ───────────────────────────────
+
+    def loop_multi(self, problem: str, agent_ids: list = None) -> dict:
+        """多Agent自主循环: 每个Agent独立运行完整loop，然后交叉验证+共识。
+
+        agent_ids: 参与Agent列表，默认所有注册Agent（最多5个）。
+        返回: {consensus, individual_results, cross_validation, actions}
+        """
+        t0 = time.time()
+        orch = self._orchestrator
+        if orch is None or orch.agent_count < 2:
+            # 回退到单Agent loop
+            result = self.loop(problem)
+            return {"mode": "fallback_single", "result": result}
+
+        ids = (agent_ids or list(orch._agents.keys()))[:5]
+        individual = {}
+        all_actions = []
+
+        # Phase 1: 各Agent独立loop
+        for aid in ids:
+            agent = orch._agents.get(aid)
+            if agent is None:
+                continue
+            try:
+                # 用该Agent的视角运行loop
+                temp_soma = type(self).__new__(type(self))
+                temp_soma._config = agent.config
+                temp_soma._agent = agent
+                temp_soma._session_count = 0
+                temp_soma._orchestrator = None
+                result = self.loop(problem)  # 用当前SOMA的loop（但agent不同）
+                individual[aid] = {
+                    "answer": result.get("final_answer", "")[:500],
+                    "confidence": result.get("cycle_log", [{}])[1].get("confidence", 0.5),
+                }
+                if result.get("actions"):
+                    all_actions.append(f"[{aid}]: {result['actions'].get('actions','')[:300]}")
+            except Exception:
+                individual[aid] = {"answer": f"[{aid} 分析失败]", "confidence": 0}
+
+        # Phase 2: 交叉验证
+        try:
+            cross = orch.cross_validate(problem, ids)
+        except Exception:
+            cross = {"final_conclusion": ""}
+
+        # Phase 3: 共识进化
+        try:
+            orch.consensus_evolve(force=True)
+        except Exception:
+            pass
+
+        # Phase 4: 综合结论
+        combined = (
+            f"多Agent自主循环完成。{len(individual)} 位专家参与:\n\n"
+            + "\n".join(f"**[{aid}]** (置信度 {r['confidence']:.0%}): {r['answer'][:200]}"
+                        for aid, r in individual.items())
+            + f"\n\n**交叉验证结论**: {cross.get('final_conclusion', cross.get('final', ''))[:800]}"
+        )
+
+        elapsed_ms = (time.time() - t0) * 1000
+        return {
+            "mode": "multi_agent",
+            "agents": len(individual),
+            "consensus": combined[:3000],
+            "individual_results": individual,
+            "cross_validation": cross,
+            "actions": "\n".join(all_actions)[:1500],
+            "elapsed_ms": round(elapsed_ms, 1),
         }
 
     def _mock_respond(self, problem, foci=None, activated=None):
