@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.0] — 2026-06-26
+
+### Autonomous Cognitive Loop / 自主认知循环
+
+**v2.0.0 introduces the full autonomous cognitive loop.**
+
+### Added / 新增
+- soma.reason_deep(): Multi-round self-dialogue with devil's advocate
+- soma.perceive(): Auto-detect problem complexity and memory relevance
+- soma.act(): Generate actionable recommendations from analysis
+- soma.loop(): Full closed loop — perceive→reason→act→feedback→evolve
+- soma_loop MCP tool
+
+### Changed / 变更
+- soma/__init__.py `__version__` → 2.0.0
+- pyproject.toml version → 2.0.0
+
 ## [1.1.9] — 2026-06-19
 
 ### soma.reason() Zero-LLM Autonomous Reasoning / 零LLM自主推理
