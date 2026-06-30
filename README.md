@@ -1,4 +1,4 @@
-# SOMA v2.0.0 — The Cognitive Kernel for AI Agents
+# SOMA v2.0.1 — The Cognitive Kernel for AI Agents
 
 <p align="center">
   <strong>Wisdom over Memory — 智慧超越记忆</strong><br>
@@ -28,7 +28,7 @@ answer = soma.respond("How to analyze our growth bottleneck?")
 
 **Why SOMA instead of a vector database?** Traditional memory (ChromaDB, Mem0) stores and retrieves. SOMA **thinks first**: a 7-law reasoning network decomposes problems *before* fetching memories. The result: agents that systematically analyze, not just pattern-match.
 
-| | Vector DBs | Mem0 | **SOMA v2.0.0** |
+| | Vector DBs | Mem0 | **SOMA v2.0.1** |
 |---|---|---|---|
 | Stores & retrieves | ✓ | ✓ | ✓ |
 | Reasoning framework | ✗ | ✗ | **✓ 7 thinking laws** |
@@ -46,13 +46,13 @@ answer = soma.respond("How to analyze our growth bottleneck?")
 <p align="center">
   <a href="https://github.com/sunyan999999/soma"><img src="https://img.shields.io/github/stars/sunyan999999/soma?style=social" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-2.0.0-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-2.0.1-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/python-3.10%2B-green" alt="Python"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/semantic_recall-100%25-brightgreen" alt="Semantic Recall"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/overall_score-85.5%2F100-blue" alt="Overall Score"></a>
   <a href="#"><img src="https://img.shields.io/badge/tests-639%2F639-brightgreen" alt="Tests"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v2.0.0-success" alt="Changelog"></a>
-  <a href="#"><img src="https://img.shields.io/badge/milestone-2.0.0-ff6b6b" alt="Milestone"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v2.0.1-success" alt="Changelog"></a>
+  <a href="#"><img src="https://img.shields.io/badge/milestone-2.0.1-ff6b6b" alt="Milestone"></a>
 </p>
 
 📖 **[中文文档](README_zh.md)** | **[Docs](https://sunyan999999.github.io/soma/)** | **[Demo](https://github.com/sunyan999999/soma-demo)** | **[Roadmap](ROADMAP.md)** | **[Changelog](CHANGELOG.md)** | **[Contributing](CONTRIBUTING.md)**
@@ -63,9 +63,9 @@ answer = soma.respond("How to analyze our growth bottleneck?")
 
 ---
 
-## v2.0.0 — Zhongdao Closed Loop
+## v2.0.1 — Zhongdao Closed Loop
 
-**v2.0.0 closes the Zhongdao feedback loop** — from correction to verification to optimization:
+**v2.0.1 closes the Zhongdao feedback loop** — from correction to verification to optimization:
 
 | # | Feature | Description |
 |---|---------|-------------|
@@ -75,11 +75,11 @@ answer = soma.respond("How to analyze our growth bottleneck?")
 | B4 | Auto-archiving | 90-day old corrections auto-archived to prevent DB bloat |
 | B5 | Production refinements | Mobile optimization + i18n completion + cooldown protection |
 
-**Benchmark validated** on 零熵智库 (v2.0.0): Overall 80.5 (+5.8 vs v1.1.2), Memory 79.7 (+20.2), Wisdom 76.2, Evolution 75.0, Scalability 100.0. 650 tests passed.
+**Benchmark validated** on 零熵智库 (v2.0.1): Overall 80.5 (+5.8 vs v1.1.2), Memory 79.7 (+20.2), Wisdom 76.2, Evolution 75.0, Scalability 100.0. 650 tests passed.
 
 Every capability line that started as a seed in v0.1 has grown into a complete system:
 
-| Capability Line | Core Question | v2.0.0 Answer |
+| Capability Line | Core Question | v2.0.1 Answer |
 |---|---|---|
 | **Memory** | How can AI manage memory like humans do? | Three-tier: fragments → scenes → profile |
 | **Reasoning** | How to use information to think? | Causal chains + conflict detection + cross-domain analogy |
@@ -95,7 +95,7 @@ Every capability line that started as a seed in v0.1 has grown into a complete s
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                         SOMA v2.0.0 — Cognitive Kernel                           │
+│                         SOMA v2.0.1 — Cognitive Kernel                           │
 │                                                                                │
 │  ┌──────────────────────────────────────────────────────────────────┐        │
 │  │  L3 User Profile — "Knows who you are"                             │        │
@@ -425,7 +425,7 @@ SOMA v1.0 — benchmarked with 1,050 production memories from 零熵智库 (5 ru
 
 | System | Recall@5 | Reasoning | Three-Tier Memory | Evolution | Multi-Agent | Awareness |
 |--------|:---:|:---:|:---:|:---:|:---:|:---:|
-| **SOMA v2.0.0** | **100%** | **✓** | **✓** | **✓** | **✓** | **✓** |
+| **SOMA v2.0.1** | **100%** | **✓** | **✓** | **✓** | **✓** | **✓** |
 | ChromaDB | 2.5% | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Mem0 | * | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Zep | * | ✗ | ✗ | ✗ | ✗ | ✗ |

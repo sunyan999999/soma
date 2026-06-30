@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.1] — 2026-06-30
+
+### Evolution + LLM Hybrid + Multi-Agent Loop / 进化自适应 + LLM混合 + 多Agent循环
+
+**v2.0.1 improves evolution with adaptive thresholds, adds optional LLM enhancement, and extends the autonomous loop to multi-agent mode.**
+
+### Added / 新增
+- evolve() adaptive thresholds: auto-scales based on data volume (more data = lower thresholds)
+- get_evolution_quality(): returns evolution quality score (0-1)
+- reason(use_llm=True): optional LLM-enhanced synthesis while keeping internal reasoning
+- loop_multi(): multi-agent autonomous loop with cross-validation + consensus
+
+### Fixed / 修复
+- law_discovery.py: disabled joblib multiprocessing (JOBLIB_MULTIPROCESSING=0), fixed 4 worker x embedding model = 10GB memory leak
+
+### Changed / 变更
+- soma/__init__.py `__version__` → 2.0.1
+- pyproject.toml version → 2.0.1
+
 ## [2.0.0] — 2026-06-26
 
 ### Autonomous Cognitive Loop / 自主认知循环
