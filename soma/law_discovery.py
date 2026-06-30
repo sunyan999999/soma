@@ -1,7 +1,11 @@
 """新规律自主归纳 — 从高关联记忆聚类中发现候选思维规律
 
 基于 DBSCAN 聚类 + TF-IDF 关键词提取 + LLM 审核提示。
+v2.0.1-fix: 禁用 joblib 多进程避免 4 worker × embedding = 10GB 内存泄漏
 """
+
+import os as _os
+_os.environ.setdefault("JOBLIB_MULTIPROCESSING", "0")  # 必须在此 import sklearn 之前
 
 import math
 import time
@@ -122,7 +126,7 @@ class LawDiscovery:
 
         # DBSCAN 聚类
         eps = 0.3  # 余弦距离阈值
-        clustering = DBSCAN(eps=eps, min_samples=3, metric="cosine").fit(normalized)
+        clustering = DBSCAN(eps=eps, min_samples=3, metric="cosine", n_jobs=1).fit(normalized)
 
         labels = clustering.labels_
         clusters: Dict[int, List[MemoryUnit]] = {}
