@@ -1,4 +1,4 @@
-# SOMA v2.0.1 — AI Agent 认知内核
+# SOMA v2.0.2 — AI Agent 认知内核
 
 <p align="center">
   <strong>Wisdom over Memory — 智慧超越记忆</strong><br>
@@ -28,7 +28,7 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 
 **为什么用 SOMA 而非向量数据库？** 传统记忆库（ChromaDB、Mem0）只管存和搜。SOMA **先思考再检索**：7条思维规律组成推理网络，分析问题的维度决定了要激活什么记忆。结果是能系统拆解问题的 Agent，而不是只会模式匹配的机器人。
 
-| | 向量数据库 | Mem0 | **SOMA v2.0.1** |
+| | 向量数据库 | Mem0 | **SOMA v2.0.2** |
 |---|---|---|---|
 | 存取记忆 | ✓ | ✓ | ✓ |
 | 推理框架 | ✗ | ✗ | **✓ 7条思维规律** |
@@ -46,13 +46,13 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 <p align="center">
   <a href="https://github.com/sunyan999999/soma"><img src="https://img.shields.io/github/stars/sunyan999999/soma?style=social" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-2.0.1-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-2.0.2-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/python-3.10%2B-green" alt="Python"></a>
   <a href="#基准测试"><img src="https://img.shields.io/badge/语义召回-100%25-brightgreen" alt="语义召回率"></a>
   <a href="#基准测试"><img src="https://img.shields.io/badge/综合评分-85.5%2F100-blue" alt="综合评分"></a>
   <a href="#"><img src="https://img.shields.io/badge/测试-639%2F639-brightgreen" alt="测试"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/变更日志-v2.0.1-success" alt="变更日志"></a>
-  <a href="#"><img src="https://img.shields.io/badge/里程碑-2.0.1-ff6b6b" alt="里程碑"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/变更日志-v2.0.2-success" alt="变更日志"></a>
+  <a href="#"><img src="https://img.shields.io/badge/里程碑-2.0.2-ff6b6b" alt="里程碑"></a>
 </p>
 
 📖 **[English README](README.md)** | **[文档](https://sunyan999999.github.io/soma/)** | **[变更日志](CHANGELOG.md)** | **[贡献指南](CONTRIBUTING.md)**
@@ -63,9 +63,9 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 
 ---
 
-## v2.0.1 — 中道引擎闭环
+## v2.0.2 — 中道引擎闭环
 
-**v2.0.1 闭合中道引擎反馈环路** — 从"执行校正"到"验证效果"到"智能优化"：
+**v2.0.2 闭合中道引擎反馈环路** — 从"执行校正"到"验证效果"到"智能优化"：
 
 | # | 功能 | 说明 |
 |---|------|------|
@@ -75,11 +75,11 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 | B4 | 自动归档清理 | 90天前旧记录自动归档，防止数据库膨胀 |
 | B5 | 生产环境修复 | 移动端适配 + i18n 完善 + 冷却保护 |
 
-**基准验证** 于零熵智库 v2.0.1：综合 80.5 (+5.8)，记忆 79.7 (+20.2)，智慧 76.2，进化 75.0，伸缩 100.0。650 测试通过。
+**基准验证** 于零熵智库 v2.0.2：综合 80.5 (+5.8)，记忆 79.7 (+20.2)，智慧 76.2，进化 75.0，伸缩 100.0。650 测试通过。
 
-从 v0.1 埋下的每一颗种子，到 v2.0.1 长成的完整系统：
+从 v0.1 埋下的每一颗种子，到 v2.0.2 长成的完整系统：
 
-| 能力线 | 核心问题 | v2.0.1 的答案 |
+| 能力线 | 核心问题 | v2.0.2 的答案 |
 |---|---|---|
 | **记忆** | AI如何像人一样管理记忆？ | 三层架构：碎片 → 场景 → 画像 |
 | **推理** | 找到信息后如何用来思考？ | 因果链 + 冲突检测 + 跨域类比 |
@@ -95,7 +95,7 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                         SOMA v2.0.1 — 认知内核                                   │
+│                         SOMA v2.0.2 — 认知内核                                   │
 │                                                                                │
 │  ┌──────────────────────────────────────────────────────────────────┐        │
 │  │  L3 用户画像 — "理解你是个什么样的人"                                │        │
@@ -201,7 +201,7 @@ soma-quickstart         # 或使用 CLI 入口
 
 ### 2. 三层记忆体系
 
-v2.0.1 延续了自动记忆分层——系统在你使用的过程中，默默构建对你的理解：
+v2.0.2 延续了自动记忆分层——系统在你使用的过程中，默默构建对你的理解：
 
 | 层级 | 是什么 | 示例 |
 |------|--------|------|
@@ -279,8 +279,8 @@ soma = SOMA(
     persist_dir="soma_data",      # 持久化目录
     recall_threshold=0.01,        # 最低激活阈值
     top_k=5,                      # 默认召回数
-    agent_id="",                  # v2.0.1: 多Agent身份标识
-    group_id="",                  # v2.0.1: 团队/组织级共享
+    agent_id="",                  # v2.0.2: 多Agent身份标识
+    group_id="",                  # v2.0.2: 团队/组织级共享
 )
 
 # 智者管道
@@ -292,7 +292,7 @@ soma.remember(content, context, importance) -> str  # 返回 memory_id
 soma.remember_semantic(subject, predicate, object_, confidence)
 soma.query_memory(query: str, top_k: int) -> list
 
-# v2.0.1: 三层记忆
+# v2.0.2: 三层记忆
 soma.get_scenes(user_id="", top_k=10) -> list
 soma.get_profile(user_id="") -> list
 soma.capture_scenes(user_id="", force=False) -> int
@@ -350,7 +350,7 @@ result = tool.run("分析这个问题...")
 
 ## 基准测试
 
-SOMA v2.0.1 — 使用 1,050 条零熵智库生产记忆，5轮统计基准测试：
+SOMA v2.0.2 — 使用 1,050 条零熵智库生产记忆，5轮统计基准测试：
 
 ### 综合评分: 85.5/100
 
@@ -366,7 +366,7 @@ SOMA v2.0.1 — 使用 1,050 条零熵智库生产记忆，5轮统计基准测�
 
 | 系统 | Recall@5 | 推理框架 | 三层记忆 | 进化 | 多Agent | 觉察 |
 |--------|:---:|:---:|:---:|:---:|:---:|:---:|
-| **SOMA v2.0.1** | **100%** | **✓** | **✓** | **✓** | **✓** | **✓** |
+| **SOMA v2.0.2** | **100%** | **✓** | **✓** | **✓** | **✓** | **✓** |
 | ChromaDB | 2.5% | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Mem0 | * | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Zep | * | ✗ | ✗ | ✗ | ✗ | ✗ |
