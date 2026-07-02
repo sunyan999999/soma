@@ -31,6 +31,7 @@ class NumpyVectorIndex:
     """
 
     _INCREMENTAL_LIMIT = 1000
+    _SAVE_BATCH = 50  # v2.0.2: 批量保存，50次增量写一次磁盘
 
     def __init__(self, db_path: Path, vector_dim: int):
         self._db_path = db_path
@@ -171,11 +172,13 @@ class NumpyVectorIndex:
         )
         conn.commit()
 
-        # 增量添加到 FAISS 索引（如果已构建）
+        # 增量添加到 FAISS 索引（v2.0.2: 批量保存，减少磁盘IO）
         if self._faiss_index is not None:
             faiss.normalize_L2(vector.reshape(1, -1))
             if self._incremental_add(memory_id, vector):
-                self._save_index_to_disk()
+                # v2.0.2: 每 _SAVE_BATCH 次增量才写一次磁盘
+                if self._incremental_adds % self._SAVE_BATCH == 0:
+                    self._save_index_to_disk()
                 self._maybe_rebuild(conn)
                 return
         # 索引未构建或增量添加失败 → 下次搜索时重建

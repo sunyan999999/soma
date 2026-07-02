@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "2.0.1"
+    __version__ = "2.0.2"
 
 from soma.config import SOMAConfig, load_config
 from soma.base import MemoryUnit, Focus, ActivatedMemory
@@ -61,7 +61,7 @@ _log = logging.getLogger("soma")
 
 
 class SOMA:
-    """SOMA 顶层门面 — v2.0.1
+    """SOMA 顶层门面 — v2.0.2
 
     使用示例::
 
@@ -395,13 +395,15 @@ class SOMA:
 
     # ── v1.1.9: 自主推理（无需 LLM） ──────────────────────────
 
-    def reason(self, problem: str, user_id: str = "", use_llm: bool = False) -> dict:
-        """自主推理管道 — 默认零 LLM，可选 use_llm=True 用 LLM 增强合成。
+    def reason(self, problem: str, user_id: str = "", use_llm: str = "auto") -> dict:
+        """自主推理管道 — 默认智能模式，自动判断是否用 LLM 增强。
 
         管道: 拆解(7规律) → 激活(记忆) → 推理(因果链+类比+假设检验) → 合成(模板 或 LLM)
 
-        use_llm=False: 纯本地推理，零 token。use_llm=True: 推理步骤 + LLM 合成，质量更高。
-        返回: {answer, foci, memories, confidence, reasoning_steps, tokens_saved}
+        use_llm="auto": L1→纯本地, L2→LLM增强(有key), L3→LLM增强
+        use_llm=False: 纯本地推理，零 token
+        use_llm=True: 强制 LLM 合成，质量最高
+        返回: {answer, foci, memories, confidence, reasoning_steps, tokens_saved, llm_mode}
         """
         t0 = time.time()
 
@@ -491,9 +493,19 @@ class SOMA:
         confidence = min(0.95, 0.4 + 0.1 * len(reasoning_steps) + 0.05 * len(activated))
         template_answer = "\n".join(answer_parts)
 
-        # Step 4b: v2.0.1 — 可选 LLM 增强合成
-        llm_used = False
-        if use_llm:
+        # Step 4b: v2.0.2 — 智能 LLM 路由 (auto模式)
+        # auto: L1→纯本地, L2→LLM(有key), L3→LLM
+        llm_mode = "local"
+        complexity = len(reasoning_steps)
+        has_key = bool(self._config.llm_api_key or self._config.llm_model != "mock")
+
+        should_use_llm = (
+            use_llm is True or
+            (use_llm == "auto" and complexity >= 2 and has_key) or
+            (use_llm == "auto" and complexity >= 3)
+        )
+
+        if should_use_llm:
             try:
                 synthesis_prompt = (
                     f"基于以下多维度推理分析，生成一个结构化综合回答:\n\n"
@@ -503,7 +515,7 @@ class SOMA:
                 llm_result = self._agent.respond(synthesis_prompt)
                 if llm_result and len(llm_result) > 50:
                     answer = llm_result[:3000]
-                    llm_used = True
+                    llm_mode = "llm_enhanced"
                 else:
                     answer = template_answer
             except Exception:
@@ -531,6 +543,7 @@ class SOMA:
             "reasoning_steps": reasoning_steps,
             "tokens_saved": tokens_saved,
             "elapsed_ms": round(elapsed_ms, 1),
+            "llm_mode": llm_mode,
         }
 
     # ── v2.0: 深度自主推理（多轮自我对话） ──────────────────
@@ -816,6 +829,51 @@ class SOMA:
             "actions": "\n".join(all_actions)[:1500],
             "elapsed_ms": round(elapsed_ms, 1),
         }
+
+    # ── v2.0.2: 自主行动执行 ──────────────────────────────────
+
+    def execute(self, problem: str, actions: str = "") -> dict:
+        """行动执行 — 把 loop() 生成的建议转化为实际执行步骤。
+
+        执行内容: 1)记录决策到记忆 2)触发进化 3)生成下一步计划
+        返回: {executed, next_steps, memory_recorded, evolution_triggered}
+        """
+        results = {"executed": [], "next_steps": "", "memory_recorded": 0, "evolution_triggered": False}
+
+        # Step 1: 从actions中提取可执行项
+        if not actions:
+            action_result = self.act(problem)
+            actions = action_result.get("actions", "")
+
+        if actions:
+            # 记录决策到记忆
+            self.remember(
+                f"执行计划: {problem[:100]} → {actions[:300]}",
+                importance=0.8,
+                context={"type": "execution_plan", "problem": problem[:100]},
+            )
+            results["executed"].append("decision_logged")
+            results["memory_recorded"] = 1
+
+        # Step 2: 触发进化（如果有足够数据）
+        try:
+            changes = self._agent.evolver.evolve(force=True)
+            if changes:
+                results["evolution_triggered"] = True
+                results["executed"].append(f"evolution({len(changes)} changes)")
+        except Exception:
+            pass
+
+        # Step 3: 生成下一步建议
+        if actions:
+            next_prompt = f"已执行以下行动:\n{actions[:500]}\n\n基于此，下一步应该做什么？"
+            try:
+                next_result = self.reason(next_prompt)
+                results["next_steps"] = next_result.get("answer", "")[:500]
+            except Exception:
+                results["next_steps"] = actions[:300]
+
+        return results
 
     def _mock_respond(self, problem, foci=None, activated=None):
         """无 LLM 时的 mock 响应"""
