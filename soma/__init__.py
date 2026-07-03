@@ -522,6 +522,7 @@ class SOMA:
                 answer = template_answer
         else:
             answer = template_answer
+            llm_used = False
 
         if not llm_used:
             answer_parts.append(f"\n> 置信度: {confidence:.0%} | 推理维度: {len(reasoning_steps)} | 证据: {len(activated)} 条")
