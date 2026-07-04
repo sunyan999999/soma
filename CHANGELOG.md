@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.2] — 2026-07-03
+
+### Smart LLM Routing + Execute + FAISS Batch / 智能LLM路由 + 自主执行 + FAISS批量
+
+**v2.0.2 adds intelligent LLM auto-routing, autonomous action execution, and performance optimization.**
+
+### Added / 新增
+- reason(use_llm="auto"): L1→pure local, L2→LLM enhanced (with key), L3→LLM (smart routing)
+- soma.execute(): action execution — decision logging + evolution trigger + next steps
+- FAISS batch save: every 50 incremental adds (down from every add) for 16K+ memory performance
+- llm_mode field in reason() return: "local" / "llm_enhanced"
+
+### Fixed / 修复
+- llm_used uninitialized variable causing reason/execute crash (found by Codex)
+
+### Changed / 变更
+- soma/__init__.py `__version__` → 2.0.2
+- pyproject.toml version → 2.0.2
+- soma/vector_store.py `_SAVE_BATCH = 50`
+
 ## [2.0.1] — 2026-06-30
 
 ### Evolution + LLM Hybrid + Multi-Agent Loop / 进化自适应 + LLM混合 + 多Agent循环
