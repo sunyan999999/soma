@@ -891,16 +891,23 @@ def chat(req: ChatRequest):
                 })
             except Exception:
                 pass
+            foci_orch = chat_result.get("foci", [])
             return {
                 **chat_result,
                 "mock_mode": False,
                 "deep_mode": False,
                 "provider_used": "multi_agent",
-                # 确保前端期望的字段始终存在
-                "foci": chat_result.get("foci", []),
+                "foci": foci_orch,
                 "activated_memories": chat_result.get("activated_memories", []),
                 "prompt": chat_result.get("prompt", ""),
                 "llm_error": None,
+                "soma_enhancement": {  # v2.0.3: 多Agent增强标识
+                    "active": True,
+                    "dimensions": len(foci_orch),
+                    "laws_used": [f.get("law_id","") for f in foci_orch[:5]],
+                    "depth": "deep" if len(foci_orch) >= 4 else "medium",
+                    "suggestion": "多Agent协作分析，回答综合了多位专家视角",
+                },
             }
 
     # 单Agent路径（原有逻辑）
@@ -989,6 +996,24 @@ def chat(req: ChatRequest):
             print(f"[SOMA] 自动进化完成: {len(changes)} 项变更")
 
     response_time = (time.time() - t0) * 1000
+    # v2.0.3: SOMA增强标识 — 前端展示分析深度
+    law_names = []
+    for f in foci_data:
+        for law in (getattr(getattr(agent, '_agent', None), 'engine', None).laws if getattr(getattr(agent, '_agent', None), 'engine', None) else []):
+            if law.id == f.get("law_id", ""):
+                law_names.append(law.name)
+                break
+        else:
+            law_names.append(f.get("law_id", ""))
+
+    soma_enhancement = {
+        "active": deep_mode or len(foci_data) >= 3,
+        "dimensions": len(foci_data),
+        "laws_used": law_names[:5],
+        "depth": "deep" if len(foci_data) >= 4 else ("medium" if len(foci_data) >= 2 else "light"),
+        "suggestion": "本次分析综合运用了多条思维规律，回答质量已提升" if len(foci_data) >= 3 else None,
+    }
+
     response_data = {
         "problem": req.problem,
         "mock_mode": use_mock,
@@ -1001,6 +1026,7 @@ def chat(req: ChatRequest):
         "weights": agent.evolver.get_weights(),
         "provider_used": provider_id,
         "llm_error": llm_error,
+        "soma_enhancement": soma_enhancement,  # v2.0.3
         # v0.9.2: 编排状态（单Agent模式下无活跃编排）
         "orchestration": {
             "enabled": agent._orchestrator is not None,
