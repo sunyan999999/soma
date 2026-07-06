@@ -322,11 +322,12 @@ class SOMA:
             problem, foci, activated, self._agent._last_anti_memories,
         )
 
-        # v2.0.3: 智慧增强 — L2+ 问题先用 reason() 做多维度预分析，注入 LLM prompt
+        # v2.0.3: 智慧增强 — L2+ 问题先用 reason(use_llm=False) 做零token预分析
         pre_analysis = ""
         if complexity >= 2:
             try:
-                reason_result = self.reason(problem)
+                # 强制纯本地推理避免双重LLM调用（主LLM调用已足够）
+                reason_result = self.reason(problem, use_llm=False)
                 if reason_result.get("answer"):
                     pre_analysis = (
                         f"\n\n[SOMA 多维度预分析]:\n{reason_result['answer'][:800]}\n"
