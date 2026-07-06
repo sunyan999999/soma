@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "2.0.2"
+    __version__ = "2.0.3"
 
 from soma.config import SOMAConfig, load_config
 from soma.base import MemoryUnit, Focus, ActivatedMemory
@@ -61,7 +61,7 @@ _log = logging.getLogger("soma")
 
 
 class SOMA:
-    """SOMA 顶层门面 — v2.0.2
+    """SOMA 顶层门面 — v2.0.3
 
     使用示例::
 
@@ -322,13 +322,31 @@ class SOMA:
             problem, foci, activated, self._agent._last_anti_memories,
         )
 
+        # v2.0.3: 智慧增强 — L2+ 问题先用 reason() 做多维度预分析，注入 LLM prompt
+        pre_analysis = ""
+        if complexity >= 2:
+            try:
+                reason_result = self.reason(problem)
+                if reason_result.get("answer"):
+                    pre_analysis = (
+                        f"\n\n[SOMA 多维度预分析]:\n{reason_result['answer'][:800]}\n"
+                        f"[置信度: {reason_result['confidence']:.0%} | "
+                        f"维度: {len(reason_result.get('reasoning_steps',[]))} | "
+                        f"模式: {reason_result.get('llm_mode','local')}]"
+                    )
+            except Exception:
+                pass
+
         mock_fallback = False
 
         try:
-            answer = self._agent._call_llm(
-                self._agent._build_prompt(problem, foci, activated),
-                user_id,
-            )
+            base_prompt = self._agent._build_prompt(problem, foci, activated)
+            if pre_analysis:
+                # 注入预分析到系统提示词末尾
+                enhanced_prompt = base_prompt + pre_analysis
+            else:
+                enhanced_prompt = base_prompt
+            answer = self._agent._call_llm(enhanced_prompt, user_id)
         except Exception:
             _log.error(
                 "SOMA.chat() LLM调用失败，回退到mock响应:\n%s",
