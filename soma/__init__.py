@@ -515,6 +515,7 @@ class SOMA:
         # Step 4b: v2.0.2 — 智能 LLM 路由 (auto模式)
         # auto: L1→纯本地, L2→LLM(有key), L3→LLM
         llm_mode = "local"
+        llm_used = False  # v2.0.3-fix: 确保所有分支都能访问
         complexity = len(reasoning_steps)
         has_key = bool(self._config.llm_api_key or self._config.llm_model != "mock")
 
@@ -535,6 +536,7 @@ class SOMA:
                 if llm_result and len(llm_result) > 50:
                     answer = llm_result[:3000]
                     llm_mode = "llm_enhanced"
+                    llm_used = True
                 else:
                     answer = template_answer
             except Exception:
