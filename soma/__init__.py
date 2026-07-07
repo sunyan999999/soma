@@ -321,13 +321,15 @@ class SOMA:
         self._agent._last_reasoning = self._agent._execute_reasoning(
             problem, foci, activated, self._agent._last_anti_memories,
         )
-
-        # v2.0.3: 智慧增强 — L2+ 问题先用 reason(use_llm=False) 做零token预分析
+        # v2.0.4: ????? — L2轻量本地/L3 LLM增强，结果返回前端展示
         pre_analysis = ""
+        pre_analysis_dimensions = []
+        pre_analysis_mode = "none"
         if complexity >= 2:
             try:
-                # 强制纯本地推理避免双重LLM调用（主LLM调用已足够）
-                reason_result = self.reason(problem, use_llm=False)
+                # L3用LLM增强预分析，L2用纯本地预分析
+                _use_llm = (complexity >= 3)
+                reason_result = self.reason(problem, use_llm=_use_llm)
                 if reason_result.get("answer"):
                     pre_analysis = (
                         f"\n\n[SOMA 多维度预分析]:\n{reason_result['answer'][:800]}\n"
@@ -335,6 +337,11 @@ class SOMA:
                         f"维度: {len(reason_result.get('reasoning_steps',[]))} | "
                         f"模式: {reason_result.get('llm_mode','local')}]"
                     )
+                    pre_analysis_dimensions = [
+                        {"law_id": s["law_id"], "dimension": s.get("dimension","")[:120]}
+                        for s in reason_result.get("reasoning_steps", [])
+                    ]
+                    pre_analysis_mode = "llm_enhanced" if _use_llm else "local"
             except Exception:
                 pass
 
@@ -353,6 +360,8 @@ class SOMA:
                 "SOMA.chat() LLM调用失败，回退到mock响应:\n%s",
                 traceback.format_exc(),
             )
+            answer = self._mock_respond(problem, foci, activated)
+            mock_fallback = True
             answer = self._mock_respond(problem, foci, activated)
             mock_fallback = True
 
@@ -407,6 +416,13 @@ class SOMA:
             "memory_stats": self._agent.memory.stats(),
             "weights": self._agent.evolver.get_weights(),
             "reasoning": getattr(self._agent, '_last_reasoning', []),
+            # v2.0.4: 预分析结果供前端展示
+            "pre_analysis": {
+                "text": pre_analysis,
+                "dimensions": pre_analysis_dimensions,
+                "mode": pre_analysis_mode,
+                "active": len(pre_analysis_dimensions) > 0,
+            },
         }
 
         self._agent.record_session(problem, answer, foci, activated)
