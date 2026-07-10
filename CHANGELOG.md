@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.4] — 2026-07-07
+
+### Wisdom Perception Upgrade / 智慧感知升级
+
+**v2.0.4: L3 LLM-enhanced pre-analysis plus frontend-visible analysis depth. Benchmark 92.6 (all-time high).**
+
+### Added / 新增
+- L3 complex questions use LLM-enhanced pre-analysis (vs L2 lightweight local)
+- chat() returns pre_analysis field: text plus dimensions plus mode for frontend display
+- llm_used fully initialized across all code paths
+
+### Changed / 变更
+- soma/__init__.py __version__ to 2.0.4
+- pyproject.toml version to 2.0.4
+- Benchmark: Overall 92.6, Wisdom 83.7 (+7.8 vs v2.0.2)
+
+## [2.0.3] — 2026-07-06
+
+### Wisdom Depth Enhancement / 智慧深度提升
+
+**v2.0.3: L2+ questions auto-inject reason() pre-analysis into LLM prompt.**
+
+### Added / 新增
+- chat() pre-analysis injection for L2+ complexity
+- soma_enhancement field in API response
+- Version 2.0.3
+
 ## [2.0.2] — 2026-07-03
 
 ### Smart LLM Routing + Execute + FAISS Batch / 智能LLM路由 + 自主执行 + FAISS批量

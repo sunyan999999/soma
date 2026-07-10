@@ -53,11 +53,23 @@ def _get_soma():
 
     persist_dir = os.environ.get("SOMA_DATA_DIR", str(Path.home() / ".soma" / "claude"))
     llm = os.environ.get("SOMA_LLM", "mock")
+    # v1.1.4+: 支持从环境变量读取 API Key 和 Base URL
+    api_key = os.environ.get("SOMA_API_KEY", "") or os.environ.get("DEEPSEEK_API_KEY", "")
+    base_url = os.environ.get("SOMA_BASE_URL", "")
+    # 场景/画像自动提取：默认开启
+    scene_enabled = os.environ.get("SOMA_SCENE_EXTRACTION", "true").lower() == "true"
+    profile_enabled = os.environ.get("SOMA_PROFILE_EXTRACTION", "true").lower() == "true"
+    zhongdao_enabled = os.environ.get("SOMA_ZHONGDAO", "true").lower() == "true"
 
     _soma_instance = SOMA(
         persist_dir=persist_dir,
         llm=llm,
+        llm_api_key=api_key,
+        llm_base_url=base_url,
         top_k=5,
+        scene_extraction_enabled=scene_enabled,
+        profile_extraction_enabled=profile_enabled,
+        enable_zhongdao=zhongdao_enabled,
     )
     return _soma_instance
 

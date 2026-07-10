@@ -445,6 +445,7 @@ class SOMA_Agent:
     def record_session(
         self, problem: str, answer: str,
         foci: List[Focus], activated: List[ActivatedMemory],
+        user_name: str = "", twin_name: str = "",
     ) -> None:
         """录制一次对话会话到 AnalyticsStore。
 
@@ -460,6 +461,8 @@ class SOMA_Agent:
                 "id": sid,
                 "problem": problem,
                 "mock_mode": False,
+                "user_name": user_name,
+                "twin_name": twin_name,
                 "provider_used": self.config.llm_model or "unknown",
                 "response_time_ms": 0,
                 "foci": [{"law_id": f.law_id, "dimension": f.dimension,

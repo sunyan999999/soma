@@ -359,6 +359,15 @@ class AnalyticsStore:
                 self._conn.execute(f"ALTER TABLE benchmark_runs ADD COLUMN {col} {defn}")
             except Exception:
                 pass  # 列已存在
+
+        # v2.0.4 ??????????
+        for col, defn in [
+            ("report_type", "TEXT DEFAULT ''"),
+        ]:
+            try:
+                self._conn.execute(f"ALTER TABLE benchmark_runs ADD COLUMN {col} {defn}")
+            except Exception:
+                pass  # ????
         self._conn.commit()
 
     def record_benchmark(self, run) -> int:

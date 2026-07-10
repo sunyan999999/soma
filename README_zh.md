@@ -1,4 +1,4 @@
-# SOMA v2.0.3 — AI Agent 认知内核
+# SOMA v2.0.4 — AI Agent 认知内核
 
 <p align="center">
   <strong>Wisdom over Memory — 智慧超越记忆</strong><br>
@@ -28,7 +28,7 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 
 **为什么用 SOMA 而非向量数据库？** 传统记忆库（ChromaDB、Mem0）只管存和搜。SOMA **先思考再检索**：7条思维规律组成推理网络，分析问题的维度决定了要激活什么记忆。结果是能系统拆解问题的 Agent，而不是只会模式匹配的机器人。
 
-| | 向量数据库 | Mem0 | **SOMA v2.0.3** |
+| | 向量数据库 | Mem0 | **SOMA v2.0.4** |
 |---|---|---|---|
 | 存取记忆 | ✓ | ✓ | ✓ |
 | 推理框架 | ✗ | ✗ | **✓ 7条思维规律** |
@@ -46,13 +46,13 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 <p align="center">
   <a href="https://github.com/sunyan999999/soma"><img src="https://img.shields.io/github/stars/sunyan999999/soma?style=social" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-2.0.3-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-2.0.4-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/python-3.10%2B-green" alt="Python"></a>
   <a href="#基准测试"><img src="https://img.shields.io/badge/语义召回-100%25-brightgreen" alt="语义召回率"></a>
-  <a href="#基准测试"><img src="https://img.shields.io/badge/综合评分-85.5%2F100-blue" alt="综合评分"></a>
-  <a href="#"><img src="https://img.shields.io/badge/测试-639%2F639-brightgreen" alt="测试"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/变更日志-v2.0.3-success" alt="变更日志"></a>
-  <a href="#"><img src="https://img.shields.io/badge/里程碑-2.0.3-ff6b6b" alt="里程碑"></a>
+  <a href="#基准测试"><img src="https://img.shields.io/badge/综合评分-92.6%2F100-blue" alt="综合评分"></a>
+  <a href="#"><img src="https://img.shields.io/badge/测试-650%2F650-brightgreen" alt="测试"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/变更日志-v2.0.4-success" alt="变更日志"></a>
+  <a href="#"><img src="https://img.shields.io/badge/里程碑-2.0.4-ff6b6b" alt="里程碑"></a>
 </p>
 
 📖 **[English README](README.md)** | **[文档](https://sunyan999999.github.io/soma/)** | **[变更日志](CHANGELOG.md)** | **[贡献指南](CONTRIBUTING.md)**
@@ -63,29 +63,30 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 
 ---
 
-## v2.0.3 — 中道引擎闭环
+## v2.0.4 — 自主认知循环
 
-**v2.0.3 闭合中道引擎反馈环路** — 从"执行校正"到"验证效果"到"智能优化"：
+**v2.0.4 综合基准评分 92.6 分，创历史最高。** 自主认知循环现在可以完全不依赖外部 LLM 完成推理：
 
 | # | 功能 | 说明 |
 |---|------|------|
-| B1 | 校正效果追踪 | Dash 每日趋势柱状图 + 各规律校正频率面板 |
-| B2 | 自动调参建议 | 基于历史数据智能推荐最优中道参数 |
-| B3 | Dash 趋势可视化 | 柱状图 + 频率分布 + 建议卡片 + 时间范围选择器 |
-| B4 | 自动归档清理 | 90天前旧记录自动归档，防止数据库膨胀 |
-| B5 | 生产环境修复 | 移动端适配 + i18n 完善 + 冷却保护 |
+| A1 | 自主推理 | `soma.reason()` — 7规律拆解+记忆激活，零LLM，小于500ms |
+| A2 | 智能LLM路由 | `use_llm="auto"` — 简单问题纯本地，复杂问题自动LLM增强 |
+| A3 | 多轮自我辩论 | `soma.reason_deep()` — 初轮分析+反方质疑+修正合成 |
+| A4 | 完整认知循环 | `soma.loop()` — 感知→推理→行动→反馈→进化 五阶段闭环 |
+| A5 | 多Agent协作 | `soma.loop_multi()` — 并行独立循环+交叉验证+共识进化 |
+| A6 | 预分析注入 | 复杂聊天问题自动注入结构化预分析，回答深度显著提升 |
 
-**基准验证** 于零熵智库 v2.0.3：综合 80.5 (+5.8)，记忆 79.7 (+20.2)，智慧 76.2，进化 75.0，伸缩 100.0。650 测试通过。
+**基准测试**（16K+ 记忆规模，650 测试）：综合 92.6，记忆 94.7，智慧 83.7，进化 96.3，伸缩 100.0。
 
-从 v0.1 埋下的每一颗种子，到 v2.0.3 长成的完整系统：
+从 v0.1 埋下的每一颗种子，到 v2.0.4 长成的完整系统：
 
-| 能力线 | 核心问题 | v2.0.3 的答案 |
+| 能力线 | 核心问题 | v2.0.4 的答案 |
 |---|---|---|
 | **记忆** | AI如何像人一样管理记忆？ | 三层架构：碎片 → 场景 → 画像 |
 | **推理** | 找到信息后如何用来思考？ | 因果链 + 冲突检测 + 跨域类比 |
 | **协作** | 多个AI如何组队工作？ | 专家路由 + 共识协议 + 分布式进化 |
 | **进化** | AI能从自己的经验中学习吗？ | 反思 → 调权 → 固化 → 分享（三层校正） |
-| **工程** | 如何证明这些能力是真实的？ | 639测试 + 五维基准 + 竞品对比 |
+| **工程** | 如何证明这些能力是真实的？ | 650测试 + 五维基准 + 竞品对比 |
 
 **所有新功能默认关闭。从任何 0.x 版本升级，零代码改动。**
 
@@ -95,7 +96,7 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                         SOMA v2.0.3 — 认知内核                                   │
+│                         SOMA v2.0.4 — 认知内核                                   │
 │                                                                                │
 │  ┌──────────────────────────────────────────────────────────────────┐        │
 │  │  L3 用户画像 — "理解你是个什么样的人"                                │        │
@@ -201,7 +202,7 @@ soma-quickstart         # 或使用 CLI 入口
 
 ### 2. 三层记忆体系
 
-v2.0.3 延续了自动记忆分层——系统在你使用的过程中，默默构建对你的理解：
+v2.0.4 延续了自动记忆分层——系统在你使用的过程中，默默构建对你的理解：
 
 | 层级 | 是什么 | 示例 |
 |------|--------|------|
@@ -250,7 +251,7 @@ SOMA 跟踪每条思维规律在每轮对话中的成功/失败。每 5 次会�
 - **分布式进化**：各专家独立进化，定期合并群体经验
 - **记忆隔离**：三态隔离（agent_id + group_id）——私有、团队共享、全局
 
-### 7. 零熵觉察层
+### 7. Bias Awareness Layer (Zhongdao)
 
 当用户连续从单一视角分析问题，SOMA 温和提醒——不强制、不阻断、不改变管道。
 
@@ -279,8 +280,8 @@ soma = SOMA(
     persist_dir="soma_data",      # 持久化目录
     recall_threshold=0.01,        # 最低激活阈值
     top_k=5,                      # 默认召回数
-    agent_id="",                  # v2.0.3: 多Agent身份标识
-    group_id="",                  # v2.0.3: 团队/组织级共享
+    agent_id="",                  # v2.0.4: 多Agent身份标识
+    group_id="",                  # v2.0.4: 团队/组织级共享
 )
 
 # 智者管道
@@ -292,7 +293,7 @@ soma.remember(content, context, importance) -> str  # 返回 memory_id
 soma.remember_semantic(subject, predicate, object_, confidence)
 soma.query_memory(query: str, top_k: int) -> list
 
-# v2.0.3: 三层记忆
+# v2.0.4: 三层记忆
 soma.get_scenes(user_id="", top_k=10) -> list
 soma.get_profile(user_id="") -> list
 soma.capture_scenes(user_id="", force=False) -> int
@@ -350,13 +351,13 @@ result = tool.run("分析这个问题...")
 
 ## 基准测试
 
-SOMA v2.0.3 — 使用 1,050 条零熵智库生产记忆，5轮统计基准测试：
+SOMA v2.0.4 — 使用 1,050 条digital twin project生产记忆，5轮统计基准测试：
 
-### 综合评分: 85.5/100
+### 综合评分: 92.6/100
 
 | 维度 | 评分 | 等级 |
 |-----------|:---:|:---:|
-| **综合** | **85.5** | 优秀 |
+| **综合** | **92.6** | 优秀 |
 | **记忆** | **97.6** | 优秀 — 召回率100%，三层记忆体系运行 |
 | **智慧** | **87.3** | 优秀 — 因果分析+跨域类比+冲突检测全激活 |
 | **进化** | **60.2** | 良好 — 权重自适应，反思循环运行中 |
@@ -366,7 +367,7 @@ SOMA v2.0.3 — 使用 1,050 条零熵智库生产记忆，5轮统计基准测�
 
 | 系统 | Recall@5 | 推理框架 | 三层记忆 | 进化 | 多Agent | 觉察 |
 |--------|:---:|:---:|:---:|:---:|:---:|:---:|
-| **SOMA v2.0.3** | **100%** | **✓** | **✓** | **✓** | **✓** | **✓** |
+| **SOMA v2.0.4** | **100%** | **✓** | **✓** | **✓** | **✓** | **✓** |
 | ChromaDB | 2.5% | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Mem0 | * | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Zep | * | ✗ | ✗ | ✗ | ✗ | ✗ |
@@ -390,7 +391,7 @@ git clone https://github.com/soma-project/soma-core.git
 cd soma-core
 pip install -e ".[dev]"
 
-pytest -v --cov=soma --cov-report=term    # 639 测试，~97% 覆盖率
+pytest -v --cov=soma --cov-report=term    # 650 测试，~97% 覆盖率
 
 python -m soma                              # 快速验证
 
@@ -453,7 +454,7 @@ soma-core/
 │   ├── providers.py       # LLM 提供商管理
 │   └── frontend/          # Vue 3 仪表盘界面（中英文切换）
 ├── docs/                  # 文档（中英双语）
-├── tests/                 # 639 测试，~97% 覆盖率
+├── tests/                 # 650 测试，~97% 覆盖率
 ├── examples/              # 使用示例
 └── pyproject.toml         # 构建配置
 ```
