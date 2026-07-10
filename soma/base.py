@@ -24,6 +24,9 @@ class MemoryUnit:
     session_id: str = ""
     agent_id: str = ""
     shared_group_id: str = ""
+    # v2.0.5: 多模态记忆支持（纯增量，不影响现有功能）
+    content_type: str = "text"         # text/table/chart
+    structured_data: Optional[dict] = None  # JSON 结构化数据
 
     def relevance_potential(self) -> float:
         """关联潜力 = 指数近因衰减 × 重要性 × 使用频次因子

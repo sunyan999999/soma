@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "2.0.4"
+    __version__ = "2.0.5"
 
 from soma.config import SOMAConfig, load_config
 from soma.base import MemoryUnit, Focus, ActivatedMemory
@@ -61,7 +61,7 @@ _log = logging.getLogger("soma")
 
 
 class SOMA:
-    """SOMA 顶层门面 — v2.0.4
+    """SOMA 顶层门面 — v2.0.5
 
     使用示例::
 
@@ -342,6 +342,23 @@ class SOMA:
                         for s in reason_result.get("reasoning_steps", [])
                     ]
                     pre_analysis_mode = "llm_enhanced" if _use_llm else "local"
+
+                    # v2.0.5: L3 反事实推理 — 追问"如果反过来呢？"
+                    if complexity >= 3:
+                        try:
+                            counter_prompt = (
+                                f"对以下分析提出反事实推理:\n"
+                                f"{reason_result['answer'][:400]}\n\n"
+                                f"核心假设是什么？如果这些假设不成立会怎样？"
+                                f"有什么被忽略的替代方案？给出2-3个反事实洞察。"
+                            )
+                            counter_result = self.reason(counter_prompt, use_llm=False)
+                            if counter_result.get("answer"):
+                                pre_analysis += (
+                                    f"\n\n[反事实推理]:\n{counter_result['answer'][:400]}"
+                                )
+                        except Exception:
+                            pass
             except Exception:
                 pass
 
