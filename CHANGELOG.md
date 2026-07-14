@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.5] — 2026-07-14
+
+### Counterfactual Reasoning + HTTP Server + Multi-Modal / 反事实推理 + 独立服务 + 多模态记忆
+
+**v2.0.5 adds 3 pure-additive features. Wisdom +1.9 from counterfactual reasoning. 649 tests passed.**
+
+### Added / 新增
+- F: L3 counterfactual reasoning — if assumptions fail, what alternatives exist
+- G: soma/server.py standalone HTTP service (soma-server CLI)
+- H: MemoryUnit content_type/structured_data multi-modal fields
+- pyproject.toml: fastembed version pinned to <0.8.0 (ONNX regression fix)
+
+### Fixed / 修复
+- llm_used initialization across all code paths (Codex verified)
+- fastembed version constraint to prevent ONNX latency regression
+
+### Changed / 变更
+- soma/__init__.py __version__ to 2.0.5
+- pyproject.toml version to 2.0.5
+- Codex verified: Wisdom 85.6 (+1.9), 10/10 semantic recall
+
 ## [2.0.4] — 2026-07-07
 
 ### Wisdom Perception Upgrade / 智慧感知升级
