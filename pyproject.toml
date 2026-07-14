@@ -31,7 +31,7 @@ dependencies = [
     "numpy>=1.24",
     "jieba>=0.42",
     "scikit-learn>=1.3.0",
-    "fastembed>=0.4.0",
+    "fastembed>=0.4.0,<0.8.0",
     "faiss-cpu>=1.8.0",
     "tenacity>=8.0",
 ]
