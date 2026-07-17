@@ -207,7 +207,7 @@ class SOMA_Agent:
             self.zhongdao = ZhongdaoEngine(config)
             self._zhongdao_mode = "auto" if config.enable_zhongdao == "auto" else "on"
 
-    def respond(self, problem: str, user_id: str = "") -> str:
+    def respond(self, problem: str, user_id: str = "", skip_record: bool = False) -> str:
         """完整管道：拆解 → 双向激活 → 合成 → 应答"""
         import time
 
@@ -345,7 +345,8 @@ class SOMA_Agent:
         self.evolver.set_current_context(foci, activated, problem)
 
         # Step 7: 录制 session（供仪表盘消费）
-        self.record_session(problem, answer, foci, activated)
+        if not skip_record:
+            self.record_session(problem, answer, foci, activated)
 
         return answer
 

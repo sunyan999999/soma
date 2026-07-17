@@ -164,7 +164,7 @@ class SOMA:
             )
         return getattr(self._agent, name)
 
-    def respond(self, problem: str, user_id: str = "") -> str:
+    def respond(self, problem: str, user_id: str = "", skip_record: bool = False) -> str:
         """完整智者管道：拆解→激活→合成→反思→进化检测
 
         v0.9.2: 当 orchestration_mode="multi" 时，走多Agent编排管道。
@@ -565,7 +565,7 @@ class SOMA:
                     f"问题: {problem}\n\n推理:\n{template_answer[:1500]}\n\n"
                     f"要求: 保留核心维度分析，语言更精炼，给出明确建议。"
                 )
-                llm_result = self._agent.respond(synthesis_prompt)
+                llm_result = self._agent.respond(synthesis_prompt, skip_record=True)
                 if llm_result and len(llm_result) > 50:
                     answer = llm_result[:3000]
                     llm_mode = "llm_enhanced"

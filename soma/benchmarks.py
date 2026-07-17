@@ -79,7 +79,8 @@ def normalize_score(raw_value: float, data_count: int, metric: str) -> float:
 
     if metric == "query_latency_ms":
         # 数据量分档阈值：延迟随数据量增长是正常的物理现象，不能惩罚
-        # 100条 <500: 30ms, 500-2000: 80ms, 2000-10000: 150ms, >10000: 300ms
+        # 阈值基于 CPU ONNX 推理的合理预期（v2.0.5 基准: fastembed 60-80ms）
+        # 大数据量阈值从 300→500ms（Codex 建议），避免 ONNX 版本波动导致假降分
         if n < 500:
             threshold_ms = 30.0
         elif n < 2000:
@@ -87,11 +88,19 @@ def normalize_score(raw_value: float, data_count: int, metric: str) -> float:
         elif n < 10000:
             threshold_ms = 150.0
         else:
-            threshold_ms = 300.0
+            threshold_ms = 500.0
         if raw_value <= 0:
             return 100.0
+        # 对数衰减：ratio > 1 时用 log₂ 平滑下降，避免线性扣分过于剧烈
+        # 例: 280ms / 500ms = 0.56 → score = 44 (合理反映延迟但不灾难性)
+        #      500ms / 500ms = 1.00 → score = 0
+        #      1000ms / 500ms = 2.00 → score = 0 (clamped)
         ratio = raw_value / threshold_ms
-        return round(max(0, min(100, (1.0 - min(ratio, 1.0)) * 100)), 1)
+        if ratio <= 1.0:
+            score = (1.0 - ratio) * 100
+        else:
+            score = max(0, -math.log2(ratio) * 30)
+        return round(max(0, min(100, score)), 1)
 
     elif metric == "insert_latency_ms":
         # 插入延迟分档: <500: 10ms, 500-2000: 20ms, 2000-10000: 40ms, >10000: 80ms
