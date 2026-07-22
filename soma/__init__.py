@@ -27,6 +27,8 @@ from soma.multi_agent.orchestrator import OrchestrationResult
 from soma.memory.scene import SceneStore
 from soma.memory.profile import ProfileStore
 from soma.memory.capture import CapturePipeline, CaptureConfig
+from soma.code_memory import CodeAnalyzer, CodeStructure
+from soma.memory_manager import MemoryManager, MaintenanceReport, ConflictReport
 
 # 包内置默认思维框架 — 确保 pip install 后在任何目录都能找到
 _PACKAGE_DIR = Path(__file__).parent
@@ -49,6 +51,11 @@ __all__ = [
     "SOMAAutoGenMemory",
     "AuditLogger",
     "RBACManager",
+    "CodeAnalyzer",
+    "CodeStructure",
+    "MemoryManager",
+    "MaintenanceReport",
+    "ConflictReport",
     "MemoryUnit",
     "Focus",
     "ActivatedMemory",
@@ -967,6 +974,67 @@ class SOMA:
 
         return memory_id
 
+    def remember_code(
+        self, code: str, file_path: str = "", language: str = "python",
+        importance: float = 0.8, user_id: str = "", session_id: str = "",
+    ) -> dict:
+        """存储代码记忆 — AST 自动解析结构 + 生成语义三元组。
+
+        示例::
+
+            code = '''
+            def fibonacci(n: int) -> int:
+                if n <= 1:
+                    return n
+                return fibonacci(n-1) + fibonacci(n-2)
+            '''
+            result = soma.remember_code(code, file_path="math_utils.py")
+            # → 存储结构化记忆 + 自动生成语义三元组
+
+        返回: {"memory_id": ..., "structure": CodeStructure, "triples_count": int}
+        """
+        analyzer = CodeAnalyzer()
+        enriched = analyzer.analyze_and_enrich(code, language)
+        structure_data = enriched["structured_data"]
+        triples = enriched["semantic_triples"]
+        summary = enriched["summary"]
+
+        # 构建上下文
+        ctx = {
+            "content_type": "code",
+            "language": language,
+            "file_path": file_path,
+            "code_summary": summary,
+        }
+
+        # 存储情节记忆（带结构化数据）
+        memory_id = self._agent.remember(
+            f"[代码] {file_path or 'snippet'}: {summary}\n{code[:500]}",
+            ctx,
+            importance,
+            user_id=user_id,
+            session_id=session_id,
+        )
+
+        # 自动注入语义三元组（调用关系、继承关系）
+        for subj, pred, obj in triples:
+            try:
+                self._agent.remember_semantic(
+                    subject=subj,
+                    predicate=pred,
+                    object_=obj,
+                    confidence=min(0.9, 0.5 + 0.1 * len(triples)),
+                    namespace=f"code:{file_path}" if file_path else "code:snippet",
+                )
+            except Exception:
+                pass
+
+        return {
+            "memory_id": memory_id,
+            "structure": structure_data,
+            "triples_count": len(triples),
+        }
+
     def remember_semantic(
         self, subject: str, predicate: str, object_: str, confidence: float = 1.0,
         namespace: str = "",
@@ -1196,6 +1264,47 @@ class SOMA:
                 "solve_multi() 需要在 orchestration_mode='multi' 模式下使用。"
             )
         return self._orchestrator.solve(problem, strategy=strategy)
+
+    # ── 记忆健康管理 ──────────────────────────────────────────
+
+    @property
+    def memory_manager(self) -> MemoryManager:
+        """惰性初始化记忆管理器"""
+        if not hasattr(self, "_memory_mgr"):
+            self._memory_mgr = MemoryManager(
+                episodic_store=self._agent.memory.episodic,
+                semantic_store=self._agent.memory.semantic,
+                skill_store=self._agent.memory.skill,
+            )
+        return self._memory_mgr
+
+    def memory_health(self) -> dict:
+        """返回记忆系统健康报告。
+
+        包含: 各库计数 / 衰减统计 / 冲突数量 / 可巩固组数
+        """
+        mgr = self.memory_manager
+        report = mgr.health_report()
+
+        # 补充巩固候选信息
+        candidates = mgr.find_consolidation_candidates()
+        report["consolidation_candidates"] = len(candidates)
+        report["largest_group"] = len(candidates[0][1]) if candidates else 0
+
+        return report
+
+    def memory_maintenance(
+        self, prune: bool = True, consolidate: bool = True, detect: bool = True,
+    ) -> MaintenanceReport:
+        """运行一轮主动记忆维护。
+
+        维护步骤: 修剪过期 → 情节合并为语义 → 冲突检测
+
+        建议每 N 次 evolution 或每天调用一次。
+        """
+        return self.memory_manager.run_maintenance(
+            prune=prune, consolidate=consolidate, detect=detect,
+        )
 
     # ── 生命周期 ──────────────────────────────────────────────
 
