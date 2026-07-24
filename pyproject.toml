@@ -58,6 +58,7 @@ Documentation = "https://sunyan999999.github.io/soma/"
 PyPI = "https://pypi.org/project/soma-wisdom/"
 
 [project.scripts]
+soma = "soma.cli:main"
 soma-quickstart = "soma.__main__:main"
 soma-server = "soma.server:main"
 
