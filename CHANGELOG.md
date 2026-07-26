@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.6-dev] — unreleased
+
+### Code Memory + Memory Lifecycle + Unified CLI / 代码结构化记忆 + 主动记忆管理 + 统一 CLI
+
+**v2.0.6-dev adds AST-aware code memory, Ebbinghaus forgetting curve, and cross-agent CLI. 702 tests passed.**
+
+### Added / 新增
+- **代码结构化记忆** (`soma/code_memory.py`): AST 解析 Python 代码，自动提取函数/类/调用图/导入关系，生成语义三元组 (CALLS/INHERITS/HAS_METHOD)。`SOMA.remember_code()` 一行接入
+- **主动记忆管理** (`soma/memory_manager.py`): 艾宾浩斯遗忘曲线 (情节7天/语义30天/技能90天半衰期)，同主题 ≥5 条情节记忆自动合并为语义摘要，矛盾三元组自动冲突检测+严重度分级，低于阈值记忆自动修剪。`SOMA.memory_health()` / `SOMA.memory_maintenance()`
+- **统一 CLI** (`soma/cli.py`): `soma recall/record/think/maintain/stats/health` 六个子命令，所有智能体一行终端命令接入 SOMA 共享记忆网络
+- **embedder 延迟健康监控**: `last_latency_ms` / `avg_latency_ms` / `is_healthy` / `latency_report()`，实时检测 ONNX 性能回归
+- **全智能体集成指南**: `AgentsCollab/knowledge/SOMA智能体集成指南.md` + 各智能体专属接入卡片
+- **SOMA Server 自启动脚本**: `scripts/start_soma_server.bat`
+- **SECURITY.md**: 安全策略与审计历史
+
+### Fixed / 修复
+- `skip_record` 参数: 内部 LLM 合成调用不再重复录制 session
+- Benchmark 评分公式: 大数据量查询延迟阈值 300→500ms + 对数衰减替代线性扣分，不再被 ONNX 版本波动灾难性扣分
+- P1 安全修复: 权限白名单收紧 (移除 21 条危险通配规则)
+- P2 安全修复: 遥测缓存清理 + CodexSandboxUsers ACL 移除 + AgentsCollab 权限收紧
+
+### Changed / 变更
+- `soma/__init__.py`: 新增 `remember_code()` / `memory_health()` / `memory_maintenance()` 方法
+- `pyproject.toml`: 注册 `soma` CLI 命令 + 版本号 → 2.0.6.dev0
+- Claude Code hooks: SessionStart 改用 `soma recall`，新增 Stop hook `soma maintain`
+- CLAUDE.md: 记忆操作命令更新为 `soma` CLI
+
+### Tested / 测试
+- 702 用例通过 (660 已有 + 42 新增)，零回归
+
+---
+
 ## [2.0.5] — 2026-07-14
 
 ### Counterfactual Reasoning + HTTP Server + Multi-Modal / 反事实推理 + 独立服务 + 多模态记忆
