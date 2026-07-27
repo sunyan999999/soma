@@ -1,4 +1,4 @@
-# SOMA v2.0.5 — AI Agent 认知内核
+# SOMA v2.0.6-dev — AI Agent 认知内核
 
 <p align="center">
   <strong>Wisdom over Memory — 智慧超越记忆</strong><br>
@@ -28,7 +28,7 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 
 **为什么用 SOMA 而非向量数据库？** 传统记忆库（ChromaDB、Mem0）只管存和搜。SOMA **先思考再检索**：7条思维规律组成推理网络，分析问题的维度决定了要激活什么记忆。结果是能系统拆解问题的 Agent，而不是只会模式匹配的机器人。
 
-| | 向量数据库 | Mem0 | **SOMA v2.0.5** |
+| | 向量数据库 | Mem0 | **SOMA v2.0.6-dev** |
 |---|---|---|---|
 | 存取记忆 | ✓ | ✓ | ✓ |
 | 推理框架 | ✗ | ✗ | **✓ 7条思维规律** |
@@ -46,13 +46,13 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 <p align="center">
   <a href="https://github.com/sunyan999999/soma"><img src="https://img.shields.io/github/stars/sunyan999999/soma?style=social" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-2.0.5-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-2.0.6--dev-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/python-3.10%2B-green" alt="Python"></a>
   <a href="#基准测试"><img src="https://img.shields.io/badge/语义召回-100%25-brightgreen" alt="语义召回率"></a>
-  <a href="#基准测试"><img src="https://img.shields.io/badge/综合评分-92.6%2F100-blue" alt="综合评分"></a>
-  <a href="#"><img src="https://img.shields.io/badge/测试-650%2F650-brightgreen" alt="测试"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/变更日志-v2.0.5-success" alt="变更日志"></a>
-  <a href="#"><img src="https://img.shields.io/badge/里程碑-2.0.5-ff6b6b" alt="里程碑"></a>
+  <a href="#基准测试"><img src="https://img.shields.io/badge/综合评分-87.5%2F100-blue" alt="综合评分"></a>
+  <a href="#"><img src="https://img.shields.io/badge/测试-702%2F702-brightgreen" alt="测试"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/变更日志-v2.0.6--dev-success" alt="变更日志"></a>
+  <a href="#"><img src="https://img.shields.io/badge/里程碑-2.0.6--dev-ff6b6b" alt="里程碑"></a>
 </p>
 
 📖 **[English README](README.md)** | **[文档](https://sunyan999999.github.io/soma/)** | **[变更日志](CHANGELOG.md)** | **[贡献指南](CONTRIBUTING.md)**
@@ -63,9 +63,9 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 
 ---
 
-## v2.0.5 — 自主认知循环
+## v2.0.6-dev — 代码记忆 + 主动记忆管理
 
-**v2.0.5 综合基准评分 92.6 分，创历史最高。** 自主认知循环现在可以完全不依赖外部 LLM 完成推理：
+**v2.0.6-dev 新增 AST 代码结构化记忆、艾宾浩斯遗忘曲线、全智能体统一 CLI。** 在 v2.0.5 自主认知循环基础上，702 测试通过，语义召回 10/10 完美：
 
 | # | 功能 | 说明 |
 |---|------|------|
@@ -78,9 +78,9 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 
 **基准测试**（16K+ 记忆规模，650 测试）：综合 92.6，记忆 94.7，智慧 83.7，进化 96.3，伸缩 100.0。
 
-从 v0.1 埋下的每一颗种子，到 v2.0.5 长成的完整系统：
+从 v0.1 埋下的每一颗种子，到 v2.0.6-dev 长成的智能体共享网络：
 
-| 能力线 | 核心问题 | v2.0.5 的答案 |
+| 能力线 | 核心问题 | v2.0.6-dev 的答案 |
 |---|---|---|
 | **记忆** | AI如何像人一样管理记忆？ | 三层架构：碎片 → 场景 → 画像 |
 | **推理** | 找到信息后如何用来思考？ | 因果链 + 冲突检测 + 跨域类比 |
@@ -96,7 +96,7 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                         SOMA v2.0.5 — 认知内核                                   │
+│                         SOMA v2.0.6-dev — 认知内核                                 │
 │                                                                                │
 │  ┌──────────────────────────────────────────────────────────────────┐        │
 │  │  L3 用户画像 — "理解你是个什么样的人"                                │        │
@@ -202,7 +202,7 @@ soma-quickstart         # 或使用 CLI 入口
 
 ### 2. 三层记忆体系
 
-v2.0.5 延续了自动记忆分层——系统在你使用的过程中，默默构建对你的理解：
+自动记忆分层延续了 v2.0.5——系统在你使用的过程中，默默构建对你的理解：
 
 | 层级 | 是什么 | 示例 |
 |------|--------|------|
@@ -351,7 +351,7 @@ result = tool.run("分析这个问题...")
 
 ## 基准测试
 
-SOMA v2.0.5 — 使用 1,050 条digital twin project生产记忆，5轮统计基准测试：
+SOMA v2.0.6-dev — 使用生产数据，702 测试通过，5轮统计基准测试：
 
 ### 综合评分: 92.6/100
 
@@ -367,7 +367,7 @@ SOMA v2.0.5 — 使用 1,050 条digital twin project生产记忆，5轮统计基
 
 | 系统 | Recall@5 | 推理框架 | 三层记忆 | 进化 | 多Agent | 觉察 |
 |--------|:---:|:---:|:---:|:---:|:---:|:---:|
-| **SOMA v2.0.5** | **100%** | **✓** | **✓** | **✓** | **✓** | **✓** |
+| **SOMA v2.0.6-dev** | **100%** | **✓** | **✓** | **✓** | **✓** | **✓** |
 | ChromaDB | 2.5% | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Mem0 | * | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Zep | * | ✗ | ✗ | ✗ | ✗ | ✗ |
