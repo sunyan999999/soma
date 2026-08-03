@@ -8,6 +8,7 @@
     soma stats                             # 记忆库状态
     soma health                            # 健康检查
     soma maintain                          # 运行记忆维护（修剪+巩固+冲突检测）
+    soma learn "外部知识文本..."             # 五层质量过滤后存入记忆库
 
 智能体集成::
 
@@ -223,6 +224,54 @@ def cmd_maintain(_args):
         return 1
 
 
+def cmd_learn(args):
+    """从外部知识学习（五层质量过滤）"""
+    content = args.content
+    source = getattr(args, "source", "manual")
+    problem = getattr(args, "context", "")
+
+    if not content or len(content.strip()) < 20:
+        print(json.dumps({"error": "内容太短，至少20个字符"}, ensure_ascii=False))
+        return 1
+
+    try:
+        soma = _get_soma()
+        result = soma.learn_from_external(
+            [content.strip()],
+            problem_context=problem,
+            source_name=source,
+        )
+        print(json.dumps({
+            "status": "completed",
+            "accepted": len(result.accepted),
+            "quarantined": len(result.quarantined),
+            "rejected": len(result.rejected),
+            "acceptance_rate": result.acceptance_rate,
+        }, ensure_ascii=False, indent=2))
+
+        if result.accepted:
+            ek = result.accepted[0]
+            print(json.dumps({
+                "details": {
+                    "relevance": ek.relevance_score,
+                    "quality": ek.quality_score,
+                    "style_alignment": ek.style_alignment,
+                    "conflicts": ek.conflicts,
+                    "digested": ek.digested_content[:300],
+                }
+            }, ensure_ascii=False, indent=2))
+        elif result.rejected:
+            print(json.dumps({
+                "reject_reason": result.rejected[0].reject_reason,
+            }, ensure_ascii=False, indent=2))
+
+        soma.close()
+        return 0
+    except Exception as e:
+        print(json.dumps({"error": str(e)}, ensure_ascii=False))
+        return 1
+
+
 # ═══════════════════════════════════════════════════════════════
 # CLI 定义
 # ═══════════════════════════════════════════════════════════════
@@ -275,6 +324,14 @@ def build_parser() -> argparse.ArgumentParser:
     # maintain
     sub.add_parser("maintain", help="记忆维护（修剪+巩固+冲突检测）")
 
+    # learn
+    p_learn = sub.add_parser("learn", help="从外部知识学习（五层质量过滤）")
+    p_learn.add_argument("content", help="外部文本内容")
+    p_learn.add_argument("-s", "--source", type=str, default="manual",
+                          help="来源标识 (web/document/rag)")
+    p_learn.add_argument("-c", "--context", type=str, default="",
+                          help="当前分析主题，用于相关性判断")
+
     return parser
 
 
@@ -293,6 +350,7 @@ def main():
         "record": cmd_record,
         "think": cmd_think,
         "maintain": cmd_maintain,
+        "learn": cmd_learn,
     }
 
     handler = dispatch.get(args.command)

@@ -29,6 +29,7 @@ from soma.memory.profile import ProfileStore
 from soma.memory.capture import CapturePipeline, CaptureConfig
 from soma.code_memory import CodeAnalyzer, CodeStructure
 from soma.memory_manager import MemoryManager, MaintenanceReport, ConflictReport
+from soma.knowledge_gate import KnowledgeGate, GateResult, ExternalKnowledge
 
 # 包内置默认思维框架 — 确保 pip install 后在任何目录都能找到
 _PACKAGE_DIR = Path(__file__).parent
@@ -56,6 +57,9 @@ __all__ = [
     "MemoryManager",
     "MaintenanceReport",
     "ConflictReport",
+    "KnowledgeGate",
+    "GateResult",
+    "ExternalKnowledge",
     "MemoryUnit",
     "Focus",
     "ActivatedMemory",
@@ -1305,6 +1309,44 @@ class SOMA:
         return self.memory_manager.run_maintenance(
             prune=prune, consolidate=consolidate, detect=detect,
         )
+
+    # ── 外部知识学习 ──────────────────────────────────────────
+
+    @property
+    def knowledge_gate(self) -> KnowledgeGate:
+        """惰性初始化知识门控"""
+        if not hasattr(self, "_knowledge_gate"):
+            self._knowledge_gate = KnowledgeGate(self._agent)
+        return self._knowledge_gate
+
+    def learn_from_external(
+        self, contents, problem_context: str = "", source_name: str = "external"
+    ) -> GateResult:
+        """从外部知识学习：五层质量过滤后自动存入记忆库。
+
+        管道: 相关性过滤 → SOMA推理消化 → 风格对齐 → 一致性校验 → 分级存储
+
+        示例::
+
+            # 从 Web 搜索结果学习
+            result = soma.learn_from_external(
+                ["外部文本1", "外部文本2"],
+                problem_context="零熵智库的认知架构设计",
+                source_name="web",
+            )
+            print(f"接受: {len(result.accepted)}, 隔离: {len(result.quarantined)}")
+
+        Args:
+            contents: str | List[str] — 外部文本
+            problem_context: 当前分析主题，用于相关性判断
+            source_name: 来源标识 (web/document/rag)
+
+        Returns:
+            GateResult 含 accepted/quarantined/rejected 分类
+        """
+        if isinstance(contents, str):
+            contents = [contents]
+        return self.knowledge_gate.ingest(contents, problem_context, source_name)
 
     # ── 生命周期 ──────────────────────────────────────────────
 
