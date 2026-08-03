@@ -9,6 +9,7 @@
     soma health                            # 健康检查
     soma maintain                          # 运行记忆维护（修剪+巩固+冲突检测）
     soma learn "外部知识文本..."             # 五层质量过滤后存入记忆库
+    soma graph                            # 自动构建知识图谱
 
 智能体集成::
 
@@ -224,6 +225,30 @@ def cmd_maintain(_args):
         return 1
 
 
+def cmd_graph(args):
+    """自动构建知识图谱"""
+    max_memories = getattr(args, "max_memories", 200)
+    try:
+        soma = _get_soma()
+        report = soma.build_knowledge_graph(max_memories=max_memories)
+        print(json.dumps({
+            "status": "completed",
+            "new_triples": report.new_triples,
+            "new_session_edges": report.new_session_edges,
+            "new_keyword_edges": report.new_keyword_edges,
+            "total_semantic": report.total_semantic_after,
+            "duration_ms": report.duration_ms,
+        }, ensure_ascii=False, indent=2))
+        if report.sample_triples:
+            samples = [f"{s} {p} {o}" for s, p, o in report.sample_triples[:3]]
+            print(json.dumps({"sample_triples": samples}, ensure_ascii=False, indent=2))
+        soma.close()
+        return 0
+    except Exception as e:
+        print(json.dumps({"error": str(e)}, ensure_ascii=False))
+        return 1
+
+
 def cmd_learn(args):
     """从外部知识学习（五层质量过滤）"""
     content = args.content
@@ -332,6 +357,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_learn.add_argument("-c", "--context", type=str, default="",
                           help="当前分析主题，用于相关性判断")
 
+    # graph
+    p_graph = sub.add_parser("graph", help="自动构建知识图谱")
+    p_graph.add_argument("-n", "--max-memories", type=int, default=200,
+                          help="最多处理多少条记忆 (默认200)")
+
     return parser
 
 
@@ -351,6 +381,7 @@ def main():
         "think": cmd_think,
         "maintain": cmd_maintain,
         "learn": cmd_learn,
+        "graph": cmd_graph,
     }
 
     handler = dispatch.get(args.command)

@@ -30,6 +30,7 @@ from soma.memory.capture import CapturePipeline, CaptureConfig
 from soma.code_memory import CodeAnalyzer, CodeStructure
 from soma.memory_manager import MemoryManager, MaintenanceReport, ConflictReport
 from soma.knowledge_gate import KnowledgeGate, GateResult, ExternalKnowledge
+from soma.graph_builder import AutoGraphBuilder, GraphBuildReport
 
 # 包内置默认思维框架 — 确保 pip install 后在任何目录都能找到
 _PACKAGE_DIR = Path(__file__).parent
@@ -60,6 +61,8 @@ __all__ = [
     "KnowledgeGate",
     "GateResult",
     "ExternalKnowledge",
+    "AutoGraphBuilder",
+    "GraphBuildReport",
     "MemoryUnit",
     "Focus",
     "ActivatedMemory",
@@ -1347,6 +1350,28 @@ class SOMA:
         if isinstance(contents, str):
             contents = [contents]
         return self.knowledge_gate.ingest(contents, problem_context, source_name)
+
+    @property
+    def graph_builder(self) -> AutoGraphBuilder:
+        """惰性初始化图谱构建器"""
+        if not hasattr(self, "_graph_builder"):
+            self._graph_builder = AutoGraphBuilder(
+                episodic_store=self._agent.memory.episodic,
+                semantic_store=self._agent.memory.semantic,
+            )
+        return self._graph_builder
+
+    def build_knowledge_graph(self, max_memories: int = 200) -> GraphBuildReport:
+        """运行一轮自动知识图谱构建。
+
+        三路构建:
+          1. 中文模式匹配: 因果/归属/依赖/相似关系 → 语义三元组
+          2. 会话共现: 同会话记忆 → 关联边
+          3. 关键词重叠: Jaccard > 0.3 → 相似边
+
+        建议每次 memory_maintenance 时自动调用。
+        """
+        return self.graph_builder.build(max_memories=max_memories)
 
     # ── 生命周期 ──────────────────────────────────────────────
 
