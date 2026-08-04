@@ -7,11 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.0.6-dev] — unreleased
+## [2.0.6] — 2026-07-27
 
 ### Code Memory + Memory Lifecycle + Unified CLI / 代码结构化记忆 + 主动记忆管理 + 统一 CLI
 
-**v2.0.6-dev adds AST-aware code memory, Ebbinghaus forgetting curve, and cross-agent CLI. 702 tests passed.**
+**v2.0.6 adds code memory, active memory management, unified CLI, knowledge gate, and auto graph builder. 748 tests passed.**
 
 ### Added / 新增
 - **代码结构化记忆** (`soma/code_memory.py`): AST 解析 Python 代码，自动提取函数/类/调用图/导入关系，生成语义三元组 (CALLS/INHERITS/HAS_METHOD)。`SOMA.remember_code()` 一行接入
@@ -30,12 +30,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed / 变更
 - `soma/__init__.py`: 新增 `remember_code()` / `memory_health()` / `memory_maintenance()` 方法
-- `pyproject.toml`: 注册 `soma` CLI 命令 + 版本号 → 2.0.6.dev0
+- `pyproject.toml`: 注册 `soma` CLI 命令 + 版本号 → 2.0.6
 - Claude Code hooks: SessionStart 改用 `soma recall`，新增 Stop hook `soma maintain`
 - CLAUDE.md: 记忆操作命令更新为 `soma` CLI
 
 ### Tested / 测试
-- 702 用例通过 (660 已有 + 42 新增)，零回归
+- 748 用例通过，零回归 (1个网络环境预现有失败)
+
+### Added (continued) / 新增（续）
+- **外部知识门控管道** (`soma/knowledge_gate.py`): 五层质量过滤 — 相关性→SOMA消化→风格对齐→一致性校验→分级存储。纯本地，零LLM。`SOMA.learn_from_external()` + `soma learn` CLI
+- **自动知识图谱构建** (`soma/graph_builder.py`): 三路自动生长 — 中文模式匹配(21种关系) + 会话共现边 + 关键词重叠边。`SOMA.build_knowledge_graph()` + `soma graph` CLI
+- 155 个新测试 (42 + 24 + 24 + 65)
 
 ---
 
