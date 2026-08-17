@@ -51,6 +51,8 @@ class SOMAConfig(BaseModel):
     use_vector_search: bool = True
     vector_dim: int = 512  # BAAI/bge-small-zh-v1.5 实际输出512维
     embedder_device: str = "cpu"  # "cpu" | "cuda"
+    # v2.0.8: 构造时是否立即加载/预热嵌入模型（避免首个请求热路径卡 30-100s）
+    warmup_on_init: bool = False
 
     # 框架锚定检测（v0.9.1+）
     enable_frame_detection: bool = False

@@ -51,6 +51,11 @@ class SOMAEmbedder(BaseEmbedder):
                 threads=4,
             )
 
+    @property
+    def is_loaded(self) -> bool:
+        """模型是否已加载完成。v2.0.8: 供热路径判断是否可安全 encode。"""
+        return self._model is not None
+
     def encode(self, text: str) -> np.ndarray:
         self._ensure_model()
         t0 = time.perf_counter()

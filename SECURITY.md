@@ -54,3 +54,5 @@ python -m pip install --upgrade pip-audit && pip-audit
 |------|--------|------|------|
 | 2026-07-08 | Qoder CN | Claude Code 环境全量审计 | P0 已修复，P1/P2 已完成 |
 | 2026-07-26 | Claude Code | SOMA v2.0.6-dev 代码安全扫描 | 零漏洞，零硬编码密钥 |
+| 2026-08-16 | Claude Code | SOMA v2.0.7 安全审计 | 修复 --project 路径穿越漏洞（正则白名单）+ importance 越界钳制 |
+| 2026-08-17 | Claude Code | SOMA v2.0.8 安全审计 | 依赖锁定（litellm/fastembed）防升级漂移 + 激活异常不再静默吞掉 |

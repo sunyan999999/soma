@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "2.0.6"
+    __version__ = "2.0.8"
 
 from soma.config import SOMAConfig, load_config
 from soma.base import MemoryUnit, Focus, ActivatedMemory
@@ -75,7 +75,7 @@ _log = logging.getLogger("soma")
 
 
 class SOMA:
-    """SOMA 顶层门面 — v2.0.6
+    """SOMA 顶层门面 — v2.0.8
 
     使用示例::
 
@@ -106,6 +106,8 @@ class SOMA:
         top_k: int = 5,
         agent_id: str = "",
         group_id: str = "",
+        # v2.0.8: 构造时立即加载嵌入模型（避免首请求热路径卡 30-100s）
+        warmup_on_init: bool = False,
         # v0.9.2: 多Agent编排
         orchestration_mode: str = "single",
         orchestration_top_k: int = 3,
@@ -140,6 +142,7 @@ class SOMA:
             use_vector_search=use_vector_search,
             recall_threshold=recall_threshold,
             default_top_k=top_k,
+            warmup_on_init=warmup_on_init,
             orchestration_mode=orchestration_mode,
             orchestration_top_k=orchestration_top_k,
             orchestration_consensus=orchestration_consensus,
@@ -343,7 +346,8 @@ class SOMA:
             try:
                 # L3用LLM增强预分析，L2用纯本地预分析
                 _use_llm = (complexity >= 3)
-                reason_result = self.reason(problem, use_llm=_use_llm)
+                reason_result = self.reason(problem, use_llm=_use_llm,
+                                            _foci=foci, _activated=activated)
                 if reason_result.get("answer"):
                     pre_analysis = (
                         f"\n\n[SOMA 多维度预分析]:\n{reason_result['answer'][:800]}\n"
@@ -461,35 +465,53 @@ class SOMA:
 
     # ── v1.1.9: 自主推理（无需 LLM） ──────────────────────────
 
-    def reason(self, problem: str, user_id: str = "", use_llm: str = "auto") -> dict:
-        """自主推理管道 — 默认智能模式，自动判断是否用 LLM 增强。
+    def reason(self, problem: str, user_id: str = "", use_llm: str = "auto",
+               _foci=None, _activated=None) -> dict:
+        """自主推理管道 — 拆解→激活→推理→合成。
 
         管道: 拆解(7规律) → 激活(记忆) → 推理(因果链+类比+假设检验) → 合成(模板 或 LLM)
 
-        use_llm="auto": L1→纯本地, L2→LLM增强(有key), L3→LLM增强
-        use_llm=False: 纯本地推理，零 token
-        use_llm=True: 强制 LLM 合成，质量最高
+        v2.0.8 说明（use_llm 三档语义）：
+        - use_llm=False: 纯本地推理，零 token、零网络、零 LLM 调用（推荐文档称「本地推理」）
+        - use_llm="auto": 智能路由 — L1→纯本地；L2→LLM 增强（有 key 时）；L3→LLM 增强
+        - use_llm=True: 强制 LLM 合成，质量最高
+        （注意：auto/True 模式会调用 LLM，非「零 LLM」；纯本地请显式 use_llm=False）
+
         返回: {answer, foci, memories, confidence, reasoning_steps, tokens_saved, llm_mode}
         """
         t0 = time.time()
 
         # Step 1: 拆解（零 LLM，零网络）
-        # v1.1.9-fix: 保存原始向量搜索设置，避免 ONNX 下载 HuggingFace 模型
-        orig_vector = self._agent.hub._use_vector if hasattr(self._agent.hub, '_use_vector') else True
-        orig_embedder = self._agent.engine.embedder
-        try:
-            self._agent.engine.embedder = None  # 禁用 embedder，纯关键词拆解
-            foci = self._agent.decompose(problem)
-        finally:
-            self._agent.engine.embedder = orig_embedder  # 恢复
-        if not foci:
-            foci = self._agent.decompose(problem)
+        if _foci is not None:
+            # 复用调用方已拆解的焦点，避免重复 decompose（chat() 预分析场景）
+            foci = _foci
+        else:
+            # v1.1.9-fix: 保存原始向量搜索设置，避免 ONNX 下载 HuggingFace 模型
+            orig_vector = self._agent.hub._use_vector if hasattr(self._agent.hub, '_use_vector') else True
+            orig_embedder = self._agent.engine.embedder
+            try:
+                self._agent.engine.embedder = None  # 禁用 embedder，纯关键词拆解
+                foci = self._agent.decompose(problem)
+            finally:
+                self._agent.engine.embedder = orig_embedder  # 恢复
+            if not foci:
+                foci = self._agent.decompose(problem)
 
         # Step 2: 激活记忆（零 LLM）
-        try:
-            activated = self._agent.hub.activate(foci)
-        except Exception:
-            activated = []
+        if _activated is not None:
+            activated = _activated
+        else:
+            try:
+                activated = self._agent.hub.activate(foci)
+            except Exception as e:
+                # v2.0.8: 记录异常类型 + traceback 首行，避免激活失败被静默吞掉难定位
+                _log.error(
+                    "记忆激活失败 [%s]: %s\n%s",
+                    type(e).__name__,
+                    str(e)[:200],
+                    traceback.format_exc(limit=3),
+                )
+                activated = []
 
         # Step 3: 推理框架（零 LLM — 因果链+类比+假设检验+矛盾分析）
         reasoning_steps = []
@@ -1049,8 +1071,10 @@ class SOMA:
         self._agent.remember_semantic(subject, predicate, object_, confidence,
                                       namespace=namespace)
 
-    def query_memory(self, query: str, top_k: int = 5, user_id: str = "") -> list:
-        return self._agent.query_memory(query, top_k, user_id=user_id)
+    def query_memory(self, query: str, top_k: int = 5, user_id: str = "",
+                     agent_id: str = "", group_id: str = "") -> list:
+        return self._agent.query_memory(
+            query, top_k, user_id=user_id, agent_id=agent_id, group_id=group_id)
 
     def decompose(self, problem: str) -> list:
         return self._agent.decompose(problem)

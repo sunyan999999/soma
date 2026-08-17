@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.8] — 2026-08-17
+
+### Deployment & Agent Isolation Improvements / 部署与分身隔离改进
+
+**v2.0.8 adds load-on-init embedding, agent-scoped memory querying, pinned dependencies, and a multi-process deployment guide. 763 tests passed.**
+
+### Added / 新增
+- **`query_memory(agent_id=, group_id=)`**: 公开方法支持显式指定分身/组隔离维度，为空时回退到当前实例（向后兼容），集成层可用原生 agent 隔离替代手动内存过滤
+- **`warmup_on_init=True` 配置**: SOMA 构造时同步加载嵌入模型，把模型加载成本从「首个请求热路径」转移到「启动期」，消除首请求 30-100s 卡顿
+- **多进程部署文档** (`docs/guides/deployment.md`): embedder 内存预算、预热时机、进程内共享、离线环境建议
+
+### Changed / 变更
+- **`engine.decompose` 语义兜底**: embedder 未加载（`is_loaded=False`）时跳过向量语义匹配，直接走加权随机，避免热路径触发模型加载
+- **`reason()` 文档明确 use_llm 三档**: `False`=纯本地零 LLM / `"auto"`=智能路由 / `True`=强制 LLM，消除「零 LLM 自推理」命名误导
+- **激活异常日志**: 记忆激活失败时记录异常类型 + traceback 首行，不再静默吞掉
+
+### Fixed / 修复
+- **依赖版本锁定**: `litellm>=1.96.2,<1.97.0`（避免 1.97.0 Pydantic 循环引用错误）、`fastembed==0.7.4`（避免 ONNX 延迟回归 4.4x），防升级漂移
+
+### Tested / 测试
+- 763 用例通过，零回归（较 2.0.7 新增 3 个：query_memory 隔离透传 / warmup 配置 / decompose 跳过语义兜底）
+
+---
+
+## [2.0.7] — 2026-08-16
+
+### Security + Performance / 安全修复 + 性能优化
+
+**v2.0.7 fixes a path-traversal vulnerability, a memory-isolation test bug, and three performance regressions affecting multi-agent deployments. 760 tests passed.**
+
+### Added / 新增
+- **`soma` CLI `--project` 参数**: `soma recall/record/think/... --project <名>` 支持项目记忆库（`~/.soma/<项目>/`）与共享记忆库（`~/.soma/shared/`）隔离，默认不带参数仍走共享库（向后兼容）
+- **多智能体 embedder 共享**: 多个 agent 分身复用同一份 ONNX 模型，避免重复加载
+
+### Fixed / 修复
+- **路径穿越漏洞（高危）**: `soma record/recall --project` 无路径校验，可读写 `~/.soma/` 外任意路径，现加正则白名单 `^[A-Za-z0-9_-]+$`
+- **recall 阈值 bug**: CLI 搜索场景被自适应激活阈值（~0.3）全过滤导致返回空，现 CLI 场景清零阈值
+- **importance 越界**: `record -i` 未 clamp 到 [0,1]，可写入异常重要性，现钳制到 [0,1]
+- **测试隔离缺陷**: `test_backward_compat` 用默认 persist_dir 污染真实记忆库 + adaptive 阈值 flaky，现用 tmp_path 隔离
+
+### Changed / 变更
+- **性能优化 1**: `engine.decompose` 里 `_extract_keywords(problem)` 缓存只算一次，避免重复 jieba 分词
+- **性能优化 2**: `chat()` 预分析复用主流程已拆解的 foci/activated，避免重复一轮 decompose+activate 检索
+- **性能优化 3**: `SOMA_Agent` 支持传入共享 embedder，`create_agents` 多分身共享一份 ONNX 模型（内存 N×100MB → 1×100MB）
+
+### Tested / 测试
+- 760 用例通过，零回归（较 2.0.6 的 748 新增 12 个）
+
+---
+
 ## [2.0.6] — 2026-07-27
 
 ### Code Memory + Memory Lifecycle + Unified CLI / 代码结构化记忆 + 主动记忆管理 + 统一 CLI

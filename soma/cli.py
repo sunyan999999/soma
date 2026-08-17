@@ -28,6 +28,7 @@
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -35,32 +36,57 @@ from pathlib import Path
 # 共享记忆库目录 — 所有智能体写入同一位置
 SHARED_MEMORY_DIR = str(Path.home() / ".soma" / "shared")
 
+# 项目名只允许字母/数字/下划线/连字符，阻止路径穿越（--project ../.. 等）
+_PROJECT_NAME_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
-def _get_soma():
-    """惰性初始化 SOMA 实例，共享记忆库"""
+
+def _persist_dir(project: str = "") -> str:
+    """解析记忆库目录：project 为空 → 共享库，非空 → 项目隔离库。
+
+    校验 project 必须是安全目录名，否则抛出 ValueError。
+    """
+    if not project:
+        return SHARED_MEMORY_DIR
+    if not _PROJECT_NAME_RE.match(project):
+        raise ValueError(
+            f"非法项目名: {project!r}（只允许字母、数字、下划线、连字符）"
+        )
+    return str(Path.home() / ".soma" / project)
+
+
+def _get_soma(project: str = ""):
+    """惰性初始化 SOMA 实例。
+
+    project 为空 → 共享记忆库 (~/.soma/shared/)
+    project 非空 → 项目隔离记忆库 (~/.soma/<project>/)
+    """
     from soma import SOMA
 
-    return SOMA(
-        persist_dir=SHARED_MEMORY_DIR,
+    soma = SOMA(
+        persist_dir=_persist_dir(project),
         llm=os.environ.get("SOMA_LLM", "mock"),
         top_k=5,
     )
+    # CLI 是「搜索」场景，非推理激活场景：把自适应激活阈值清零，
+    # 让 recall 能召回关键词模糊匹配的低分记忆（否则默认阈值 ~0.3 会全过滤）
+    soma._agent.hub.threshold = 0.0
+    return soma
 
 
 # ═══════════════════════════════════════════════════════════════
 # 子命令实现
 # ═══════════════════════════════════════════════════════════════
 
-def cmd_health(_args):
+def cmd_health(args):
     """健康检查：验证 SOMA 可用性"""
     try:
-        soma = _get_soma()
+        soma = _get_soma(getattr(args, "project", ""))
         stats = soma.stats
         print(json.dumps({
             "status": "ok",
             "version": soma.__class__.__module__.split(".")[0],
             "memory_stats": stats,
-            "persist_dir": SHARED_MEMORY_DIR,
+            "persist_dir": _persist_dir(getattr(args, "project", "")),
         }, ensure_ascii=False, indent=2))
         soma.close()
         return 0
@@ -69,10 +95,10 @@ def cmd_health(_args):
         return 1
 
 
-def cmd_stats(_args):
+def cmd_stats(args):
     """记忆库统计"""
     try:
-        soma = _get_soma()
+        soma = _get_soma(getattr(args, "project", ""))
         stats = soma.stats
         # 补充健康信息
         try:
@@ -94,7 +120,7 @@ def cmd_recall(args):
     top_k = getattr(args, "top_k", 5)
 
     try:
-        soma = _get_soma()
+        soma = _get_soma(getattr(args, "project", ""))
         results = soma.query_memory(query, top_k=top_k)
 
         if not results:
@@ -127,7 +153,7 @@ def cmd_recall(args):
 def cmd_record(args):
     """记录一条经验"""
     content = args.content
-    importance = getattr(args, "importance", 0.7)
+    importance = max(0.0, min(1.0, getattr(args, "importance", 0.7)))
     domain = getattr(args, "domain", "")
 
     if not content or len(content.strip()) < 3:
@@ -135,7 +161,7 @@ def cmd_record(args):
         return 1
 
     try:
-        soma = _get_soma()
+        soma = _get_soma(getattr(args, "project", ""))
         ctx = {}
         if domain:
             ctx["domain"] = domain
@@ -164,7 +190,7 @@ def cmd_think(args):
         return 1
 
     try:
-        soma = _get_soma()
+        soma = _get_soma(getattr(args, "project", ""))
 
         # 拆解问题
         foci = soma.decompose(problem.strip())
@@ -199,10 +225,10 @@ def cmd_think(args):
         return 1
 
 
-def cmd_maintain(_args):
+def cmd_maintain(args):
     """运行记忆维护"""
     try:
-        soma = _get_soma()
+        soma = _get_soma(getattr(args, "project", ""))
         report = soma.memory_maintenance(prune=True, consolidate=True, detect=True)
 
         conflicts_summary = [
@@ -229,7 +255,7 @@ def cmd_graph(args):
     """自动构建知识图谱"""
     max_memories = getattr(args, "max_memories", 200)
     try:
-        soma = _get_soma()
+        soma = _get_soma(getattr(args, "project", ""))
         report = soma.build_knowledge_graph(max_memories=max_memories)
         print(json.dumps({
             "status": "completed",
@@ -260,7 +286,7 @@ def cmd_learn(args):
         return 1
 
     try:
-        soma = _get_soma()
+        soma = _get_soma(getattr(args, "project", ""))
         result = soma.learn_from_external(
             [content.strip()],
             problem_context=problem,
@@ -301,6 +327,14 @@ def cmd_learn(args):
 # CLI 定义
 # ═══════════════════════════════════════════════════════════════
 
+def _add_project_arg(p: argparse.ArgumentParser) -> None:
+    """为子命令添加 --project 命名空间参数（默认 shared 共享库）"""
+    p.add_argument(
+        "--project", type=str, default="",
+        help="记忆库命名空间（默认 shared；项目记忆用 --project SOMA）",
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="soma",
@@ -325,11 +359,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     # recall
     p_recall = sub.add_parser("recall", help="搜索共享记忆")
+    _add_project_arg(p_recall)
     p_recall.add_argument("query", help="搜索查询")
     p_recall.add_argument("-n", "--top-k", type=int, default=5, help="返回条数 (默认5)")
 
     # record
     p_record = sub.add_parser("record", help="记录一条经验")
+    _add_project_arg(p_record)
     p_record.add_argument("content", help="要记录的内容")
     p_record.add_argument("-i", "--importance", type=float, default=0.7,
                            help="重要性 0-1 (默认0.7)")
@@ -338,19 +374,21 @@ def build_parser() -> argparse.ArgumentParser:
 
     # think
     p_think = sub.add_parser("think", help="多维度推理分析")
+    _add_project_arg(p_think)
     p_think.add_argument("problem", help="要分析的问题")
 
     # stats
-    sub.add_parser("stats", help="记忆库统计")
+    _add_project_arg(sub.add_parser("stats", help="记忆库统计"))
 
     # health
-    sub.add_parser("health", help="健康检查")
+    _add_project_arg(sub.add_parser("health", help="健康检查"))
 
     # maintain
-    sub.add_parser("maintain", help="记忆维护（修剪+巩固+冲突检测）")
+    _add_project_arg(sub.add_parser("maintain", help="记忆维护（修剪+巩固+冲突检测）"))
 
     # learn
     p_learn = sub.add_parser("learn", help="从外部知识学习（五层质量过滤）")
+    _add_project_arg(p_learn)
     p_learn.add_argument("content", help="外部文本内容")
     p_learn.add_argument("-s", "--source", type=str, default="manual",
                           help="来源标识 (web/document/rag)")
@@ -359,6 +397,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     # graph
     p_graph = sub.add_parser("graph", help="自动构建知识图谱")
+    _add_project_arg(p_graph)
     p_graph.add_argument("-n", "--max-memories", type=int, default=200,
                           help="最多处理多少条记忆 (默认200)")
 

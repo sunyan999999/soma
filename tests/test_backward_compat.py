@@ -3,6 +3,12 @@ import os
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def _isolate_memory(tmp_path, monkeypatch):
+    """把默认 persist_dir 隔离到临时目录，避免污染真实 soma_data 并受其 adaptive 阈值影响。"""
+    monkeypatch.setenv("SOMA_DATA_DIR", str(tmp_path))
+
+
 class TestBackwardCompatibleInit:
     def test_default_init_no_new_params(self):
         from soma import SOMA

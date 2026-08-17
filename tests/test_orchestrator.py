@@ -66,6 +66,23 @@ class TestOrchestratorLifecycle:
         assert orch.agent_count == 2
         assert orch.default_agent is not None  # 第一个自动成为默认
 
+    def test_create_agents_share_embedder(self, tmp_path):
+        """v2.0.7: 多分身共享同一个 embedder，避免重复加载 ONNX 模型"""
+        from soma.config import SOMAConfig
+        from soma.multi_agent.orchestrator import SOMAOrchestrator
+
+        config = SOMAConfig(use_vector_search=True,
+                            episodic_persist_dir=tmp_path)
+        orch = SOMAOrchestrator(config)
+        ids = orch.create_agents([
+            {"agent_id": "a1", "expertise": ["x"]},
+            {"agent_id": "a2", "expertise": ["y"]},
+            {"agent_id": "a3", "expertise": ["z"]},
+        ])
+        embedders = [orch._agents[i].embedder for i in ids]
+        # 3 个分身共享同一个 embedder 对象
+        assert len(set(id(e) for e in embedders)) == 1
+
     def test_single_mode_is_default(self):
         """v0.9.2核心约束：默认模式行为不变"""
         import tempfile

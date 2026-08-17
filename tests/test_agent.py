@@ -105,6 +105,40 @@ class TestSOMA_Agent:
         assert "memory_id" in results[0]
         assert "activation_score" in results[0]
 
+    def test_query_memory_agent_id_param(self, agent):
+        """v2.0.8: query_memory 支持显式 agent_id/group_id 过滤"""
+        # 显式传 agent_id/group_id → 透传到 hub.activate
+        with patch.object(agent.hub, "activate") as mock_activate:
+            mock_activate.return_value = []
+            agent.query_memory("测试", top_k=3, agent_id="custom_agent", group_id="g1")
+            _, kwargs = mock_activate.call_args
+            assert kwargs["agent_id"] == "custom_agent"
+            assert kwargs["group_id"] == "g1"
+        # 不传 → 回退到当前实例 agent_id/group_id（向后兼容）
+        with patch.object(agent.hub, "activate") as mock_activate:
+            mock_activate.return_value = []
+            agent.query_memory("测试", top_k=3)
+            _, kwargs = mock_activate.call_args
+            assert kwargs["agent_id"] == agent.agent_id
+            assert kwargs["group_id"] == agent.group_id
+
+    def test_warmup_on_init_config(self, config):
+        """v2.0.8: warmup_on_init 配置透传"""
+        cfg = config.model_copy(update={"use_vector_search": False})
+        assert cfg.warmup_on_init is False  # 默认关闭，向后兼容
+
+    def test_embedder_not_loaded_skips_semantic_match(self):
+        """v2.0.8: embedder 未加载时 decompose 语义兜底被跳过，不触发模型加载"""
+        from soma.engine import WisdomEngine
+        eng = WisdomEngine(load_config(Path("wisdom_laws.yaml")))
+        fake_embedder = MagicMock()
+        fake_embedder.is_loaded = False  # 未加载
+        eng.embedder = fake_embedder
+        foci = eng.decompose("完全无关键词匹配的独特问题场景描述")
+        assert isinstance(foci, list)
+        # 未加载时 _semantic_match 不应被调用（不会触发 encode）
+        fake_embedder.encode.assert_not_called()
+
     def test_reflect(self, agent):
         agent.reflect("task_001", "success")
         log = agent.evolver.get_log()

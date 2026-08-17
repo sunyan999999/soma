@@ -1,4 +1,4 @@
-"""SOMA Standalone HTTP Server — v2.0.6
+"""SOMA Standalone HTTP Server — v2.0.8
 
 提供独立的 REST API 服务，外部项目无需 pip install 即可通过 HTTP 调用 SOMA。
 启动: python -m soma.server 或 soma-server
@@ -20,7 +20,7 @@ except ImportError:
     print("fastapi/uvicorn not installed. Run: pip install fastapi uvicorn")
     sys.exit(1)
 
-app = FastAPI(title="SOMA API Server", version="2.0.6")
+app = FastAPI(title="SOMA API Server", version="2.0.8")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 _soma = None
@@ -50,7 +50,7 @@ class MemoryRequest(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "version": "2.0.6"}
+    return {"status": "ok", "version": "2.0.8"}
 
 
 @app.post("/api/reason")
@@ -97,7 +97,7 @@ def api_stats():
 def main():
     import uvicorn
     port = int(os.environ.get("SOMA_PORT", "8766"))
-    print(f"SOMA Server v2.0.6 starting on http://localhost:{port}")
+    print(f"SOMA Server v2.0.8 starting on http://localhost:{port}")
     uvicorn.run("soma.server:app", host="0.0.0.0", port=port, reload=False, log_level="info")
 
 

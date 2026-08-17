@@ -108,6 +108,8 @@ class WisdomEngine(BaseFrameworkEngine):
         """
         foci: List[Focus] = []
         problem_lower = problem.lower()
+        # 关键词只提取一次，多个 focus 复用，避免重复 jieba 分词
+        problem_keywords = _extract_keywords(problem)
 
         # ── 阶段1: 关键词直接匹配 ────────────────────────
         for law in self.laws:
@@ -116,7 +118,7 @@ class WisdomEngine(BaseFrameworkEngine):
             ]
             if matched_triggers:
                 dimension = f"从「{law.name}」出发：{law.description}。应用于问题：「{problem}」"
-                keywords = list(set(law.triggers + _extract_keywords(problem)))
+                keywords = list(set(law.triggers + problem_keywords))
                 focus = Focus(
                     law_id=law.id,
                     dimension=dimension,
@@ -138,7 +140,7 @@ class WisdomEngine(BaseFrameworkEngine):
                         f"从「{chosen.name}」出发（探索性视角）："
                         f"{chosen.description}。应用于问题：「{problem}」"
                     ),
-                    keywords=list(set(chosen.triggers + _extract_keywords(problem))),
+                    keywords=list(set(chosen.triggers + problem_keywords)),
                     weight=round(chosen.weight * 0.7, 4),
                     rationale=f"探索因子：直接匹配规律较少（{len(foci)}条），主动引入「{chosen.name}」拓宽思维维度",
                 ))
@@ -167,7 +169,7 @@ class WisdomEngine(BaseFrameworkEngine):
                             f"从「{rlaw.name}」出发（由「{law.name}」关联激活）："
                             f"{rlaw.description}。应用于问题：「{problem}」"
                         ),
-                        keywords=list(set(rlaw.triggers + _extract_keywords(problem))),
+                        keywords=list(set(rlaw.triggers + problem_keywords)),
                         weight=round(rlaw.weight * bonus, 4),
                         rationale=f"规律链推理：{law.name} → {rlaw.name}"
                         + (f"（{partial}个触发词部分命中）" if partial > 0 else ""),
@@ -184,7 +186,7 @@ class WisdomEngine(BaseFrameworkEngine):
                         f"{combo_desc}。应用于问题：「{problem}」"
                     )
                     combo_keywords = list(set(
-                        law_a.triggers + law_b.triggers + _extract_keywords(problem)
+                        law_a.triggers + law_b.triggers + problem_keywords
                     ))
                     foci.append(Focus(
                         law_id=f"combo_{a_id}_{b_id}",
@@ -196,8 +198,10 @@ class WisdomEngine(BaseFrameworkEngine):
 
         # ── 阶段3: 兜底 — 无匹配时加权随机选取 ─────────────
         if not foci:
-            # 3a: 向量语义匹配兜底（如果 embedder 可用）
-            semantic_matches = self._semantic_match(problem) if self.embedder else []
+            # 3a: 向量语义匹配兜底（仅当 embedder 已加载时走，避免请求热路径
+            # 触发模型加载卡 30-100s；未预热时直接跳过走加权随机）
+            embedder_ready = self.embedder and getattr(self.embedder, "is_loaded", True)
+            semantic_matches = self._semantic_match(problem) if embedder_ready else []
             if semantic_matches:
                 foci.extend(semantic_matches)
 
@@ -206,7 +210,7 @@ class WisdomEngine(BaseFrameworkEngine):
                 weights = [law.weight for law in self.laws]
                 top_law = random.choices(self.laws, weights=weights, k=1)[0]
                 dimension = f"从「{top_law.name}」视角审视：{top_law.description}。应用于问题：「{problem}」"
-                keywords = _extract_keywords(problem) + top_law.triggers
+                keywords = problem_keywords + top_law.triggers
                 foci.append(
                     Focus(
                         law_id=top_law.id,
@@ -242,6 +246,7 @@ class WisdomEngine(BaseFrameworkEngine):
         if not self.embedder:
             return []
 
+        problem_keywords = _extract_keywords(problem)
         problem_vec = np.array(self.embedder.encode(problem))
         problem_norm = np.linalg.norm(problem_vec)
         if problem_norm == 0:
@@ -269,7 +274,7 @@ class WisdomEngine(BaseFrameworkEngine):
                 f"从「{law.name}」视角审视（语义匹配）："
                 f"{law.description}。应用于问题：「{problem}」"
             )
-            keywords = _extract_keywords(problem) + law.triggers
+            keywords = problem_keywords + law.triggers
             foci.append(Focus(
                 law_id=law.id,
                 dimension=dimension,

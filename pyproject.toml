@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "soma-wisdom"
-version = "2.0.6"
+version = "2.0.8"
 description = "SOMA: Somatic Wisdom Architecture — Wisdom over Memory"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -25,13 +25,15 @@ classifiers = [
 ]
 dependencies = [
     "networkx>=3.0",
-    "litellm>=1.0.0",
+    # v2.0.8: 锁定 litellm 上界，避免 1.97.0 Pydantic 循环引用兼容错误（零熵智库 P3 反馈）
+    "litellm>=1.96.2,<1.97.0",
     "pydantic>=2.0",
     "pyyaml>=6.0",
     "numpy>=1.24",
     "jieba>=0.42",
     "scikit-learn>=1.3.0",
-    "fastembed>=0.4.0,<0.8.0",
+    # v2.0.8: 锁定 fastembed 上界，避免 ONNX 推理延迟回归 4.4x
+    "fastembed==0.7.4",
     "faiss-cpu>=1.8.0",
     "tenacity>=8.0",
 ]

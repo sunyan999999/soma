@@ -87,6 +87,8 @@ class SOMAOrchestrator:
         from soma.agent import SOMA_Agent
 
         agent_ids: List[str] = []
+        # v2.0.7: 多分身共享 embedder，避免重复加载 ONNX 模型（优先复用默认 agent 的）
+        shared_embedder = getattr(self.default_agent, 'embedder', None)
         for spec in specs:
             agent_id = spec["agent_id"]
             expertise = spec.get("expertise", [])
@@ -117,7 +119,10 @@ class SOMAOrchestrator:
                 zhongdao_boost_factor=self.config.zhongdao_boost_factor,
                 zhongdao_min_samples=self.config.zhongdao_min_samples,
             )
-            agent = SOMA_Agent(agent_config, agent_id=agent_id, group_id=group_id)
+            agent = SOMA_Agent(agent_config, agent_id=agent_id, group_id=group_id,
+                               embedder=shared_embedder)
+            if shared_embedder is None:
+                shared_embedder = agent.embedder
 
             # 第一个 agent 自动成为默认
             if is_default or self.default_agent is None:

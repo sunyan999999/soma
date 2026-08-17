@@ -135,21 +135,27 @@ class SOMA_Agent:
         ),
     }
 
-    def __init__(self, config: SOMAConfig, agent_id: str = "", group_id: str = ""):
+    def __init__(self, config: SOMAConfig, agent_id: str = "", group_id: str = "",
+                 embedder=None):
         self.config = config
         self.agent_id = agent_id
         self.group_id = group_id
 
         # 嵌入器（需在引擎之前创建，供语义匹配兜底使用）
-        self.embedder = None
-        if config.use_vector_search:
+        # v2.0.7: 支持传入共享 embedder，多分身复用同一份 ONNX 模型，避免重复加载
+        self.embedder = embedder
+        if self.embedder is None and config.use_vector_search:
             self.embedder = SOMAEmbedder(config)
-            # v1.1.1: 预热嵌入模型（后台下载，不阻塞）
+            # v1.1.1: 后台预热嵌入模型（不阻塞构造）
             import threading
             threading.Thread(
                 target=self.embedder.warmup, daemon=True,
                 name="soma-embedder-warmup",
             ).start()
+            # v2.0.8: warmup_on_init=True 时同步加载完成再返回，
+            # 避免首个请求热路径触发模型加载卡 30-100s
+            if config.warmup_on_init:
+                self.embedder.warmup()
 
         # 加载思维框架
         framework = config.framework or load_config(config.framework_path)
@@ -793,8 +799,13 @@ class SOMA_Agent:
         self.memory.remember_semantic(subject, predicate, object_, confidence,
                                       namespace=namespace)
 
-    def query_memory(self, query: str, top_k: int = 5, user_id: str = "") -> List[Dict]:
-        """直接查询记忆（绕过框架拆解）"""
+    def query_memory(self, query: str, top_k: int = 5, user_id: str = "",
+                     agent_id: str = "", group_id: str = "") -> List[Dict]:
+        """直接查询记忆（绕过框架拆解）。
+
+        v2.0.8: 支持 agent_id/group_id 显式指定隔离维度；为空时用当前实例的
+        agent_id/group_id（原行为），向后兼容。
+        """
         from soma.engine import _extract_keywords
 
         keywords = _extract_keywords(query, max_keywords=10)
@@ -810,7 +821,8 @@ class SOMA_Agent:
         try:
             activated = self.hub.activate(
                 [focus], user_id=user_id,
-                agent_id=self.agent_id, group_id=self.group_id,
+                agent_id=agent_id or self.agent_id,
+                group_id=group_id or self.group_id,
             )
         finally:
             self.hub.top_k = original_top_k
