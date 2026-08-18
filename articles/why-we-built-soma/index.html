@@ -1075,11 +1075,11 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOMA</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">soma</span> <span class="o">=</span> <span class="n">SOMA</span><span class="p">()</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Not &quot;search memory for &#39;growth bottleneck&#39;&quot;</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># But &quot;decompose through 7 thinking dimensions&quot;</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">soma</span><span class="o">.</span><span class="n">decompose</span><span class="p">(</span><span class="s2">&quot;How to analyze our growth bottleneck?&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># → [&#39;first_principles&#39;, &#39;systems_thinking&#39;, &#39;pareto_principle&#39;,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1">#    &#39;contradiction_analysis&#39;, &#39;inversion&#39;]</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="c1"># Not "search memory for 'growth bottleneck'"</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># But "decompose through 7 thinking dimensions"</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">soma</span><span class="o">.</span><span class="n">decompose</span><span class="p">(</span><span class="s2">"How to analyze our growth bottleneck?"</span><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1"># → ['first_principles', 'systems_thinking', 'pareto_principle',</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1">#    'contradiction_analysis', 'inversion']</span>
 </code></pre></div>
 <h3 id="2-bidirectional-activation">2. Bidirectional Activation<a class="headerlink" href="#2-bidirectional-activation" title="Permanent link">&para;</a></h3>
 <p>Most memory systems work one way: query → vector → results. SOMA activates in both directions:
@@ -1193,9 +1193,9 @@
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOMA</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">soma</span> <span class="o">=</span> <span class="n">SOMA</span><span class="p">()</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="s2">&quot;First-principles thinking: deconstruct to fundamentals...&quot;</span><span class="p">,</span> 
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>              <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;domain&quot;</span><span class="p">:</span> <span class="s2">&quot;philosophy&quot;</span><span class="p">},</span> <span class="n">importance</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">answer</span> <span class="o">=</span> <span class="n">soma</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="s2">&quot;How to analyze our growth bottleneck?&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="s2">"First-principles thinking: deconstruct to fundamentals..."</span><span class="p">,</span> 
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>              <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">"domain"</span><span class="p">:</span> <span class="s2">"philosophy"</span><span class="p">},</span> <span class="n">importance</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">answer</span> <span class="o">=</span> <span class="n">soma</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="s2">"How to analyze our growth bottleneck?"</span><span class="p">)</span>
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>5 minutes. That's it.</strong></p>

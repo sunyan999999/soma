@@ -1533,7 +1533,7 @@
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>SOMA 新增方法                 │  加新方法不影响已有调用
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>soma.xxx 新子包               │  不 import 就不加载，零开销
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>管道步骤用 if config.flag: 包裹 │  flag 默认 False，旧代码路径完全跳过
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>新策略作为 ConsensusProtocol 选项 │  默认 strategy=&quot;auto&quot;，行为不变
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>新策略作为 ConsensusProtocol 选项 │  默认 strategy="auto"，行为不变
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>新 SQLite 表                  │  独立表名和前缀，不与现有表冲突
 </code></pre></div>
 <hr />
@@ -1584,7 +1584,7 @@
 <a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>        self._entropy_calc = CognitiveEntropyCalculator(...)
 <a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
 <a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>  SOMA 新增方法 (不影响存量):
-<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    def get_cognitive_state(self, user_id: str = &quot;&quot;) -&gt; dict
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    def get_cognitive_state(self, user_id: str = "") -&gt; dict
 </code></pre></div>
 <h4 id="_7">兼容性证明<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h4>
 <table>
@@ -1690,9 +1690,9 @@
 <a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="c1"># 3. 响应末尾追加呼吸提醒（随机从 3 条内置模板选取）</span>
 <a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>
 <a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="n">BREATHING_REMINDERS</span> <span class="o">=</span> <span class="p">[</span>
-<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>    <span class="s2">&quot;在继续之前，不妨先做一次深呼吸，感受当下的状态。&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>    <span class="s2">&quot;暂停三秒，问问自己：我现在的情绪在哪个位置？&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>    <span class="s2">&quot;注意到思绪的速度了吗？先回到呼吸，再回到问题。&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>    <span class="s2">"在继续之前，不妨先做一次深呼吸，感受当下的状态。"</span><span class="p">,</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>    <span class="s2">"暂停三秒，问问自己：我现在的情绪在哪个位置？"</span><span class="p">,</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>    <span class="s2">"注意到思绪的速度了吗？先回到呼吸，再回到问题。"</span><span class="p">,</span>
 <a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="p">]</span>
 </code></pre></div>
 <p>引导模式状态存储在内存中（会话级临时状态，不持久化）。进入和退出均有 INFO 日志记录。</p>
@@ -1731,7 +1731,7 @@
 <a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>    if self.config.enable_frame_detection:
 <a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>        frame_result = self.hub.detect_frame_anchoring(recent_turns)
 <a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>        if frame_result:
-<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>            prompt_parts.append(f&quot;\n## 觉察提示\n{frame_result[&#39;reflection&#39;]}&quot;)
+<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>            prompt_parts.append(f"\n## 觉察提示\n{frame_result['reflection']}")
 </code></pre></div>
 <h4 id="_11">兼容性证明<a class="headerlink" href="#_11" title="Permanent link">&para;</a></h4>
 <table>
@@ -1903,7 +1903,7 @@
 <a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>        self._hook_registry = HookRegistry(...)
 <a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>
 <a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>  respond() 方法中，在 6 个步骤后各插入一行:
-<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>    self._emit_hooks(&quot;step_name&quot;, context_dict)
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>    self._emit_hooks("step_name", context_dict)
 </code></pre></div>
 <h4 id="_15">兼容性证明<a class="headerlink" href="#_15" title="Permanent link">&para;</a></h4>
 <table>
@@ -1944,17 +1944,17 @@
 <a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>  → 写入日志文件，不打扰用户
 <a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>
 <a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>Channel 3: reflection_log 表 (SQLite 持久化)
-<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>  → reflection_type=&quot;inner_hook&quot;
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>  → reflection_type="inner_hook"
 <a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>  → 可被 MetaEvolver.evolve() 读取用于权重调整
 </code></pre></div>
 <p><strong>新增公开方法（不影响存量）</strong>：
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># soma/__init__.py 新增</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_hook_reflections</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;获取最近的内求钩子提示，按时间倒序&quot;&quot;&quot;</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_hook_reflections</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span><span class="sd">"""获取最近的内求钩子提示，按时间倒序"""</span>
 <a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="o">...</span>
 <a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">clear_hook_reflections</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;清空已读取的钩子提示&quot;&quot;&quot;</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">clear_hook_reflections</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">    </span><span class="sd">"""清空已读取的钩子提示"""</span>
 <a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>    <span class="o">...</span>
 </code></pre></div></p>
 <h4 id="_16">风险矩阵<a class="headerlink" href="#_16" title="Permanent link">&para;</a></h4>
@@ -2028,14 +2028,14 @@
 <a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>  SOMAConfig 新增字段:
 <a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>    zhongdao_action_weight: float = 0.5      # 行动导向（阳），D3 确认
 <a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>    zhongdao_awareness_weight: float = 0.5   # 觉察导向（阴），D3 确认
-<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    zhongdao_user_type: str = &quot;general&quot;      # 用户类型: entrepreneur/practitioner/general
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    zhongdao_user_type: str = "general"      # 用户类型: entrepreneur/practitioner/general
 <a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>    zhongdao_auto_adjust_max: float = 0.02   # 每步最大自动调整幅度，D3 确认
 <a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>    zhongdao_weight_min: float = 0.3         # 权重硬下限，D3 确认
 <a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>    zhongdao_weight_max: float = 0.7         # 权重硬上限，D3 确认
 <a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>
 <a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>soma/multi_agent/consensus.py (+40 行)
 <a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>  form_consensus() 新增策略分支:
-<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>    if strategy == &quot;zhongdao&quot;:
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>    if strategy == "zhongdao":
 <a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>        return self._zhongdao_balance(question, opinions)
 <a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>
 <a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a>  新增方法:
@@ -2073,9 +2073,9 @@
 <h4 id="d3">阴阳权重自动演化（D3 确认参数）<a class="headerlink" href="#d3" title="Permanent link">&para;</a></h4>
 <p><div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># 用户类型微调（初始化时一次性调整，±0.1）</span>
 <a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">USER_TYPE_ADJUSTMENTS</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="s2">&quot;entrepreneur&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="o">+</span><span class="mf">0.1</span><span class="p">,</span> <span class="s2">&quot;awareness&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">},</span>
-<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>    <span class="s2">&quot;practitioner&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="s2">&quot;awareness&quot;</span><span class="p">:</span> <span class="o">+</span><span class="mf">0.1</span><span class="p">},</span>
-<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>    <span class="s2">&quot;general&quot;</span><span class="p">:</span>       <span class="p">{</span><span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">&quot;awareness&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">},</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="s2">"entrepreneur"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"action"</span><span class="p">:</span> <span class="o">+</span><span class="mf">0.1</span><span class="p">,</span> <span class="s2">"awareness"</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">},</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>    <span class="s2">"practitioner"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"action"</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="s2">"awareness"</span><span class="p">:</span> <span class="o">+</span><span class="mf">0.1</span><span class="p">},</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>    <span class="s2">"general"</span><span class="p">:</span>       <span class="p">{</span><span class="s2">"action"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">"awareness"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">},</span>
 <a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="p">}</span>
 <a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>
 <a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="c1"># 每次 evolve() 调用的自动调整（步进 ±0.02，硬边界 0.3/0.7）</span>
@@ -2102,7 +2102,7 @@
 <a id="__codelineno-14-29" name="__codelineno-14-29" href="#__codelineno-14-29"></a><span class="o">|</span> <span class="n">Z2</span> <span class="o">|</span> <span class="n">三个维度权重之和不为</span> <span class="mf">1.0</span> <span class="o">|</span> <span class="n">配置错误</span> <span class="o">|</span> <span class="n">极低</span> <span class="o">|</span> <span class="n">评分偏斜</span> <span class="o">|</span> <span class="err">`</span><span class="fm">__init__</span><span class="err">`</span> <span class="n">时验证权重</span><span class="err">，</span><span class="n">自动归一化</span> <span class="o">|</span>
 <a id="__codelineno-14-30" name="__codelineno-14-30" href="#__codelineno-14-30"></a><span class="o">|</span> <span class="n">Z3</span> <span class="o">|</span> <span class="err">`</span><span class="n">success_history</span><span class="err">`</span> <span class="n">为空</span><span class="err">（</span><span class="n">新用户</span><span class="err">）</span> <span class="o">|</span> <span class="n">首次使用</span> <span class="o">|</span> <span class="n">高</span> <span class="o">|</span> <span class="n">维度</span> <span class="mi">3</span> <span class="n">失效</span> <span class="o">|</span> <span class="n">空列表时</span> <span class="err">`</span><span class="n">_compute_growth_alignment</span><span class="err">`</span> <span class="n">返回</span> <span class="mf">0.5</span><span class="err">（</span><span class="n">中性值</span><span class="err">）</span> <span class="o">|</span>
 <a id="__codelineno-14-31" name="__codelineno-14-31" href="#__codelineno-14-31"></a><span class="o">|</span> <span class="n">Z4</span> <span class="o">|</span> <span class="n">外部依赖关键词列表不完整</span> <span class="o">|</span> <span class="n">覆盖不足</span> <span class="o">|</span> <span class="n">中</span> <span class="o">|</span> <span class="n">维度</span> <span class="mi">2</span> <span class="n">评分不准</span> <span class="o">|</span> <span class="n">关键词列表放在外部</span> <span class="n">YAML</span> <span class="n">文件中</span><span class="err">，</span><span class="n">可热更新</span> <span class="o">|</span>
-<a id="__codelineno-14-32" name="__codelineno-14-32" href="#__codelineno-14-32"></a><span class="o">|</span> <span class="n">Z5</span> <span class="o">|</span> <span class="n">中道分数与用户实际偏好相反</span> <span class="o">|</span> <span class="n">个性化差异</span> <span class="o">|</span> <span class="n">中</span> <span class="o">|</span> <span class="n">用户不满意</span> <span class="o">|</span> <span class="n">结果标注</span> <span class="err">`</span><span class="n">strategy_used</span><span class="o">=</span><span class="s2">&quot;zhongdao&quot;</span><span class="err">`，</span><span class="n">可通过反馈数据调整权重</span> <span class="o">|</span>
+<a id="__codelineno-14-32" name="__codelineno-14-32" href="#__codelineno-14-32"></a><span class="o">|</span> <span class="n">Z5</span> <span class="o">|</span> <span class="n">中道分数与用户实际偏好相反</span> <span class="o">|</span> <span class="n">个性化差异</span> <span class="o">|</span> <span class="n">中</span> <span class="o">|</span> <span class="n">用户不满意</span> <span class="o">|</span> <span class="n">结果标注</span> <span class="err">`</span><span class="n">strategy_used</span><span class="o">=</span><span class="s2">"zhongdao"</span><span class="err">`，</span><span class="n">可通过反馈数据调整权重</span> <span class="o">|</span>
 <a id="__codelineno-14-33" name="__codelineno-14-33" href="#__codelineno-14-33"></a>
 <a id="__codelineno-14-34" name="__codelineno-14-34" href="#__codelineno-14-34"></a><span class="o">---</span>
 <a id="__codelineno-14-35" name="__codelineno-14-35" href="#__codelineno-14-35"></a>
@@ -2158,7 +2158,7 @@ soma/config.py (+3 行)
 <a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>
 <a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>```python
 <a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a># SOMA.respond() 入口
-<a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a>def respond(self, problem: str, user_id: str = &quot;&quot;) -&gt; str:
+<a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a>def respond(self, problem: str, user_id: str = "") -&gt; str:
 <a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a>    # 插件拦截 (v0.9.1)
 <a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a>    if self._config.enable_plugins:
 <a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a>        try:
@@ -2167,7 +2167,7 @@ soma/config.py (+3 行)
 <a id="__codelineno-16-20" name="__codelineno-16-20" href="#__codelineno-16-20"></a>                if result.handled:
 <a id="__codelineno-16-21" name="__codelineno-16-21" href="#__codelineno-16-21"></a>                    return result.response
 <a id="__codelineno-16-22" name="__codelineno-16-22" href="#__codelineno-16-22"></a>        except Exception:
-<a id="__codelineno-16-23" name="__codelineno-16-23" href="#__codelineno-16-23"></a>            _log.warning(&quot;插件执行异常，回退到正常推理管道&quot;, exc_info=True)
+<a id="__codelineno-16-23" name="__codelineno-16-23" href="#__codelineno-16-23"></a>            _log.warning("插件执行异常，回退到正常推理管道", exc_info=True)
 <a id="__codelineno-16-24" name="__codelineno-16-24" href="#__codelineno-16-24"></a>
 <a id="__codelineno-16-25" name="__codelineno-16-25" href="#__codelineno-16-25"></a>    # 正常推理管道（代码不变）
 <a id="__codelineno-16-26" name="__codelineno-16-26" href="#__codelineno-16-26"></a>    return self._agent.respond(problem, user_id=user_id)
@@ -2478,11 +2478,11 @@ soma/config.py (+3 行)
 <p>所有新增列/表都使用 <code>IF NOT EXISTS</code> 或 try/except 包围：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="c1"># 安全迁移模式 (每个新增列都用这个模式)</span>
 <a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="k">for</span> <span class="n">col</span><span class="p">,</span> <span class="n">col_def</span> <span class="ow">in</span> <span class="p">[</span>
-<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>    <span class="p">(</span><span class="s2">&quot;entropy_score&quot;</span><span class="p">,</span> <span class="s2">&quot;REAL DEFAULT NULL&quot;</span><span class="p">),</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>    <span class="p">(</span><span class="s2">"entropy_score"</span><span class="p">,</span> <span class="s2">"REAL DEFAULT NULL"</span><span class="p">),</span>
 <a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="p">]:</span>
 <a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>    <span class="k">try</span><span class="p">:</span>
 <a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>            <span class="sa">f</span><span class="s2">&quot;ALTER TABLE analytics_sessions ADD COLUMN </span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">col_def</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>            <span class="sa">f</span><span class="s2">"ALTER TABLE analytics_sessions ADD COLUMN </span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">col_def</span><span class="si">}</span><span class="s2">"</span>
 <a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>        <span class="p">)</span>
 <a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>    <span class="k">except</span> <span class="n">sqlite3</span><span class="o">.</span><span class="n">OperationalError</span><span class="p">:</span>
 <a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a>        <span class="k">pass</span>  <span class="c1"># 列已存在，跳过</span>
@@ -2699,17 +2699,17 @@ soma/config.py (+3 行)
 <a id="__codelineno-30-11" name="__codelineno-30-11" href="#__codelineno-30-11"></a>│   → 格式: [HOOK:{hook_name}] step={step} {prompt}   │
 <a id="__codelineno-30-12" name="__codelineno-30-12" href="#__codelineno-30-12"></a>├─────────────────────────────────────────────────────┤
 <a id="__codelineno-30-13" name="__codelineno-30-13" href="#__codelineno-30-13"></a>│ Channel 3: reflection_log 表 (持久化)                 │
-<a id="__codelineno-30-14" name="__codelineno-30-14" href="#__codelineno-30-14"></a>│   → reflection_type=&quot;inner_hook&quot;                    │
+<a id="__codelineno-30-14" name="__codelineno-30-14" href="#__codelineno-30-14"></a>│   → reflection_type="inner_hook"                    │
 <a id="__codelineno-30-15" name="__codelineno-30-15" href="#__codelineno-30-15"></a>│   → 可被 MetaEvolver 的 evolve() 读取用于权重调整      │
 <a id="__codelineno-30-16" name="__codelineno-30-16" href="#__codelineno-30-16"></a>└─────────────────────────────────────────────────────┘
 </code></pre></div>
 <p>新增公开方法（不影响存量）：</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_hook_reflections</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;获取最近的内求钩子提示，按时间倒序&quot;&quot;&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_hook_reflections</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="w">    </span><span class="sd">"""获取最近的内求钩子提示，按时间倒序"""</span>
 <a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>    <span class="o">...</span>
 <a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a>
-<a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">clear_hook_reflections</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;清空已读取的钩子提示&quot;&quot;&quot;</span>
+<a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">clear_hook_reflections</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a><span class="w">    </span><span class="sd">"""清空已读取的钩子提示"""</span>
 <a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a>    <span class="o">...</span>
 </code></pre></div>
 <p><strong>设计理由</strong>：钩子提示是「觉察辅助」而非「答案修正」。强行混入 answer 会破坏返回格式兼容性，让外部应用自行决定如何展示是最灵活的做法。</p>
@@ -2748,9 +2748,9 @@ soma/config.py (+3 行)
 <a id="__codelineno-32-6" name="__codelineno-32-6" href="#__codelineno-32-6"></a>
 <a id="__codelineno-32-7" name="__codelineno-32-7" href="#__codelineno-32-7"></a><span class="c1"># 呼吸提醒模板（内置 3 条，可扩展）</span>
 <a id="__codelineno-32-8" name="__codelineno-32-8" href="#__codelineno-32-8"></a><span class="n">BREATHING_REMINDERS</span> <span class="o">=</span> <span class="p">[</span>
-<a id="__codelineno-32-9" name="__codelineno-32-9" href="#__codelineno-32-9"></a>    <span class="s2">&quot;在继续之前，不妨先做一次深呼吸，感受当下的状态。&quot;</span><span class="p">,</span>
-<a id="__codelineno-32-10" name="__codelineno-32-10" href="#__codelineno-32-10"></a>    <span class="s2">&quot;暂停三秒，问问自己：我现在的情绪在哪个位置？&quot;</span><span class="p">,</span>
-<a id="__codelineno-32-11" name="__codelineno-32-11" href="#__codelineno-32-11"></a>    <span class="s2">&quot;注意到思绪的速度了吗？先回到呼吸，再回到问题。&quot;</span><span class="p">,</span>
+<a id="__codelineno-32-9" name="__codelineno-32-9" href="#__codelineno-32-9"></a>    <span class="s2">"在继续之前，不妨先做一次深呼吸，感受当下的状态。"</span><span class="p">,</span>
+<a id="__codelineno-32-10" name="__codelineno-32-10" href="#__codelineno-32-10"></a>    <span class="s2">"暂停三秒，问问自己：我现在的情绪在哪个位置？"</span><span class="p">,</span>
+<a id="__codelineno-32-11" name="__codelineno-32-11" href="#__codelineno-32-11"></a>    <span class="s2">"注意到思绪的速度了吗？先回到呼吸，再回到问题。"</span><span class="p">,</span>
 <a id="__codelineno-32-12" name="__codelineno-32-12" href="#__codelineno-32-12"></a><span class="p">]</span>
 </code></pre></div>
 <p>引导模式状态存储在 <code>CognitiveEntropyCalculator</code> 的内存状态中，不持久化（会话级别的临时状态）。</p>
@@ -2763,9 +2763,9 @@ soma/config.py (+3 行)
 <a id="__codelineno-33-4" name="__codelineno-33-4" href="#__codelineno-33-4"></a>
 <a id="__codelineno-33-5" name="__codelineno-33-5" href="#__codelineno-33-5"></a><span class="c1"># 用户类型微调（初始化时一次性调整）</span>
 <a id="__codelineno-33-6" name="__codelineno-33-6" href="#__codelineno-33-6"></a><span class="n">USER_TYPE_ADJUSTMENTS</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-33-7" name="__codelineno-33-7" href="#__codelineno-33-7"></a>    <span class="s2">&quot;entrepreneur&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="o">+</span><span class="mf">0.1</span><span class="p">,</span> <span class="s2">&quot;awareness&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">},</span>  <span class="c1"># 创业者 → 偏行动</span>
-<a id="__codelineno-33-8" name="__codelineno-33-8" href="#__codelineno-33-8"></a>    <span class="s2">&quot;practitioner&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="s2">&quot;awareness&quot;</span><span class="p">:</span> <span class="o">+</span><span class="mf">0.1</span><span class="p">},</span>  <span class="c1"># 修行者 → 偏觉察</span>
-<a id="__codelineno-33-9" name="__codelineno-33-9" href="#__codelineno-33-9"></a>    <span class="s2">&quot;general&quot;</span><span class="p">:</span>       <span class="p">{</span><span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">&quot;awareness&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">},</span>   <span class="c1"># 通用 → 不调整</span>
+<a id="__codelineno-33-7" name="__codelineno-33-7" href="#__codelineno-33-7"></a>    <span class="s2">"entrepreneur"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"action"</span><span class="p">:</span> <span class="o">+</span><span class="mf">0.1</span><span class="p">,</span> <span class="s2">"awareness"</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">},</span>  <span class="c1"># 创业者 → 偏行动</span>
+<a id="__codelineno-33-8" name="__codelineno-33-8" href="#__codelineno-33-8"></a>    <span class="s2">"practitioner"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"action"</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="s2">"awareness"</span><span class="p">:</span> <span class="o">+</span><span class="mf">0.1</span><span class="p">},</span>  <span class="c1"># 修行者 → 偏觉察</span>
+<a id="__codelineno-33-9" name="__codelineno-33-9" href="#__codelineno-33-9"></a>    <span class="s2">"general"</span><span class="p">:</span>       <span class="p">{</span><span class="s2">"action"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">"awareness"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">},</span>   <span class="c1"># 通用 → 不调整</span>
 <a id="__codelineno-33-10" name="__codelineno-33-10" href="#__codelineno-33-10"></a><span class="p">}</span>
 <a id="__codelineno-33-11" name="__codelineno-33-11" href="#__codelineno-33-11"></a>
 <a id="__codelineno-33-12" name="__codelineno-33-12" href="#__codelineno-33-12"></a><span class="c1"># 自动演化的约束</span>
@@ -2775,7 +2775,7 @@ soma/config.py (+3 行)
 <a id="__codelineno-33-16" name="__codelineno-33-16" href="#__codelineno-33-16"></a>
 <a id="__codelineno-33-17" name="__codelineno-33-17" href="#__codelineno-33-17"></a><span class="c1"># 自动调整逻辑</span>
 <a id="__codelineno-33-18" name="__codelineno-33-18" href="#__codelineno-33-18"></a><span class="k">def</span><span class="w"> </span><span class="nf">_auto_adjust_zhongdao</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">feedback_score</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
-<a id="__codelineno-33-19" name="__codelineno-33-19" href="#__codelineno-33-19"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;根据用户反馈微调权重&quot;&quot;&quot;</span>
+<a id="__codelineno-33-19" name="__codelineno-33-19" href="#__codelineno-33-19"></a><span class="w">    </span><span class="sd">"""根据用户反馈微调权重"""</span>
 <a id="__codelineno-33-20" name="__codelineno-33-20" href="#__codelineno-33-20"></a>    <span class="k">if</span> <span class="n">feedback_score</span> <span class="o">&gt;</span> <span class="mf">0.7</span><span class="p">:</span>  <span class="c1"># 正向反馈 → 微调当前主导权重</span>
 <a id="__codelineno-33-21" name="__codelineno-33-21" href="#__codelineno-33-21"></a>        <span class="n">delta</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">AUTO_ADJUST_MAX_PER_STEP</span><span class="p">,</span> <span class="n">feedback_score</span> <span class="o">-</span> <span class="mf">0.7</span><span class="p">)</span>
 <a id="__codelineno-33-22" name="__codelineno-33-22" href="#__codelineno-33-22"></a>    <span class="k">elif</span> <span class="n">feedback_score</span> <span class="o">&lt;</span> <span class="mf">0.3</span><span class="p">:</span>  <span class="c1"># 负向反馈 → 回调</span>
@@ -2886,13 +2886,13 @@ soma/config.py (+3 行)
 </code></pre></div>
 <p><strong>Changelog 格式要求</strong>：
 <div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="p">{</span>
-<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a><span class="w">  </span><span class="nt">&quot;pattern_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;P_xxx&quot;</span><span class="p">,</span>
-<a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a><span class="w">  </span><span class="nt">&quot;from_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1.0&quot;</span><span class="p">,</span>
-<a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a><span class="w">  </span><span class="nt">&quot;to_version&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
-<a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a><span class="w">  </span><span class="nt">&quot;reviewers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;reviewer_id_1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;reviewer_id_2&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;reviewer_id_3&quot;</span><span class="p">],</span>
-<a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a><span class="w">  </span><span class="nt">&quot;change_summary&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;修改了触发条件的范围，从仅限企业场景扩展到团队场景&quot;</span><span class="p">,</span>
-<a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a><span class="w">  </span><span class="nt">&quot;rationale&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;在零熵智库的 50+ 次采纳中发现该规律在团队层面同样有效&quot;</span><span class="p">,</span>
-<a id="__codelineno-35-8" name="__codelineno-35-8" href="#__codelineno-35-8"></a><span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-05-12T10:00:00Z&quot;</span>
+<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a><span class="w">  </span><span class="nt">"pattern_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"P_xxx"</span><span class="p">,</span>
+<a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a><span class="w">  </span><span class="nt">"from_version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1.0"</span><span class="p">,</span>
+<a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a><span class="w">  </span><span class="nt">"to_version"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2.0"</span><span class="p">,</span>
+<a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a><span class="w">  </span><span class="nt">"reviewers"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"reviewer_id_1"</span><span class="p">,</span><span class="w"> </span><span class="s2">"reviewer_id_2"</span><span class="p">,</span><span class="w"> </span><span class="s2">"reviewer_id_3"</span><span class="p">],</span>
+<a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a><span class="w">  </span><span class="nt">"change_summary"</span><span class="p">:</span><span class="w"> </span><span class="s2">"修改了触发条件的范围，从仅限企业场景扩展到团队场景"</span><span class="p">,</span>
+<a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a><span class="w">  </span><span class="nt">"rationale"</span><span class="p">:</span><span class="w"> </span><span class="s2">"在零熵智库的 50+ 次采纳中发现该规律在团队层面同样有效"</span><span class="p">,</span>
+<a id="__codelineno-35-8" name="__codelineno-35-8" href="#__codelineno-35-8"></a><span class="w">  </span><span class="nt">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-05-12T10:00:00Z"</span>
 <a id="__codelineno-35-9" name="__codelineno-35-9" href="#__codelineno-35-9"></a><span class="p">}</span>
 </code></pre></div></p>
 <hr />

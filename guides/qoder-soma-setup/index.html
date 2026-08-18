@@ -750,7 +750,7 @@
 <h1 id="qoder-soma">Qoder SOMA 自动集成指南<a class="headerlink" href="#qoder-soma" title="Permanent link">&para;</a></h1>
 <h2 id="1-soma">1. 升级 SOMA 到最新版<a class="headerlink" href="#1-soma" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>soma-wisdom&gt;<span class="o">=</span><span class="m">1</span>.1.4<span class="w"> </span>--force-reinstall
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import soma; print(soma.__version__)&quot;</span><span class="w">  </span><span class="c1"># 确认 1.1.4</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import soma; print(soma.__version__)"</span><span class="w">  </span><span class="c1"># 确认 1.1.4</span>
 </code></pre></div>
 <h2 id="2">2. 配置自动调用<a class="headerlink" href="#2" title="Permanent link">&para;</a></h2>
 <p>将以下内容添加到 Qoder 的系统 prompt 或配置文件中：</p>
@@ -759,13 +759,13 @@
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>遇到以下场景必须自动调用 SOMA（用 subprocess）:
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>1. 技术选型/架构决策:
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>   subprocess.run([&quot;python&quot;, &quot;-m&quot;, &quot;soma&quot;, &quot;analyze&quot;, problem, &quot;--context&quot;, context])
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>   subprocess.run(["python", "-m", "soma", "analyze", problem, "--context", context])
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>2. 多方案对比:
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>   subprocess.run([&quot;python&quot;, &quot;-m&quot;, &quot;soma&quot;, &quot;compare&quot;, &quot;方案A|方案B&quot;, &quot;--criteria&quot;, &quot;维度1,维度2&quot;])
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>   subprocess.run(["python", "-m", "soma", "compare", "方案A|方案B", "--criteria", "维度1,维度2"])
 <a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
 <a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>3. 复杂问题多角度审视:
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>   subprocess.run([&quot;python&quot;, &quot;-m&quot;, &quot;soma&quot;, &quot;decompose&quot;, problem])
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>   subprocess.run(["python", "-m", "soma", "decompose", problem])
 <a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>
 <a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>调用示例:
 <a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>  result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
@@ -773,11 +773,11 @@
 <a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
 <a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>决策后记录:
 <a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>  from soma import SOMA
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>  s = SOMA(llm=&quot;deepseek-chat&quot;)
-<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>  s.remember(&quot;决定: X方案, 理由: Y, 备选: Z&quot;, importance=0.9)
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>  s = SOMA(llm="deepseek-chat")
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>  s.remember("决定: X方案, 理由: Y, 备选: Z", importance=0.9)
 </code></pre></div>
 <h2 id="3">3. 验证<a class="headerlink" href="#3" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python<span class="w"> </span>-m<span class="w"> </span>soma<span class="w"> </span>decompose<span class="w"> </span><span class="s2">&quot;如何优化数据库查询性能&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>python<span class="w"> </span>-m<span class="w"> </span>soma<span class="w"> </span>decompose<span class="w"> </span><span class="s2">"如何优化数据库查询性能"</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># 应输出 4-5 个维度的分析</span>
 </code></pre></div>
 

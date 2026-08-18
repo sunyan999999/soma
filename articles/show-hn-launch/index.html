@@ -873,9 +873,9 @@
 </code></pre></div></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOMA</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">soma</span> <span class="o">=</span> <span class="n">SOMA</span><span class="p">()</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="s2">&quot;First-principles thinking: reduce to fundamentals...&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>              <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;domain&quot;</span><span class="p">:</span> <span class="s2">&quot;philosophy&quot;</span><span class="p">},</span> <span class="n">importance</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">answer</span> <span class="o">=</span> <span class="n">soma</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="s2">&quot;How to analyze our growth bottleneck?&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="s2">"First-principles thinking: reduce to fundamentals..."</span><span class="p">,</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>              <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">"domain"</span><span class="p">:</span> <span class="s2">"philosophy"</span><span class="p">},</span> <span class="n">importance</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">answer</span> <span class="o">=</span> <span class="n">soma</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="s2">"How to analyze our growth bottleneck?"</span><span class="p">)</span>
 <a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span>
 </code></pre></div>
 <p>Repo: https://github.com/sunyan999999/soma
@@ -888,9 +888,9 @@ Benchmarks: https://github.com/sunyan999999/soma/blob/main/TEST_REPORT_v0.7.0_FI
 <p><strong>标题</strong>: I built an open-source memory layer for AI agents that thinks, not just retrieves</p>
 <p><strong>正文</strong>:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>After trying ChromaDB, Mem0, and LangChain memory for my AI coding agent, 
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>I kept hitting the same wall: they&#39;re all storage systems. Vector search 
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>I kept hitting the same wall: they're all storage systems. Vector search 
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>finds similar stuff, but the agent still makes the same class of mistakes 
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>because it can&#39;t REASON about what it remembers.
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>because it can't REASON about what it remembers.
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
 <a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>So I built SOMA — a cognitive framework that uses 7 thinking laws 
 <a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>(First Principles, Systems Thinking, Pareto, etc.) to decompose problems 
@@ -907,7 +907,7 @@ Benchmarks: https://github.com/sunyan999999/soma/blob/main/TEST_REPORT_v0.7.0_FI
 <a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>GitHub: https://github.com/sunyan999999/soma
 <a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>PyPI: https://pypi.org/project/soma-wisdom/
 <a id="__codelineno-3-20" name="__codelineno-3-20" href="#__codelineno-3-20"></a>
-<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>Would love honest feedback from Python builders who&#39;ve wrestled with 
+<a id="__codelineno-3-21" name="__codelineno-3-21" href="#__codelineno-3-21"></a>Would love honest feedback from Python builders who've wrestled with 
 <a id="__codelineno-3-22" name="__codelineno-3-22" href="#__codelineno-3-22"></a>agent memory.
 </code></pre></div></p>
 <h3 id="rmachinelearning-29m">/r/MachineLearning (2.9M 订阅)<a class="headerlink" href="#rmachinelearning-29m" title="Permanent link">&para;</a></h3>
@@ -922,7 +922,7 @@ Benchmarks: https://github.com/sunyan999999/soma/blob/main/TEST_REPORT_v0.7.0_FI
 <a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>synthesized perspectives. A self-evolution loop tracks success/failure 
 <a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>per law and auto-adjusts weights every 5 sessions.
 <a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>We&#39;ve been running it in production for 7 days with 1,752 real memories. 
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>We've been running it in production for 7 days with 1,752 real memories. 
 <a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>Results:
 <a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>- Memory: 92.2 (100% semantic recall, &lt;4ms latency)
 <a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>- Wisdom: 80.7 (thinking diversity entropy 0.87)
@@ -935,20 +935,20 @@ Benchmarks: https://github.com/sunyan999999/soma/blob/main/TEST_REPORT_v0.7.0_FI
 <a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>Repo: https://github.com/sunyan999999/soma
 <a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>Paper (draft): included in docs/
 <a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>
-<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>Open to discussion: is a &quot;wisdom framework&quot; a useful abstraction for 
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a>Open to discussion: is a "wisdom framework" a useful abstraction for 
 <a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>agent memory, or is vector search + good prompting sufficient?
 </code></pre></div></p>
 <h3 id="rlocalllama-300k">/r/LocalLLaMA (300K 订阅)<a class="headerlink" href="#rlocalllama-300k" title="Permanent link">&para;</a></h3>
 <p><strong>标题</strong>: SOMA — Local-first agent memory with ONNX embeddings, zero cloud dependencies</p>
 <p><strong>正文</strong>:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>If you&#39;re running local LLMs and want agent memory that doesn&#39;t phone 
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>If you're running local LLMs and want agent memory that doesn't phone 
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>home, check out SOMA.
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>It uses BGE-small-zh (512d) via ONNX Runtime for embeddings — runs on 
 <a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>CPU, ~100MB model download. SQLite for storage. No CUDA, no Docker, 
 <a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>no PostgreSQL, no API keys needed (mock mode for testing).
 <a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>Beyond just &quot;local&quot;: it organizes memory around 7 thinking laws that 
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>Beyond just "local": it organizes memory around 7 thinking laws that 
 <a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>decompose problems before retrieval. Self-evolution auto-tunes which 
 <a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>thinking patterns to use based on past success. Memory consolidation 
 <a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>merges similar entries. Active forgetting archives stale ones.
@@ -965,7 +965,7 @@ Benchmarks: https://github.com/sunyan999999/soma/blob/main/TEST_REPORT_v0.7.0_FI
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>做了三个月的项目，刚发布了v0.7.0版本，来分享一下。
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>SOMA是一个开源的AI Agent认知框架。和其他记忆系统（Mem0、ChromaDB）不同的是，
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>它不是简单的&quot;存向量→搜相似&quot;，而是在记忆检索之前先用7条思维规律拆解问题。
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>它不是简单的"存向量→搜相似"，而是在记忆检索之前先用7条思维规律拆解问题。
 <a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
 <a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>说人话：普通记忆系统像硬盘（存和读），SOMA像思维框架（拆问题→多角度激活→自我进化）。
 <a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
@@ -989,11 +989,11 @@ Benchmarks: https://github.com/sunyan999999/soma/blob/main/TEST_REPORT_v0.7.0_FI
 <p><strong>正文</strong>:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>前几个月在做一个AI编程助手（Glaude，Go写的类Claude Code），遇到一个问题：
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>Agent需要记忆，但市面上所有的记忆方案（Mem0、ChromaDB、LangChain Memory）
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>都只是&quot;存储&quot;，不是&quot;思考&quot;。
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>都只是"存储"，不是"思考"。
 <a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
 <a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>举个例子，Agent修复了一个N+1查询的bug，记录为记忆。下次遇到另一个性能问题时，
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>ChromaDB只能返回&quot;这里有5条相似记忆&quot;。但Agent需要的是——
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>&quot;这个问题应该从系统思维还是第一性原理去拆解？&quot;
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>ChromaDB只能返回"这里有5条相似记忆"。但Agent需要的是——
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>"这个问题应该从系统思维还是第一性原理去拆解？"
 <a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
 <a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>所以做了SOMA。核心设计：
 <a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>1. 7条思维规律组成推理网络（第一性原理、系统思维、矛盾分析、帕累托、逆向、类比、进化）

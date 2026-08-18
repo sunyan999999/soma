@@ -910,9 +910,9 @@
 <h2 id="_1">一、架构总览<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>SOMA 门面 (soma/__init__.py)
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  │
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  ├─ orchestration_mode=&quot;single&quot; → 直接调用 SOMA_Agent.respond()
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  ├─ orchestration_mode="single" → 直接调用 SOMA_Agent.respond()
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  │
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  └─ orchestration_mode=&quot;multi&quot;  → SOMAOrchestrator.solve()
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  └─ orchestration_mode="multi"  → SOMAOrchestrator.solve()
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        │
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        ├─ 1. AgentRegistry   — 管理已注册的专家Agent
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        ├─ 2. ExpertRouter    — 按问题关键词/语义匹配专家
@@ -998,10 +998,10 @@
 </table>
 <p>L1 关键词映射表（当前硬编码，可扩展）：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="s2">&quot;技术&quot;</span><span class="p">:</span>   <span class="p">[</span><span class="s2">&quot;代码&quot;</span><span class="p">,</span> <span class="s2">&quot;架构&quot;</span><span class="p">,</span> <span class="s2">&quot;API&quot;</span><span class="p">,</span> <span class="s2">&quot;数据库&quot;</span><span class="p">,</span> <span class="s2">&quot;部署&quot;</span><span class="p">,</span> <span class="s2">&quot;算法&quot;</span><span class="p">,</span> <span class="s2">&quot;性能&quot;</span><span class="p">,</span> <span class="s2">&quot;bug&quot;</span><span class="p">,</span> <span class="s2">&quot;编程&quot;</span><span class="p">],</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="s2">&quot;商业分析&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;商业&quot;</span><span class="p">,</span> <span class="s2">&quot;市场&quot;</span><span class="p">,</span> <span class="s2">&quot;营销&quot;</span><span class="p">,</span> <span class="s2">&quot;增长&quot;</span><span class="p">,</span> <span class="s2">&quot;竞品&quot;</span><span class="p">,</span> <span class="s2">&quot;营收&quot;</span><span class="p">,</span> <span class="s2">&quot;定价&quot;</span><span class="p">,</span> <span class="s2">&quot;客户&quot;</span><span class="p">],</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="s2">&quot;设计&quot;</span><span class="p">:</span>   <span class="p">[</span><span class="s2">&quot;UI&quot;</span><span class="p">,</span> <span class="s2">&quot;UX&quot;</span><span class="p">,</span> <span class="s2">&quot;交互&quot;</span><span class="p">,</span> <span class="s2">&quot;视觉&quot;</span><span class="p">,</span> <span class="s2">&quot;体验&quot;</span><span class="p">],</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="s2">&quot;管理&quot;</span><span class="p">:</span>   <span class="p">[</span><span class="s2">&quot;团队&quot;</span><span class="p">,</span> <span class="s2">&quot;组织&quot;</span><span class="p">,</span> <span class="s2">&quot;领导&quot;</span><span class="p">,</span> <span class="s2">&quot;绩效&quot;</span><span class="p">,</span> <span class="s2">&quot;流程&quot;</span><span class="p">],</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="s2">"技术"</span><span class="p">:</span>   <span class="p">[</span><span class="s2">"代码"</span><span class="p">,</span> <span class="s2">"架构"</span><span class="p">,</span> <span class="s2">"API"</span><span class="p">,</span> <span class="s2">"数据库"</span><span class="p">,</span> <span class="s2">"部署"</span><span class="p">,</span> <span class="s2">"算法"</span><span class="p">,</span> <span class="s2">"性能"</span><span class="p">,</span> <span class="s2">"bug"</span><span class="p">,</span> <span class="s2">"编程"</span><span class="p">],</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="s2">"商业分析"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"商业"</span><span class="p">,</span> <span class="s2">"市场"</span><span class="p">,</span> <span class="s2">"营销"</span><span class="p">,</span> <span class="s2">"增长"</span><span class="p">,</span> <span class="s2">"竞品"</span><span class="p">,</span> <span class="s2">"营收"</span><span class="p">,</span> <span class="s2">"定价"</span><span class="p">,</span> <span class="s2">"客户"</span><span class="p">],</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="s2">"设计"</span><span class="p">:</span>   <span class="p">[</span><span class="s2">"UI"</span><span class="p">,</span> <span class="s2">"UX"</span><span class="p">,</span> <span class="s2">"交互"</span><span class="p">,</span> <span class="s2">"视觉"</span><span class="p">,</span> <span class="s2">"体验"</span><span class="p">],</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="s2">"管理"</span><span class="p">:</span>   <span class="p">[</span><span class="s2">"团队"</span><span class="p">,</span> <span class="s2">"组织"</span><span class="p">,</span> <span class="s2">"领导"</span><span class="p">,</span> <span class="s2">"绩效"</span><span class="p">,</span> <span class="s2">"流程"</span><span class="p">],</span>
 <a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="c1"># ... 可通过 registry.register() 时指定的 expertise 动态扩展</span>
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="p">}</span>
 </code></pre></div>
@@ -1055,14 +1055,14 @@
 </code></pre></div>
 <hr />
 <h2 id="solve">三、solve() 管道全流程<a class="headerlink" href="#solve" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>用户问题: &quot;如何优化数据库查询性能？&quot;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>用户问题: "如何优化数据库查询性能？"
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>         │
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>         ▼
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>┌─ 1. Route ─────────────────────────────────────────┐
 <a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>│  ExpertRouter.route_multi(problem, top_k=3)        │
 <a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>│                                                     │
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>│  L1: &quot;数据库&quot;+&quot;性能&quot; → 命中&quot;技术&quot;标签                │
-<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>│  → 返回: [(tech_agent, 0.85, &quot;l1&quot;)]                 │
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>│  L1: "数据库"+"性能" → 命中"技术"标签                │
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>│  → 返回: [(tech_agent, 0.85, "l1")]                 │
 <a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>│                                                     │
 <a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>│  如L1无匹配 → L2语义 → 仍无匹配 → L3回退默认Agent    │
 <a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>└────────────────┬────────────────────────────────────┘
@@ -1083,7 +1083,7 @@
 <a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a>                 ▼
 <a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a>┌─ 3. Consensus ─────────────────────────────────────┐
 <a id="__codelineno-5-28" name="__codelineno-5-28" href="#__codelineno-5-28"></a>│  ConsensusProtocol.form_consensus(                  │
-<a id="__codelineno-5-29" name="__codelineno-5-29" href="#__codelineno-5-29"></a>│      problem, opinions, strategy=&quot;voting&quot;           │
+<a id="__codelineno-5-29" name="__codelineno-5-29" href="#__codelineno-5-29"></a>│      problem, opinions, strategy="voting"           │
 <a id="__codelineno-5-30" name="__codelineno-5-30" href="#__codelineno-5-30"></a>│  )                                                  │
 <a id="__codelineno-5-31" name="__codelineno-5-31" href="#__codelineno-5-31"></a>│                                                     │
 <a id="__codelineno-5-32" name="__codelineno-5-32" href="#__codelineno-5-32"></a>│  1个专家 → 直接返回，agreement_level=1.0             │
@@ -1097,7 +1097,7 @@
 <a id="__codelineno-5-40" name="__codelineno-5-40" href="#__codelineno-5-40"></a>│  OrchestrationResult {                              │
 <a id="__codelineno-5-41" name="__codelineno-5-41" href="#__codelineno-5-41"></a>│      answer: str,              # 最终回答            │
 <a id="__codelineno-5-42" name="__codelineno-5-42" href="#__codelineno-5-42"></a>│      agents_involved: [str],   # 参与专家列表         │
-<a id="__codelineno-5-43" name="__codelineno-5-43" href="#__codelineno-5-43"></a>│      routing_strategy: str,    # &quot;l1&quot;/&quot;l2&quot;/&quot;fallback&quot;│
+<a id="__codelineno-5-43" name="__codelineno-5-43" href="#__codelineno-5-43"></a>│      routing_strategy: str,    # "l1"/"l2"/"fallback"│
 <a id="__codelineno-5-44" name="__codelineno-5-44" href="#__codelineno-5-44"></a>│      consensus: ConsensusResult | None               │
 <a id="__codelineno-5-45" name="__codelineno-5-45" href="#__codelineno-5-45"></a>│  }                                                  │
 <a id="__codelineno-5-46" name="__codelineno-5-46" href="#__codelineno-5-46"></a>└─────────────────────────────────────────────────────┘
@@ -1149,9 +1149,9 @@
 </table>
 <p>注册专家请求体：
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="p">{</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="nt">&quot;agent_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tech_expert&quot;</span><span class="p">,</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="nt">&quot;expertise&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;技术&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;架构&quot;</span><span class="p">],</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;技术架构专家&quot;</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="nt">"agent_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"tech_expert"</span><span class="p">,</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="nt">"expertise"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"技术"</span><span class="p">,</span><span class="w"> </span><span class="s2">"架构"</span><span class="p">],</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"技术架构专家"</span>
 <a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="p">}</span>
 </code></pre></div></p>
 <hr />
@@ -1164,41 +1164,41 @@
 <h3 id="_5">推荐组合方式<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h3>
 <p>让 SOMA 的专家不是"空白 SOMA_Agent"，而是"零熵智库分身的适配器"：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">TwinExpertAdapter</span><span class="p">:</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;包装零熵智库分身，使其可作为 SOMA 专家参与编排&quot;&quot;&quot;</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span><span class="sd">"""包装零熵智库分身，使其可作为 SOMA 专家参与编排"""</span>
 <a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
 <a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">twin_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">twin_api_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">agent_id</span> <span class="o">=</span> <span class="n">twin_id</span>
 <a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">twin_api_url</span> <span class="o">=</span> <span class="n">twin_api_url</span>
 <a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">respond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">problem</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;委托给零熵智库分身回答&quot;&quot;&quot;</span>
-<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>        <span class="c1"># POST {twin_api_url}/chat  {&quot;problem&quot;: problem}</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">respond</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">problem</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">        </span><span class="sd">"""委托给零熵智库分身回答"""</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>        <span class="c1"># POST {twin_api_url}/chat  {"problem": problem}</span>
 <a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>        <span class="c1"># 返回分身的回答</span>
 <a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">twin_api_url</span><span class="si">}</span><span class="s2">/chat&quot;</span><span class="p">,</span>
-<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>            <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;problem&quot;</span><span class="p">:</span> <span class="n">problem</span><span class="p">,</span> <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">},</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">twin_api_url</span><span class="si">}</span><span class="s2">/chat"</span><span class="p">,</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>            <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"problem"</span><span class="p">:</span> <span class="n">problem</span><span class="p">,</span> <span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">},</span>
 <a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>        <span class="p">)</span>
-<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;answer&quot;</span><span class="p">]</span>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">"answer"</span><span class="p">]</span>
 </code></pre></div>
 <p>然后在 SOMA 启动时将零熵智库的分身列表同步注册：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># SOMA 启动后</span>
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="k">for</span> <span class="n">twin</span> <span class="ow">in</span> <span class="n">ling_shang_twins</span><span class="p">:</span>
 <a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    <span class="n">adapter</span> <span class="o">=</span> <span class="n">TwinExpertAdapter</span><span class="p">(</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>        <span class="n">twin_id</span><span class="o">=</span><span class="n">twin</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>        <span class="n">twin_api_url</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;https://智库API/twins/</span><span class="si">{</span><span class="n">twin</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>        <span class="n">twin_id</span><span class="o">=</span><span class="n">twin</span><span class="p">[</span><span class="s2">"id"</span><span class="p">],</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>        <span class="n">twin_api_url</span><span class="o">=</span><span class="sa">f</span><span class="s2">"https://智库API/twins/</span><span class="si">{</span><span class="n">twin</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
 <a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="p">)</span>
 <a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="n">soma</span><span class="o">.</span><span class="n">_orchestrator</span><span class="o">.</span><span class="n">registry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span>
 <a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>        <span class="n">adapter</span><span class="p">,</span>
-<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>        <span class="n">expertise</span><span class="o">=</span><span class="n">twin</span><span class="p">[</span><span class="s2">&quot;expertise&quot;</span><span class="p">],</span>   <span class="c1"># 从智库分身配置获取</span>
-<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>        <span class="n">description</span><span class="o">=</span><span class="n">twin</span><span class="p">[</span><span class="s2">&quot;description&quot;</span><span class="p">],</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>        <span class="n">expertise</span><span class="o">=</span><span class="n">twin</span><span class="p">[</span><span class="s2">"expertise"</span><span class="p">],</span>   <span class="c1"># 从智库分身配置获取</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>        <span class="n">description</span><span class="o">=</span><span class="n">twin</span><span class="p">[</span><span class="s2">"description"</span><span class="p">],</span>
 <a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>    <span class="p">)</span>
 </code></pre></div>
 <h3 id="_6">组合后的请求流程<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>用户: &quot;如何做竞品分析？&quot;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>用户: "如何做竞品分析？"
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>        │
 <a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>        ▼
 <a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>SOMA Orchestrator
-<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>  ├─ Router: &quot;竞品&quot;关键词 → 匹配 expertise=[&quot;商业分析&quot;] → 孙岩分身
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>  ├─ Router: "竞品"关键词 → 匹配 expertise=["商业分析"] → 孙岩分身
 <a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>  ├─ Dispatch: TwinExpertAdapter.respond() → 调用零熵智库孙岩分身API
 <a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>  ├─ 孙岩分身: 用自己的专业知识库 + SOMA思维框架 → 深度分析
 <a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>  └─ Consensus: 若还匹配了其他分身 → 综合各方观点
