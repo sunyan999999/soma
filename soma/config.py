@@ -46,6 +46,11 @@ class SOMAConfig(BaseModel):
     causal_extraction: bool = False  # 是否在回答后自动抽取因果三元组
     causal_extraction_complexity: int = 3  # 最低复杂度阈值（1-3），仅 >= 此值时触发
 
+    # 知识门控配置（v2.0.9+）
+    knowledge_gate_strictness: str = "balanced"  # strict | balanced | permissive
+    knowledge_gate_min_quality: float = 0.35  # 内容质量最低阈值（低于拒绝）
+    knowledge_gate_min_corroboration: float = 0.0  # 事实印证最低阈值（孤立事实降级）
+
     # 嵌入模型配置（Alpha 新增）
     embedding_model_name: str = "BAAI/bge-small-zh-v1.5"
     use_vector_search: bool = True

@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "2.0.8"
+    __version__ = "2.0.9"
 
 from soma.config import SOMAConfig, load_config
 from soma.base import MemoryUnit, Focus, ActivatedMemory
@@ -75,7 +75,7 @@ _log = logging.getLogger("soma")
 
 
 class SOMA:
-    """SOMA 顶层门面 — v2.0.8
+    """SOMA 顶层门面 — v2.0.9
 
     使用示例::
 
@@ -1341,17 +1341,26 @@ class SOMA:
 
     @property
     def knowledge_gate(self) -> KnowledgeGate:
-        """惰性初始化知识门控"""
+        """惰性初始化知识门控（v2.0.9: 透传 config 的严格度/质量阈值）"""
         if not hasattr(self, "_knowledge_gate"):
-            self._knowledge_gate = KnowledgeGate(self._agent)
+            self._knowledge_gate = KnowledgeGate(
+                self._agent,
+                strictness=getattr(self._config, "knowledge_gate_strictness", "balanced"),
+                min_quality=getattr(self._config, "knowledge_gate_min_quality", 0.35),
+                min_corroboration=getattr(
+                    self._config, "knowledge_gate_min_corroboration", 0.0
+                ),
+            )
         return self._knowledge_gate
 
     def learn_from_external(
-        self, contents, problem_context: str = "", source_name: str = "external"
+        self, contents, problem_context: str = "", source_name: str = "external",
+        strictness: str = "",
     ) -> GateResult:
         """从外部知识学习：五层质量过滤后自动存入记忆库。
 
-        管道: 相关性过滤 → SOMA推理消化 → 风格对齐 → 一致性校验 → 分级存储
+        管道: 来源过滤 → 相关性过滤 → SOMA推理消化 → 内容质量 → 风格对齐
+              → 一致性校验 → 事实印证 → 分级存储
 
         示例::
 
@@ -1367,13 +1376,20 @@ class SOMA:
             contents: str | List[str] — 外部文本
             problem_context: 当前分析主题，用于相关性判断
             source_name: 来源标识 (web/document/rag)
+            strictness: v2.0.9 可选覆盖严格度档位（strict/balanced/permissive），
+                        空则用 config 默认
 
         Returns:
             GateResult 含 accepted/quarantined/rejected 分类
         """
         if isinstance(contents, str):
             contents = [contents]
-        return self.knowledge_gate.ingest(contents, problem_context, source_name)
+        gate = self.knowledge_gate
+        # v2.0.9: strictness 非空时临时覆盖
+        if strictness:
+            gate._strictness = strictness
+            gate._apply_strictness()
+        return gate.ingest(contents, problem_context, source_name)
 
     @property
     def graph_builder(self) -> AutoGraphBuilder:

@@ -135,11 +135,21 @@ class FileSource(KnowledgeSource):
 
 
 class URLSource(KnowledgeSource):
-    """URL 知识源 — 抓取网页文本导入"""
+    """URL 知识源 — 抓取网页文本导入（v2.0.9: 来源可信度校验 + 正文区块过滤）"""
 
-    def __init__(self, url: str, max_length: int = 5000):
+    # 导航/页脚/广告等噪音区块标记
+    _NOISE_MARKERS = (
+        "导航", "菜单", "页脚", "版权", "相关推荐", "热门文章", "广告",
+        "点击这里", "立即注册", "订阅我们", "关注我们", "footer", "nav",
+        "copyright", "advertisement", "related posts", "popular",
+    )
+    # 每个正文块允许的最大链接占比（超过视为导航/广告块）
+    _MAX_LINK_RATIO = 0.3
+
+    def __init__(self, url: str, max_length: int = 5000, trust=None):
         self._url = url
         self._max_length = max_length
+        self._trust = trust  # SourceTrust 实例，可选
         parsed = urlparse(url)
         if parsed.scheme not in ("http", "https"):
             raise ValueError(f"不支持的URL协议: {parsed.scheme}")
@@ -151,10 +161,17 @@ class URLSource(KnowledgeSource):
         import urllib.request
         import urllib.error
 
+        # v2.0.9: 来源可信度校验 — 黑名单直接不抓取
+        if self._trust is not None:
+            _, verdict = self._trust.rate(self._url)
+            if verdict == "rejected":
+                _log.warning("URL知识源来源不可信，拒绝抓取: %s", self._url)
+                return []
+
         try:
             req = urllib.request.Request(
                 self._url,
-                headers={"User-Agent": "SOMA-ExternalKnowledge/0.7"},
+                headers={"User-Agent": "SOMA-ExternalKnowledge/0.9"},
             )
             with urllib.request.urlopen(req, timeout=30) as resp:
                 content = resp.read().decode("utf-8", errors="replace")
@@ -162,19 +179,38 @@ class URLSource(KnowledgeSource):
             _log.warning("URL知识源抓取失败: %s — %s", self._url, e)
             return []
 
-        # 简单 HTML 文本提取（去除标签）
+        # 简单 HTML 文本提取（去除标签），保留链接锚文本用于区块过滤
         text = re.sub(r'<script[^>]*>.*?</script>', '', content, flags=re.DOTALL | re.IGNORECASE)
         text = re.sub(r'<style[^>]*>.*?</style>', '', text, flags=re.DOTALL | re.IGNORECASE)
+        # 提取链接锚文本段（用于识别导航块）
+        link_blocks = re.findall(r'<a[^>]*>.*?</a>', text, flags=re.DOTALL | re.IGNORECASE)
         text = re.sub(r'<[^>]+>', ' ', text)
         text = re.sub(r'\s+', ' ', text).strip()
+
+        # v2.0.9: 启发式正文过滤 — 去掉含噪音标记的段落
+        paragraphs = [p.strip() for p in re.split(r'\n+|。|！|？', text) if p.strip()]
+        noise_ratio = len(link_blocks) / max(len(paragraphs), 1)
+        filtered = [
+            p for p in paragraphs
+            if len(p) > 10
+            and not any(m in p.lower() for m in self._NOISE_MARKERS)
+        ]
+        # 链接密度过高整体视为导航页
+        if noise_ratio > self._MAX_LINK_RATIO:
+            filtered = filtered[: max(len(filtered) // 2, 1)]
+        text = " ".join(filtered)
 
         if len(text) > self._max_length:
             text = text[:self._max_length] + "..."
 
-        return [{
-            "content": text,
-            "context": {"source": self._url},
-        }]
+        ctx = {"source": self._url}
+        # v2.0.9: 来源可信度写入 context 供门控使用
+        if self._trust is not None:
+            trust_score, verdict = self._trust.rate(self._url)
+            ctx["trust_score"] = trust_score
+            ctx["source_verdict"] = verdict
+
+        return [{"content": text, "context": ctx}]
 
 
 class ExternalKnowledgeImporter:

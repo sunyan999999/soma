@@ -117,6 +117,26 @@ class SemanticStore(BaseMemoryStore):
                 confidence=row["confidence"],
             )
 
+    def get_all_triples(self) -> List[dict]:
+        """返回全部语义三元组（v2.0.9: 补接口，供 MemoryManager 冲突检测使用）。"""
+        try:
+            rows = self._conn.execute(
+                "SELECT subject, predicate, object, confidence, namespace "
+                "FROM semantic_triples"
+            ).fetchall()
+        except Exception:
+            return []
+        return [
+            {
+                "subject": r["subject"],
+                "predicate": r["predicate"],
+                "object": r["object"],
+                "confidence": float(r["confidence"]),
+                "namespace": r["namespace"] or "",
+            }
+            for r in rows
+        ]
+
     def add_triple(
         self, subject: str, predicate: str, object_: str,
         confidence: float = 1.0,

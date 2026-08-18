@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.9] — 2026-08-18
+
+### External Knowledge Quality & Filtering / 外部知识准确度/质量/过滤
+
+**v2.0.9 strengthens external knowledge ingestion with source trust, content quality detection, fact corroboration, and tunable strictness. 788 tests passed.**
+
+### Added / 新增
+- **来源可信度分级** (`soma/source_trust.py`): 域名白名单/黑名单 + 信誉分，URLSource 抓取与门控层0 双重校验，黑名单来源直接拒绝
+- **内容质量检测** (`soma/content_quality.py`): 信息密度/重复率/营销词/空话/噪音多维评分，可选 LLM 增强（有 key 自动用、无 key 纯本地兜底）
+- **事实印证层**: 用内容关键词检索已有记忆计算印证度，孤立事实（无已有知识支撑）降级为 quarantined
+- **严格度配置**: `strict/balanced/permissive` 三档，SOMAConfig 支持 `knowledge_gate_strictness` 等配置组
+- **CLI `--strictness`**: `soma learn --strictness strict "内容"`
+
+### Fixed / 修复
+- **冲突检测静默失效**: `MemoryManager.detect_conflicts()` 调用的 `SemanticStore.get_all_triples()` 不存在，被 except 吞掉 → 生产环境冲突检测从不工作。补真实接口
+- **风格样本静默失效**: `knowledge_gate._get_style_samples()` 调用的 `EpisodicStore.search()` 不存在 → 风格对齐样本永远为空。补 `get_style_samples()`
+- **弱 context 误拒**: `problem_context` 拆出的 Foci 与内容零命中时，回退用内容本身拆解，避免相关性过滤误拒所有内容
+
+### Changed / 变更
+- **URL 正文提取增强**: 跳过导航/页脚/广告区块，链接密度过高降级
+- **知识门控管道**: 五层 → 七层（层0 来源 + 层2.5 内容质量 + 层4.5 事实印证）
+- `learn_from_external()` 增加 `strictness` 参数
+
+### Tested / 测试
+- 788 用例通过，零回归（较 2.0.8 新增 25 个：来源可信度 7 / 内容质量 11 / 门控新层 7）
+
+---
+
 ## [2.0.8] — 2026-08-17
 
 ### Deployment & Agent Isolation Improvements / 部署与分身隔离改进

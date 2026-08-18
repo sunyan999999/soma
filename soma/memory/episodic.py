@@ -206,6 +206,19 @@ class EpisodicStore(BaseMemoryStore):
 
         return memory_id
 
+    def get_style_samples(self, n: int = 20) -> List[str]:
+        """获取高重要性记忆文本作为风格样本（v2.0.9: 补接口，供知识门控风格对齐）。"""
+        try:
+            rows = self._conn.execute(
+                "SELECT content FROM episodic_memories "
+                "WHERE length(content) > 50 "
+                "ORDER BY importance DESC LIMIT ?",
+                (n,),
+            ).fetchall()
+        except Exception:
+            return []
+        return [r["content"] for r in rows if r["content"]]
+
     def query_by_keywords(
         self, keywords: List[str], top_k: int = 5,
         user_id: str = "",

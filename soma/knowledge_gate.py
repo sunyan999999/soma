@@ -28,6 +28,8 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
+from soma.source_trust import SourceTrust, SourceTrustConfig
+
 
 # ═══════════════════════════════════════════════════════════════
 # 配置常量（可覆盖）
@@ -56,10 +58,13 @@ class ExternalKnowledge:
     content: str
     source_url: str = ""
     source_name: str = "external"       # web / document / rag / manual
+    trust_score: float = 0.0            # 层0: 来源可信度 0-1
     relevance_score: float = 0.0        # 层1: 相关性 0-1
+    content_quality_score: float = 0.0  # 层2.5: 内容质量 0-1（v2.0.9）
     quality_score: float = 0.0          # 层2-4 综合质量: 0-1
     style_alignment: float = 0.0        # 层3: 风格对齐度 0-1
     conflicts: List[str] = field(default_factory=list)  # 层4: 矛盾描述
+    corroboration_score: float = 0.0    # 层4.5: 事实印证度 0-1（v2.0.9）
     digested_content: str = ""          # 层2 消化后内容
     aligned_content: str = ""           # 层3 风格对齐后内容
     verdict: str = ""                   # accepted | quarantined | rejected
@@ -106,15 +111,41 @@ class KnowledgeGate:
         style_threshold: float = STYLE_ALIGNMENT_THRESHOLD,
         max_conflicts: int = MAX_CONFLICTS_BEFORE_QUARANTINE,
         external_ttl_days: int = EXTERNAL_MEMORY_TTL_DAYS,
+        strictness: str = "balanced",
+        trust_config: SourceTrustConfig = None,
+        min_quality: float = 0.40,
+        min_corroboration: float = 0.0,
     ):
         self._agent = soma_agent
         self._relevance_threshold = relevance_threshold
         self._style_threshold = style_threshold
         self._max_conflicts = max_conflicts
         self._ttl_days = external_ttl_days
+        self._strictness = strictness
+        # v2.0.9: 来源可信度 + 内容质量 + 事实印证阈值
+        self._trust = SourceTrust(trust_config)
+        self._min_quality = min_quality
+        self._min_corroboration = min_corroboration
+        self._apply_strictness()
 
         # 延迟初始化复用组件
         self._memory_manager = None
+
+    def _apply_strictness(self):
+        """v2.0.9: 按严格度档位调整过滤阈值。
+
+        - strict: 质量/印证要求更高，孤立事实降级
+        - balanced: 使用传入值（默认）
+        - permissive: 放宽质量要求，接受更多
+        """
+        s = (self._strictness or "balanced").lower()
+        if s == "strict":
+            self._min_quality = min(self._min_quality + 0.15, 0.7)
+            self._min_corroboration = max(self._min_corroboration, 0.2)
+        elif s == "permissive":
+            self._min_quality = max(self._min_quality - 0.15, 0.1)
+            self._min_corroboration = 0.0
+        # balanced: 不变
 
     @property
     def memory_manager(self):
@@ -137,6 +168,7 @@ class KnowledgeGate:
         contents: List[str],
         problem_context: str = "",
         source_name: str = "external",
+        source_url: str = "",
     ) -> GateResult:
         """外部内容 → 五层过滤 → 分级存储
 
@@ -144,6 +176,7 @@ class KnowledgeGate:
             contents: 外部文本列表
             problem_context: 当前分析主题，用于相关性判断
             source_name: 来源标识 (web/document/rag)
+            source_url: 来源 URL（v2.0.9 可选，提供时先过层0来源可信度过滤）
 
         Returns:
             GateResult 含 accepted/quarantined/rejected
@@ -156,8 +189,21 @@ class KnowledgeGate:
             return result
 
         # 对问题上下文做拆解，获得基准 Foci
-        context = problem_context or " ".join(contents)[:200]
-        foci = self._agent.engine.decompose(context)
+        # v2.0.9: problem_context 拆出的 Foci 若与内容零相关（如 context 过短/
+        # 无关键词，decompose 仅靠加权随机兜底），回退用内容本身拆解作基准，
+        # 避免相关性过滤误拒所有内容
+        context = problem_context or ""
+        foci = self._agent.engine.decompose(context) if context else []
+        if foci and contents:
+            joined = " ".join(contents)
+            total_hits = sum(
+                1 for f in foci for kw in getattr(f, "keywords", [])
+                if kw and kw.lower() in joined.lower()
+            )
+            if total_hits == 0:
+                fallback = self._agent.engine.decompose(joined[:300])
+                if fallback:
+                    foci = fallback
 
         # 逐条处理
         for raw_text in contents:
@@ -167,7 +213,18 @@ class KnowledgeGate:
             ek = ExternalKnowledge(
                 content=raw_text.strip(),
                 source_name=source_name,
+                source_url=source_url,
             )
+
+            # ── 层0: 来源可信度过滤（v2.0.9）──
+            # 提供 source_url 时先查来源信誉，黑名单域名直接拒绝
+            if source_url:
+                ek.trust_score, verdict = self._trust.rate(source_url)
+                if verdict == "rejected":
+                    ek.verdict = "rejected"
+                    ek.reject_reason = f"来源不可信: {source_url}"
+                    result.rejected.append(ek)
+                    continue
 
             # ── 层1: 相关性过滤 ──
             ek = self._filter_relevance(ek, foci)
@@ -181,19 +238,34 @@ class KnowledgeGate:
                 result.rejected.append(ek)
                 continue
 
+            # ── 层2.5: 内容质量检测（v2.0.9）──
+            ek = self._check_content_quality(ek)
+            if ek.verdict == "rejected":
+                result.rejected.append(ek)
+                continue
+
             # ── 层3: 风格对齐 ──
             ek = self._align_style(ek)
 
             # ── 层4: 一致性校验 ──
             ek = self._check_consistency(ek)
 
+            # ── 层4.5: 事实印证（v2.0.9）──
+            ek = self._corroborate(ek)
+
             # ── 综合质量分 ──
             ek.quality_score = self._compute_quality(ek)
 
             # ── 判定 ──
+            low_quality = ek.content_quality_score < self._min_quality
+            low_corroboration = ek.corroboration_score < self._min_corroboration
             if ek.style_alignment < self._style_threshold and len(ek.conflicts) > self._max_conflicts:
                 ek.verdict = "rejected"
                 ek.reject_reason = f"风格对齐度{ek.style_alignment:.2f}低于阈值且冲突{len(ek.conflicts)}超限"
+                result.rejected.append(ek)
+            elif low_quality:
+                ek.verdict = "rejected"
+                ek.reject_reason = f"内容质量{ek.content_quality_score:.2f}低于阈值{self._min_quality}"
                 result.rejected.append(ek)
             elif len(ek.conflicts) > self._max_conflicts:
                 ek.verdict = "quarantined"
@@ -202,6 +274,11 @@ class KnowledgeGate:
             elif ek.style_alignment < self._style_threshold:
                 ek.verdict = "quarantined"
                 ek.reject_reason = f"风格对齐度{ek.style_alignment:.2f}低于阈值"
+                result.quarantined.append(ek)
+            elif low_corroboration:
+                # 孤立事实（无印证）降级为 quarantined，避免错误知识污染
+                ek.verdict = "quarantined"
+                ek.reject_reason = f"事实印证度{ek.corroboration_score:.2f}低于阈值，缺少已有记忆支撑"
                 result.quarantined.append(ek)
             else:
                 ek.verdict = "accepted"
@@ -301,6 +378,74 @@ class KnowledgeGate:
         return ek
 
     # ═══════════════════════════════════════════════════════════
+    # 层2.5: 内容质量检测（v2.0.9）
+    # ═══════════════════════════════════════════════════════════
+
+    def _check_content_quality(self, ek: ExternalKnowledge) -> ExternalKnowledge:
+        """评估内容质量。有 LLM 时用 LLM 增强，否则纯本地启发式。"""
+        from soma.content_quality import assess_content_quality
+
+        use_llm = self._has_llm()
+        result = assess_content_quality(
+            ek.content, agent=self._agent if use_llm else None,
+            use_llm=use_llm,
+        )
+        ek.content_quality_score = result["score"]
+        if result["score"] < self._min_quality:
+            ek.verdict = "rejected"
+            ek.reject_reason = (
+                f"内容质量{result['score']:.2f}低于阈值{self._min_quality}"
+                + (f"（{result['llm_reason']}）" if result.get("llm_reason") else "")
+            )
+        return ek
+
+    def _has_llm(self) -> bool:
+        """当前 agent 是否配置了 LLM（有 key 或非 mock 模型）。"""
+        cfg = getattr(self._agent, "config", None)
+        if cfg is None:
+            return False
+        return bool(
+            getattr(cfg, "llm_api_key", "")
+            or getattr(cfg, "llm_model", "mock") != "mock"
+        )
+
+    # ═══════════════════════════════════════════════════════════
+    # 层4.5: 事实印证（v2.0.9）
+    # ═══════════════════════════════════════════════════════════
+
+    def _corroborate(self, ek: ExternalKnowledge) -> ExternalKnowledge:
+        """事实印证：用内容关键词检索已有记忆，计算印证度。
+
+        印证度高 → 与既有知识一致（可信）；印证度为 0 → 孤立事实（降权）。
+        """
+        from soma.engine import _extract_keywords
+
+        text = ek.content or ek.digested_content or ""
+        keywords = _extract_keywords(text, max_keywords=8)
+        if not keywords:
+            ek.corroboration_score = 0.0
+            return ek
+
+        try:
+            episodic = getattr(self._agent.memory, "episodic", None)
+            if episodic is None or not hasattr(episodic, "query_by_keywords"):
+                ek.corroboration_score = 0.0
+                return ek
+            results = episodic.query_by_keywords(keywords, top_k=10)
+        except Exception:
+            ek.corroboration_score = 0.0
+            return ek
+
+        if not results:
+            ek.corroboration_score = 0.0
+            return ek
+
+        # 印证度 = 高重要性命中比例（已有高价值记忆支撑则更可信）
+        matched = [m for m in results if getattr(m, "importance", 0) >= 0.5]
+        ek.corroboration_score = round(len(matched) / len(results), 3)
+        return ek
+
+    # ═══════════════════════════════════════════════════════════
     # 层3: 风格对齐
     # ═══════════════════════════════════════════════════════════
 
@@ -333,29 +478,31 @@ class KnowledgeGate:
         return ek
 
     def _get_style_samples(self, n: int = 20) -> List[str]:
-        """从记忆库获取高重要性风格样本"""
-        samples = []
+        """从记忆库获取高重要性风格样本
+
+        v2.0.9: 修复生产环境静默失效——之前调用不存在的 episodic.search()，
+        真实 EpisodicStore 无此方法，样本永远为空。改用 get_style_samples()。
+        """
         try:
             episodic = getattr(self._agent.memory, "episodic", None)
-            if episodic:
-                # 尝试获取最近的高重要性记忆
-                try:
-                    results = episodic.search("", top_k=n * 3)
-                    # 按重要性排序取 top-n
-                    sorted_results = sorted(
-                        results,
-                        key=lambda m: getattr(m, "importance", 0),
+            if episodic is None:
+                return []
+            # 优先用真实接口；Fake/旧接口兜底
+            if hasattr(episodic, "get_style_samples"):
+                return episodic.get_style_samples(n)
+            if hasattr(episodic, "search"):
+                results = episodic.search("", top_k=n * 3)
+                return [
+                    getattr(m, "content", str(m))
+                    for m in sorted(
+                        results, key=lambda m: getattr(m, "importance", 0),
                         reverse=True,
-                    )
-                    for m in sorted_results[:n]:
-                        content = getattr(m, "content", str(m))
-                        if len(content) > 50:
-                            samples.append(content)
-                except Exception:
-                    pass
+                    )[:n]
+                    if len(getattr(m, "content", str(m))) > 50
+                ]
         except Exception:
             pass
-        return samples
+        return []
 
     def _extract_style_features(self, texts: List[str]) -> Dict[str, float]:
         """提取文本集的风格特征向量"""

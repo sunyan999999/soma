@@ -291,6 +291,7 @@ def cmd_learn(args):
             [content.strip()],
             problem_context=problem,
             source_name=source,
+            strictness=getattr(args, "strictness", ""),
         )
         print(json.dumps({
             "status": "completed",
@@ -394,6 +395,9 @@ def build_parser() -> argparse.ArgumentParser:
                           help="来源标识 (web/document/rag)")
     p_learn.add_argument("-c", "--context", type=str, default="",
                           help="当前分析主题，用于相关性判断")
+    p_learn.add_argument("--strictness", type=str, default="",
+                          choices=["strict", "balanced", "permissive", ""],
+                          help="过滤严格度 (默认 balanced)")
 
     # graph
     p_graph = sub.add_parser("graph", help="自动构建知识图谱")

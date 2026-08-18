@@ -56,3 +56,4 @@ python -m pip install --upgrade pip-audit && pip-audit
 | 2026-07-26 | Claude Code | SOMA v2.0.6-dev 代码安全扫描 | 零漏洞，零硬编码密钥 |
 | 2026-08-16 | Claude Code | SOMA v2.0.7 安全审计 | 修复 --project 路径穿越漏洞（正则白名单）+ importance 越界钳制 |
 | 2026-08-17 | Claude Code | SOMA v2.0.8 安全审计 | 依赖锁定（litellm/fastembed）防升级漂移 + 激活异常不再静默吞掉 |
+| 2026-08-18 | Claude Code | SOMA v2.0.9 安全审计 | 外部知识来源可信度过滤（黑名单域名拒绝）+ 内容质量检测防垃圾注入 |

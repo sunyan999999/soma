@@ -35,6 +35,16 @@ class FakeEpisodic:
     def search(self, query, top_k=10):
         return self.memories[:top_k]
 
+    def query_by_keywords(self, keywords, top_k=10, **kwargs):
+        # 简单匹配：关键词出现在 content 中则命中
+        results = []
+        for m in self.memories:
+            if any(kw in m.content for kw in keywords):
+                results.append(m)
+            if len(results) >= top_k:
+                break
+        return results
+
     def stats(self):
         return {"episodic": len(self.memories)}
 
@@ -388,3 +398,96 @@ class TestConstants:
         assert 0 < STYLE_ALIGNMENT_THRESHOLD < 1
         assert MAX_CONFLICTS_BEFORE_QUARANTINE >= 1
         assert EXTERNAL_MEMORY_TTL_DAYS >= 1
+
+
+# ═══════════════════════════════════════════════════════════════
+# v2.0.9 新增层测试: 内容质量 / 来源过滤 / 事实印证 / 严格度
+# ═══════════════════════════════════════════════════════════════
+
+class TestContentQualityLayer:
+    def setup_method(self):
+        self.agent = FakeAgent()
+        self.gate = KnowledgeGate(self.agent)
+
+    def test_marketing_content_rejected(self):
+        """营销/低质内容被内容质量层拒绝"""
+        ek = ExternalKnowledge(content="限时抢购！全场五折！立即点击购买！免费红包！")
+        ek = self.gate._check_content_quality(ek)
+        assert ek.verdict == "rejected"
+        assert "内容质量" in ek.reject_reason
+
+    def test_good_content_passes(self):
+        ek = ExternalKnowledge(content=(
+            "系统分析方法论强调从全局视角理解要素关联，识别反馈回路，"
+            "这是复杂问题分析的基础框架和核心方法论。"
+        ))
+        ek = self.gate._check_content_quality(ek)
+        assert ek.verdict == ""
+        assert ek.content_quality_score >= 0.3
+
+
+class TestSourceFilterLayer:
+    def test_blacklist_source_rejected(self):
+        agent = FakeAgent()
+        gate = KnowledgeGate(agent)
+        result = gate.ingest(
+            ["系统分析的重要方法论内容"],
+            problem_context="系统分析",
+            source_url="https://spam-site.com/article",
+        )
+        # 黑名单来源应被拒绝（层0）
+        assert any("来源不可信" in r.reject_reason for r in result.rejected)
+
+
+class TestCorroborationLayer:
+    def test_corroboration_with_existing_memory(self):
+        agent = FakeAgent()
+        agent.memory.episodic.memories = [
+            FakeMemory(content="系统分析方法论从全局视角理解要素关联，识别反馈回路。",
+                       importance=0.9),
+        ]
+        gate = KnowledgeGate(agent)
+        ek = ExternalKnowledge(content=(
+            "系统分析方法论从全局视角理解要素关联，识别反馈回路，"
+            "这是复杂问题分析的核心框架。"
+        ))
+        ek = gate._corroborate(ek)
+        # 与已有高重要性记忆印证 → 印证度 > 0
+        assert ek.corroboration_score > 0
+
+    def test_isolated_fact_zero_corroboration(self):
+        agent = FakeAgent()
+        gate = KnowledgeGate(agent)
+        ek = ExternalKnowledge(content="完全孤立的火星地形研究新发现报告内容。")
+        ek = gate._corroborate(ek)
+        # 无已有记忆支撑 → 印证度 0
+        assert ek.corroboration_score == 0.0
+
+
+class TestContextFallback:
+    def test_weak_context_falls_back_to_content(self):
+        """v2.0.9: problem_context 拆出的 Foci 与内容零命中时，回退用内容拆解"""
+        agent = FakeAgent()
+        # FakeEngine 对「哲学思维」拆不出 Foci
+        gate = KnowledgeGate(agent)
+        result = gate.ingest(
+            ["系统分析方法论强调从全局视角理解要素关联，识别反馈回路。"],
+            problem_context="哲学思维",
+            source_name="web",
+        )
+        # 回退后内容应能通过相关性过滤（不被误拒）
+        assert result.total >= 1
+
+
+class TestStrictness:
+    def test_strict_raises_min_quality(self):
+        gate = KnowledgeGate(FakeAgent(), min_quality=0.3, strictness="strict")
+        assert round(gate._min_quality, 2) >= 0.45  # 0.3 + 0.15
+
+    def test_permissive_lowers_min_quality(self):
+        gate = KnowledgeGate(FakeAgent(), min_quality=0.3, strictness="permissive")
+        assert gate._min_quality <= 0.3
+
+    def test_balanced_unchanged(self):
+        gate = KnowledgeGate(FakeAgent(), min_quality=0.3, strictness="balanced")
+        assert gate._min_quality == 0.3
