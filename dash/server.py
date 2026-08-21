@@ -1308,6 +1308,73 @@ def memory_list(limit: int = 50, offset: int = 0, query: str = ""):
         "limit": limit,
     }
 
+
+# ── v2.0.9: 外部知识门控 ─────────────────────────────────────
+
+class KnowledgeLearnRequest(BaseModel):
+    """外部知识门控请求"""
+    contents: List[str] = Field(..., description="外部内容列表")
+    problem_context: str = Field("", description="问题上下文，用于相关性判断")
+    source_name: str = Field("external", description="来源标识 web/document/rag/manual")
+    strictness: str = Field("", description="严格度 strict/balanced/permissive，空用默认")
+    source_url: str = Field("", description="来源 URL（提供时过层0来源可信度）")
+
+
+class SourceTrustRequest(BaseModel):
+    """来源可信度评估请求"""
+    url: str = Field(..., description="要评估的 URL")
+
+
+@app.post("/api/knowledge/learn")
+def knowledge_learn(req: KnowledgeLearnRequest):
+    """外部知识门控：五层质量过滤后分级存储"""
+    result = get_agent().learn_from_external(
+        req.contents,
+        problem_context=req.problem_context,
+        source_name=req.source_name,
+        strictness=req.strictness,
+    )
+    return {
+        "status": "completed",
+        "stats": result.stats,
+        "accepted": [
+            {"content": ek.content[:200], "quality": ek.quality_score,
+             "corroboration": ek.corroboration_score}
+            for ek in result.accepted
+        ],
+        "quarantined": [
+            {"content": ek.content[:200], "reason": ek.reject_reason}
+            for ek in result.quarantined
+        ],
+        "rejected": [
+            {"content": ek.content[:200], "reason": ek.reject_reason}
+            for ek in result.rejected
+        ],
+    }
+
+
+@app.get("/api/knowledge/config")
+def knowledge_config():
+    """知识门控当前配置"""
+    gate = get_agent().knowledge_gate
+    return {
+        "strictness": gate._strictness,
+        "min_quality": gate._min_quality,
+        "min_corroboration": gate._min_corroboration,
+        "relevance_threshold": gate._relevance_threshold,
+        "style_threshold": gate._style_threshold,
+        "max_conflicts": gate._max_conflicts,
+        "whitelist": sorted(gate._trust._config.whitelist.keys()),
+        "blacklist": sorted(gate._trust._config.blacklist),
+    }
+
+
+@app.post("/api/knowledge/source-trust")
+def knowledge_source_trust(req: SourceTrustRequest):
+    """评估来源可信度"""
+    score, verdict = get_agent().knowledge_gate._trust.rate(req.url)
+    return {"url": req.url, "score": score, "verdict": verdict}
+
 @app.put("/api/memory/{memory_id}")
 def memory_update(memory_id: str, content: str = "", importance: float = 0.7):
     """更新一条记忆的内容或重要性"""

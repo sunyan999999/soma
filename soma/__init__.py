@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "2.0.9"
+    __version__ = "2.0.10"
 
 from soma.config import SOMAConfig, load_config
 from soma.base import MemoryUnit, Focus, ActivatedMemory
@@ -75,7 +75,7 @@ _log = logging.getLogger("soma")
 
 
 class SOMA:
-    """SOMA 顶层门面 — v2.0.9
+    """SOMA 顶层门面 — v2.0.10
 
     使用示例::
 
@@ -966,6 +966,111 @@ class SOMA:
 
         return results
 
+    # ── v2.0.10: 全自主认知循环闭环 ────────────────────────────
+
+    def run_autonomous(
+        self, goal: str, max_rounds: int = 3,
+        feedback_fn=None,
+    ) -> dict:
+        """全自主认知循环：给定目标，迭代「感知→推理→行动→检查」直到完成或达上限。
+
+        与 loop() 的区别：loop() 是单轮认知闭环；run_autonomous() 把多轮认知
+        串成自主执行，每轮携带上轮结果继续推进目标，直到：
+          - 外部反馈函数 feedback_fn 判定完成（最可靠）
+          - 有 LLM key 时由 LLM 判断目标是否达成
+          - 否则跑满 max_rounds（保守，不提前误停）
+
+        Args:
+            goal: 要自主完成的目标/问题
+            max_rounds: 最大迭代轮数（默认 3）
+            feedback_fn: 可选外部完成判断函数 `fn(round_result, execution) -> bool`
+
+        Returns:
+            {goal, completed, rounds, round_count, final_answer, elapsed_ms}
+        """
+        t0 = time.time()
+        rounds = []
+        context = goal
+        completed = False
+
+        for i in range(max_rounds):
+            # 单轮认知闭环（感知→推理→行动→反馈→进化）
+            round_result = self.loop(context, max_cycles=1)
+
+            # 提取本轮行动文本并执行
+            actions_obj = round_result.get("actions", {})
+            actions_text = actions_obj.get("actions", "") if isinstance(actions_obj, dict) else ""
+            execution = self.execute(context, actions_text)
+
+            rounds.append({
+                "round": i + 1,
+                "perception": (round_result.get("cycle_log") or [{}])[0].get("data", {}),
+                "answer": round_result.get("final_answer", ""),
+                "actions": actions_text[:300],
+                "execution": execution,
+            })
+
+            # 完成判断
+            if self._check_goal_complete(goal, round_result, execution, feedback_fn):
+                completed = True
+                break
+
+            # 未完成：携带本轮结果继续推进
+            next_answer = round_result.get("final_answer", "")[:300]
+            next_steps = execution.get("next_steps", "")[:300]
+            context = (
+                f"{goal}\n\n"
+                f"[第 {i + 1} 轮结果]\n"
+                f"分析: {next_answer}\n"
+                f"下一步: {next_steps}\n\n"
+                f"请继续推进该目标。"
+            )
+
+        return {
+            "goal": goal,
+            "completed": completed,
+            "rounds": rounds,
+            "round_count": len(rounds),
+            "final_answer": rounds[-1]["answer"] if rounds else "",
+            "elapsed_ms": round((time.time() - t0) * 1000, 1),
+        }
+
+    def _check_goal_complete(
+        self, goal: str, round_result: dict, execution: dict,
+        feedback_fn=None,
+    ) -> bool:
+        """判断目标是否达成。
+
+        优先级：外部反馈函数 → LLM（有 key）→ 本地兜底（返回 False，跑满轮数）。
+        """
+        if feedback_fn is not None:
+            try:
+                return bool(feedback_fn(round_result, execution))
+            except Exception:
+                pass
+
+        if self._has_llm():
+            try:
+                prompt = (
+                    f"目标: {goal}\n\n"
+                    f"本轮分析: {str(round_result.get('final_answer', ''))[:400]}\n\n"
+                    f"判断目标是否已达成？只回答 true 或 false。"
+                )
+                resp = self._agent._call_llm(prompt, "")[:20].strip().lower()
+                return "true" in resp
+            except Exception:
+                pass
+
+        # 本地兜底：保守处理，不提前误停（跑满 max_rounds）
+        return False
+
+    def _has_llm(self) -> bool:
+        """当前是否配置了 LLM（有 key 或非 mock 模型）。"""
+        return bool(
+            getattr(self._config, "llm_api_key", "")
+            or getattr(self._config, "llm_model", "mock") != "mock"
+        )
+
     def _mock_respond(self, problem, foci=None, activated=None):
         """无 LLM 时的 mock 响应"""
         if foci is None:
@@ -1070,6 +1175,80 @@ class SOMA:
     ) -> None:
         self._agent.remember_semantic(subject, predicate, object_, confidence,
                                       namespace=namespace)
+
+    # ── v2.0.10: 多模态记忆 ────────────────────────────────────
+
+    def remember_image(
+        self, image_path: str = "", description: str = "",
+        importance: float = 0.6, user_id: str = "", use_ocr: bool = True,
+    ) -> dict:
+        """存储图片记忆 — 图片引用 + 结构化描述（可选 OCR 增强）。
+
+        示例::
+
+            result = soma.remember_image(
+                image_path="diagram.png",
+                description="系统架构图：三个微服务通过消息队列解耦",
+            )
+            # → 存为文本记忆（含图片路径引用 + OCR 文字）
+
+        返回: {"memory_id": ..., "meta": {...}}
+        """
+        from soma.multimodal import ImageMemory
+
+        img = ImageMemory(image_path=image_path, description=description,
+                          use_ocr=use_ocr)
+        meta = img.analyze()
+        content = img.to_memory_content(meta)
+
+        ctx = {
+            "content_type": "image",
+            "image_path": image_path,
+            "description": description,
+            "meta": meta,
+        }
+        memory_id = self._agent.remember(content, ctx, importance,
+                                         user_id=user_id)
+        return {"memory_id": memory_id, "meta": meta}
+
+    def remember_table(
+        self, data: list = None, title: str = "",
+        markdown_table: str = "", csv_text: str = "",
+        importance: float = 0.6, user_id: str = "",
+    ) -> dict:
+        """存储表格记忆 — 结构化数据提取要点。
+
+        支持三种输入：
+          - data: List[Dict]，直接结构化数据
+          - markdown_table: markdown 表格字符串（自动解析）
+          - csv_text: CSV 字符串（自动解析）
+
+        示例::
+
+            result = soma.remember_table(
+                data=[{"季度": "Q1", "营收": "100万"}, {"季度": "Q2", "营收": "150万"}],
+                title="季度营收表",
+            )
+
+        返回: {"memory_id": ..., "meta": {...}}
+        """
+        from soma.multimodal import TableMemory
+
+        table = TableMemory(
+            title=title, data=data or [],
+            markdown_table=markdown_table, csv_text=csv_text,
+        )
+        meta = table.analyze()
+        content = table.to_memory_content(meta)
+
+        ctx = {
+            "content_type": "table",
+            "title": title,
+            "meta": meta,
+        }
+        memory_id = self._agent.remember(content, ctx, importance,
+                                         user_id=user_id)
+        return {"memory_id": memory_id, "meta": meta}
 
     def query_memory(self, query: str, top_k: int = 5, user_id: str = "",
                      agent_id: str = "", group_id: str = "") -> list:

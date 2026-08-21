@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.10] — 2026-08-19
+
+### Autonomous Loop + Multimodal Memory + Test Hardening / 全自主循环 + 多模态记忆 + 测试强化
+
+**v2.0.10 adds an autonomous reasoning loop, image/table memory, knowledge-gate APIs, and major test coverage gains. 837 tests passed (3 rounds, zero regression).**
+
+### Added / 新增
+- **全自主认知循环** (`SOMA.run_autonomous()`): 给定目标，多轮迭代「感知→推理→行动→检查」，携带上轮结果推进直到完成或达上限；支持外部反馈函数 / LLM / 本地三种完成判断
+- **多模态记忆** (`soma/multimodal.py`): `remember_image()`（图片引用+描述+可选 OCR）、`remember_table()`（结构化数据 / markdown / CSV 三种输入自动解析）
+- **dash 知识门控 API**: `/api/knowledge/learn`（五层过滤入库）/ `/api/knowledge/config`（门控配置）/ `/api/knowledge/source-trust`（来源可信度评估）
+- **外部知识使用说明** (`docs/guides/external-knowledge.md`)
+
+### Changed / 变更
+- **测试覆盖大幅提升**: rbac 27%→95%、plugin 0%→98%、router 60%→83%；新增 test_autonomous / test_multimodal / test_rbac / test_plugin / test_router（30+ 测试）
+
+### Tested / 测试
+- 837 用例通过，3 轮全量测试零回归（较 2.0.9 新增 48 个测试）
+- 边界审查：run_autonomous（max_rounds=0/空目标/反馈函数异常）、multimodal（列不匹配/无分隔行/非法扩展名）全部健壮
+
+---
+
 ## [2.0.9] — 2026-08-18
 
 ### External Knowledge Quality & Filtering / 外部知识准确度/质量/过滤
