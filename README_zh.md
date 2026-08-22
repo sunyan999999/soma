@@ -1,4 +1,4 @@
-# SOMA v2.0.10 — AI Agent 认知内核
+# SOMA v2.0.11 — AI Agent 认知内核
 
 <p align="center">
   <strong>Wisdom over Memory — 智慧超越记忆</strong><br>
@@ -28,7 +28,7 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 
 **为什么用 SOMA 而非向量数据库？** 传统记忆库（ChromaDB、Mem0）只管存和搜。SOMA **先思考再检索**：7条思维规律组成推理网络，分析问题的维度决定了要激活什么记忆。结果是能系统拆解问题的 Agent，而不是只会模式匹配的机器人。
 
-| | 向量数据库 | Mem0 | **SOMA v2.0.10** |
+| | 向量数据库 | Mem0 | **SOMA v2.0.11** |
 |---|---|---|---|
 | 存取记忆 | ✓ | ✓ | ✓ |
 | 推理框架 | ✗ | ✗ | **✓ 7条思维规律** |
@@ -46,13 +46,13 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 <p align="center">
   <a href="https://github.com/sunyan999999/soma"><img src="https://img.shields.io/github/stars/sunyan999999/soma?style=social" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-2.0.10-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-2.0.11-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/python-3.10%2B-green" alt="Python"></a>
   <a href="#基准测试"><img src="https://img.shields.io/badge/语义召回-100%25-brightgreen" alt="语义召回率"></a>
   <a href="#基准测试"><img src="https://img.shields.io/badge/综合评分-87.5%2F100-blue" alt="综合评分"></a>
-  <a href="#"><img src="https://img.shields.io/badge/测试-837%2F837-brightgreen" alt="测试"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/变更日志-v2.0.10-success" alt="变更日志"></a>
-  <a href="#"><img src="https://img.shields.io/badge/里程碑-2.0.10-ff6b6b" alt="里程碑"></a>
+  <a href="#"><img src="https://img.shields.io/badge/测试-853%2F837-brightgreen" alt="测试"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/变更日志-v2.0.11-success" alt="变更日志"></a>
+  <a href="#"><img src="https://img.shields.io/badge/里程碑-2.0.11-ff6b6b" alt="里程碑"></a>
 </p>
 
 📖 **[English README](README.md)** | **[文档](https://sunyan999999.github.io/soma/)** | **[变更日志](CHANGELOG.md)** | **[贡献指南](CONTRIBUTING.md)**
@@ -65,7 +65,7 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 
 ## v2.0.6 — 代码记忆 + 主动记忆管理
 
-**v2.0.6 新增 AST 代码结构化记忆、艾宾浩斯遗忘曲线、全智能体统一 CLI。** 在 v2.0.5 自主认知循环基础上，837 测试通过，语义召回 10/10 完美：
+**v2.0.6 新增 AST 代码结构化记忆、艾宾浩斯遗忘曲线、全智能体统一 CLI。** 在 v2.0.5 自主认知循环基础上，853 测试通过，语义召回 10/10 完美：
 
 | # | 功能 | 说明 |
 |---|------|------|
@@ -80,7 +80,7 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 
 从 v0.1 埋下的每一颗种子，到 v2.0.6 长成的智能体共享网络：
 
-| 能力线 | 核心问题 | v2.0.10 的答案 |
+| 能力线 | 核心问题 | v2.0.11 的答案 |
 |---|---|---|
 | **记忆** | AI如何像人一样管理记忆？ | 三层架构：碎片 → 场景 → 画像 |
 | **推理** | 找到信息后如何用来思考？ | 因果链 + 冲突检测 + 跨域类比 |
@@ -96,7 +96,7 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                         SOMA v2.0.10 — 认知内核                                 │
+│                         SOMA v2.0.11 — 认知内核                                 │
 │                                                                                │
 │  ┌──────────────────────────────────────────────────────────────────┐        │
 │  │  L3 用户画像 — "理解你是个什么样的人"                                │        │
@@ -351,7 +351,7 @@ result = tool.run("分析这个问题...")
 
 ## 基准测试
 
-SOMA v2.0.10 — 使用生产数据，837 测试通过，5轮统计基准测试：
+SOMA v2.0.11 — 使用生产数据，853 测试通过，5轮统计基准测试：
 
 ### 综合评分: 92.6/100
 
@@ -367,7 +367,7 @@ SOMA v2.0.10 — 使用生产数据，837 测试通过，5轮统计基准测试�
 
 | 系统 | Recall@5 | 推理框架 | 三层记忆 | 进化 | 多Agent | 觉察 |
 |--------|:---:|:---:|:---:|:---:|:---:|:---:|
-| **SOMA v2.0.10** | **100%** | **✓** | **✓** | **✓** | **✓** | **✓** |
+| **SOMA v2.0.11** | **100%** | **✓** | **✓** | **✓** | **✓** | **✓** |
 | ChromaDB | 2.5% | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Mem0 | * | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Zep | * | ✗ | ✗ | ✗ | ✗ | ✗ |

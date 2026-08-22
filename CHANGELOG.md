@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.11] — 2026-08-22
+
+### Fixed / 修复
+
+**向量索引一致性重大修复（生产故障根因）**
+
+生产环境（2.0.9/2.0.10）出现记忆检索退化：语义召回率骤降、查询延迟 3 倍上升，且伴随「嵌入向量生成失败」日志。根因已定位为 `soma/vector_store.py` 的存量 bug + 状态污染，**并非 2.0.10 代码回归**（git diff 证实记忆链路 2.0.9→2.0.10 零改动）。
+
+### Fixed / 修复
+- **`store_vector()` 缺 `import faiss` → NameError**（`soma/vector_store.py`）: 函数内调用 `faiss.normalize_L2()` 却未 import，导致 faiss 索引构建后**每次插入记忆都抛异常**——DB 向量已写入但 faiss 索引不更新（失步），新记忆语义检索永远搜不到。这是 recall 下降与查询变慢的共同根因
+- **`similarity_search()` 失步处理遗漏**（`soma/vector_store.py`）: 仅在 `current_count > ntotal` 时重建，遗漏 `current_count < ntotal`（删除后 faiss 残留向量无法精确删除）→ 索引永久失步 + 残留向量占用 top-k 名额。现改为 **DB 与 faiss 不一致即从 DB 全量重建**，自愈恢复
+- **「嵌入向量生成失败」日志误导**（`soma/memory/episodic.py`）: 原 try 块同时包住 encode 与索引写入，无法区分失败来源。现拆开分别记录真实异常，便于生产定位
+
+### Added / 新增
+- 向量索引一致性回归测试（`tests/test_vector_store.py` +3）：索引构建后插入不失步 / 删除不残留 / 失步自愈
+- 严苛场景测试（`tests/test_vector_store_stress.py` +13）：45 轮一致性循环、300 条大量插入、磁盘持久化重启、未存盘窗口重建、损坏索引恢复、维度迁移、并发插入+查询、embed/索引失败降级、端到端多轮 benchmark 模拟召回、2000 条性能对照
+
+### Tested / 测试
+- **853 用例通过，3 遍 stress 稳定零 flaky**
+- 红绿验证：回退修复后一致性测试失败（NameError 实锤），恢复后通过——证明测试能抓 bug
+- 性能对照：一致状态查询快速（<100ms），仅失步后重建一次，重建后恢复，不再出现 300ms 常态
+
+### 生产升级建议
+1. 安装 2.0.11 后，删除数据目录下 `episodic.db.faiss_index` 和 `episodic.db.faiss_id_map.json`，重启服务强制全量重建一次索引（一次性，之后增量正常）
+2. 建议 `warmup_on_init=True`，避免服务启动早期 embedder 预热与请求竞态
+
+---
+
 ## [2.0.10] — 2026-08-19
 
 ### Autonomous Loop + Multimodal Memory + Test Hardening / 全自主循环 + 多模态记忆 + 测试强化

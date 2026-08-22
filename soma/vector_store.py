@@ -165,6 +165,8 @@ class NumpyVectorIndex:
 
     def store_vector(self, conn, memory_id: str, vector: np.ndarray):
         """存储嵌入向量并增量更新 FAISS 索引"""
+        import faiss
+
         blob = vector.astype(np.float32).tobytes()
         conn.execute(
             "UPDATE episodic_memories SET vector = ? WHERE id = ?",
@@ -223,16 +225,18 @@ class NumpyVectorIndex:
                 self._build_faiss_index(ids, vecs)
                 self._cached_count = current_count
 
-        # 缓存失效（向量数变化但磁盘已有较新索引或需要重建）
-        if current_count != self._cached_count and self._faiss_index is not None:
+        # 缓存一致性：DB 与 faiss 索引不一致时从 DB 全量重建
+        # 覆盖两类失步：
+        #   current_count > ntotal  新增向量未入索引（增量失败/异常）
+        #   current_count < ntotal  删除后的残留向量（faiss 无法精确删除）
+        if self._faiss_index is not None and current_count != self._cached_count:
             if current_count == self._faiss_index.ntotal:
                 # 仅计数未同步，更新即可
                 self._cached_count = current_count
-            elif current_count > self._faiss_index.ntotal:
-                # 有增量未更新到 FAISS → 全量重建（增量已在 store_vector 中处理）
+            else:
+                # DB 与 faiss 不等 → 全量重建，清除残留并纳入最新向量
                 ids, vecs = self.get_all_vectors(conn)
-                if len(ids) > 0:
-                    self._build_faiss_index(ids, vecs)
+                self._build_faiss_index(ids, vecs)
                 self._cached_count = len(ids)
 
         if self._faiss_index is None or self._faiss_index.ntotal == 0:

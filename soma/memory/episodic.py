@@ -192,16 +192,26 @@ class EpisodicStore(BaseMemoryStore):
         )
         self._conn.commit()
 
-        # 自动生成嵌入向量
+        # 自动生成嵌入向量（拆开 encode 与索引写入，便于定位失败原因）
         if self._use_vector and self._embedder is not None:
             try:
                 vec = self._embedder.encode(content)
-                self._vector_index.store_vector(self._conn, memory_id, vec)
-            except Exception:
+            except Exception as e:
                 _log.warning(
-                    "嵌入向量生成失败，memory_id=%s，记忆已存储但无法语义搜索。"
-                    "如果首次启动，可能是嵌入模型正在从 HuggingFace 下载（~66MB），稍后自动恢复。",
-                    memory_id,
+                    "嵌入向量编码失败，memory_id=%s，记忆已存储但无法语义搜索。"
+                    "如果首次启动，可能是嵌入模型正在从 HuggingFace 下载（~66MB），"
+                    "稍后自动恢复。原因: %s",
+                    memory_id, e,
+                )
+                return memory_id
+            try:
+                self._vector_index.store_vector(self._conn, memory_id, vec)
+            except Exception as e:
+                # 索引写入失败：DB 有向量但 faiss 索引缺该条，下次查询会重建补全
+                _log.warning(
+                    "向量索引写入失败，memory_id=%s，记忆已存储但该条暂缺语义索引"
+                    "（下次查询将自动重建索引补全）。原因: %s",
+                    memory_id, e,
                 )
 
         return memory_id

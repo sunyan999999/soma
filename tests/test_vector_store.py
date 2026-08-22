@@ -131,3 +131,96 @@ class TestNumpyVectorIndex:
             index.store_vector(conn, f"c_{i}", np.ones(4, dtype=np.float32))
 
         assert index.count_indexed(conn) == 5
+
+    # ── 回归：索引构建后的一致性（修复 faiss NameError + delete 残留）──
+
+    def test_store_vector_after_index_build_no_desync(self, index, conn):
+        """索引构建后再插入记忆，DB 与 faiss 保持一致。
+
+        回归: store_vector 内 faiss.normalize_L2 未 import faiss → NameError，
+        索引构建后每次插入记忆 faiss 索引不更新，新记忆语义召回不到。
+        """
+        index.ensure_table(conn)
+        rng = np.random.default_rng(0)
+        for i in range(3):
+            mid = f"m{i}"
+            conn.execute(
+                "INSERT INTO episodic_memories (id, content, timestamp) VALUES (?, ?, ?)",
+                (mid, f"记忆{i}", 1234567890.0),
+            )
+            conn.commit()
+            index.store_vector(conn, mid, rng.normal(size=4).astype(np.float32))
+        # 触发索引构建
+        index.similarity_search(conn, rng.normal(size=4).astype(np.float32), 3)
+        assert index._faiss_index is not None
+        # 索引构建后再插入 → 修复前抛 NameError 导致 DB 与 faiss 失步
+        mid = "after_build"
+        conn.execute(
+            "INSERT INTO episodic_memories (id, content, timestamp) VALUES (?, ?, ?)",
+            (mid, "构建后插入", 1234567890.0),
+        )
+        conn.commit()
+        index.store_vector(conn, mid, rng.normal(size=4).astype(np.float32))
+        # DB 向量数 == faiss ntotal，无失步
+        assert index.count_indexed(conn) == index._faiss_index.ntotal == 4
+        # 查询能搜到新记忆
+        res = [r[0] for r in index.similarity_search(
+            conn, rng.normal(size=4).astype(np.float32), 4)]
+        assert mid in res
+
+    def test_delete_leaves_no_stale_in_search(self, index, conn):
+        """删除记忆后 query 不返回已删向量（回归: faiss 残留占用 top-k 名额）。"""
+        index.ensure_table(conn)
+        rng = np.random.default_rng(1)
+        for i in range(4):
+            mid = f"m{i}"
+            conn.execute(
+                "INSERT INTO episodic_memories (id, content, timestamp) VALUES (?, ?, ?)",
+                (mid, f"记忆{i}", 1234567890.0),
+            )
+            conn.commit()
+            index.store_vector(conn, mid, rng.normal(size=4).astype(np.float32))
+        index.similarity_search(conn, rng.normal(size=4).astype(np.float32), 4)  # 构建索引
+        # 删除 m0, m1
+        for mid in ("m0", "m1"):
+            conn.execute("UPDATE episodic_memories SET vector=NULL WHERE id=?", (mid,))
+            conn.commit()
+            index.delete_vector(conn, mid)
+        # 查询不应包含已删向量（重建清除残留）
+        res = [r[0] for r in index.similarity_search(
+            conn, rng.normal(size=4).astype(np.float32), 4)]
+        assert not any(r in ("m0", "m1") for r in res)
+        assert set(res) <= {"m2", "m3"}
+        assert len(res) == 2
+
+    def test_similarity_search_self_heals_desync(self, index, conn):
+        """DB 与 faiss 失步（新增向量未入索引）时，下次查询自动重建修复。"""
+        index.ensure_table(conn)
+        rng = np.random.default_rng(2)
+        for i in range(2):
+            mid = f"m{i}"
+            conn.execute(
+                "INSERT INTO episodic_memories (id, content, timestamp) VALUES (?, ?, ?)",
+                (mid, f"记忆{i}", 1234567890.0),
+            )
+            conn.commit()
+            index.store_vector(conn, mid, rng.normal(size=4).astype(np.float32))
+        index.similarity_search(conn, rng.normal(size=4).astype(np.float32), 2)  # 构建
+        # 模拟增量添加失败：DB 有向量但 faiss 索引未更新
+        mid = "orphan"
+        conn.execute(
+            "INSERT INTO episodic_memories (id, content, timestamp) VALUES (?, ?, ?)",
+            (mid, "失步记忆", 1234567890.0),
+        )
+        conn.commit()
+        conn.execute(
+            "UPDATE episodic_memories SET vector=? WHERE id=?",
+            (np.ones(4, dtype=np.float32).tobytes(), mid),
+        )
+        conn.commit()
+        index._cached_count = -1  # 模拟缓存失效
+        # 查询应自动重建并纳入 orphan
+        res = [r[0] for r in index.similarity_search(
+            conn, rng.normal(size=4).astype(np.float32), 5)]
+        assert mid in res
+        assert index.count_indexed(conn) == index._faiss_index.ntotal == 3
