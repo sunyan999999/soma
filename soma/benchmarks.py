@@ -520,7 +520,12 @@ def run_memory_benchmark(agent) -> MemoryBenchmark:
     details["insert_latency_samples"] = len(latencies)
     details["insert_latency_p99_ms"] = round(sorted(latencies)[int(len(latencies) * 0.99)], 2)
 
-    # 3. 查询延迟
+    # 3. 查询延迟（v2.0.12: 采样前预热一次丢弃，吸收基准自身插入触发的索引重建，
+    #    避免把 2.3万条 HNSW 全量重建（~5s）计入 query 延迟，测量稳定态真实延迟）
+    try:
+        agent.query_memory("延迟测试 性能 写入", top_k=5)
+    except Exception:
+        pass
     q_latencies = []
     for _ in range(20):
         t0 = time.perf_counter()

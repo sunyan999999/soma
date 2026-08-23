@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.12] — 2026-08-23
+
+### Fixed / 修复（hotfix：benchmark 测量修正）
+
+**`run_memory_benchmark` 的 avg_query 被基准自身插入污染**（DSH 生产验证反馈）：
+
+基准每次执行插入 10 条测试记忆，会触发 faiss 全量重建（2.3 万条 HNSW ~5s），把 query 延迟从真实 ~35ms 拖到 351ms（p99 5.4s），dashboard 基准页数字失真。
+
+### Fixed / 修复
+- **查询延迟采样前预热丢弃一次**（`soma/benchmarks.py`）: 采样前先执行一次 query（吸收索引重建/模型加载），再采集 20 次稳定态，avg_query 恢复真实延迟量级
+
+### 说明
+- **仅影响 benchmark 测量，生产功能零影响**，生产 2.0.11 无需升级（除非需要拿到测量修正）
+- 后台同步重建优化（增量 1000 条时 ~5s 阻塞插入）记入后续版本评估
+
+### Tested / 测试
+- benchmark + 向量严苛测试 20 通过，全量无回归
+
+---
+
 ## [2.0.11] — 2026-08-22
 
 ### Fixed / 修复
