@@ -105,8 +105,12 @@ class MemoryCore:
         agent_id: str = "",
         group_id: str = "",
         graph_keywords: Optional[List[str]] = None,
+        max_age_days: Optional[float] = None,
     ) -> List[ActivatedMemory]:
-        """混合搜索：加权 RRF 融合 + 时间衰减因子 + 图谱扩展关键词"""
+        """混合搜索：加权 RRF 融合 + 时间衰减因子 + 图谱扩展关键词
+
+        v2.0.12: max_age_days 时间窗口硬截断透传。
+        """
         import math
         import time as _time
         keywords = focus.keywords
@@ -118,6 +122,7 @@ class MemoryCore:
         vec_results = self.episodic.query_by_vector(
             query_vec, top_k * 3, user_id=user_id,
             agent_id=agent_id, group_id=group_id,
+            max_age_days=max_age_days,
         )
         vec_rank = {mem.id: i + 1 for i, mem in enumerate(vec_results)}
         vec_mem = {mem.id: mem for mem in vec_results}
@@ -126,6 +131,7 @@ class MemoryCore:
         kw_results = self.episodic.query_by_keywords(
             keywords, top_k * 3, user_id=user_id,
             agent_id=agent_id, group_id=group_id,
+            max_age_days=max_age_days,
         )
         kw_rank = {mem.id: i + 1 for i, mem in enumerate(kw_results)}
         kw_mem = {mem.id: mem for mem in kw_results}
@@ -137,6 +143,7 @@ class MemoryCore:
             gk_results = self.episodic.query_by_keywords(
                 graph_keywords, top_k * 2, user_id=user_id,
                 agent_id=agent_id, group_id=group_id,
+                max_age_days=max_age_days,
             )
             graph_kw_rank = {mem.id: i + 1 for i, mem in enumerate(gk_results)}
             graph_kw_mem = {mem.id: mem for mem in gk_results}
@@ -204,6 +211,7 @@ class MemoryCore:
         user_id: str = "",
         agent_id: str = "",
         group_id: str = "",
+        max_age_days: Optional[float] = None,
     ) -> List[ActivatedMemory]:
         """对单个 Focus 跨三个子库查询，返回 ActivatedMemory 列表
 
@@ -212,6 +220,7 @@ class MemoryCore:
         - agent_id + group_id: agent级隔离（agent自己的 OR 组共享的）
 
         v0.8.0: 通过语义图谱扩展关键词，打破检索孤岛。
+        v2.0.12: max_age_days 时间窗口硬截断（情节记忆）。
         """
         keywords = focus.keywords
 
@@ -225,12 +234,14 @@ class MemoryCore:
                 focus, top_k, user_id=user_id,
                 agent_id=agent_id, group_id=group_id,
                 graph_keywords=graph_keywords,
+                max_age_days=max_age_days,
             )
         else:
             activated: List[ActivatedMemory] = []
             episodic_results = self.episodic.query_by_keywords(
                 all_keywords, top_k, user_id=user_id,
                 agent_id=agent_id, group_id=group_id,
+                max_age_days=max_age_days,
             )
             for mem in episodic_results:
                 matched = [kw for kw in all_keywords if kw.lower() in mem.content.lower()]

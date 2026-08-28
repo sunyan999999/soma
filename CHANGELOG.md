@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.13] — 2026-08-28
+
+### Fixed / 修复
+
+**记忆时间感知 —— 记忆串台根因修复**（DigitalTwinHub 接入反馈）
+
+接入方（DSH/零熵智库）反馈：用户数月前记忆被召回，但注入 LLM 时**只有纯文本、无时间信息**，LLM 把远期旧状态当当前状态反复纠正。根因定位在 SOMA 包本身：`MemoryUnit.timestamp` 精确存在，但 `explain_activation()` 返回 dict 时丢弃了它。
+
+### Changed / 变更
+- **`explain_activation()` 返回时间信息**（`soma/hub/_core.py`）：返回 dict 增加 `timestamp`（记忆创建时间，UTC 秒）、`age_days`（记忆年龄，天）、`memory_type`——接入方与 LLM 可感知时间远近，旧状态不再被当作当前状态
+- **`query_memory()` 暴露 `max_age_days` 时间窗口**（`soma/agent.py` → `hub.activate` → `retriever.retrieve` → `memory.query` 四层透传）：底层 `episodic.query_by_keywords/query_by_vector` 已支持 `min_ts` 硬截断，公共接口现在可用（如 `query_memory("睡眠", max_age_days=30)` 只取 30 天内）
+
+### Tested / 测试
+- 记忆时间感知测试（`tests/test_memory_time_aware.py` +5）：时间字段返回 / max_age_days 透传 / 底层硬截断 / 端到端不含远期记忆
+- 全量无回归
+
+### 说明
+- 时间感知排序（近因衰减 `relevance_potential()` 7 天半衰期）此前已存在；本次补上「返回时间信息 + 硬截断参数」，接入方过渡补丁可移除
+- 业务性质字段（state/fact/event，区分状态类与事实类时效）记入后续版本评估
+
+---
+
 ## [2.0.12] — 2026-08-23
 
 ### Fixed / 修复（hotfix：benchmark 测量修正）

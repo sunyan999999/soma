@@ -800,11 +800,14 @@ class SOMA_Agent:
                                       namespace=namespace)
 
     def query_memory(self, query: str, top_k: int = 5, user_id: str = "",
-                     agent_id: str = "", group_id: str = "") -> List[Dict]:
+                     agent_id: str = "", group_id: str = "",
+                     max_age_days: Optional[float] = None) -> List[Dict]:
         """直接查询记忆（绕过框架拆解）。
 
         v2.0.8: 支持 agent_id/group_id 显式指定隔离维度；为空时用当前实例的
         agent_id/group_id（原行为），向后兼容。
+        v2.0.12: 支持 max_age_days 时间窗口硬截断（如 30 天内），
+        返回结果含 timestamp/age_days（时间感知）。
         """
         from soma.engine import _extract_keywords
 
@@ -823,6 +826,7 @@ class SOMA_Agent:
                 [focus], user_id=user_id,
                 agent_id=agent_id or self.agent_id,
                 group_id=group_id or self.group_id,
+                max_age_days=max_age_days,
             )
         finally:
             self.hub.top_k = original_top_k

@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 from soma.base import ActivatedMemory, Focus
@@ -43,7 +44,8 @@ class ActivationHub:
         self.last_conflicts: List[Tuple[ActivatedMemory, ActivatedMemory, float]] = []
 
     def activate(self, foci: List[Focus], user_id: str = "", laws=None,
-                 agent_id: str = "", group_id: str = "") -> List[ActivatedMemory]:
+                 agent_id: str = "", group_id: str = "",
+                 max_age_days: Optional[float] = None) -> List[ActivatedMemory]:
         """
         双向激活：对每个 Focus 查询 MemoryCore，全局合并排序。
 
@@ -53,6 +55,7 @@ class ActivationHub:
         4. 按分数降序排列
         5. MMR 多样性重排 + 阈值过滤，返回 Top-K
         6. v0.8.0: 冲突检测降权 + 记忆→焦点反向传播
+        v2.0.12: max_age_days 时间窗口硬截断（透传给底层查询）。
         """
         candidates: Dict[str, list] = {}
 
@@ -60,6 +63,7 @@ class ActivationHub:
             results = self.retriever.retrieve(
                 focus, top_k=self.top_k * 2, user_id=user_id,
                 agent_id=agent_id, group_id=group_id,
+                max_age_days=max_age_days,
             )
 
             for am in results:
@@ -229,10 +233,18 @@ class ActivationHub:
         return result
 
     def explain_activation(self, activated: ActivatedMemory) -> Dict:
-        """返回激活记忆的详细解释信息"""
+        """返回激活记忆的详细解释信息
+
+        v2.0.12: 返回时间信息（timestamp/age_days）——记忆串台根因修复：
+        此前只返回纯文本，接入方无法感知记忆时间远近，LLM 会把远期旧状态当当前状态。
+        """
         mem = activated.memory
+        now_ts = datetime.now(timezone.utc).timestamp()
         info = {
             "memory_id": mem.id,
+            "timestamp": mem.timestamp,          # 记忆创建时间（UTC 秒）
+            "age_days": round(max(0.0, now_ts - mem.timestamp) / 86400.0, 1),
+            "memory_type": mem.memory_type,      # episodic/semantic/skill/scene/profile
             "content_preview": mem.content[:200],
             "content": mem.content,
             "activation_score": activated.activation_score,

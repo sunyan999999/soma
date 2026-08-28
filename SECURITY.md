@@ -57,5 +57,5 @@ python -m pip install --upgrade pip-audit && pip-audit
 | 2026-08-16 | Claude Code | SOMA v2.0.7 安全审计 | 修复 --project 路径穿越漏洞（正则白名单）+ importance 越界钳制 |
 | 2026-08-17 | Claude Code | SOMA v2.0.8 安全审计 | 依赖锁定（litellm/fastembed）防升级漂移 + 激活异常不再静默吞掉 |
 | 2026-08-18 | Claude Code | SOMA v2.0.9 安全审计 | 外部知识来源可信度过滤（黑名单域名拒绝）+ 内容质量检测防垃圾注入 |
-| 2026-08-22 | Claude Code | SOMA v2.0.11 安全审计 | 向量索引一致性修复（faiss 存储异常不再静默吞掉）+ 日志区分 embed/索引写入失败 |
+| 2026-08-22 | Claude Code | SOMA v2.0.13 安全审计 | 向量索引一致性修复（faiss 存储异常不再静默吞掉）+ 日志区分 embed/索引写入失败 |
 | 2026-08-19 | Claude Code | SOMA v2.0.10 安全审计 | 多模态记忆输入校验（图片路径/表格解析）+ 知识门控 API 参数校验 |
