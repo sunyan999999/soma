@@ -90,3 +90,9 @@ reports/
 deploy/
 *.pdf
 !docs/SOMA_v1.1.1_*.pdf
+
+# ⛔ 独立项目 —— 绝不随 SOMA 发布（soma-agent 尚不可用，将做成独立项目）
+# 严禁任何 git add -A / 全量推送带上这些目录
+soma-agent/
+soma_agent_data/
+workspace/
