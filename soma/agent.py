@@ -760,17 +760,23 @@ class SOMA_Agent:
         user_id: str = "",
         session_id: str = "",
         share_to_group: bool = False,
+        nature: str = "event",
     ) -> str:
-        """存储情节记忆。share_to_group=True 时写入公共记忆区。"""
+        """存储情节记忆。share_to_group=True 时写入公共记忆区。
+
+        v2.0.14: nature 业务性质 —— state 状态类(失眠/情绪/健康,时效强)/fact 事实技能类(长期)/event 事件。
+        """
         if share_to_group and self.group_id:
             return self.memory.share_to_group(
                 content, context, importance,
                 user_id=user_id, group_id=self.group_id, session_id=session_id,
+                nature=nature,
             )
         return self.memory.remember(
             content, context, importance,
             user_id=user_id, session_id=session_id,
             agent_id=self.agent_id, shared_group_id="",
+            nature=nature,
         )
 
     def share_to_group(
@@ -780,11 +786,13 @@ class SOMA_Agent:
         importance: float = 0.5,
         user_id: str = "",
         session_id: str = "",
+        nature: str = "event",
     ) -> str:
         """显式将记忆共享到本agent所在组的公共记忆区"""
         return self.memory.share_to_group(
             content, context, importance,
             user_id=user_id, group_id=self.group_id, session_id=session_id,
+            nature=nature,
         )
 
     def remember_semantic(

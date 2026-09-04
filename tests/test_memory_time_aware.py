@@ -104,3 +104,66 @@ class TestMaxAgeDays:
         assert results
         for item in results:
             assert item["age_days"] <= 30, f"含远期记忆: {item['content_preview'][:20]}"
+
+
+class TestNature:
+    """记忆业务性质字段（v2.0.14：state/fact/event）"""
+
+    def test_remember_nature_roundtrip(self, agent):
+        """remember(nature) 存入 → 查询返回同一 nature"""
+        agent.remember("用户最近睡眠不错", {"domain": "健康"}, nature="state")
+        r = agent.query_memory("睡眠", top_k=3)
+        assert r
+        assert all(x["nature"] == "state" for x in r), f"nature 应为 state: {r}"
+
+    def test_default_nature_event(self, agent):
+        """不带 nature 的记忆默认 event"""
+        agent.remember("用户昨天开会", {"domain": "工作"})
+        r = agent.query_memory("开会", top_k=3)
+        assert r and r[0]["nature"] == "event"
+
+    def test_nature_fact(self, agent):
+        agent.remember("用户会写 Python", {"domain": "技能"}, nature="fact")
+        r = agent.query_memory("Python", top_k=3)
+        assert r and r[0]["nature"] == "fact"
+
+    def test_explain_activation_has_nature_stale(self, agent):
+        """explain_activation 返回 nature/is_stale 字段"""
+        agent.remember("用户睡眠不好", {"domain": "健康"}, importance=0.9,
+                       nature="state")
+        r = agent.query_memory("睡眠", top_k=3)
+        assert r
+        for x in r:
+            assert "nature" in x and "is_stale" in x
+
+    def test_state_stale_logic(self):
+        """is_state_stale：state 超窗口 True，未超/fact False"""
+        from soma.base import MemoryUnit
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc).timestamp()
+        old_state = MemoryUnit(content="失眠", nature="state",
+                               timestamp=now - 40 * 86400)
+        new_state = MemoryUnit(content="失眠", nature="state",
+                               timestamp=now - 86400)
+        old_fact = MemoryUnit(content="会Python", nature="fact",
+                              timestamp=now - 100 * 86400)
+        old_event = MemoryUnit(content="开会", nature="event",
+                               timestamp=now - 100 * 86400)
+        assert old_state.is_state_stale() is True
+        assert new_state.is_state_stale() is False
+        assert old_fact.is_state_stale() is False
+        assert old_event.is_state_stale() is False
+
+    def test_old_high_importance_state_is_stale(self, agent):
+        """40 天前 state 记忆召回时 is_stale=True（提示勿当当前状态）"""
+        from datetime import datetime, timezone
+        from soma.base import ActivatedMemory, MemoryUnit
+        now = datetime.now(timezone.utc).timestamp()
+        mem = MemoryUnit(content="用户睡眠不好长期失眠", nature="state",
+                         timestamp=now - 40 * 86400, importance=0.95)
+        am = ActivatedMemory(memory=mem, activation_score=0.8,
+                             source="episodic", match_rationale="匹配")
+        info = agent.hub.explain_activation(am)
+        assert info["nature"] == "state"
+        assert info["is_stale"] is True, "40 天前 state 记忆应 is_stale=True"
+        assert info["age_days"] > 30

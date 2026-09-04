@@ -42,6 +42,7 @@ class NumpyVectorIndex:
         self._index_type = "none"
         self._cached_count = -1
         self._incremental_adds = 0
+        self._rebuild_busy = False    # v2.0.14: 后台重建进行中标志（防止并发重建）
         self._faiss_index_path = db_path.parent / (db_path.stem + ".faiss_index")
         self._faiss_id_map_path = db_path.parent / (db_path.stem + ".faiss_id_map.json")
 
@@ -153,13 +154,42 @@ class NumpyVectorIndex:
         return True
 
     def _maybe_rebuild(self, conn):
-        """如果增量添加过多则触发全量重建"""
-        if self._incremental_adds >= self._INCREMENTAL_LIMIT:
-            _log.info("增量添加达 %d 次，触发全量索引重建", self._incremental_adds)
+        """增量添加过多 → 后台异步全量重建（插入不阻塞）
+
+        v2.0.14: 原实现同步重建（HNSW 全量 + 磁盘写 ~5s）会阻塞插入。
+        现改为：主线程只做轻量快照读取（get_all_vectors，读 DB 快），
+        faiss 重建 + 磁盘写放后台线程。重建期间的少量增量仍写 DB，
+        由 similarity_search 的一致性检查（失步自愈）兜底补入。
+        """
+        if self._incremental_adds < self._INCREMENTAL_LIMIT:
+            return
+        if self._rebuild_busy:
+            return  # 已有后台重建在跑，避免并发重建
+        try:
             ids, vecs = self.get_all_vectors(conn)
-            if len(ids) > 0:
-                self._build_faiss_index(ids, vecs)
-            self._cached_count = len(ids)
+        except Exception as e:
+            _log.warning("后台重建读取向量失败: %s", e)
+            return
+        if not ids:
+            return
+        self._cached_count = len(ids)
+        self._rebuild_busy = True
+        _log.info("增量添加达 %d 次，后台异步全量重建索引 (n=%d)",
+                  self._incremental_adds, len(ids))
+        import threading
+        threading.Thread(
+            target=self._rebuild_async, args=(ids, vecs),
+            daemon=True, name="soma-vector-rebuild",
+        ).start()
+
+    def _rebuild_async(self, ids: List[str], vecs: np.ndarray):
+        """后台线程执行 faiss 全量重建 + 磁盘写入（插入线程不等待）"""
+        try:
+            self._build_faiss_index(ids, vecs)
+        except Exception as e:
+            _log.warning("后台全量重建失败: %s", e)
+        finally:
+            self._rebuild_busy = False
 
     # ── 公共接口 ────────────────────────────────────────────────
 

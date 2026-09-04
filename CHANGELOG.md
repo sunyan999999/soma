@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.14] — 2026-08-31
+
+### Added / 新增
+
+**记忆业务性质字段（nature: state/fact/event）** —— 时间感知深化（DSH 接入方第 3 项）
+
+区分「状态类」记忆（失眠/情绪/健康，时效强，会变）与「事实/技能类」（长期有效）：
+- `MemoryUnit` 新增 `nature` 字段（`soma/base.py`），默认 `event`；`remember()`/`share_to_group()` 支持传入（`soma/agent.py` → `memory/core.py` → `episodic` 全链路透传）
+- DB schema 增量迁移（`nature` 列，向后兼容旧库）
+- `explain_activation()` 返回 `nature` + `is_stale`（`soma/hub/_core.py`）——接入方可判断「这条状态记忆是否已过时效窗口」
+- 状态类时效窗口：`STATE_TTL_DAYS = 30`（`soma/base.py`），`MemoryUnit.is_state_stale()` 判断 state 类是否超窗口；非 state 类恒不过期
+
+**faiss 后台异步重建**（2.0.11 遗留性能项）
+
+增量插入触发全量重建（HNSW + 磁盘写 ~5s）不再阻塞插入：
+- `_maybe_rebuild` 改为主线程轻量快照读取 + 后台线程执行 faiss 重建（`soma/vector_store.py`）
+- 重建期间的少量增量写 DB，由 `similarity_search` 一致性检查（失步自愈）兜底补入，不丢
+- `_rebuild_busy` 标志防止并发重建
+
+### Tested / 测试
+- nature 测试（+6）：存取往返 / 默认 event / is_state_stale 语义 / explain_activation 返回 nature+is_stale
+- faiss 后台重建测试（+3）：触发不阻塞主线程 / 后台完成索引可用 / 重建期间增量自愈补入
+- 全量无回归
+
+### 说明
+- nature + is_stale 与 2.0.13 的 age_days 联动：接入方注入层可据 `nature=state 且 is_stale=True` 明确提示「这是 N 天前的旧状态，可能已变化」，根治状态类记忆被当长期事实用
+
+---
+
 ## [2.0.13] — 2026-08-28
 
 ### Fixed / 修复

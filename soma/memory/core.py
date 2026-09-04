@@ -52,12 +52,17 @@ class MemoryCore:
         session_id: str = "",
         agent_id: str = "",
         shared_group_id: str = "",
+        nature: str = "event",
     ) -> str:
-        """存储情节记忆"""
+        """存储情节记忆
+
+        v2.0.14: nature 业务性质（state 状态类/时效强 / fact 事实技能类/长期 / event 事件）。
+        """
         return self.episodic.add(
             content, context, importance,
             user_id=user_id, session_id=session_id,
             agent_id=agent_id, shared_group_id=shared_group_id,
+            nature=nature,
         )
 
     def share_to_group(
@@ -68,12 +73,14 @@ class MemoryCore:
         user_id: str = "",
         group_id: str = "",
         session_id: str = "",
+        nature: str = "event",
     ) -> str:
         """将记忆共享到公共记忆区——同组所有agent可见"""
         return self.episodic.add(
             content, context, importance,
             user_id=user_id, session_id=session_id,
             agent_id="", shared_group_id=group_id,
+            nature=nature,
         )
 
     def remember_semantic(

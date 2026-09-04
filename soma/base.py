@@ -7,6 +7,8 @@ from typing import Any, Dict, List, Optional
 # 近因衰减半衰期（天）：7天后权重衰减至 50%，14天后 25%，30天后 <5%
 # 与记忆查询的默认30天时间窗口配合 —— 半衰期针对"短期相关性"，时间窗口负责硬截断
 RECENCY_HALF_LIFE_DAYS = 7.0
+# 状态类记忆（nature=state）时效窗口（天）：超过视为可能已过时，注入层应提示
+STATE_TTL_DAYS = 30.0
 
 
 @dataclass
@@ -27,6 +29,8 @@ class MemoryUnit:
     # v2.0.5: 多模态记忆支持（纯增量，不影响现有功能）
     content_type: str = "text"         # text/table/chart
     structured_data: Optional[dict] = None  # JSON 结构化数据
+    # v2.0.14: 业务性质 — 区分时效强弱（state/fact/event）
+    nature: str = "event"   # state 状态类(失眠/情绪/健康,时效强) / fact 事实技能类(长期有效) / event 一般事件(默认)
 
     def relevance_potential(self) -> float:
         """关联潜力 = 指数近因衰减 × 重要性 × 使用频次因子
@@ -42,6 +46,23 @@ class MemoryUnit:
         days = max(now - self.timestamp, 0) / 86400.0
         recency = math.exp(-days / RECENCY_HALF_LIFE_DAYS)
         return recency * self.importance * (1.0 + 0.1 * self.access_count)
+
+    def is_state_stale(self, ttl_days: float = STATE_TTL_DAYS) -> bool:
+        """状态类记忆（nature=state）是否已超时效窗口。
+
+        失眠/情绪/健康等状态是暂时的——超过 ttl_days 未更新即视为可能已过时，
+        注入 LLM 时应提示勿当作当前状态。非状态类（fact/event）恒返回 False。
+        """
+        if self.nature != "state":
+            return False
+        now = datetime.now(timezone.utc).timestamp()
+        age_days = max(now - self.timestamp, 0) / 86400.0
+        return age_days > ttl_days
+
+    def age_days(self) -> float:
+        """记忆年龄（天），供注入层时间标注"""
+        now = datetime.now(timezone.utc).timestamp()
+        return round(max(now - self.timestamp, 0) / 86400.0, 1)
 
 
 @dataclass

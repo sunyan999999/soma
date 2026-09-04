@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 from soma.base import ActivatedMemory, Focus
@@ -239,12 +238,14 @@ class ActivationHub:
         此前只返回纯文本，接入方无法感知记忆时间远近，LLM 会把远期旧状态当当前状态。
         """
         mem = activated.memory
-        now_ts = datetime.now(timezone.utc).timestamp()
         info = {
             "memory_id": mem.id,
             "timestamp": mem.timestamp,          # 记忆创建时间（UTC 秒）
-            "age_days": round(max(0.0, now_ts - mem.timestamp) / 86400.0, 1),
+            "age_days": getattr(mem, "age_days", lambda: 0.0)(),
             "memory_type": mem.memory_type,      # episodic/semantic/skill/scene/profile
+            "nature": getattr(mem, "nature", "event"),   # state/fact/event 业务性质
+            "is_stale": (mem.is_state_stale()
+                         if hasattr(mem, "is_state_stale") else False),
             "content_preview": mem.content[:200],
             "content": mem.content,
             "activation_score": activated.activation_score,

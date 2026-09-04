@@ -77,7 +77,8 @@ class EpisodicStore(BaseMemoryStore):
                 user_id TEXT NOT NULL DEFAULT '',
                 session_id TEXT NOT NULL DEFAULT '',
                 agent_id TEXT NOT NULL DEFAULT '',
-                shared_group_id TEXT NOT NULL DEFAULT ''
+                shared_group_id TEXT NOT NULL DEFAULT '',
+                nature TEXT NOT NULL DEFAULT 'event'
             )
             """
         )
@@ -91,6 +92,7 @@ class EpisodicStore(BaseMemoryStore):
             ("session_id", "TEXT NOT NULL DEFAULT ''"),
             ("agent_id", "TEXT NOT NULL DEFAULT ''"),
             ("shared_group_id", "TEXT NOT NULL DEFAULT ''"),
+            ("nature", "TEXT NOT NULL DEFAULT 'event'"),
         ]:
             try:
                 self._conn.execute(
@@ -165,6 +167,7 @@ class EpisodicStore(BaseMemoryStore):
         session_id: str = "",
         agent_id: str = "",
         shared_group_id: str = "",
+        nature: str = "event",
     ) -> str:
         content_hash = self._compute_hash(content)
 
@@ -177,6 +180,8 @@ class EpisodicStore(BaseMemoryStore):
         if existing:
             return existing["id"]
 
+        if nature not in ("state", "fact", "event"):
+            nature = "event"
         memory_id = uuid.uuid4().hex
         now = datetime.now(timezone.utc).timestamp()
         context_json = json.dumps(context or {}, ensure_ascii=False)
@@ -184,11 +189,11 @@ class EpisodicStore(BaseMemoryStore):
         self._conn.execute(
             """
             INSERT INTO episodic_memories (id, content, content_hash, timestamp, importance,
-                context_json, user_id, session_id, agent_id, shared_group_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                context_json, user_id, session_id, agent_id, shared_group_id, nature)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (memory_id, content, content_hash, now, importance, context_json,
-             user_id, session_id, agent_id, shared_group_id),
+             user_id, session_id, agent_id, shared_group_id, nature),
         )
         self._conn.commit()
 
@@ -357,6 +362,7 @@ class EpisodicStore(BaseMemoryStore):
             session_id=row["session_id"] if "session_id" in row.keys() else "",
             agent_id=row["agent_id"] if "agent_id" in row.keys() else "",
             shared_group_id=row["shared_group_id"] if "shared_group_id" in row.keys() else "",
+            nature=row["nature"] if "nature" in row.keys() else "event",
         )
 
     @property
