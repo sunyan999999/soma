@@ -12,9 +12,13 @@
         <meta name="author" content="SOMA Project Team">
       
       
-        <link rel="canonical" href="https://sunyan999999.github.io/soma/guides/external-knowledge/">
+        <link rel="canonical" href="https://sunyan999999.github.io/soma/guides/memory-recency_zh/">
       
       
+        <link rel="prev" href="../customization/">
+      
+      
+        <link rel="next" href="../../articles/soma-vs-mem0/">
       
       
         
@@ -25,7 +29,7 @@
     
     
       
-        <title>SOMA 外部知识集成指南 / External Knowledge Ingestion Guide - SOMA — Somatic Wisdom Architecture</title>
+        <title>记忆时效 - SOMA — Somatic Wisdom Architecture</title>
       
     
     
@@ -78,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#soma-external-knowledge-ingestion-guide" class="md-skip">
+        <a href="#_1" class="md-skip">
           跳转至
         </a>
       
@@ -114,7 +118,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              SOMA 外部知识集成指南 / External Knowledge Ingestion Guide
+              记忆时效
             
           </span>
         </div>
@@ -419,10 +423,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../memory-recency_zh/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    记忆时效
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -438,6 +469,120 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        三层机制
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="三层机制">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 近因衰减 —— 真正的主防线
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-max_age_days" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. max_age_days —— 需要显式窗口时用它
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-is_stale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. is_stale —— 兜底
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        正确标注记忆
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        回填存量记忆
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reload" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        长驻进程：reload()
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        小结
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -722,33 +867,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#background" class="md-nav__link">
+  <a href="#_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        背景 / Background
+        三层机制
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        一、使用方式 / Usage
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="一、使用方式 / Usage">
+    <nav class="md-nav" aria-label="三层机制">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#cli" class="md-nav__link">
+  <a href="#1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CLI（一条命令）
+        1. 近因衰减 —— 真正的主防线
       
     </span>
   </a>
@@ -756,10 +890,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#python-api" class="md-nav__link">
+  <a href="#2-max_age_days" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Python API
+        2. max_age_days —— 需要显式窗口时用它
       
     </span>
   </a>
@@ -767,10 +901,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#url" class="md-nav__link">
+  <a href="#3-is_stale" class="md-nav__link">
     <span class="md-ellipsis">
       
-        URL 导入（自动校验来源可信度）
+        3. is_stale —— 兜底
       
     </span>
   </a>
@@ -783,71 +917,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
+  <a href="#_3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        二、配置 / Configuration
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="二、配置 / Configuration">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#strict-balanced-permissive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        严格度档位（strict / balanced / permissive）
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#somaconfig-v209" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SOMAConfig 全局配置（v2.0.9+）
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        自定义来源白/黑名单
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#llm" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        可选 LLM 质量增强
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#filter-layers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        三、过滤层说明 / Filter Layers
+        正确标注记忆
       
     </span>
   </a>
@@ -855,10 +928,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#verification" class="md-nav__link">
+  <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
-        四、验证 / Verification
+        回填存量记忆
       
     </span>
   </a>
@@ -866,10 +939,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#notes" class="md-nav__link">
+  <a href="#reload" class="md-nav__link">
     <span class="md-ellipsis">
       
-        五、注意事项 / Notes
+        长驻进程：reload()
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        小结
       
     </span>
   </a>
@@ -896,189 +980,211 @@
   
 
 
-<h1 id="soma-external-knowledge-ingestion-guide">SOMA 外部知识集成指南 / External Knowledge Ingestion Guide<a class="headerlink" href="#soma-external-knowledge-ingestion-guide" title="Permanent link">&para;</a></h1>
+<h1 id="_1">记忆时效 —— 三层机制，以及该依赖哪一层<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h1>
+<p><em>适用于 soma-wisdom ≥ 2.0.15</em></p>
+<p>把记忆注入 LLM 时，最难察觉的故障是 <strong>模型把旧状态当成当前状态</strong>：</p>
 <blockquote>
-<p>v2.0.9+ | 来源可信度 + 内容质量 + 事实印证 + 严格度过滤，让外部知识安全进入记忆库。</p>
+<p>用户（3 个月前）：「我最近睡眠不好。」
+LLM 今天：「既然您一直睡眠不好，这里有些建议……」← 错了，那是旧状态</p>
 </blockquote>
-<h2 id="background">背景 / Background<a class="headerlink" href="#background" title="Permanent link">&para;</a></h2>
-<p>SOMA 的外部知识门控（<code>KnowledgeGate</code>）是一条<strong>多层质量过滤管道</strong>，外部内容（Web / RAG / 文档）必须通过全部过滤层才能进入记忆库，避免低质、错误、营销内容污染记忆。</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>层0 来源可信度 → 层1 相关性 → 层2 SOMA推理消化 → 层2.5 内容质量
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  → 层3 风格对齐 → 层4 一致性校验 → 层4.5 事实印证 → 分级存储
-</code></pre></div>
-<p>判定结果三类：<strong>accepted</strong>（接受入库）/ <strong>quarantined</strong>（隔离，需人工确认）/ <strong>rejected</strong>（拒绝）。</p>
-<h2 id="usage">一、使用方式 / Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
-<h3 id="cli">CLI（一条命令）<a class="headerlink" href="#cli" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># 让 SOMA 从外部文本学习，自动过全部过滤层</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>soma<span class="w"> </span>learn<span class="w"> </span><span class="s2">"外部文本内容"</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"当前主题"</span><span class="w"> </span>--strictness<span class="w"> </span>balanced
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># 严格模式（质量/印证要求更高，孤立事实会降级）</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>soma<span class="w"> </span>learn<span class="w"> </span><span class="s2">"外部文本"</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"主题"</span><span class="w"> </span>--strictness<span class="w"> </span>strict
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># 宽松模式（接受更多）</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>soma<span class="w"> </span>learn<span class="w"> </span><span class="s2">"外部文本"</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"主题"</span><span class="w"> </span>--strictness<span class="w"> </span>permissive
-</code></pre></div>
-<p>参数：
-- <code>-c, --context</code>：问题上下文（用于相关性判断）。<strong>建议用能体现主题的完整短语</strong>，过短可能导致相关性过滤误拒（v2.0.9 已做弱 context 回退，但完整主题更准确）
-- <code>-s, --source</code>：来源标识 <code>web / document / rag / manual</code>
-- <code>--strictness</code>：严格度档位，默认 balanced</p>
-<h3 id="python-api">Python API<a class="headerlink" href="#python-api" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOMA</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">soma</span> <span class="o">=</span> <span class="n">SOMA</span><span class="p">()</span>  <span class="c1"># 默认 balanced</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">result</span> <span class="o">=</span> <span class="n">soma</span><span class="o">.</span><span class="n">learn_from_external</span><span class="p">(</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="p">[</span><span class="s2">"外部文本1"</span><span class="p">,</span> <span class="s2">"外部文本2"</span><span class="p">],</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">problem_context</span><span class="o">=</span><span class="s2">"零熵智库的系统分析方法论"</span><span class="p">,</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">source_name</span><span class="o">=</span><span class="s2">"web"</span><span class="p">,</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">strictness</span><span class="o">=</span><span class="s2">"balanced"</span><span class="p">,</span>   <span class="c1"># 可选，空则用 SOMAConfig 默认</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="p">)</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"接受 </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">accepted</span><span class="p">)</span><span class="si">}</span><span class="s2">，隔离 </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">quarantined</span><span class="p">)</span><span class="si">}</span><span class="s2">，拒绝 </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">rejected</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="c1"># 查看接受率</span>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"接受率: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">acceptance_rate</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</code></pre></div>
-<h3 id="url">URL 导入（自动校验来源可信度）<a class="headerlink" href="#url" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma.memory.external</span><span class="w"> </span><span class="kn">import</span> <span class="n">URLSource</span><span class="p">,</span> <span class="n">FileSource</span><span class="p">,</span> <span class="n">ExternalKnowledgeImporter</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># URL 抓取（自动过来源可信度校验，黑名单域名拒绝）</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">source</span> <span class="o">=</span> <span class="n">URLSource</span><span class="p">(</span><span class="s2">"https://github.com/xxx/article"</span><span class="p">,</span> <span class="n">trust</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="c1"># trust=None 用默认白/黑名单；也可传自定义 SourceTrust</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">importer</span> <span class="o">=</span> <span class="n">ExternalKnowledgeImporter</span><span class="p">(</span><span class="n">soma</span><span class="o">.</span><span class="n">_agent</span><span class="o">.</span><span class="n">memory</span><span class="o">.</span><span class="n">episodic</span><span class="p">)</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">importer</span><span class="o">.</span><span class="n">import_source</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="c1"># 文件导入（.md/.txt/.json）</span>
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">file_src</span> <span class="o">=</span> <span class="n">FileSource</span><span class="p">(</span><span class="s2">"docs/notes.md"</span><span class="p">)</span>
-<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">importer</span><span class="o">.</span><span class="n">import_source</span><span class="p">(</span><span class="n">file_src</span><span class="p">)</span>
-</code></pre></div>
-<h2 id="configuration">二、配置 / Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<h3 id="strict-balanced-permissive">严格度档位（strict / balanced / permissive）<a class="headerlink" href="#strict-balanced-permissive" title="Permanent link">&para;</a></h3>
+<p>SOMA 用三个独立机制处理这件事。它们<strong>不是同一道防线的三层</strong> —— 作用阶段不同，
+其中一层是兜底而不是主防线。分不清会导致接入方式选错。本文是这张地图。</p>
+<h2 id="_2">三层机制<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>档位</th>
-<th>min_quality</th>
-<th>min_corroboration</th>
-<th>适用场景</th>
+<th>#</th>
+<th>机制</th>
+<th>作用位置</th>
+<th>效果</th>
 </tr>
 </thead>
 <tbody>
-<tr>
-<td><strong>permissive</strong></td>
-<td>默认 -0.15</td>
-<td>0.0</td>
-<td>内容收集早期，宁多勿漏</td>
-</tr>
-<tr>
-<td><strong>balanced</strong></td>
-<td>0.40</td>
-<td>0.0</td>
-<td>默认，常规知识入库</td>
-</tr>
-<tr>
-<td><strong>strict</strong></td>
-<td>默认 +0.15</td>
-<td>0.2</td>
-<td>生产知识库，宁缺毋滥</td>
-</tr>
-</tbody>
-</table>
-<h3 id="somaconfig-v209">SOMAConfig 全局配置（v2.0.9+）<a class="headerlink" href="#somaconfig-v209" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOMA</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">soma</span> <span class="o">=</span> <span class="n">SOMA</span><span class="p">(</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="c1"># 知识门控配置组</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="c1"># （通过 config 字段，见下方「源码级配置」）</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="p">)</span>
-</code></pre></div>
-<p>源码级（<code>SOMAConfig</code> 字段）：
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">knowledge_gate_strictness</span> <span class="o">=</span> <span class="s2">"balanced"</span>   <span class="c1"># strict | balanced | permissive</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">knowledge_gate_min_quality</span> <span class="o">=</span> <span class="mf">0.40</span>        <span class="c1"># 内容质量最低阈值</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">knowledge_gate_min_corroboration</span> <span class="o">=</span> <span class="mf">0.0</span>   <span class="c1"># 事实印证最低阈值</span>
-</code></pre></div></p>
-<h3 id="_1">自定义来源白/黑名单<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma.source_trust</span><span class="w"> </span><span class="kn">import</span> <span class="n">SourceTrust</span><span class="p">,</span> <span class="n">SourceTrustConfig</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">SourceTrustConfig</span><span class="p">(</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">whitelist</span><span class="o">=</span><span class="p">{</span><span class="s2">"my-corp.com"</span><span class="p">:</span> <span class="mf">0.95</span><span class="p">,</span> <span class="s2">"docs.example.org"</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">},</span>  <span class="c1"># 高可信域名</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">blacklist</span><span class="o">=</span><span class="p">{</span><span class="s2">"ads-spam.com"</span><span class="p">,</span> <span class="s2">"fake-news.net"</span><span class="p">},</span>                <span class="c1"># 拒绝域名</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">default_score</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>                                          <span class="c1"># 未知域名默认分</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="p">)</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma.knowledge_gate</span><span class="w"> </span><span class="kn">import</span> <span class="n">KnowledgeGate</span>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="n">gate</span> <span class="o">=</span> <span class="n">KnowledgeGate</span><span class="p">(</span><span class="n">soma</span><span class="o">.</span><span class="n">_agent</span><span class="p">,</span> <span class="n">trust_config</span><span class="o">=</span><span class="n">cfg</span><span class="p">)</span>
-</code></pre></div>
-<h3 id="llm">可选 LLM 质量增强<a class="headerlink" href="#llm" title="Permanent link">&para;</a></h3>
-<p>有 LLM key（<code>llm_api_key</code> 或非 mock 模型）时，<code>ingest</code> 自动用 LLM 对内容质量/事实合理性二次评估（与本地启发式各占 50%）；无 key 时纯本地启发式兜底。<strong>无需额外配置，自动探测。</strong></p>
-<h2 id="filter-layers">三、过滤层说明 / Filter Layers<a class="headerlink" href="#filter-layers" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>层</th>
-<th>能力</th>
-<th>默认阈值</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>0</td>
-<td>来源可信度</td>
-<td>黑名单拒绝</td>
-<td>域名白/黑名单 + 信誉分</td>
-</tr>
 <tr>
 <td>1</td>
-<td>相关性</td>
-<td>命中 ≥2 关键词</td>
-<td>内容与问题上下文匹配度</td>
+<td><strong>近因衰减</strong> <code>exp(-days/7)</code></td>
+<td>打分阶段，激活阈值之前</td>
+<td>旧记忆分数被压低，<strong>直接掉出召回</strong></td>
 </tr>
 <tr>
 <td>2</td>
-<td>SOMA 推理消化</td>
-<td>≥1 个观点</td>
-<td>7 规律拆解外部内容</td>
-</tr>
-<tr>
-<td>2.5</td>
-<td>内容质量</td>
-<td>≥0.40</td>
-<td>信息密度/重复率/营销词/空话/噪音</td>
+<td><strong><code>max_age_days</code></strong></td>
+<td>查询期硬过滤</td>
+<td>「只要最近 N 天」</td>
 </tr>
 <tr>
 <td>3</td>
-<td>风格对齐</td>
-<td>≥0.30</td>
-<td>与记忆库高重要性记忆风格匹配</td>
-</tr>
-<tr>
-<td>4</td>
-<td>一致性校验</td>
-<td>冲突 ≤2</td>
-<td>与已有语义三元组矛盾检测</td>
-</tr>
-<tr>
-<td>4.5</td>
-<td>事实印证</td>
-<td>≥0.0 (balanced)</td>
-<td>与已有记忆交叉验证，孤立事实降级（strict）</td>
+<td><strong><code>is_stale</code></strong>（仅 nature=<code>state</code>）</td>
+<td><code>explain_activation</code> 输出，召回之后</td>
+<td>标记被召回的状态记忆可能已过时</td>
 </tr>
 </tbody>
 </table>
-<h2 id="verification">四、验证 / Verification<a class="headerlink" href="#verification" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># 正常知识应 accepted</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>soma<span class="w"> </span>learn<span class="w"> </span><span class="s2">"系统分析方法论强调从全局视角理解要素关联，识别反馈回路，这是复杂问题分析的核心框架。"</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"系统分析"</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># 营销内容应 rejected</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>soma<span class="w"> </span>learn<span class="w"> </span><span class="s2">"限时抢购！全场五折！立即点击购买！免费红包！"</span><span class="w"> </span>--strictness<span class="w"> </span>strict<span class="w"> </span>-c<span class="w"> </span><span class="s2">"商业促销"</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="c1"># 黑名单来源应 rejected</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>soma<span class="w"> </span>learn<span class="w"> </span><span class="s2">"内容"</span><span class="w"> </span>--strictness<span class="w"> </span>strict<span class="w"> </span>-c<span class="w"> </span><span class="s2">"主题"</span>
-<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="c1"># （配合 source_url 场景：URLSource 或 ingest(source_url=...)）</span>
+<h3 id="1">1. 近因衰减 —— 真正的主防线<a class="headerlink" href="#1" title="Permanent link">&para;</a></h3>
+<p>每条记忆的激活分数都会乘上一个 <strong>半衰期 7 天</strong> 的指数衰减：</p>
+<table>
+<thead>
+<tr>
+<th>年龄</th>
+<th>权重</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0 天</td>
+<td>1.00</td>
+</tr>
+<tr>
+<td>3 天</td>
+<td>0.65</td>
+</tr>
+<tr>
+<td>7 天</td>
+<td>0.37</td>
+</tr>
+<tr>
+<td>14 天</td>
+<td>0.14</td>
+</tr>
+<tr>
+<td>30 天</td>
+<td>0.014</td>
+</tr>
+<tr>
+<td>40 天</td>
+<td><strong>0.003</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>这才是真正让旧记忆进不来的机制。</strong> 到第 30 天，记忆只剩不到 2% 的权重 —— 远低于
+SOMA 默认激活阈值。一条 40 天前的记忆不是「以低分被召回」，而是<strong>根本不会被召回</strong>，
+哪怕 importance 是 0.95。</p>
+<blockquote>
+<p><strong>推论</strong>：如果你打算靠 <code>is_stale</code> 去拦远期状态记忆，它几乎永远不会触发 ——
+30 天以上的记忆早被衰减清出去了。<code>is_stale</code> 是兜底，不是主防线。</p>
+</blockquote>
+<h3 id="2-max_age_days">2. <code>max_age_days</code> —— 需要显式窗口时用它<a class="headerlink" href="#2-max_age_days" title="Permanent link">&para;</a></h3>
+<p>衰减是软的、基于分数的机制。当你需要硬截断 —— 「我只要这个月的」—— 传 <code>max_age_days</code>：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOMA</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">soma</span> <span class="o">=</span> <span class="n">SOMA</span><span class="p">()</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># 只看 30 天内；更早的直接被过滤掉</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">results</span> <span class="o">=</span> <span class="n">soma</span><span class="o">.</span><span class="n">query_memory</span><span class="p">(</span><span class="s2">"睡眠"</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">max_age_days</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># 不传窗口（默认）—— 衰减依然生效，但不做硬过滤</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">results</span> <span class="o">=</span> <span class="n">soma</span><span class="o">.</span><span class="n">query_memory</span><span class="p">(</span><span class="s2">"睡眠"</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 </code></pre></div>
-<h2 id="notes">五、注意事项 / Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
-<ol>
-<li><strong><code>-c</code> context 用完整主题短语</strong>：过短（如「哲学思维」）可能让相关性过滤误拒；v2.0.9 已做「弱 context 回退用内容拆解」，但完整主题最稳。</li>
-<li><strong>来源 URL 校验</strong>：<code>learn_from_external</code> 传 <code>source_url</code> 或 <code>URLSource</code> 会自动过层0；纯文本无 URL 则跳过层0。</li>
-<li><strong>孤立事实降级</strong>：balanced 模式默认不强制印证（min_corroboration=0.0），strict 模式才强制（0.2），避免普通内容因无印证被误隔离。</li>
-<li><strong>LLM 增强是自动的</strong>：有 key 自动用，无 key 纯本地，不改变 API。</li>
-</ol>
+<p>返回项都带时间元数据：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s2">"age_days"</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s2">"timestamp"</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s2">"nature"</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s2">"is_stale"</span><span class="p">])</span>
+</code></pre></div>
+<p>当<strong>问题本身</strong>带时间约束时用 <code>max_age_days</code>。别把它当通用安全网 —— 那是衰减的活。</p>
+<h3 id="3-is_stale">3. <code>is_stale</code> —— 兜底<a class="headerlink" href="#3-is_stale" title="Permanent link">&para;</a></h3>
+<p><code>nature</code> 标记一条记忆是什么性质的东西：</p>
+<table>
+<thead>
+<tr>
+<th><code>nature</code></th>
+<th>含义</th>
+<th>例子</th>
+<th>时效性</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>state</code></td>
+<td>会变化的状态</td>
+<td>「最近睡眠不好」「焦虑」「这周在北京」</td>
+<td><strong>强</strong></td>
+</tr>
+<tr>
+<td><code>fact</code></td>
+<td>知识、技能、特质</td>
+<td>「会写 Python」「偏好简洁接口」、wiki 内容</td>
+<td>无</td>
+</tr>
+<tr>
+<td><code>event</code></td>
+<td>发生过的事（默认）</td>
+<td>「参加了设计评审」</td>
+<td>弱</td>
+</tr>
+</tbody>
+</table>
+<p><code>state</code> 记忆超过 30 天（<code>STATE_TTL_DAYS</code>）后，<code>explain_activation</code> 返回
+<code>is_stale = True</code>。用它来软化注入措辞：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">soma</span><span class="o">.</span><span class="n">query_memory</span><span class="p">(</span><span class="s2">"睡眠"</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="k">if</span> <span class="n">item</span><span class="p">[</span><span class="s2">"nature"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"state"</span> <span class="ow">and</span> <span class="n">item</span><span class="p">[</span><span class="s2">"is_stale"</span><span class="p">]:</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>        <span class="c1"># 40 天前的状态 —— 当历史讲，不当现状讲</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>        <span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">'age_days'</span><span class="p">])</span><span class="si">}</span><span class="s2"> 天前，可能已变化] </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'content_preview'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="k">elif</span> <span class="n">item</span><span class="p">[</span><span class="s2">"nature"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"event"</span><span class="p">:</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">'age_days'</span><span class="p">])</span><span class="si">}</span><span class="s2"> 天前] </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'content_preview'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="k">else</span><span class="p">:</span>  <span class="c1"># fact —— 无时效</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>        <span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'content_preview'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+</code></pre></div>
+<p><strong><code>is_stale</code> 真正有用的场景</strong>：10–30 天前的状态记忆。它还能过激活阈值（10 天衰减约
+0.24），所以<strong>确实会被召回并注入</strong> —— 没有这个标记，LLM 很可能当成现状讲。
+这才是兜底机制发挥价值的窗口。</p>
+<p><strong>它管不了的</strong>：30 天以上的记忆。衰减早已把它们压到召回阈值之下，
+<code>is_stale</code> 根本没机会在它们身上执行。</p>
+<h2 id="_3">正确标注记忆<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
+<p>写入时知道性质就标上：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="s2">"用户最近睡眠不好"</span><span class="p">,</span> <span class="n">nature</span><span class="o">=</span><span class="s2">"state"</span><span class="p">)</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="s2">"用户会写 Python"</span><span class="p">,</span> <span class="n">nature</span><span class="o">=</span><span class="s2">"fact"</span><span class="p">)</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="s2">"用户参加了设计评审"</span><span class="p">)</span>            <span class="c1"># 默认 event</span>
+</code></pre></div>
+<p>代码记忆默认 <code>fact</code>（代码技能不会过期）：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember_code</span><span class="p">(</span><span class="s2">"def add(a, b): return a + b"</span><span class="p">,</span> <span class="n">file_path</span><span class="o">=</span><span class="s2">"calc.py"</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="_4">回填存量记忆<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
+<p>如果你的库早于 <code>nature</code>，或者全部还是默认的 <code>event</code>，用内置重分类工具。
+<strong>默认 dry-run 只预览</strong>，落盘前自动备份：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># 预览 —— 不改任何东西</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>soma<span class="w"> </span>reclassify
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># 落盘（备份写到 &lt;记忆库目录&gt;/nature_backups/）</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>soma<span class="w"> </span>reclassify<span class="w"> </span>--apply
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># 回滚一次重分类</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>soma<span class="w"> </span>reclassify<span class="w"> </span>--rollback<span class="w"> </span>~/.soma/shared/nature_backups/nature_backup_20260911-134025.json
+</code></pre></div>
+<p>Python 调用：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">print</span><span class="p">(</span><span class="n">soma</span><span class="o">.</span><span class="n">reclassify_nature</span><span class="p">())</span>              <span class="c1"># dry run</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">soma</span><span class="o">.</span><span class="n">reclassify_nature</span><span class="p">(</span><span class="n">dry_run</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span> <span class="c1"># 落盘 + 自动备份</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">soma</span><span class="o">.</span><span class="n">rollback_nature</span><span class="p">(</span><span class="n">backup_path</span><span class="p">)</span>
+</code></pre></div>
+<p>规则基于关键词（零 LLM 调用），可完全替换：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma.nature</span><span class="w"> </span><span class="kn">import</span> <span class="n">NatureClassifier</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">clf</span> <span class="o">=</span> <span class="n">NatureClassifier</span><span class="p">(</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">state_keywords</span><span class="o">=</span><span class="p">(</span><span class="s2">"失眠"</span><span class="p">,</span> <span class="s2">"焦虑"</span><span class="p">,</span> <span class="s2">"偏头痛"</span><span class="p">),</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">fact_keywords</span><span class="o">=</span><span class="p">(</span><span class="s2">"会"</span><span class="p">,</span> <span class="s2">"擅长"</span><span class="p">),</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">fact_min_len</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>          <span class="c1"># 长文档视为知识</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="n">fact_sources</span><span class="o">=</span><span class="p">(</span><span class="s2">"wiki"</span><span class="p">,</span> <span class="s2">"knowledge"</span><span class="p">,</span> <span class="s2">"doc"</span><span class="p">),</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="p">)</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="nb">print</span><span class="p">(</span><span class="n">clf</span><span class="o">.</span><span class="n">classify</span><span class="p">(</span><span class="s2">"用户会写 Rust"</span><span class="p">,</span> <span class="p">{}))</span>   <span class="c1"># 'fact'</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="n">soma</span><span class="o">.</span><span class="n">reclassify_nature</span><span class="p">(</span><span class="n">classifier</span><span class="o">=</span><span class="n">clf</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div>
+<p>默认只处理 <code>nature</code> 仍为 <code>event</code> 的记忆 —— 已分类的（无论是你标的还是人工修的）一律不动。
+传 <code>only_nature=None</code> 可覆盖。</p>
+<h2 id="reload">长驻进程：<code>reload()</code><a class="headerlink" href="#reload" title="Permanent link">&para;</a></h2>
+<p>如果另一个进程往同一个记忆库写数据（CLI、另一个 Agent、批处理任务），长驻实例需要
+刷新内存里的向量索引。SQLite 读取本身是实时的，滞后的是 faiss 索引。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">soma</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="c1"># {'reloaded_vectors': 26574, 'total': 26574}</span>
+</code></pre></div>
+<p>注意 <code>similarity_search</code> 自身在「索引计数与 DB 计数不一致」时已经会自愈重建，
+所以单纯新增的记忆通常在下一次搜索就会被纳入。<code>reload()</code> 用于<strong>想立刻生效</strong>的场合，
+并且能兜住自愈漏掉的情况：外部进程删 N 条又加 N 条，总数不变 —— 索引会留着已删向量、
+看不到新向量，直到你手动 reload。</p>
+<h2 id="_5">小结<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>近因衰减是主防线。</strong> 它静默清掉旧记忆；「40 天前的状态」这类问题靠它就能解决。</li>
+<li><strong><code>max_age_days</code></strong> 是给带时间约束的问题用的显式窗口，不是安全网。</li>
+<li><strong><code>is_stale</code> 是兜底</strong>，覆盖 10–30 天这个「状态记忆仍会被召回」的窗口。
+  它不是拦远期记忆的手段 —— 那些衰减早就拦掉了。</li>
+</ul>
 
 
 

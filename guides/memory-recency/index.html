@@ -12,7 +12,7 @@
         <meta name="author" content="SOMA Project Team">
       
       
-        <link rel="canonical" href="https://sunyan999999.github.io/soma/guides/external-knowledge/">
+        <link rel="canonical" href="https://sunyan999999.github.io/soma/guides/memory-recency/">
       
       
       
@@ -25,7 +25,7 @@
     
     
       
-        <title>SOMA 外部知识集成指南 / External Knowledge Ingestion Guide - SOMA — Somatic Wisdom Architecture</title>
+        <title>Memory Recency — The Three Mechanisms, and Which One to Rely On - SOMA — Somatic Wisdom Architecture</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#soma-external-knowledge-ingestion-guide" class="md-skip">
+        <a href="#memory-recency-the-three-mechanisms-and-which-one-to-rely-on" class="md-skip">
           跳转至
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              SOMA 外部知识集成指南 / External Knowledge Ingestion Guide
+              Memory Recency — The Three Mechanisms, and Which One to Rely On
             
           </span>
         </div>
@@ -722,33 +722,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#background" class="md-nav__link">
+  <a href="#the-three-mechanisms" class="md-nav__link">
     <span class="md-ellipsis">
       
-        背景 / Background
+        The three mechanisms
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#usage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        一、使用方式 / Usage
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="一、使用方式 / Usage">
+    <nav class="md-nav" aria-label="The three mechanisms">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#cli" class="md-nav__link">
+  <a href="#1-recency-decay-the-actual-front-line" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CLI（一条命令）
+        1. Recency decay — the actual front line
       
     </span>
   </a>
@@ -756,10 +745,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#python-api" class="md-nav__link">
+  <a href="#2-max_age_days-explicit-window-when-you-want-one" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Python API
+        2. max_age_days — explicit window, when you want one
       
     </span>
   </a>
@@ -767,10 +756,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#url" class="md-nav__link">
+  <a href="#3-is_stale-the-backstop" class="md-nav__link">
     <span class="md-ellipsis">
       
-        URL 导入（自动校验来源可信度）
+        3. is_stale — the backstop
       
     </span>
   </a>
@@ -783,71 +772,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
+  <a href="#tagging-memories-correctly" class="md-nav__link">
     <span class="md-ellipsis">
       
-        二、配置 / Configuration
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="二、配置 / Configuration">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#strict-balanced-permissive" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        严格度档位（strict / balanced / permissive）
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#somaconfig-v209" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SOMAConfig 全局配置（v2.0.9+）
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        自定义来源白/黑名单
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#llm" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        可选 LLM 质量增强
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#filter-layers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        三、过滤层说明 / Filter Layers
+        Tagging memories correctly
       
     </span>
   </a>
@@ -855,10 +783,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#verification" class="md-nav__link">
+  <a href="#backfilling-existing-memories" class="md-nav__link">
     <span class="md-ellipsis">
       
-        四、验证 / Verification
+        Backfilling existing memories
       
     </span>
   </a>
@@ -866,10 +794,21 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#notes" class="md-nav__link">
+  <a href="#long-running-processes-reload" class="md-nav__link">
     <span class="md-ellipsis">
       
-        五、注意事项 / Notes
+        Long-running processes: reload()
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
       
     </span>
   </a>
@@ -896,189 +835,220 @@
   
 
 
-<h1 id="soma-external-knowledge-ingestion-guide">SOMA 外部知识集成指南 / External Knowledge Ingestion Guide<a class="headerlink" href="#soma-external-knowledge-ingestion-guide" title="Permanent link">&para;</a></h1>
+<h1 id="memory-recency-the-three-mechanisms-and-which-one-to-rely-on">Memory Recency — The Three Mechanisms, and Which One to Rely On<a class="headerlink" href="#memory-recency-the-three-mechanisms-and-which-one-to-rely-on" title="Permanent link">&para;</a></h1>
+<p><em>Applies to soma-wisdom ≥ 2.0.15</em></p>
+<p>If you inject memories into an LLM prompt, the hardest failure to notice is <strong>the model
+treating an old state as a current one</strong>:</p>
 <blockquote>
-<p>v2.0.9+ | 来源可信度 + 内容质量 + 事实印证 + 严格度过滤，让外部知识安全进入记忆库。</p>
+<p>User (3 months ago): "I've been sleeping badly."
+LLM today: "Since you've been sleeping badly, here's some advice…" ← wrong, that's stale</p>
 </blockquote>
-<h2 id="background">背景 / Background<a class="headerlink" href="#background" title="Permanent link">&para;</a></h2>
-<p>SOMA 的外部知识门控（<code>KnowledgeGate</code>）是一条<strong>多层质量过滤管道</strong>，外部内容（Web / RAG / 文档）必须通过全部过滤层才能进入记忆库，避免低质、错误、营销内容污染记忆。</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>层0 来源可信度 → 层1 相关性 → 层2 SOMA推理消化 → 层2.5 内容质量
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  → 层3 风格对齐 → 层4 一致性校验 → 层4.5 事实印证 → 分级存储
-</code></pre></div>
-<p>判定结果三类：<strong>accepted</strong>（接受入库）/ <strong>quarantined</strong>（隔离，需人工确认）/ <strong>rejected</strong>（拒绝）。</p>
-<h2 id="usage">一、使用方式 / Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
-<h3 id="cli">CLI（一条命令）<a class="headerlink" href="#cli" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># 让 SOMA 从外部文本学习，自动过全部过滤层</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>soma<span class="w"> </span>learn<span class="w"> </span><span class="s2">"外部文本内容"</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"当前主题"</span><span class="w"> </span>--strictness<span class="w"> </span>balanced
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># 严格模式（质量/印证要求更高，孤立事实会降级）</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>soma<span class="w"> </span>learn<span class="w"> </span><span class="s2">"外部文本"</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"主题"</span><span class="w"> </span>--strictness<span class="w"> </span>strict
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># 宽松模式（接受更多）</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>soma<span class="w"> </span>learn<span class="w"> </span><span class="s2">"外部文本"</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"主题"</span><span class="w"> </span>--strictness<span class="w"> </span>permissive
-</code></pre></div>
-<p>参数：
-- <code>-c, --context</code>：问题上下文（用于相关性判断）。<strong>建议用能体现主题的完整短语</strong>，过短可能导致相关性过滤误拒（v2.0.9 已做弱 context 回退，但完整主题更准确）
-- <code>-s, --source</code>：来源标识 <code>web / document / rag / manual</code>
-- <code>--strictness</code>：严格度档位，默认 balanced</p>
-<h3 id="python-api">Python API<a class="headerlink" href="#python-api" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOMA</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">soma</span> <span class="o">=</span> <span class="n">SOMA</span><span class="p">()</span>  <span class="c1"># 默认 balanced</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">result</span> <span class="o">=</span> <span class="n">soma</span><span class="o">.</span><span class="n">learn_from_external</span><span class="p">(</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="p">[</span><span class="s2">"外部文本1"</span><span class="p">,</span> <span class="s2">"外部文本2"</span><span class="p">],</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">problem_context</span><span class="o">=</span><span class="s2">"零熵智库的系统分析方法论"</span><span class="p">,</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">source_name</span><span class="o">=</span><span class="s2">"web"</span><span class="p">,</span>
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">strictness</span><span class="o">=</span><span class="s2">"balanced"</span><span class="p">,</span>   <span class="c1"># 可选，空则用 SOMAConfig 默认</span>
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="p">)</span>
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"接受 </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">accepted</span><span class="p">)</span><span class="si">}</span><span class="s2">，隔离 </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">quarantined</span><span class="p">)</span><span class="si">}</span><span class="s2">，拒绝 </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">rejected</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="c1"># 查看接受率</span>
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"接受率: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">acceptance_rate</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</code></pre></div>
-<h3 id="url">URL 导入（自动校验来源可信度）<a class="headerlink" href="#url" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma.memory.external</span><span class="w"> </span><span class="kn">import</span> <span class="n">URLSource</span><span class="p">,</span> <span class="n">FileSource</span><span class="p">,</span> <span class="n">ExternalKnowledgeImporter</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># URL 抓取（自动过来源可信度校验，黑名单域名拒绝）</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">source</span> <span class="o">=</span> <span class="n">URLSource</span><span class="p">(</span><span class="s2">"https://github.com/xxx/article"</span><span class="p">,</span> <span class="n">trust</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="c1"># trust=None 用默认白/黑名单；也可传自定义 SourceTrust</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">importer</span> <span class="o">=</span> <span class="n">ExternalKnowledgeImporter</span><span class="p">(</span><span class="n">soma</span><span class="o">.</span><span class="n">_agent</span><span class="o">.</span><span class="n">memory</span><span class="o">.</span><span class="n">episodic</span><span class="p">)</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">importer</span><span class="o">.</span><span class="n">import_source</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
-<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="c1"># 文件导入（.md/.txt/.json）</span>
-<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">file_src</span> <span class="o">=</span> <span class="n">FileSource</span><span class="p">(</span><span class="s2">"docs/notes.md"</span><span class="p">)</span>
-<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">importer</span><span class="o">.</span><span class="n">import_source</span><span class="p">(</span><span class="n">file_src</span><span class="p">)</span>
-</code></pre></div>
-<h2 id="configuration">二、配置 / Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<h3 id="strict-balanced-permissive">严格度档位（strict / balanced / permissive）<a class="headerlink" href="#strict-balanced-permissive" title="Permanent link">&para;</a></h3>
+<p>SOMA has three separate mechanisms that address this. They are <strong>not</strong> three layers of the
+same defense — they operate at different stages and one of them is a backstop, not the
+front line. Getting this wrong leads to the wrong integration. This page is the map.</p>
+<h2 id="the-three-mechanisms">The three mechanisms<a class="headerlink" href="#the-three-mechanisms" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
-<th>档位</th>
-<th>min_quality</th>
-<th>min_corroboration</th>
-<th>适用场景</th>
+<th>#</th>
+<th>Mechanism</th>
+<th>Where it acts</th>
+<th>Effect</th>
 </tr>
 </thead>
 <tbody>
-<tr>
-<td><strong>permissive</strong></td>
-<td>默认 -0.15</td>
-<td>0.0</td>
-<td>内容收集早期，宁多勿漏</td>
-</tr>
-<tr>
-<td><strong>balanced</strong></td>
-<td>0.40</td>
-<td>0.0</td>
-<td>默认，常规知识入库</td>
-</tr>
-<tr>
-<td><strong>strict</strong></td>
-<td>默认 +0.15</td>
-<td>0.2</td>
-<td>生产知识库，宁缺毋滥</td>
-</tr>
-</tbody>
-</table>
-<h3 id="somaconfig-v209">SOMAConfig 全局配置（v2.0.9+）<a class="headerlink" href="#somaconfig-v209" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOMA</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">soma</span> <span class="o">=</span> <span class="n">SOMA</span><span class="p">(</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="c1"># 知识门控配置组</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="c1"># （通过 config 字段，见下方「源码级配置」）</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="p">)</span>
-</code></pre></div>
-<p>源码级（<code>SOMAConfig</code> 字段）：
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">knowledge_gate_strictness</span> <span class="o">=</span> <span class="s2">"balanced"</span>   <span class="c1"># strict | balanced | permissive</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">knowledge_gate_min_quality</span> <span class="o">=</span> <span class="mf">0.40</span>        <span class="c1"># 内容质量最低阈值</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">knowledge_gate_min_corroboration</span> <span class="o">=</span> <span class="mf">0.0</span>   <span class="c1"># 事实印证最低阈值</span>
-</code></pre></div></p>
-<h3 id="_1">自定义来源白/黑名单<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma.source_trust</span><span class="w"> </span><span class="kn">import</span> <span class="n">SourceTrust</span><span class="p">,</span> <span class="n">SourceTrustConfig</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">cfg</span> <span class="o">=</span> <span class="n">SourceTrustConfig</span><span class="p">(</span>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">whitelist</span><span class="o">=</span><span class="p">{</span><span class="s2">"my-corp.com"</span><span class="p">:</span> <span class="mf">0.95</span><span class="p">,</span> <span class="s2">"docs.example.org"</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">},</span>  <span class="c1"># 高可信域名</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">blacklist</span><span class="o">=</span><span class="p">{</span><span class="s2">"ads-spam.com"</span><span class="p">,</span> <span class="s2">"fake-news.net"</span><span class="p">},</span>                <span class="c1"># 拒绝域名</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">default_score</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>                                          <span class="c1"># 未知域名默认分</span>
-<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="p">)</span>
-<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma.knowledge_gate</span><span class="w"> </span><span class="kn">import</span> <span class="n">KnowledgeGate</span>
-<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="n">gate</span> <span class="o">=</span> <span class="n">KnowledgeGate</span><span class="p">(</span><span class="n">soma</span><span class="o">.</span><span class="n">_agent</span><span class="p">,</span> <span class="n">trust_config</span><span class="o">=</span><span class="n">cfg</span><span class="p">)</span>
-</code></pre></div>
-<h3 id="llm">可选 LLM 质量增强<a class="headerlink" href="#llm" title="Permanent link">&para;</a></h3>
-<p>有 LLM key（<code>llm_api_key</code> 或非 mock 模型）时，<code>ingest</code> 自动用 LLM 对内容质量/事实合理性二次评估（与本地启发式各占 50%）；无 key 时纯本地启发式兜底。<strong>无需额外配置，自动探测。</strong></p>
-<h2 id="filter-layers">三、过滤层说明 / Filter Layers<a class="headerlink" href="#filter-layers" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>层</th>
-<th>能力</th>
-<th>默认阈值</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>0</td>
-<td>来源可信度</td>
-<td>黑名单拒绝</td>
-<td>域名白/黑名单 + 信誉分</td>
-</tr>
 <tr>
 <td>1</td>
-<td>相关性</td>
-<td>命中 ≥2 关键词</td>
-<td>内容与问题上下文匹配度</td>
+<td><strong>Recency decay</strong> <code>exp(-days/7)</code></td>
+<td>Scoring, before the activation threshold</td>
+<td>Old memories score lower and <em>fall out of recall entirely</em></td>
 </tr>
 <tr>
 <td>2</td>
-<td>SOMA 推理消化</td>
-<td>≥1 个观点</td>
-<td>7 规律拆解外部内容</td>
-</tr>
-<tr>
-<td>2.5</td>
-<td>内容质量</td>
-<td>≥0.40</td>
-<td>信息密度/重复率/营销词/空话/噪音</td>
+<td><strong><code>max_age_days</code></strong></td>
+<td>Query-time hard filter</td>
+<td>"Only give me memories from the last N days"</td>
 </tr>
 <tr>
 <td>3</td>
-<td>风格对齐</td>
-<td>≥0.30</td>
-<td>与记忆库高重要性记忆风格匹配</td>
-</tr>
-<tr>
-<td>4</td>
-<td>一致性校验</td>
-<td>冲突 ≤2</td>
-<td>与已有语义三元组矛盾检测</td>
-</tr>
-<tr>
-<td>4.5</td>
-<td>事实印证</td>
-<td>≥0.0 (balanced)</td>
-<td>与已有记忆交叉验证，孤立事实降级（strict）</td>
+<td><strong><code>is_stale</code></strong> (nature=<code>state</code> only)</td>
+<td><code>explain_activation</code> output, after recall</td>
+<td>Flags a recalled state memory as possibly outdated</td>
 </tr>
 </tbody>
 </table>
-<h2 id="verification">四、验证 / Verification<a class="headerlink" href="#verification" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># 正常知识应 accepted</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>soma<span class="w"> </span>learn<span class="w"> </span><span class="s2">"系统分析方法论强调从全局视角理解要素关联，识别反馈回路，这是复杂问题分析的核心框架。"</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"系统分析"</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># 营销内容应 rejected</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>soma<span class="w"> </span>learn<span class="w"> </span><span class="s2">"限时抢购！全场五折！立即点击购买！免费红包！"</span><span class="w"> </span>--strictness<span class="w"> </span>strict<span class="w"> </span>-c<span class="w"> </span><span class="s2">"商业促销"</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="c1"># 黑名单来源应 rejected</span>
-<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>soma<span class="w"> </span>learn<span class="w"> </span><span class="s2">"内容"</span><span class="w"> </span>--strictness<span class="w"> </span>strict<span class="w"> </span>-c<span class="w"> </span><span class="s2">"主题"</span>
-<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="c1"># （配合 source_url 场景：URLSource 或 ingest(source_url=...)）</span>
+<h3 id="1-recency-decay-the-actual-front-line">1. Recency decay — the actual front line<a class="headerlink" href="#1-recency-decay-the-actual-front-line" title="Permanent link">&para;</a></h3>
+<p>Every memory's activation score is multiplied by an exponential decay with a <strong>7-day half-life</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Age</th>
+<th>Weight</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0d</td>
+<td>1.00</td>
+</tr>
+<tr>
+<td>3d</td>
+<td>0.65</td>
+</tr>
+<tr>
+<td>7d</td>
+<td>0.37</td>
+</tr>
+<tr>
+<td>14d</td>
+<td>0.14</td>
+</tr>
+<tr>
+<td>30d</td>
+<td>0.014</td>
+</tr>
+<tr>
+<td>40d</td>
+<td><strong>0.003</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>This is what actually keeps old memories out.</strong> By 30 days a memory retains under 2% of its
+weight — far below SOMA's default activation threshold. A 40-day-old memory does not get
+recalled "with a low score"; it does not get recalled <strong>at all</strong>, even at importance 0.95.</p>
+<blockquote>
+<p><strong>Consequence:</strong> if you were planning to rely on <code>is_stale</code> to catch old state memories,
+it will almost never fire for memories older than 30 days — decay already removed them.
+<code>is_stale</code> is a backstop, not the main defense.</p>
+</blockquote>
+<h3 id="2-max_age_days-explicit-window-when-you-want-one">2. <code>max_age_days</code> — explicit window, when you want one<a class="headerlink" href="#2-max_age_days-explicit-window-when-you-want-one" title="Permanent link">&para;</a></h3>
+<p>Decay is a soft, score-based mechanism. When you want a hard cut — "I only want things from
+this month" — pass <code>max_age_days</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma</span><span class="w"> </span><span class="kn">import</span> <span class="n">SOMA</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">soma</span> <span class="o">=</span> <span class="n">SOMA</span><span class="p">()</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># Only memories from the last 30 days; older ones are filtered out entirely</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">results</span> <span class="o">=</span> <span class="n">soma</span><span class="o">.</span><span class="n">query_memory</span><span class="p">(</span><span class="s2">"sleep"</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">max_age_days</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># No window (default) — decay still applies, but nothing is hard-filtered</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">results</span> <span class="o">=</span> <span class="n">soma</span><span class="o">.</span><span class="n">query_memory</span><span class="p">(</span><span class="s2">"sleep"</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 </code></pre></div>
-<h2 id="notes">五、注意事项 / Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
-<ol>
-<li><strong><code>-c</code> context 用完整主题短语</strong>：过短（如「哲学思维」）可能让相关性过滤误拒；v2.0.9 已做「弱 context 回退用内容拆解」，但完整主题最稳。</li>
-<li><strong>来源 URL 校验</strong>：<code>learn_from_external</code> 传 <code>source_url</code> 或 <code>URLSource</code> 会自动过层0；纯文本无 URL 则跳过层0。</li>
-<li><strong>孤立事实降级</strong>：balanced 模式默认不强制印证（min_corroboration=0.0），strict 模式才强制（0.2），避免普通内容因无印证被误隔离。</li>
-<li><strong>LLM 增强是自动的</strong>：有 key 自动用，无 key 纯本地，不改变 API。</li>
-</ol>
+<p>Every returned item carries its own time metadata:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s2">"age_days"</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s2">"timestamp"</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s2">"nature"</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s2">"is_stale"</span><span class="p">])</span>
+</code></pre></div>
+<p>Use <code>max_age_days</code> when the <em>question itself</em> is time-bounded. Don't use it as a generic
+safety net — recency decay already handles that.</p>
+<h3 id="3-is_stale-the-backstop">3. <code>is_stale</code> — the backstop<a class="headerlink" href="#3-is_stale-the-backstop" title="Permanent link">&para;</a></h3>
+<p><code>nature</code> marks what kind of thing a memory is:</p>
+<table>
+<thead>
+<tr>
+<th><code>nature</code></th>
+<th>Meaning</th>
+<th>Examples</th>
+<th>Time-sensitive?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>state</code></td>
+<td>A condition that changes</td>
+<td>"hasn't been sleeping well", "feeling anxious", "in Beijing this week"</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr>
+<td><code>fact</code></td>
+<td>Knowledge, skills, traits</td>
+<td>"writes Python", "prefers terse APIs", wiki content</td>
+<td>No</td>
+</tr>
+<tr>
+<td><code>event</code></td>
+<td>A thing that happened (default)</td>
+<td>"attended the design review"</td>
+<td>Mildly</td>
+</tr>
+</tbody>
+</table>
+<p>A <code>state</code> memory older than 30 days (<code>STATE_TTL_DAYS</code>) has <code>is_stale = True</code> in
+<code>explain_activation</code> output. Use it to soften the phrasing in your prompt:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">soma</span><span class="o">.</span><span class="n">query_memory</span><span class="p">(</span><span class="s2">"sleep"</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="k">if</span> <span class="n">item</span><span class="p">[</span><span class="s2">"nature"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"state"</span> <span class="ow">and</span> <span class="n">item</span><span class="p">[</span><span class="s2">"is_stale"</span><span class="p">]:</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>        <span class="c1"># Rendered 40 days ago — present it as history, not as current state</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>        <span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">'age_days'</span><span class="p">])</span><span class="si">}</span><span class="s2"> days ago, may have changed] </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'content_preview'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="k">elif</span> <span class="n">item</span><span class="p">[</span><span class="s2">"nature"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"event"</span><span class="p">:</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s1">'age_days'</span><span class="p">])</span><span class="si">}</span><span class="s2"> days ago] </span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'content_preview'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="k">else</span><span class="p">:</span>  <span class="c1"># fact — timeless</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>        <span class="n">prompt</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">item</span><span class="p">[</span><span class="s1">'content_preview'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="s2">"</span>
+</code></pre></div>
+<p><strong>What <code>is_stale</code> is good for:</strong> a state memory from 10–30 days ago. It still passes the
+activation threshold (decay at 10d is ~0.24), so it <em>will</em> be recalled and injected — and
+without the flag, the LLM may present it as current. This is the real window where the
+backstop earns its place.</p>
+<p><strong>What it is not for:</strong> memories older than ~30 days. Decay has already dropped those below
+the recall threshold; <code>is_stale</code> never gets a chance to run on them.</p>
+<h2 id="tagging-memories-correctly">Tagging memories correctly<a class="headerlink" href="#tagging-memories-correctly" title="Permanent link">&para;</a></h2>
+<p>Tag at write time whenever you know the nature:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="s2">"User hasn't been sleeping well lately"</span><span class="p">,</span> <span class="n">nature</span><span class="o">=</span><span class="s2">"state"</span><span class="p">)</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="s2">"User writes Python"</span><span class="p">,</span> <span class="n">nature</span><span class="o">=</span><span class="s2">"fact"</span><span class="p">)</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember</span><span class="p">(</span><span class="s2">"User attended the design review"</span><span class="p">)</span>            <span class="c1"># defaults to event</span>
+</code></pre></div>
+<p>Code memories default to <code>fact</code> (a codebase skill doesn't expire):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember_code</span><span class="p">(</span><span class="s2">"def add(a, b): return a + b"</span><span class="p">,</span> <span class="n">file_path</span><span class="o">=</span><span class="s2">"calc.py"</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="backfilling-existing-memories">Backfilling existing memories<a class="headerlink" href="#backfilling-existing-memories" title="Permanent link">&para;</a></h2>
+<p>If your store predates <code>nature</code>, or everything is still defaulted to <code>event</code>, run the built-in
+reclassifier. It is <strong>dry-run by default</strong> and backs up before writing:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Preview — nothing is modified</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>soma<span class="w"> </span>reclassify
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Apply (writes a backup to &lt;memory-dir&gt;/nature_backups/)</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>soma<span class="w"> </span>reclassify<span class="w"> </span>--apply
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># Undo a run</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>soma<span class="w"> </span>reclassify<span class="w"> </span>--rollback<span class="w"> </span>~/.soma/shared/nature_backups/nature_backup_20260911-134025.json
+</code></pre></div>
+<p>From Python:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">print</span><span class="p">(</span><span class="n">soma</span><span class="o">.</span><span class="n">reclassify_nature</span><span class="p">())</span>              <span class="c1"># dry run</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">soma</span><span class="o">.</span><span class="n">reclassify_nature</span><span class="p">(</span><span class="n">dry_run</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span> <span class="c1"># apply, auto-backup</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">soma</span><span class="o">.</span><span class="n">rollback_nature</span><span class="p">(</span><span class="n">backup_path</span><span class="p">)</span>
+</code></pre></div>
+<p>Rules are keyword-based (zero LLM calls) and fully replaceable:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">soma.nature</span><span class="w"> </span><span class="kn">import</span> <span class="n">NatureClassifier</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">clf</span> <span class="o">=</span> <span class="n">NatureClassifier</span><span class="p">(</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">state_keywords</span><span class="o">=</span><span class="p">(</span><span class="s2">"insomnia"</span><span class="p">,</span> <span class="s2">"anxious"</span><span class="p">,</span> <span class="s2">"migraine"</span><span class="p">),</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">fact_keywords</span><span class="o">=</span><span class="p">(</span><span class="s2">"writes"</span><span class="p">,</span> <span class="s2">"specializes in"</span><span class="p">),</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">fact_min_len</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>          <span class="c1"># long documents count as knowledge</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="n">fact_sources</span><span class="o">=</span><span class="p">(</span><span class="s2">"wiki"</span><span class="p">,</span> <span class="s2">"knowledge"</span><span class="p">,</span> <span class="s2">"doc"</span><span class="p">),</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="p">)</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="nb">print</span><span class="p">(</span><span class="n">clf</span><span class="o">.</span><span class="n">classify</span><span class="p">(</span><span class="s2">"User writes Rust"</span><span class="p">,</span> <span class="p">{}))</span>   <span class="c1"># 'fact'</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="n">soma</span><span class="o">.</span><span class="n">reclassify_nature</span><span class="p">(</span><span class="n">classifier</span><span class="o">=</span><span class="n">clf</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div>
+<p>By default the reclassifier only touches memories whose <code>nature</code> is still <code>event</code> — anything
+already classified (by you or by hand) is left alone. Pass <code>only_nature=None</code> to override.</p>
+<h2 id="long-running-processes-reload">Long-running processes: <code>reload()</code><a class="headerlink" href="#long-running-processes-reload" title="Permanent link">&para;</a></h2>
+<p>If another process writes to the same memory directory (a CLI, a second agent, a batch job),
+your long-running instance needs its in-memory vector index refreshed. SQLite reads are
+already live; the faiss index is what lags.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">soma</span><span class="o">.</span><span class="n">reload</span><span class="p">()</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="c1"># {'reloaded_vectors': 26574, 'total': 26574}</span>
+</code></pre></div>
+<p>Note that <code>similarity_search</code> already self-heals when the indexed count diverges from the DB
+count, so a plain new memory is usually picked up on the next search anyway. <code>reload()</code> is for
+when you want the refresh to happen <strong>now</strong>, and it also catches the case self-healing misses:
+an external process that deletes N memories and adds N more leaves the count unchanged, so the
+index keeps the deleted vectors and never sees the new ones until you reload.</p>
+<h2 id="summary">Summary<a class="headerlink" href="#summary" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Recency decay is the front line.</strong> It silently removes old memories; nothing else is needed
+  for the 40-day-old-state problem.</li>
+<li><strong><code>max_age_days</code></strong> is an explicit window for time-bounded questions, not a safety net.</li>
+<li><strong><code>is_stale</code> is a backstop</strong> for the 10–30 day window, where a state memory still gets
+  recalled. It is not a defense against old memories — decay already handled those.</li>
+</ul>
 
 
 
