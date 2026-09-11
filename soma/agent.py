@@ -840,6 +840,23 @@ class SOMA_Agent:
             self.hub.top_k = original_top_k
         return [self.hub.explain_activation(am) for am in activated]
 
+    def reclassify_nature(self, classifier=None, dry_run: bool = True,
+                          backup_dir: Optional[str] = None, user_id: str = "",
+                          only_nature: str = "event",
+                          limit: Optional[int] = None) -> Dict:
+        """批量重分类存量记忆的 nature（v2.0.15）。详见 soma.nature.reclassify_nature"""
+        return self.memory.reclassify_nature(
+            classifier=classifier, dry_run=dry_run, backup_dir=backup_dir,
+            user_id=user_id, only_nature=only_nature, limit=limit)
+
+    def rollback_nature(self, backup_path: str) -> Dict:
+        """按备份回滚一次 nature 重分类（v2.0.15）"""
+        return self.memory.rollback_nature(backup_path)
+
+    def reload(self) -> Dict:
+        """重载记忆索引，使外部进程的写入对本实例可见（v2.0.15）"""
+        return self.memory.reload()
+
     def decompose(self, problem: str) -> List[Focus]:
         """暴露思维拆解结果（供可视化和调试）"""
         return self.engine.decompose(problem)

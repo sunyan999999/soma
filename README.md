@@ -1,4 +1,4 @@
-# SOMA v2.0.14 — The Cognitive Kernel for AI Agents
+# SOMA v2.0.15 — The Cognitive Kernel for AI Agents
 
 <p align="center">
   <strong>Wisdom over Memory — 智慧超越记忆</strong><br>
@@ -28,7 +28,7 @@ answer = soma.respond("How to analyze our growth bottleneck?")
 
 **Why SOMA instead of a vector database?** Traditional memory (ChromaDB, Mem0) stores and retrieves. SOMA **thinks first**: a 7-law reasoning network decomposes problems *before* fetching memories. The result: agents that systematically analyze, not just pattern-match.
 
-| | Vector DBs | Mem0 | **SOMA v2.0.14** |
+| | Vector DBs | Mem0 | **SOMA v2.0.15** |
 |---|---|---|---|
 | Stores & retrieves | ✓ | ✓ | ✓ |
 | Reasoning framework | ✗ | ✗ | **✓ 7 thinking laws** |
@@ -46,12 +46,12 @@ answer = soma.respond("How to analyze our growth bottleneck?")
 <p align="center">
   <a href="https://github.com/sunyan999999/soma"><img src="https://img.shields.io/github/stars/sunyan999999/soma?style=social" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-2.0.14-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-2.0.15-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/python-3.10%2B-green" alt="Python"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/semantic_recall-100%25-brightgreen" alt="Semantic Recall"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/overall_score-87.5%2F100-blue" alt="Overall Score"></a>
   <a href="#"><img src="https://img.shields.io/badge/tests-853-brightgreen" alt="Tests"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v2.0.14-success" alt="Changelog"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v2.0.15-success" alt="Changelog"></a>
   <a href="#"><img src="https://img.shields.io/badge/milestone-2.0.4-ff6b6b" alt="Milestone"></a>
 </p>
 
@@ -87,7 +87,7 @@ answer = soma.respond("How to analyze our growth bottleneck?")
 
 Every capability line that started as a seed in v0.1 has grown into a complete system:
 
-| Capability Line | Core Question | v2.0.14 Answer |
+| Capability Line | Core Question | v2.0.15 Answer |
 |---|---|---|
 | **Memory** | How can AI manage memory like humans do? | Three-tier: fragments → scenes → profile |
 | **Reasoning** | How to use information to think? | Causal chains + conflict detection + cross-domain analogy |
@@ -103,7 +103,7 @@ Every capability line that started as a seed in v0.1 has grown into a complete s
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                         SOMA v2.0.14 — Cognitive Kernel                         │
+│                         SOMA v2.0.15 — Cognitive Kernel                         │
 │                                                                                │
 │  ┌──────────────────────────────────────────────────────────────────┐        │
 │  │  L3 User Profile — "Knows who you are"                             │        │
@@ -220,6 +220,24 @@ v1.0 introduces automatic memory layering — the system quietly builds understa
 | **L3 Profile** | Extracted user traits | "Prefers functional programming, strong at debugging, learning systems design" |
 
 The entire process is automatic. You use SOMA normally; behind the scenes, `CapturePipeline` aggregates fragments into scenes and distills scenes into your profile.
+
+#### Time awareness — know which mechanism to rely on
+
+An old state memory ("hasn't been sleeping well") is the classic injection failure: the LLM
+restates it as current fact. Three mechanisms handle this, at different stages — **recency
+decay** (`exp(-days/7)`, 7-day half-life) is the front line: by 30 days a memory retains under
+2% weight and never passes the activation threshold. **`max_age_days`** is an explicit
+query-time window. **`is_stale`** is a *backstop* for `nature="state"` memories in the 10–30 day
+band, where a stale state still gets recalled — it is not a defense against older memories,
+because decay already removed those.
+
+```python
+soma.remember("User hasn't been sleeping well", nature="state")   # state / fact / event
+soma.query_memory("sleep", top_k=5, max_age_days=30)              # explicit window
+soma.reclassify_nature()                                          # backfill: dry-run first
+```
+
+→ [Memory recency: the three mechanisms](docs/guides/memory-recency.md)
 
 ### 3. Bidirectional Activation — Hybrid RRF
 
@@ -433,7 +451,7 @@ SOMA v1.0 — benchmarked with 1,050 production memories from digital twin proje
 
 | System | Recall@5 | Reasoning | Three-Tier Memory | Evolution | Multi-Agent | Awareness |
 |--------|:---:|:---:|:---:|:---:|:---:|:---:|
-| **SOMA v2.0.14** | **100%** | **✓** | **✓** | **✓** | **✓** | **✓** |
+| **SOMA v2.0.15** | **100%** | **✓** | **✓** | **✓** | **✓** | **✓** |
 | ChromaDB | 2.5% | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Mem0 | * | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Zep | * | ✗ | ✗ | ✗ | ✗ | ✗ |

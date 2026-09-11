@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "2.0.14"
+    __version__ = "2.0.15"
 
 from soma.config import SOMAConfig, load_config
 from soma.base import MemoryUnit, Focus, ActivatedMemory
@@ -1091,11 +1091,17 @@ class SOMA:
     def remember(
         self, content: str, context: dict = None, importance: float = 0.5,
         user_id: str = "", session_id: str = "",
-        auto_capture: bool | None = None,
+        auto_capture: bool | None = None, nature: str = "event",
     ) -> str:
-        """存储一条情节记忆。auto_capture=None 时尊重全局配置。"""
+        """存储一条情节记忆。auto_capture=None 时尊重全局配置。
+
+        v2.0.15: nature 门面透传（此前仅 agent 层支持，接入方走门面会 TypeError）。
+        nature: state 状态类(失眠/情绪/健康, 时效强) / fact 事实技能类(长期有效)
+        / event 一般事件(默认)。知识与技能类内容建议显式传 nature="fact"。
+        """
         memory_id = self._agent.remember(content, context, importance,
-                                         user_id=user_id, session_id=session_id)
+                                         user_id=user_id, session_id=session_id,
+                                         nature=nature)
 
         # v0.10.0: 自动捕获触发
         should_capture = auto_capture
@@ -1111,8 +1117,11 @@ class SOMA:
     def remember_code(
         self, code: str, file_path: str = "", language: str = "python",
         importance: float = 0.8, user_id: str = "", session_id: str = "",
+        nature: str = "fact",
     ) -> dict:
         """存储代码记忆 — AST 自动解析结构 + 生成语义三元组。
+
+        v2.0.15: nature 默认 fact —— 代码/技能属长期有效能力，不随时间过时。
 
         示例::
 
@@ -1148,6 +1157,7 @@ class SOMA:
             importance,
             user_id=user_id,
             session_id=session_id,
+            nature=nature,
         )
 
         # 自动注入语义三元组（调用关系、继承关系）
@@ -1181,6 +1191,7 @@ class SOMA:
     def remember_image(
         self, image_path: str = "", description: str = "",
         importance: float = 0.6, user_id: str = "", use_ocr: bool = True,
+        nature: str = "event",
     ) -> dict:
         """存储图片记忆 — 图片引用 + 结构化描述（可选 OCR 增强）。
 
@@ -1208,13 +1219,13 @@ class SOMA:
             "meta": meta,
         }
         memory_id = self._agent.remember(content, ctx, importance,
-                                         user_id=user_id)
+                                         user_id=user_id, nature=nature)
         return {"memory_id": memory_id, "meta": meta}
 
     def remember_table(
         self, data: list = None, title: str = "",
         markdown_table: str = "", csv_text: str = "",
-        importance: float = 0.6, user_id: str = "",
+        importance: float = 0.6, user_id: str = "", nature: str = "event",
     ) -> dict:
         """存储表格记忆 — 结构化数据提取要点。
 
@@ -1247,13 +1258,63 @@ class SOMA:
             "meta": meta,
         }
         memory_id = self._agent.remember(content, ctx, importance,
-                                         user_id=user_id)
+                                         user_id=user_id, nature=nature)
         return {"memory_id": memory_id, "meta": meta}
 
     def query_memory(self, query: str, top_k: int = 5, user_id: str = "",
-                     agent_id: str = "", group_id: str = "") -> list:
+                     agent_id: str = "", group_id: str = "",
+                     max_age_days: Optional[float] = None) -> list:
+        """直接查询记忆（绕过框架拆解）。
+
+        v2.0.15: 门面透传 max_age_days（此前仅 agent 层支持，接入方走门面会
+        TypeError —— 即 DSH 反馈的「四层透传少一层」缺口）。
+        max_age_days: 时间窗口硬截断（如 30 = 只要 30 天内）；
+        返回项含 timestamp / age_days / nature / is_stale。
+        """
         return self._agent.query_memory(
-            query, top_k, user_id=user_id, agent_id=agent_id, group_id=group_id)
+            query, top_k, user_id=user_id, agent_id=agent_id, group_id=group_id,
+            max_age_days=max_age_days)
+
+    def reclassify_nature(
+        self, classifier=None, dry_run: bool = True, backup_dir: str = None,
+        user_id: str = "", only_nature: str = "event", limit: int = None,
+    ) -> dict:
+        """批量重分类存量记忆的业务性质 nature（v2.0.15）。
+
+        把已有记忆按规则回填 state/fact/event —— 迁移期一次性动作，之后
+        remember(nature=) 正常写入即可。
+
+        **默认 dry_run=True 只预览不改库**；落盘会自动备份，可用
+        rollback_nature() 按备份回滚。
+
+        Args:
+            classifier: 自定义 NatureClassifier（默认内置规则）
+            dry_run: True 只统计不改
+            backup_dir: 备份目录（默认记忆库同目录 nature_backups/）
+            user_id: 只处理某用户
+            only_nature: 只重分类该历史性质（默认 'event'，不动已分类的）
+            limit: 最多处理条数
+
+        Returns:
+            {dry_run, scanned, changed, unchanged, by_nature, backup_path, samples}
+        """
+        return self._agent.reclassify_nature(
+            classifier=classifier, dry_run=dry_run, backup_dir=backup_dir,
+            user_id=user_id, only_nature=only_nature, limit=limit)
+
+    def rollback_nature(self, backup_path: str) -> dict:
+        """按 reclassify_nature 的备份文件回滚一次重分类（v2.0.15）"""
+        return self._agent.rollback_nature(backup_path)
+
+    def reload(self) -> dict:
+        """重载记忆索引，使外部进程的写入对本实例可见（v2.0.15）。
+
+        长驻服务场景：CLI / 另一个 Agent 往同一个记忆库写了数据，SQLite 查询
+        能立刻看到，但内存里的 faiss 索引还是旧的，语义检索会漏 —— 调本方法刷新。
+
+        返回 {"reloaded_vectors": N, "total": M}。
+        """
+        return self._agent.reload()
 
     def decompose(self, problem: str) -> list:
         return self._agent.decompose(problem)

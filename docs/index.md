@@ -15,6 +15,7 @@ Welcome to the SOMA documentation. SOMA (Somatic Wisdom Architecture) is a light
 - **[Best Practices](guides/best-practices.md)** — Production patterns, tuning, security, observability
 - **[Integrations](guides/integrations.md)** — LangChain, LlamaIndex, CrewAI, AutoGen, MCP
 - **[Enterprise Guide](guides/enterprise.md)** — RBAC, audit logging, SSO, private deployment, SOC2
+- **[Memory Recency](guides/memory-recency.md)** — Recency decay vs `max_age_days` vs `is_stale`: which one to rely on
 
 ## Contributing
 
@@ -52,6 +53,7 @@ Welcome to the SOMA documentation. SOMA (Somatic Wisdom Architecture) is a light
 - **[最佳实践](guides/best-practices.md)** — 生产模式、调优、安全、可观测性
 - **[集成指南](guides/integrations.md)** — LangChain、LlamaIndex、CrewAI、AutoGen、MCP
 - **[企业部署指南](guides/enterprise.md)** — RBAC、审计日志、SSO、私有部署、SOC2
+- **[记忆时效](guides/memory-recency_zh.md)** — 近因衰减 / max_age_days / is_stale 三层分工，该依赖哪一层
 
 ## 贡献
 

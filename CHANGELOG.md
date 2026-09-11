@@ -7,6 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.15] — 2026-09-11
+
+接入方收尾版：把 2.0.13/2.0.14 的记忆时间感知能力补齐到顶层门面，并把 DSH 只能裸 SQL
+做的存量回填沉淀成内置能力。**无行为破坏，纯增量。**
+
+### Fixed / 修复
+
+**门面透传补全 —— 四层链路打通**（DSH 反馈的「接入方走门面会 TypeError」）
+
+2.0.13 的 `max_age_days`、2.0.14 的 `nature` 都只打通到 agent 层，顶层门面 `SOMA`
+没跟上：接入方按文档写 `get_soma().query_memory(q, max_age_days=30)` 会 **TypeError**，
+`SOMA.remember(..., nature=...)` 同样不可用 —— 只能绕过门面直接摸 `_agent`。
+
+- `SOMA.remember` / `remember_image` / `remember_table` 补 `nature` 透传（`soma/__init__.py`）
+- `SOMA.remember_code` 补 `nature` 且**默认 `fact`**（代码/技能不随时间过时）
+- `SOMA.query_memory` 补 `max_age_days` 透传
+- 至此 门面 → agent → memory → episodic/store 四层完全一致
+
+### Added / 新增
+
+**内置 nature 批量重分类工具**（`soma/nature.py`）
+
+存量记忆全是默认 `event` 时的一次性回填动作 —— 此前接入方只能裸 SQL UPDATE。
+
+- `NatureClassifier`：规则化分类（零 LLM 依赖）。优先级 **状态词 > 知识来源/长文档 > 事实词 > event**；状态词优先是因为时效性才是最要紧的属性
+- `reclassify_nature(store, classifier=None, dry_run=True, backup_dir=None, user_id="", only_nature="event", limit=None)`：
+  **默认 dry_run 只预览**；落盘前自动写备份（id → 原 nature），备份失败则中止不改库
+- `rollback_nature(store, backup_path)`：按备份还原
+- 默认只处理 `nature='event'` 的记忆 —— 已分类/人工修正过的一律不动
+- 默认规则覆盖：状态词（失眠/焦虑/发烧/…）、事实词（用户会/擅长/偏好/…）、长文档（>300 字）、知识来源（wiki/knowledge/external/doc/import）
+- CLI：`soma reclassify`（预览）/ `--apply`（落盘）/ `--rollback <备份>` / `--user-id` / `--limit`
+- 门面与 agent 层同步暴露：`SOMA.reclassify_nature()` / `SOMA.rollback_nature()`
+
+**实例索引重载 `reload()`**（`soma/__init__.py` → `agent` → `memory` → `episodic.reload_index()`）
+
+长驻服务场景：外部进程（CLI / 另一个 Agent / 批处理）往同一记忆库写入后，
+SQLite 读取是实时的，但内存里的 faiss 索引会滞后。
+
+- `SOMA.reload()` → `{"reloaded_vectors": N, "total": M}`
+- 说明：`similarity_search` 本身在「索引计数 ≠ DB 计数」时已会自愈重建，单纯新增记忆
+  通常下次搜索即可见；`reload()` 用于**想立刻生效**，并兜住自愈漏掉的情况 ——
+  外部「删 N 条 + 加 N 条」总数不变时，索引会留着已删向量、看不到新向量
+
+### Docs / 文档
+
+- 新增 `docs/guides/memory-recency.md` + `_zh.md`：**近因衰减 / `max_age_days` / `is_stale` 三层分工**
+  - 明确 `exp(-days/7)` 衰减是**主防线**（30 天后权重 <2%，过不了激活阈值）；
+    `is_stale` 是覆盖 10–30 天区间的**兜底**，不是拦远期记忆的手段
+  - 接入建议：`nature=fact` 直接注入 / `nature=event` 标注「N 天前」/ `nature=state 且 is_stale` 提示「可能已变化」
+  - README / README_zh / docs/index.md / mkdocs.yml 已加交叉引用
+
+### Tested / 测试
+- 门面透传测试（`tests/test_facade_passthrough.py` +9）：DSH 生产调用形式不抛 TypeError / max_age_days 真截断 / nature 各写入路径往返 / remember_code 默认 fact
+- nature 重分类与重载测试（`tests/test_nature_reclassify.py` +17）：分类规则 7 项 / dry_run 不改库 / 落盘生效+备份 / only_nature 保护 / 回滚还原 / 外部写入 reload 可见 / 同数替换场景
+- 全量无回归
+
+### CLI / 新增命令
+```bash
+soma reclassify                       # 预览（不改库）
+soma reclassify --apply               # 落盘，自动备份
+soma reclassify --rollback <备份路径>  # 回滚
+```
+
+---
+
 ## [2.0.14] — 2026-08-31
 
 ### Added / 新增

@@ -396,6 +396,39 @@ class MemoryCore:
         """查找 start→end 的因果路径"""
         return self.get_causal_graph().get_causal_chain(start, end, max_depth)
 
+    def reclassify_nature(
+        self,
+        classifier=None,
+        dry_run: bool = True,
+        backup_dir: Optional[str] = None,
+        user_id: str = "",
+        only_nature: str = "event",
+        limit: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """批量重分类存量记忆的 nature（v2.0.15）。详见 soma.nature.reclassify_nature"""
+        from soma.nature import reclassify_nature
+
+        return reclassify_nature(
+            self.episodic, classifier=classifier, dry_run=dry_run,
+            backup_dir=backup_dir, user_id=user_id,
+            only_nature=only_nature, limit=limit,
+        )
+
+    def rollback_nature(self, backup_path: str) -> Dict[str, Any]:
+        """按备份回滚一次 nature 重分类（v2.0.15）"""
+        from soma.nature import rollback_nature
+
+        return rollback_nature(self.episodic, backup_path)
+
+    def reload(self) -> Dict[str, Any]:
+        """重载记忆索引，使外部进程的写入对本实例可见（v2.0.15）。
+
+        SQLite 读写本身是实时的，需要刷新的是内存里的 faiss 向量索引 ——
+        外部写入的新记忆不在旧索引里，语义检索会漏。
+        """
+        indexed = self.episodic.reload_index()
+        return {"reloaded_vectors": indexed, "total": self.episodic.count()}
+
     def close(self) -> None:
         """关闭所有子存储的连接"""
         self.episodic.close()

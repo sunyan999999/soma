@@ -326,6 +326,23 @@ class EpisodicStore(BaseMemoryStore):
 
         return count
 
+    def reload_index(self) -> int:
+        """从 DB 重新加载向量索引（v2.0.15）。
+
+        场景：长驻实例运行时，**外部进程**（CLI / 另一个 Agent / 裸 SQL）往同一个
+        记忆库写了数据 —— SQLite 查询能立刻看到新行（WAL 多读者），但内存里的
+        faiss 索引还是旧的，语义检索会漏掉新记忆。调本方法把索引按 DB 现状重建。
+
+        Returns:
+            重建后的向量条数（索引未启用时返回 0）
+        """
+        if self._vector_index is None:
+            return 0
+        ids, vecs = self._vector_index.get_all_vectors(self._conn)
+        self._vector_index._build_faiss_index(ids, vecs)
+        _log.info("向量索引已重载: %d 条", len(ids))
+        return len(ids)
+
     def get(self, memory_id: str) -> Optional[MemoryUnit]:
         row = self._conn.execute(
             "SELECT * FROM episodic_memories WHERE id = ?", (memory_id,)
