@@ -863,6 +863,22 @@ class SOMA_Agent:
         """按备份回滚一次 nature 重分类（v2.0.15）"""
         return self.memory.rollback_nature(backup_path)
 
+    def repair_context(self, dry_run: bool = True, backup_dir: Optional[str] = None,
+                       user_id: str = "", limit: Optional[int] = None) -> Dict:
+        """扫描修复 context 非 JSON 对象的存量脏数据（v2.0.17）。
+
+        详见 soma.repair.repair_context。默认 dry_run 只预览，落盘自动备份。
+        """
+        from soma.repair import repair_context as _repair
+        return _repair(
+            self.memory.episodic, dry_run=dry_run, backup_dir=backup_dir,
+            user_id=user_id, limit=limit)
+
+    def rollback_context(self, backup_path: str) -> Dict:
+        """按备份回滚一次 context 修复（v2.0.17）"""
+        from soma.repair import rollback_context as _rollback
+        return _rollback(self.memory.episodic, backup_path)
+
     def reload(self) -> Dict:
         """重载记忆索引，使外部进程的写入对本实例可见（v2.0.15）"""
         return self.memory.reload()

@@ -24,6 +24,7 @@ class MemoryCore:
             config.episodic_persist_dir,
             embedder=embedder,
             use_vector_search=use_vector,
+            mmap_size=config.sqlite_mmap_size,  # v2.0.17
         )
         self.semantic = SemanticStore(config.episodic_persist_dir)
         self.skill = SkillStore(config.episodic_persist_dir)

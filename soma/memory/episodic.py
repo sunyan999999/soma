@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 
 from soma.abc import BaseMemoryStore
 from soma.base import MemoryUnit
+from soma.memory.context_utils import normalize_context, parse_context
 
 _log = logging.getLogger("soma.memory.episodic")
 
@@ -22,6 +23,7 @@ class EpisodicStore(BaseMemoryStore):
         collection_name: str = "episodic",
         embedder=None,
         use_vector_search: bool = False,
+        mmap_size: int = 0,
     ):
         persist_dir.mkdir(parents=True, exist_ok=True)
         self._db_path = persist_dir / f"{collection_name}.db"
@@ -29,6 +31,8 @@ class EpisodicStore(BaseMemoryStore):
         self._conn.row_factory = sqlite3.Row
         self._embedder = embedder
         self._use_vector = use_vector_search and embedder is not None
+        # v2.0.17: SQLite 内存映射大小（字节），0 = 禁用。见 SOMAConfig.sqlite_mmap_size
+        self._mmap_size = max(0, int(mmap_size))
 
         self._create_table()
         self._vector_index = None
@@ -60,7 +64,11 @@ class EpisodicStore(BaseMemoryStore):
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA synchronous=NORMAL")       # WAL 下 NORMAL 足够安全
         self._conn.execute("PRAGMA cache_size=-8000")          # 8MB 缓存
-        self._conn.execute("PRAGMA mmap_size=268435456")       # 256MB 内存映射
+        # v2.0.17: 改由 SOMAConfig.sqlite_mmap_size 控制，默认 0（禁用）。
+        # 历史默认 256MB 会让每个连接把整个库映射进进程 RSS —— Linux 上多专家
+        # 架构一个实例开 4 个连接，同一个 episodic.db 被映射 4 份，实测每实例
+        # 因此多占约 811MB（DSH 2026-09-12 定位）。调大可加速随机读，代价是常驻内存。
+        self._conn.execute(f"PRAGMA mmap_size={self._mmap_size}")
         self._conn.execute("PRAGMA temp_store=MEMORY")         # 临时表存内存
         self._conn.execute("PRAGMA busy_timeout=15000")        # 15秒忙等待（Windows并发场景）
         self._conn.execute(
@@ -184,7 +192,9 @@ class EpisodicStore(BaseMemoryStore):
             nature = "event"
         memory_id = uuid.uuid4().hex
         now = datetime.now(timezone.utc).timestamp()
-        context_json = json.dumps(context or {}, ensure_ascii=False)
+        # v2.0.17: 规范化非 dict 入参（调用方误传字符串时 json.dumps 会产出
+        # 合法但非对象的 JSON，读回来就是 str），从源头堵住脏数据
+        context_json = json.dumps(normalize_context(context), ensure_ascii=False)
 
         self._conn.execute(
             """
@@ -299,7 +309,11 @@ class EpisodicStore(BaseMemoryStore):
             # 时间窗口过滤
             if min_ts is not None and mem.timestamp < min_ts:
                 continue
-            mem.context["_vector_score"] = score
+            # v2.0.17: 兜底防御。context 经 parse_context 后恒为 dict，但 MemoryUnit
+            # 也可能由外部直接构造 —— 这里再挡一层，避免单条脏数据把整次全库检索炸掉
+            # （历史事故：26,872 条中 1 条 str context 让 query_by_vector 抛 TypeError）
+            if isinstance(mem.context, dict):
+                mem.context["_vector_score"] = score
             memories.append(mem)
             if len(memories) >= top_k:
                 break
@@ -373,7 +387,7 @@ class EpisodicStore(BaseMemoryStore):
             timestamp=row["timestamp"],
             importance=row["importance"],
             access_count=row["access_count"],
-            context=json.loads(row["context_json"]),
+            context=parse_context(row["context_json"]),
             memory_type=mem_type,
             user_id=row["user_id"] if "user_id" in row.keys() else "",
             session_id=row["session_id"] if "session_id" in row.keys() else "",

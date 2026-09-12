@@ -59,6 +59,13 @@ class SOMAConfig(BaseModel):
     # v2.0.8: 构造时是否立即加载/预热嵌入模型（避免首个请求热路径卡 30-100s）
     warmup_on_init: bool = False
 
+    # SQLite 内存映射大小（字节，v2.0.17）
+    # 0 = 禁用。历史硬编码 256MB 会让每个连接把整个库映射进进程 RSS —— Linux 上
+    # 多专家架构一个实例开 4 个连接，同一个 episodic.db 被映射 4 份，实测每实例
+    # 因此多占约 811MB。调大可加速随机读（实测未命中时 p50 约快 3 倍），代价是
+    # 常驻内存随映射量增长；多实例 / 多租户常驻服务建议保持 0，单实例 CLI 可调大。
+    sqlite_mmap_size: int = 0
+
     # 框架锚定检测（v0.9.1+）
     enable_frame_detection: bool = False
     frame_detection_window: int = 5

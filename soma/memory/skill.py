@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from soma.abc import BaseMemoryStore
 from soma.base import MemoryUnit
+from soma.memory.context_utils import normalize_context, parse_context
 
 
 class SkillStore(BaseMemoryStore):
@@ -122,7 +123,8 @@ class SkillStore(BaseMemoryStore):
 
         skill_id = uuid.uuid4().hex
         now = datetime.now(timezone.utc).timestamp()
-        context_json = json.dumps(context or {}, ensure_ascii=False)
+        # v2.0.17: 规范化非 dict 入参，从源头堵住脏数据
+        context_json = json.dumps(normalize_context(context), ensure_ascii=False)
 
         self._conn.execute(
             """
@@ -140,7 +142,7 @@ class SkillStore(BaseMemoryStore):
             id=row["id"],
             content=f"技能: {row['name']} — {row['pattern']}",
             timestamp=row["created_at"],
-            context=json.loads(row["context_json"]),
+            context=parse_context(row["context_json"]),
             memory_type="skill",
             importance=0.8,
         )

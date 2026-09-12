@@ -17,6 +17,8 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
+from soma.memory.context_utils import parse_context
+
 _log = logging.getLogger("soma.memory.external")
 
 
@@ -270,8 +272,8 @@ class ExternalKnowledgeImporter:
         ).fetchall()
 
         for row in rows:
-            import json
-            ctx = json.loads(row["context_json"] or "{}")
+            # v2.0.17: 脏 context 不再抛错（历史实现直接 json.loads 后当 dict 用）
+            ctx = parse_context(row["context_json"])
             expires_in = ctx.get("_expires_in_days", 30)
             age_days = (now - row["timestamp"]) / 86400.0
             if age_days > expires_in:

@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "2.0.16"
+    __version__ = "2.0.17"
 
 from soma.config import SOMAConfig, load_config
 from soma.base import MemoryUnit, Focus, ActivatedMemory
@@ -1314,6 +1314,37 @@ class SOMA:
     def rollback_nature(self, backup_path: str) -> dict:
         """按 reclassify_nature 的备份文件回滚一次重分类（v2.0.15）"""
         return self._agent.rollback_nature(backup_path)
+
+    def repair_context(self, dry_run: bool = True, backup_dir: str = None,
+                       user_id: str = "", limit: int = None) -> dict:
+        """扫描并修复 context 非 JSON 对象的存量脏数据（v2.0.17）。
+
+        背景：context 字段可能被写入非 JSON 对象的值（调用方误传字符串），
+        使任何全库检索在 ``mem.context["_vector_score"] = score`` 处抛 TypeError
+        崩溃 —— 一条脏数据足以毁掉整次全库查询。2.0.17 起读写都已防御，
+        本方法负责把**存量**脏数据扫出来并规范化。
+
+        修复方式：原值收进 ``{"_raw": <原值>, "_repaired_at": ...}``，不丢数据；
+        修复前后读出的内容一致，只是库里不再有会破坏 SQL/FTS 假设的形状。
+
+        **默认 dry_run=True 只预览不改库**；落盘前自动备份，可用
+        rollback_context() 按备份回滚。
+
+        Args:
+            dry_run: True 只统计不改（默认）
+            backup_dir: 备份目录（默认记忆库同目录 context_backups/）
+            user_id: 只处理某用户（空 = 全部）
+            limit: 最多处理条数
+
+        Returns:
+            {dry_run, scanned, dirty, repaired, by_table, samples, backup_path}
+        """
+        return self._agent.repair_context(
+            dry_run=dry_run, backup_dir=backup_dir, user_id=user_id, limit=limit)
+
+    def rollback_context(self, backup_path: str) -> dict:
+        """按 repair_context 的备份文件回滚一次修复（v2.0.17）"""
+        return self._agent.rollback_context(backup_path)
 
     def reload(self) -> dict:
         """重载记忆索引，使外部进程的写入对本实例可见（v2.0.15）。

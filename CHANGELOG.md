@@ -7,6 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.17] — 2026-09-13
+
+稳健性版：修复「单条脏 context 让全库检索崩溃」，并把 SQLite 内存映射从硬编码改为
+可配置、默认关闭。**默认行为有变化** —— `sqlite_mmap_size` 默认 0（此前硬编码 256MB），
+理由见下方「默认值变化」。
+
+### 背景
+
+DSH 在生产跑官方基准（26,872 条记忆）时崩溃：
+
+    File "soma/memory/episodic.py", line 302, in query_by_vector
+        mem.context["_vector_score"] = score
+    TypeError: 'str' object does not support item assignment
+
+全库 26,872 条中有 1 条 `context_json` 是裸字符串而非 JSON 对象。读取路径把
+`json.loads` 的结果直接当 dict 用，一赋值就炸 —— **1 条脏数据毁掉整次全库查询**。
+带 user_id 的常规查询因该行 user_id 为空被过滤而幸免，所以生产未暴露；但官方基准、
+管理端全库检索、以及 2.0.15 新增的 `reclassify_nature`（默认扫全库）都会踩到。
+
+脏数据的来源正是写入侧：调用方把字符串传给 `remember(context=...)` 时，
+`json.dumps("文本")` 产出的是**合法但非对象**的 JSON，读回来就是 str。
+
+### 新增
+
+- **context 双向防御**（`soma/memory/context_utils.py`）
+  - 读取 `parse_context()`：任何形状的 `context_json` 都产出 dict，脏值收进
+    `{"_raw": <原值>}`，**不丢数据**；已覆盖非法 JSON、非对象 JSON、bytes、None
+  - 写入 `normalize_context()`：`remember(context=...)` 收到非 dict 时包一层并告警，
+    从源头不再产生脏数据
+  - 覆盖 `episodic` / `skill` 两处 `context_json` 读点，以及 `external.check_expired`
+  - `query_by_vector` 热路径补 `isinstance` 兜底 —— 外部直接构造的 MemoryUnit 也挡得住
+- **脏数据自愈工具**（`soma/repair.py`）
+  - `soma.repair_context(dry_run=True)` 扫描存量脏数据；默认只预览，落盘自动备份
+  - `soma.rollback_context(backup_path)` 按备份回滚
+  - CLI：`soma repair-context` / `--apply` / `--rollback`
+  - 修复形状 `{"_raw": <原值>, "_repaired_at": ...}` —— 与读取路径的规范化结果一致，
+    修复前后取出的内容不变，只是库里不再有破坏 SQL/FTS 假设的形状
+- **SQLite mmap 可配置**（`SOMAConfig.sqlite_mmap_size`，默认 0）
+
+### 默认值变化
+
+`sqlite_mmap_size` 默认 **0（禁用 mmap）**，此前 `episodic.py` 硬编码 256MB。
+
+DSH 定位到：Linux 上每实例 750MB 的 RSS 大头**不是** ONNX 会话，而是 SQLite mmap ——
+每个连接把整个 episodic.db 映射进进程 RSS，多专家架构一个实例开 4 个连接，
+同一个库被映射 4 份。他们的 A/B 实测：
+
+    每实例内存    实例创建耗时    映射量
+    94MB          2203ms         0.03MB    ← 本次默认值（0）
+    228MB         2249ms         512MB
+    754MB         1570ms         3247MB    ← 历史值（256MB）
+
+叠加 2.0.16 的会话共享后：建 3 个实例 2866MB → 742MB；生产主服务 cgroup
+16.4GB → 1.85GB。
+
+**代价（如实标注）**：关掉 mmap 后随机读走普通 I/O，DSH 实测查询 p50 从 38ms
+升到 107ms。多实例 / 多租户常驻服务建议保持 0；单实例、查询延迟敏感的场景可调大：
+
+    SOMAConfig(sqlite_mmap_size=32 * 1024 * 1024)
+
+### 测试
+
+- 新增 `tests/test_context_safety.py`（40 项）：parse/normalize 全形状、脏行读取、
+  DSH 崩溃路径复现、repair 的预览/落盘/回滚/用户过滤/限额、mmap 配置与门面透传
+
+### 未纳入本次
+
+DSH 另建议「同一实例的多专家共享一个 SQLite 连接」（当前 4 个连接把同一库映射 4 次）。
+该改动涉及多专家架构的连接生命周期，回归面较大；本次先以「mmap 默认 0」消除其内存
+影响（映射归零后，多连接的成本主要是句柄而非 RSS），共享连接留待有明确压测数据后再评估。
+
+---
+
 ## [2.0.16] — 2026-09-12
 
 多实例内存版：解决「每个 SOMA 实例独占一份 ONNX 嵌入会话」导致的随实例数线性增长的

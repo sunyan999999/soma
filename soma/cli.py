@@ -359,6 +359,37 @@ def cmd_reclassify(args):
         return 1
 
 
+def cmd_repair_context(args):
+    """扫描并修复 context 非 JSON 对象的存量脏数据（v2.0.17）
+
+    默认只预览（dry_run），加 --apply 才落盘；落盘自动备份，可用 --rollback 回滚。
+    """
+    try:
+        soma = _get_soma(getattr(args, "project", ""))
+
+        # 回滚模式
+        rb = getattr(args, "rollback", "")
+        if rb:
+            out = soma.rollback_context(rb)
+            print(json.dumps(out, ensure_ascii=False, indent=2))
+            soma.close()
+            return 0
+
+        out = soma.repair_context(
+            dry_run=not getattr(args, "apply", False),
+            user_id=getattr(args, "user_id", "") or "",
+            limit=getattr(args, "limit", None),
+        )
+        print(json.dumps(out, ensure_ascii=False, indent=2))
+        if out.get("dry_run") and out.get("dirty"):
+            print("\n（预览模式，未改动。确认无误后加 --apply 落盘）", file=sys.stderr)
+        soma.close()
+        return 0
+    except Exception as e:
+        print(json.dumps({"error": str(e)}, ensure_ascii=False))
+        return 1
+
+
 def _add_project_arg(p: argparse.ArgumentParser) -> None:
     """为子命令添加 --project 命名空间参数（默认 shared 共享库）"""
     p.add_argument(
@@ -449,6 +480,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_rc.add_argument("--rollback", type=str, default="",
                        help="按备份文件回滚一次重分类")
 
+    # repair-context（v2.0.17）
+    p_rp = sub.add_parser("repair-context",
+                          help="修复 context 非 JSON 对象的存量脏数据")
+    _add_project_arg(p_rp)
+    p_rp.add_argument("--apply", action="store_true",
+                       help="真正落盘（默认只预览 dry_run）")
+    p_rp.add_argument("--user-id", type=str, default="",
+                       help="只处理某用户的记忆")
+    p_rp.add_argument("--limit", type=int, default=None,
+                       help="最多处理条数")
+    p_rp.add_argument("--rollback", type=str, default="",
+                       help="按备份文件回滚一次修复")
+
     return parser
 
 
@@ -470,6 +514,7 @@ def main():
         "learn": cmd_learn,
         "graph": cmd_graph,
         "reclassify": cmd_reclassify,
+        "repair-context": cmd_repair_context,
     }
 
     handler = dispatch.get(args.command)

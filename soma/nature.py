@@ -33,6 +33,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
+from soma.memory.context_utils import parse_context
+
 NATURE_STATE = "state"
 NATURE_FACT = "fact"
 NATURE_EVENT = "event"
@@ -173,10 +175,9 @@ def reclassify_nature(
     for row in rows:
         mid = row["id"]
         old = row["nature"] if "nature" in row.keys() else NATURE_EVENT
-        try:
-            ctx = json.loads(row["context_json"] or "{}")
-        except (ValueError, TypeError):
-            ctx = {}
+        # v2.0.17: 统一走 parse_context —— 脏 context 收进 _raw 而不是丢成 {}，
+        # 分类器还能从原始文本里取到线索（如 "部署验证/分身健康检查"）
+        ctx = parse_context(row["context_json"])
         new = clf.classify(row["content"] or "", ctx)
         by_nature[new] = by_nature.get(new, 0) + 1
         if new != old:
