@@ -39,11 +39,11 @@
 
 ```python
 # 会话启动时检索相关记忆
-python c:/SOMA/soma-core/examples/dev_memory.py recall "<任务关键词>"
+python C:/Projects/SOMA/soma-core/examples/dev_memory.py recall "<任务关键词>"
 
 # 关键事件记录
-python c:/SOMA/soma-core/examples/dev_memory.py save -i 0.9 "决定: X"
-python c:/SOMA/soma-core/examples/dev_memory.py save -i 0.95 "约束: X"
+python C:/Projects/SOMA/soma-core/examples/dev_memory.py save -i 0.9 "决定: X"
+python C:/Projects/SOMA/soma-core/examples/dev_memory.py save -i 0.95 "约束: X"
 ```
 
 **记忆类型**:

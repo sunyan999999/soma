@@ -128,7 +128,7 @@ MCP 兼容的 Agent（Claude Code、Cursor 等）直接配置即可自动注册�
 
 | Agent | 工作目录 | 推荐方式 | 状态 |
 |-------|---------|---------|:----:|
-| Claude Code | C:\SOMA | MCP + Skill | ✅ 已接入 |
+| Claude Code | C:\Projects\SOMA | MCP + Skill | ✅ 已接入 |
 | Cursor | C:\sfjr | CLI + HTTP | 📋 待接入 |
 | Codex | C:\mojiaxuanshu | CLI | 📋 待接入 |
 | Qoder | 零熵智库 | CLI + HTTP | 📋 待接入 |
