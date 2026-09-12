@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "2.0.15"
+    __version__ = "2.0.16"
 
 from soma.config import SOMAConfig, load_config
 from soma.base import MemoryUnit, Focus, ActivatedMemory
@@ -108,6 +108,10 @@ class SOMA:
         group_id: str = "",
         # v2.0.8: 构造时立即加载嵌入模型（避免首请求热路径卡 30-100s）
         warmup_on_init: bool = False,
+        # v2.0.16: 注入外部嵌入器（通常来自 get_shared_embedder()），使多个实例
+        # 复用同一份 ONNX 会话，不再随实例数各自占用原生内存。
+        # 注入的实例由调用方管理生命周期 —— 本实例 close() 不会释放它。
+        embedder=None,
         # v0.9.2: 多Agent编排
         orchestration_mode: str = "single",
         orchestration_top_k: int = 3,
@@ -154,7 +158,12 @@ class SOMA:
             zhongdao_boost_factor=zhongdao_boost_factor,
             zhongdao_min_samples=zhongdao_min_samples,
         )
-        self._agent = SOMA_Agent(self._config, agent_id=agent_id or "soma", group_id=group_id)
+        self._agent = SOMA_Agent(
+            self._config,
+            agent_id=agent_id or "soma",
+            group_id=group_id,
+            embedder=embedder,          # v2.0.16: 支持注入共享嵌入器
+        )
         self._session_count = 0
 
         # v0.9.2: 多Agent编排器（默认关闭）

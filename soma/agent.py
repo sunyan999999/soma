@@ -143,19 +143,29 @@ class SOMA_Agent:
 
         # 嵌入器（需在引擎之前创建，供语义匹配兜底使用）
         # v2.0.7: 支持传入共享 embedder，多分身复用同一份 ONNX 模型，避免重复加载
+        # v2.0.16: 记录归属 —— 只有自建的才在 close() 时释放 ONNX 会话；
+        #          注入/共享实例由调用方管理生命周期，实例无权释放
         self.embedder = embedder
+        self._owns_embedder = False
         if self.embedder is None and config.use_vector_search:
             self.embedder = SOMAEmbedder(config)
+            self._owns_embedder = True
+
+        # 预热：用 getattr 探测，因为 warmup / is_loaded 是 SOMAEmbedder 的扩展，
+        # 不在 BaseEmbedder 契约内 —— 注入第三方 embedder 时不能假定它们存在。
+        # 已加载的实例（典型为 get_shared_embedder() 产出的共享实例）直接跳过，
+        # 避免每个 SOMA 实例都重复跑一遍预热。
+        _warmup = getattr(self.embedder, "warmup", None) if self.embedder else None
+        if _warmup is not None and not getattr(self.embedder, "is_loaded", False):
             # v1.1.1: 后台预热嵌入模型（不阻塞构造）
             import threading
             threading.Thread(
-                target=self.embedder.warmup, daemon=True,
-                name="soma-embedder-warmup",
+                target=_warmup, daemon=True, name="soma-embedder-warmup",
             ).start()
             # v2.0.8: warmup_on_init=True 时同步加载完成再返回，
             # 避免首个请求热路径触发模型加载卡 30-100s
             if config.warmup_on_init:
-                self.embedder.warmup()
+                _warmup()
 
         # 加载思维框架
         framework = config.framework or load_config(config.framework_path)
@@ -862,11 +872,15 @@ class SOMA_Agent:
         return self.engine.decompose(problem)
 
     def close(self) -> None:
-        """关闭所有子组件连接（memory + evolver + zhongdao）"""
+        """关闭所有子组件连接（memory + evolver + zhongdao + 自建 embedder）"""
         if self.zhongdao is not None:
             self.zhongdao.reset()
         self.memory.close()
         self.evolver.close()
+        # v2.0.16: 释放自建的 ONNX 会话；注入/共享实例由所有者负责，
+        # 这里不能动 —— 否则多实例共享时会被第一个 close 的实例误释放
+        if self._owns_embedder and self.embedder is not None:
+            self.embedder.close()
 
     def __enter__(self) -> "SOMA_Agent":
         return self

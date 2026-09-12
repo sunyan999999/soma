@@ -7,6 +7,103 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.16] — 2026-09-12
+
+多实例内存版：解决「每个 SOMA 实例独占一份 ONNX 嵌入会话」导致的随实例数线性增长的
+原生内存开销。**无行为破坏，纯增量** —— 不传 `embedder=` 时行为与 2.0.15 完全一致。
+
+### 背景
+
+接入方（DSH，148 用户 / 26,574 条记忆在线）实测：每新建一个 SOMA 用户实例，
+fastembed `TextEmbedding` 与 onnxruntime `InferenceSession` 数量 1:1 递增，
+生产 4 个 worker 在 4 小时内涨到 4.4 / 6.8 / 9.2 / 12 GB，两次撑爆 cgroup 触发
+OOM、全站 502。他们的临时对策是把热实例数压到 3 个/worker，代价是被淘汰用户的
+下一条消息要等 1.3s 重建实例。
+
+接入方定位准确：他们事后替换 `soma._agent.embedder` 无效 —— SOMA 在实例初始化
+阶段已经建好自己的会话，换引用之后旧会话仍被实例内部持有。
+
+### Added / 新增
+
+**进程级共享嵌入器 `get_shared_embedder()`**（`soma/embedder.py`）
+
+- 按 `模型名::维度` 缓存 + `threading.Lock` 线程安全，同进程内相同配置返回**同一实例**，
+  多个 SOMA 实例复用同一份 ONNX 推理会话
+- `release_shared_embedders()` 释放全部共享实例并返回释放数量（进程收尾 / 测试清理用）
+- 首次调用只创建对象，模型仍按 `warmup_on_init` / 首次 `encode()` 惰性加载，
+  与原有预热行为一致
+
+**门面依赖注入 `SOMA(embedder=...)`**（`soma/__init__.py`）
+
+- `SOMA_Agent` 自 v2.0.7 起就支持 `embedder=` 参数，但顶层门面没透传 ——
+  接入方按文档注入会被静默忽略。本次补齐门面 → agent 的透传
+- 用法：
+
+  ```python
+  from soma import SOMA
+  from soma.embedder import get_shared_embedder
+
+  shared = get_shared_embedder()          # 一个 worker 里只建这一份
+  s1 = SOMA(persist_dir=d1, embedder=shared)
+  s2 = SOMA(persist_dir=d2, embedder=shared)   # 复用，不新建会话
+  ```
+
+### Fixed / 修复
+
+**`SOMAEmbedder.close()` —— 显式释放 ONNX 会话**（`soma/embedder.py`）
+
+此前 SOMA 没有任何路径释放嵌入会话，实例销毁后原生内存只能等进程退出才归还。
+
+- 逐层断开 `TextEmbedding.model` → `OnnxTextModel.model` → `InferenceSession`
+  的引用链（只置空最外层引用不够，onnxruntime 会话会因残留引用不释放），再 `gc.collect()`
+- 可安全重复调用
+
+### 变更 / 所有权语义
+
+实例 close 时**只释放自己创建的 embedder**：
+
+| 场景 | `_owns_embedder` | close 行为 |
+|------|------------------|-----------|
+| `SOMA(...)` 自建 | `True` | 释放自己的 ONNX 会话 |
+| `SOMA(embedder=shared)` 注入 | `False` | **不动** —— 由调用方管理 |
+
+这条规则是必需的：多实例共享一份 embedder 时，若实例有权释放，第一个 `close()`
+的实例就会把其他实例正在用的会话打掉。
+
+配套调整：预热逻辑改为按加载状态触发（`is_loaded`），共享实例已加载则跳过预热，
+不会每个实例都重跑一遍 `warmup()`；探测用 `getattr`，因为 `warmup` / `is_loaded`
+是 `SOMAEmbedder` 的扩展、不在 `BaseEmbedder` 契约内，注入第三方 embedder 不会崩。
+
+### 实测（Windows，干净进程）
+
+| 路径 | 每新增实例 RSS 增量 |
+|------|--------------------|
+| 自建（2.0.15 行为） | +140 / +95 / +96 MB —— 线性增长 |
+| 注入共享（2.0.16） | +97 / **+0** / **+0** MB —— 首个实例加载，之后完全平坦 |
+
+即 N 个实例的嵌入会话从 N 份降为 1 份。关闭注入实例后共享会话仍可用。
+
+> 注：本地单实例 ONNX 增量（95~140MB）低于接入方报告的 750~860MB，差异应来自
+> 平台/运行时（glibc arena、onnxruntime 线程池策略、Linux 与 Windows 的原生分配器
+> 行为不同）。**改造解决的是「份数随实例数增长」这个结构性问题，与单份绝对值无关。**
+
+### 迁移建议 / Migration
+
+- 存量代码不传 `embedder=` 时行为不变，可平滑升级
+- 多用户/多租户长驻服务：进程启动时 `get_shared_embedder()` 一次，创建实例时注入；
+  进程退出调 `release_shared_embedders()`
+- 接入方原先的淘汰策略可以放宽 —— 被淘汰用户的实例重建不再需要重新加载 ONNX，
+  重建开销从秒级（模型加载）降为毫秒级（仅建 SQLite 连接）
+
+### 说明 / 未纳入本次
+
+接入方建议 ⑤（多租户共享内核：laws / 关系图谱 / 进化状态进程级共享）与建议 ④
+（`_load_from_db` / `_load_state` 惰性加载）未纳入。原因是这两项针对的是 Python 侧
+对象开销（接入方实测 semantic 2.7MB + evolve 9MB ≈ 每实例 12MB），而 750MB 量级
+的开销来自 ONNX 会话、已由本次单例解决。惰性加载收益与改动风险不成正比，留待后续。
+
+---
+
 ## [2.0.15] — 2026-09-11
 
 接入方收尾版：把 2.0.13/2.0.14 的记忆时间感知能力补齐到顶层门面，并把 DSH 只能裸 SQL

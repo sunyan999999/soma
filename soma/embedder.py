@@ -1,5 +1,7 @@
+import gc
+import threading
 import time
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import numpy as np
 
@@ -41,6 +43,33 @@ class SOMAEmbedder(BaseEmbedder):
             return True
         except Exception:
             return False
+
+    def close(self) -> None:
+        """释放 ONNX 推理会话（v2.0.16）。
+
+        断开 fastembed → onnxruntime 的引用链并触发 GC，使原生会话内存可被回收。
+
+        只应释放**自己持有**的模型；共享/注入的实例由其所有者统一释放
+        （SOMA 会跳过注入进来的 embedder，见 SOMA_Agent.close）。
+        可安全重复调用。
+        """
+        model = self._model
+        self._model = None
+        self._warmed_up = False
+        if model is None:
+            return
+        # fastembed.TextEmbedding.model -> OnnxTextModel.model -> InferenceSession
+        # 逐层断开引用，否则 onnxruntime 会话会因残留引用而不释放
+        try:
+            inner = getattr(model, "model", None)
+            if inner is not None and hasattr(inner, "model"):
+                inner.model = None
+            if hasattr(model, "model"):
+                model.model = None
+        except Exception:
+            pass
+        del model
+        gc.collect()
 
     def _ensure_model(self):
         if self._model is None:
@@ -133,3 +162,64 @@ class SOMAEmbedder(BaseEmbedder):
         norms = np.linalg.norm(vectors, axis=-1, keepdims=True)
         norms = np.where(norms == 0, 1.0, norms)
         return vectors / norms
+
+
+# ── 进程级共享嵌入器（v2.0.16）────────────────────────────────────────
+#
+# 背景：fastembed 的 TextEmbedding 持有一份 onnxruntime InferenceSession，
+# 每份会话占用大量原生内存。若每个 SOMA 实例各建一份，多租户/多 worker
+# 场景会随实例数线性增长（实测单实例增量数十至数百 MB，随平台而异）。
+#
+# 共享实例由调用方掌握生命周期：SOMA 只关闭自己创建的 embedder，
+# 注入进来的（含本工厂产出的）一律不动。
+
+_SHARED_EMBEDDERS: Dict[str, SOMAEmbedder] = {}
+_SHARED_LOCK = threading.Lock()
+
+
+def _shared_key(config: SOMAConfig) -> str:
+    return f"{config.embedding_model_name}::{config.vector_dim}"
+
+
+def get_shared_embedder(config: Optional[SOMAConfig] = None) -> SOMAEmbedder:
+    """获取进程级共享嵌入器（v2.0.16）。
+
+    同一进程内，模型名 + 维度相同的调用返回**同一实例**，因此多个 SOMA
+    实例可以复用同一份 ONNX 推理会话，不再随实例数线性增长。
+
+    用法::
+
+        from soma import SOMA
+        from soma.embedder import get_shared_embedder
+
+        shared = get_shared_embedder()
+        s1 = SOMA(persist_dir=d1, embedder=shared)
+        s2 = SOMA(persist_dir=d2, embedder=shared)   # 复用，不新建会话
+
+    首次调用只创建对象，模型按 ``warmup()`` / 首次 ``encode()`` 惰性加载，
+    与 SOMA 原有预热行为一致（受 ``warmup_on_init`` 控制）。
+
+    注意：共享实例不在任何单个 SOMA 的 close() 中释放，需要时由调用方
+    显式调用 :func:`release_shared_embedders` 或 ``shared.close()``。
+    """
+    cfg = config or SOMAConfig()
+    key = _shared_key(cfg)
+    with _SHARED_LOCK:
+        inst = _SHARED_EMBEDDERS.get(key)
+        if inst is None:
+            inst = SOMAEmbedder(cfg)
+            _SHARED_EMBEDDERS[key] = inst
+        return inst
+
+
+def release_shared_embedders() -> int:
+    """释放全部进程级共享嵌入器，返回释放数量（v2.0.16）。
+
+    供进程收尾或测试清理使用；调用后再取会得到新实例。
+    """
+    with _SHARED_LOCK:
+        instances = list(_SHARED_EMBEDDERS.values())
+        _SHARED_EMBEDDERS.clear()
+    for inst in instances:
+        inst.close()
+    return len(instances)
