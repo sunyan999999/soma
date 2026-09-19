@@ -51,7 +51,7 @@ class MemoryUnit:
         """状态类记忆（nature=state）是否已超时效窗口。
 
         失眠/情绪/健康等状态是暂时的——超过 ttl_days 未更新即视为可能已过时，
-        注入 LLM 时应提示勿当作当前状态。非状态类（fact/event）恒返回 False。
+        注入 LLM 时应提示不得直接当作当前状态回复。非状态类（fact/event）恒返回 False。
         """
         if self.nature != "state":
             return False
@@ -63,6 +63,45 @@ class MemoryUnit:
         """记忆年龄（天），供注入层时间标注"""
         now = datetime.now(timezone.utc).timestamp()
         return round(max(now - self.timestamp, 0) / 86400.0, 1)
+
+    def age_label(self) -> str:
+        """人类可读的记忆年龄标注（v2.0.18），供注入 LLM 的 prompt 使用。
+
+        数据源与 explain_activation() 的 age_days 同源 —— 本方法只是把同一口径
+        转成中文表述，不另造名词。注入层带上它能避免 LLM 把远期旧状态当作当前
+        状态（2026-08「失眠串台」事故的根因）。
+
+        分档：今天 / 昨天 / N 天前 / 约 N 周前 / 约 N 个月前 / 约 N 年前
+        """
+        d = self.age_days()
+        if d < 1:
+            return "今天"
+        if d < 2:
+            return "昨天"
+        if d < 7:
+            return f"{int(d)} 天前"
+        if d < 30:
+            return f"约 {int(d // 7)} 周前"
+        if d < 365:
+            return f"约 {int(d // 30)} 个月前"
+        return f"约 {d / 365:.1f} 年前"
+
+    def staleness_note(self) -> str:
+        """状态类记忆超时效窗口时的注入提示（v2.0.18），非状态类返回空串。
+
+        与 is_state_stale() 同一判据（nature=state 且超过 STATE_TTL_DAYS），
+        供注入层在记忆条目下方附加「不得直接当作当前状态回复」的提醒。
+
+        v2.0.18.1 措辞由接入方在生产验证中定稿：上游原先的「勿当作当前状态，
+        必要时先向用户确认」比他们线上跑的强约束软一档；他们选了折中版 ——
+        既堵死 2026-08「失眠串台」那类直接误用，又保留追问余地。
+        """
+        if not self.is_state_stale():
+            return ""
+        return (
+            f"⚠ 该状态记录于{self.age_label()}，可能已变化，"
+            "不得直接当作当前状态回复；确需使用须先向用户确认"
+        )
 
 
 @dataclass

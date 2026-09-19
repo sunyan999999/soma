@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 
 from soma.abc import BaseMemoryStore
 from soma.base import MemoryUnit
+from soma.db import close_store_connection, open_store_connection
 from soma.memory.context_utils import normalize_context, parse_context
 
 _log = logging.getLogger("soma.memory.episodic")
@@ -27,8 +28,7 @@ class EpisodicStore(BaseMemoryStore):
     ):
         persist_dir.mkdir(parents=True, exist_ok=True)
         self._db_path = persist_dir / f"{collection_name}.db"
-        self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
-        self._conn.row_factory = sqlite3.Row
+        self._conn = open_store_connection(self._db_path, mmap_size=mmap_size)
         self._embedder = embedder
         self._use_vector = use_vector_search and embedder is not None
         # v2.0.17: SQLite 内存映射大小（字节），0 = 禁用。见 SOMAConfig.sqlite_mmap_size
@@ -119,6 +119,31 @@ class EpisodicStore(BaseMemoryStore):
         )
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_episodic_group ON episodic_memories(shared_group_id)"
+        )
+        # v2.0.18.3: (user_id, agent_id) 复合索引。生产 hub 调用恒带这两个条件，
+        # 而 SQLite 会放着选择性更好的 idx_episodic_user 不用，去扫
+        # idx_episodic_agent（agent_id 近乎覆盖全表）—— 实测 21k 行 / 203 用户下，
+        # 只有 3 条记忆的长尾用户也要付 ~70ms（子集 COUNT 35ms + 取向量 35ms），
+        # 代价与用户记忆数无关。同一条索引同时修三处拼这个组合的查询：
+        #   ① 向量子集检索 _exact_filtered_search（读路径）
+        #   ② insert() 的 content_hash 去重（写路径，每次 remember 都付）
+        #   ③ 关键词 LIKE 兜底 search_utils 路径2（中文 1~2 字词）
+        # 比在 SQL 里写 INDEXED BY 稳：不依赖计划器统计，也没有「索引被删就
+        # 直接报错」的硬绑定。（接入方若已手工建过同名索引，IF NOT EXISTS 命中。）
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_episodic_user_agent "
+            "ON episodic_memories(user_id, agent_id)"
+        )
+        # v2.0.18: 轻量 KV —— 存放跨会话元信息（上次会话结束时间、已推进的自主目标等）。
+        # 与记忆表同库，避免为几十字节的状态另开一个数据库文件/连接。
+        self._conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS soma_meta (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at REAL NOT NULL
+            )
+            """
         )
         self._create_fts5()
         self._conn.commit()
@@ -282,14 +307,29 @@ class EpisodicStore(BaseMemoryStore):
         group_id: str = "",
         max_age_days: Optional[float] = None,
     ) -> List[MemoryUnit]:
-        """向量语义搜索（支持 user_id + agent/group 隔离 + 时间窗口过滤）"""
+        """向量语义搜索（支持 user_id + agent/group 隔离 + 时间窗口过滤）
+
+        v2.0.18.2: 隔离条件**下推**给 similarity_search，在过滤后的子集内取 top-k。
+
+        原先的 ``fetch_k = top_k * 3`` 是「按比例过滤」的粗略补偿：先全局取 3×top_k
+        条候选，再逐条按 user_id 剔除。多租户下单个用户的记忆占全库比例很低时，这
+        ``3×top_k`` 条候选里往往**一条都不属于**该用户 —— 向量通道对该用户等于失效，
+        而它是 RRF 融合的主通道。接入方 27,008 条 / 130 用户的分布下，中位用户 17 条
+        （占 0.06%）取 45 条候选，期望命中不足 0.05 条；实测（tmp/probe_user_recall.py）
+        长尾用户 top_k=10 只召回 1 条。关键词通道本来就是 SQL 前置过滤，不受影响 ——
+        两条通道时机不一致是这个 bug 的根源。
+
+        下面的 Python 侧过滤**保留**，不再是主路径：它是「子集过大退回全局检索」
+        （similarity_search 返回的是未过滤候选）时的兜底，也让本方法在
+        _vector_index 换成别的实现时依然正确。
+        """
         if self._vector_index is None:
             return []
 
-        filter_count = sum(1 for x in (user_id, agent_id) if x)
-        fetch_k = top_k * (3 if filter_count else 1)
         results = self._vector_index.similarity_search(
-            self._conn, query_vec, fetch_k
+            self._conn, query_vec, top_k,
+            user_id=user_id, agent_id=agent_id, group_id=group_id,
+            max_age_days=max_age_days,
         )
         memories = []
         min_ts = None
@@ -340,6 +380,32 @@ class EpisodicStore(BaseMemoryStore):
 
         return count
 
+    def prune_stale_vectors(self, background: bool = True) -> dict:
+        """清理过期向量（v2.0.18）。
+
+        记忆被删除后（forgetting 直接删行，不经过索引），faiss 索引里会留下对不上
+        任何记忆的残留向量。本方法把索引中这部分剔除，**不重新编码** —— 有效向量
+        直接从内存索引 reconstruct 出来重建成新索引，代价只有一次索引构造 + 写盘。
+
+        Args:
+            background: True（默认）把耗时的索引构造放后台线程；
+                        False 同步完成，便于测试与进程收尾。
+
+        Returns:
+            {"pruned": 移除条数, "remaining": 剩余条数,
+             "rebuilt": 是否已重建, "scheduled": 是否已调度后台重建}
+        """
+        if self._vector_index is None:
+            return {"pruned": 0, "remaining": 0,
+                    "rebuilt": False, "scheduled": False}
+        return self._vector_index.prune_stale(self._conn, background=background)
+
+    def count_stale_vectors(self) -> int:
+        """索引里过期（对应记忆已被删除）的向量条数。"""
+        if self._vector_index is None:
+            return 0
+        return self._vector_index.stale_count(self._conn)
+
     def reload_index(self) -> int:
         """从 DB 重新加载向量索引（v2.0.15）。
 
@@ -378,6 +444,167 @@ class EpisodicStore(BaseMemoryStore):
         if self._vector_index is None:
             return 0
         return self._vector_index.count_indexed(self._conn)
+
+    # ── v2.0.18: 轻量 KV（跨会话元信息） ────────────────
+
+    def meta_get(self, key: str, default: Any = None) -> Any:
+        """读取跨会话元信息，缺失或损坏时返回 default（不抛错）。"""
+        try:
+            row = self._conn.execute(
+                "SELECT value FROM soma_meta WHERE key = ?", (key,)
+            ).fetchone()
+        except sqlite3.Error:
+            _log.debug("meta_get(%s) 读取失败", key, exc_info=True)
+            return default
+        if row is None:
+            return default
+        try:
+            return json.loads(row["value"])
+        except (TypeError, ValueError):
+            return default
+
+    def meta_set(self, key: str, value: Any) -> bool:
+        """写入跨会话元信息（JSON 序列化），失败返回 False 而不抛错。"""
+        try:
+            payload = json.dumps(value, ensure_ascii=False)
+        except (TypeError, ValueError):
+            _log.debug("meta_set(%s) 值无法序列化", key, exc_info=True)
+            return False
+        try:
+            self._conn.execute(
+                "INSERT INTO soma_meta(key, value, updated_at) VALUES(?,?,?) "
+                "ON CONFLICT(key) DO UPDATE SET value=excluded.value, "
+                "updated_at=excluded.updated_at",
+                (key, payload, datetime.now(timezone.utc).timestamp()),
+            )
+            self._conn.commit()
+            return True
+        except sqlite3.Error:
+            _log.debug("meta_set(%s) 写入失败", key, exc_info=True)
+            return False
+
+    def query_by_context_type(
+        self, ctx_type: str, days: float = 0, limit: int = 50, user_id: str = "",
+    ) -> List[MemoryUnit]:
+        """按 context.type 取最近的记忆（v2.0.18，自主目标来源用）。
+
+        先用 LIKE 粗筛（不依赖 SQLite JSON1 扩展），再用 parse_context 精确比对。
+        粗筛刻意放宽，宁可多取几条交给 Python 侧过滤 —— 少取会静默丢目标。
+        单条 context 为脏数据时跳过该条，不影响其余结果（沿用 v2.0.17 的防御）。
+        """
+        sql = "SELECT * FROM episodic_memories WHERE context_json LIKE ? "
+        params: List[Any] = [f'%"type"%{ctx_type}%']
+        if days > 0:
+            sql += "AND timestamp >= ? "
+            params.append(datetime.now(timezone.utc).timestamp() - days * 86400)
+        if user_id:
+            sql += "AND user_id = ? "
+            params.append(user_id)
+        sql += "ORDER BY timestamp DESC LIMIT ?"
+        params.append(int(limit))
+
+        try:
+            rows = self._conn.execute(sql, params).fetchall()
+        except sqlite3.Error:
+            _log.warning("query_by_context_type(%s) 查询失败", ctx_type, exc_info=True)
+            return []
+
+        out: List[MemoryUnit] = []
+        for row in rows:
+            try:
+                mem = self._row_to_memory(row)
+            except Exception:
+                continue
+            ctx = mem.context
+            if isinstance(ctx, dict) and ctx.get("type") == ctx_type:
+                out.append(mem)
+        return out
+
+    def query_by_filters(
+        self,
+        *,
+        nature: Optional[str] = None,
+        min_importance: Optional[float] = None,
+        max_access_count: Optional[int] = None,
+        days: float = 0,
+        older_than_days: float = 0,
+        limit: int = 50,
+        user_id: str = "",
+    ) -> List[MemoryUnit]:
+        """按字段条件取最近的记忆（v2.0.18，自主目标来源用）。
+
+        只开放白名单内的几个筛选维度，不做通用查询构造器 —— 条件全部来自代码内
+        固定调用。所有值仍然参数化绑定，不做字符串拼接。
+
+        时间窗有两个方向，按需选用（都不传则不限时间）：
+        - ``days``            —— 只取最近 N 天内的（timestamp >= now - N 天）
+        - ``older_than_days`` —— 只取早于 N 天前的（timestamp < now - N 天）
+
+        两个方向同时传就是「N 天前到 M 天前」这个区间。
+
+        ``user_id`` 为空串表示**不按用户过滤**（单用户部署的常态）。多租户部署
+        必须显式传入 —— 否则会取到其他用户的记忆。
+        """
+        sql = "SELECT * FROM episodic_memories WHERE 1=1 "
+        params: List[Any] = []
+        if nature is not None:
+            sql += "AND nature = ? "
+            params.append(nature)
+        if min_importance is not None:
+            sql += "AND importance >= ? "
+            params.append(float(min_importance))
+        if max_access_count is not None:
+            sql += "AND access_count <= ? "
+            params.append(int(max_access_count))
+        if days > 0:
+            sql += "AND timestamp >= ? "
+            params.append(datetime.now(timezone.utc).timestamp() - days * 86400)
+        if older_than_days > 0:
+            sql += "AND timestamp < ? "
+            params.append(datetime.now(timezone.utc).timestamp() - older_than_days * 86400)
+        if user_id:
+            sql += "AND user_id = ? "
+            params.append(user_id)
+        sql += "ORDER BY timestamp DESC LIMIT ?"
+        params.append(int(limit))
+
+        try:
+            rows = self._conn.execute(sql, params).fetchall()
+        except sqlite3.Error:
+            _log.warning("query_by_filters 查询失败", exc_info=True)
+            return []
+
+        out: List[MemoryUnit] = []
+        for row in rows:
+            try:
+                out.append(self._row_to_memory(row))
+            except Exception:
+                continue
+        return out
+
+    def distinct_user_ids(self, limit: int = 500) -> List[str]:
+        """库里出现过的非空 user_id，按记忆条数降序（v2.0.18.2）。
+
+        后台自主循环用它做「按用户轮转」时的用户发现（``autonomous_background_
+        user_ids="*"``）。空串桶**不返回** —— 它代表「未指定用户」这个命名空间
+        本身（单租户部署的常态），不是某个具体用户；需要单租户语义时调用方自己
+        传空串。
+
+        带上限（默认 500）且按条数降序：这条查询会被后台循环**定期**调用，不能
+        被一个异常库拖成无界扫描；先覆盖记忆多的用户也更符合"优先服务活跃用户"
+        的直觉（接入方 130 用户 / 27k 条的分布下 500 完全够用）。
+        """
+        try:
+            rows = self._conn.execute(
+                "SELECT user_id, COUNT(*) AS n FROM episodic_memories "
+                "WHERE user_id != '' GROUP BY user_id "
+                "ORDER BY n DESC LIMIT ?",
+                (int(limit),),
+            ).fetchall()
+        except sqlite3.Error:
+            _log.warning("distinct_user_ids 查询失败", exc_info=True)
+            return []
+        return [r["user_id"] for r in rows if r["user_id"]]
 
     def _row_to_memory(self, row: sqlite3.Row) -> MemoryUnit:
         mem_type = row["memory_type"] if "memory_type" in row.keys() else "episodic"
@@ -445,4 +672,4 @@ class EpisodicStore(BaseMemoryStore):
         return importer.import_source(source, user_id=user_id, session_id=session_id)
 
     def close(self):
-        self._conn.close()
+        close_store_connection(self._conn)

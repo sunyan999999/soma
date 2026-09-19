@@ -12,11 +12,12 @@
 """
 
 import json
-import sqlite3
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+from soma.db import close_store_connection, open_store_connection
 
 
 class AuditLogger:
@@ -25,8 +26,7 @@ class AuditLogger:
     def __init__(self, persist_dir: Path, db_name: str = "audit.db"):
         persist_dir.mkdir(parents=True, exist_ok=True)
         self._db_path = persist_dir / db_name
-        self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
-        self._conn.row_factory = sqlite3.Row
+        self._conn = open_store_connection(self._db_path)
         self._create_table()
 
     def _create_table(self):
@@ -176,4 +176,4 @@ class AuditLogger:
         }
 
     def close(self):
-        self._conn.close()
+        close_store_connection(self._conn)

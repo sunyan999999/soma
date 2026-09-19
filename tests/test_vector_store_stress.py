@@ -88,7 +88,15 @@ def test_a_consistency_loop(tmp_path, seed):
             index.delete_vector(conn, mid)
         res = [r[0] for r in index.similarity_search(conn, _vec(rng), 10)]
         assert not any(r in mids[:3] for r in res), f"round{round_i} 删除残留"
-        assert index.count_indexed(conn) == index._faiss_index.ntotal == 7, f"round{round_i} 删除后失步"
+        # v2.0.18: 删除不再当场同步全量重建（实测那会阻塞搜索数秒），索引里会短暂
+        # 留着待清理的残留条目 —— 但已删条目不能再被召回（上一行）。
+        assert index.count_indexed(conn) == 7, f"round{round_i} 计数失步"
+        assert index.stale_count(conn) == 3, f"round{round_i} 残留计数不对"
+        # 清理之后与 DB 收敛
+        index.prune_stale(conn, background=False)
+        assert index.count_indexed(conn) == index._faiss_index.ntotal == 7, \
+            f"round{round_i} 清理后未收敛"
+        assert index.stale_count(conn) == 0, f"round{round_i} 清理后仍有残留"
         conn.close()
 
 
@@ -443,6 +451,14 @@ def test_g_end_to_end_recall_after_rebuild(tmp_path):
         # 清理后查询无残留
         res2 = store.query_by_vector(FakeEmbedder().encode(target), 10)
         assert not any(m.id == tid for m in res2), f"round{round_i} 删除后残留"
-    # 最终一致性
+    # 最终一致性：删除留下的残留由后台剪枝异步处理（v2.0.18 起不再同步重建），
+    # 等它跑完再显式收一次尾，索引应与 DB 严格收敛。
     idx = store._vector_index
+    for _ in range(200):
+        if not idx._rebuild_busy:
+            break
+        time.sleep(0.02)
+    if idx.stale_count(store._conn) > 0:
+        idx.prune_stale(store._conn, background=False)
     assert idx.count_indexed(store._conn) == idx._faiss_index.ntotal == len(base)
+    assert idx.stale_count(store._conn) == 0

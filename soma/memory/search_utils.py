@@ -91,10 +91,20 @@ def fts5_keyword_search(
         )
         try:
             params = [fts_query] + time_params + user_params + agent_params + [top_k]
+            # 2.0.18.2：这里必须是 rowid IN (子查询)，不能写成
+            # `JOIN {fts_table} fts ON t.rowid = fts.rowid`。
+            # 后者的写法会让 SQLite 选成「t 驱动 → 逐行去 FTS 虚拟表探」，带
+            # user_id 时就是该用户有多少行就探多少次；实测**一条都没命中也要
+            # 固定付 38ms**（27000 条库 / 130 用户），稠密命中时到 137ms。
+            # 改成子查询后 SQLite 会把 FTS 命中物化成 rowid 列表（必要时带
+            # bloom filter），再用 idx_episodic_user 扫该用户的行去比对，
+            # 同条件实测 16ms / 0.45ms，且 `fts.rowid` 在 external-content 表下
+            # 与主表 rowid 等价，语义不变。
             sql = f"""
                 SELECT t.* FROM {table_name} t
-                INNER JOIN {fts_table} fts ON t.rowid = fts.rowid
-                WHERE {fts_table} MATCH ?
+                WHERE t.rowid IN (
+                    SELECT rowid FROM {fts_table} WHERE {fts_table} MATCH ?
+                )
                 {time_clause} {user_clause} {agent_clause}
                 ORDER BY {order_clause}
                 LIMIT ?

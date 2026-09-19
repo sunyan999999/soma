@@ -66,10 +66,14 @@ class ConsolidationEngine:
         try:
             rows = self._conn.execute(
                 f"""
+                -- 2.0.18.2：同 search_utils.py，写成 rowid IN (子查询)。
+                -- JOIN 写法会让 SQLite 逐行去 FTS 虚拟表探，带 user_id 时
+                -- 该用户有多少行就探多少次，命中为空也照付。
                 SELECT m.id, m.content, m.importance
                 FROM episodic_memories m
-                JOIN episodic_fts f ON m.rowid = f.rowid
-                WHERE episodic_fts MATCH ?
+                WHERE m.rowid IN (
+                    SELECT rowid FROM episodic_fts WHERE episodic_fts MATCH ?
+                )
                   AND m.user_id = ?
                 LIMIT {top_k * 5}
                 """,

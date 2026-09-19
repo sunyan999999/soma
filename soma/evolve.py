@@ -1,10 +1,11 @@
 import json
 import os
-import sqlite3
 import time as time_mod
 from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+from soma.db import close_store_connection, open_store_connection
 
 
 class MetaEvolver:
@@ -22,8 +23,7 @@ class MetaEvolver:
             persist_dir = Path(os.environ.get("SOMA_DATA_DIR", "soma_data"))
         persist_dir.mkdir(parents=True, exist_ok=True)
         self._db_path = persist_dir / "evolver.db"
-        self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
-        self._conn.row_factory = sqlite3.Row
+        self._conn = open_store_connection(self._db_path)
         self._create_tables()
         self._load_state()
 
@@ -664,4 +664,4 @@ class MetaEvolver:
         return result
 
     def close(self):
-        self._conn.close()
+        close_store_connection(self._conn)

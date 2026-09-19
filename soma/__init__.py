@@ -9,9 +9,10 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "2.0.17"
+    __version__ = "2.0.18.3"
 
 from soma.config import SOMAConfig, load_config
+from soma.db import set_shared_enabled
 from soma.base import MemoryUnit, Focus, ActivatedMemory
 from soma.agent import SOMA_Agent
 from soma.evolve import MetaEvolver
@@ -31,6 +32,18 @@ from soma.code_memory import CodeAnalyzer, CodeStructure
 from soma.memory_manager import MemoryManager, MaintenanceReport, ConflictReport
 from soma.knowledge_gate import KnowledgeGate, GateResult, ExternalKnowledge
 from soma.graph_builder import AutoGraphBuilder, GraphBuildReport
+from soma.autonomous import (
+    AUTONOMOUS_MAX_CONSECUTIVE_ERRORS,
+    AUTONOMOUS_RETRY_BASE_SECONDS,
+    AUTONOMOUS_RETRY_MAX_SECONDS,
+    META_LAST_SESSION_END,
+    META_RECENT_GOALS,
+    RECENT_GOAL_WINDOW_HOURS,
+    SESSION_GAP_SECONDS,
+    BackgroundRunner,
+    GoalGenerator,
+    human_gap,
+)
 
 # 包内置默认思维框架 — 确保 pip install 后在任何目录都能找到
 _PACKAGE_DIR = Path(__file__).parent
@@ -127,6 +140,18 @@ class SOMA:
         scene_extraction_enabled: bool = False,
         profile_extraction_enabled: bool = False,
         symbolic_memory_enabled: bool = False,
+        # v2.0.18: 后台常驻自主循环。默认关闭 —— 开启后才允许 start_background()
+        # 真正起线程；只是构造时传 True 也不会自动启动，仍需显式调用。
+        autonomous_background_enabled: bool = False,
+        autonomous_background_interval: int = 3600,
+        autonomous_background_max_runtime: int = 120,
+        autonomous_background_max_goals: int = 1,
+        # v2.0.18.2: 后台循环要为其生成目标的用户。留空 = 单租户语义；"*" =
+        # 自动枚举用户轮转；也可写逗号分隔的用户 id。多租户部署必须显式配置
+        # —— 留空时若库里确实有多个用户，循环会拒绝产出目标（fail-safe）。
+        autonomous_background_user_ids: str = "",
+        autonomous_background_max_users_per_tick: int = 5,
+        shared_sqlite_connection: bool = False,
     ):
         if persist_dir is None:
             persist_dir = os.environ.get("SOMA_DATA_DIR", "soma_data")
@@ -152,12 +177,22 @@ class SOMA:
             orchestration_consensus=orchestration_consensus,
             scene_extraction_enabled=scene_extraction_enabled,
             profile_extraction_enabled=profile_extraction_enabled,
+            autonomous_background_enabled=autonomous_background_enabled,
+            autonomous_background_interval=autonomous_background_interval,
+            autonomous_background_max_runtime=autonomous_background_max_runtime,
+            autonomous_background_max_goals=autonomous_background_max_goals,
+            autonomous_background_user_ids=autonomous_background_user_ids,
+            autonomous_background_max_users_per_tick=autonomous_background_max_users_per_tick,
             enable_zhongdao=enable_zhongdao,
             zhongdao_threshold_ratio=zhongdao_threshold_ratio,
             zhongdao_penalty_factor=zhongdao_penalty_factor,
             zhongdao_boost_factor=zhongdao_boost_factor,
             zhongdao_min_samples=zhongdao_min_samples,
+            shared_sqlite_connection=shared_sqlite_connection,
         )
+        # v2.0.18: 共享开关是进程级的，必须在任何 store 建立连接之前设置。
+        # 多专家架构下让指向同一 db 文件的 store 复用同一条连接。
+        set_shared_enabled(self._config.shared_sqlite_connection)
         self._agent = SOMA_Agent(
             self._config,
             agent_id=agent_id or "soma",
@@ -165,6 +200,11 @@ class SOMA:
             embedder=embedder,          # v2.0.16: 支持注入共享嵌入器
         )
         self._session_count = 0
+        # v2.0.18: 自主目标生成 + 后台常驻循环（后者默认关闭，懒启动）
+        self._goal_generator: Optional[GoalGenerator] = None
+        self._background: Optional[BackgroundRunner] = None
+        # 上次进化时的规律样本数 —— 用作"脏标记"，样本没变就不空跑进化
+        self._last_evolve_samples: Optional[int] = None
 
         # v0.9.2: 多Agent编排器（默认关闭）
         self._orchestrator = None
@@ -221,9 +261,8 @@ class SOMA:
         self._session_count += 1
         outcome = "failure" if mock_fallback else "success"
         self._agent.reflect(f"soma_{self._session_count}", outcome)
-        # v1.1.8: 每10次普通进化，每30次强制深度进化
-        if self._session_count > 0 and self._session_count % 10 == 0:
-            self._agent.evolver.evolve(force=(self._session_count % 30 == 0))
+        # v1.1.8: 常规进化 + 深度进化；v2.0.18 起节拍改由配置驱动（原为硬编码 % 10 / % 30）
+        self._maybe_evolve(force=self._is_deep_evolution_due())
         return answer
 
     def chat(self, problem: str, user_id: str = "") -> dict:
@@ -392,7 +431,11 @@ class SOMA:
         mock_fallback = False
 
         try:
-            base_prompt = self._agent._build_prompt(problem, foci, activated)
+            base_prompt = self._agent._build_prompt(
+                problem, foci, activated,
+                # v2.0.18.1: 必须把 user_id 传下去 —— 漏传会让过期状态跨用户注入
+                self._agent._stale_state_memories(problem, user_id=user_id),
+            )
             if pre_analysis:
                 # 注入预分析到系统提示词末尾
                 enhanced_prompt = base_prompt + pre_analysis
@@ -437,8 +480,7 @@ class SOMA:
         self._session_count += 1
         outcome = "failure" if mock_fallback else "success"
         self._agent.reflect(f"soma_{self._session_count}", outcome)
-        if self._session_count > 0 and self._session_count % 5 == 0:
-            self._agent.evolver.evolve()
+        self._maybe_evolve()
 
         result = {
             "problem": problem,
@@ -779,11 +821,14 @@ class SOMA:
             f"问题: {problem}\n分析: {analysis[:800]}\n\n"
             f"每条建议包含: 做什么、为什么、预期效果。按优先级排序。"
         )
+        action_result: dict = {}
         try:
             action_result = self.reason(action_prompt)
             actions_text = action_result.get("answer", "")
         except Exception:
             actions_text = analysis[:500]
+        if not isinstance(action_result, dict):
+            action_result = {}
 
         # 提取风险提示
         risk_prompt = f"对于以下行动方案，列出2-3个关键风险:\n{actions_text[:500]}"
@@ -797,7 +842,7 @@ class SOMA:
             "actions": actions_text[:2000],
             "risks": risks_text[:500],
             "next_step": actions_text.split("\n")[0] if actions_text else "无",
-            "confidence": action_result.get("confidence", 0.5) if 'action_result' in dir() else 0.5,
+            "confidence": action_result.get("confidence", 0.5),
         }
 
     def loop(self, problem: str, max_cycles: int = 3) -> dict:
@@ -840,8 +885,7 @@ class SOMA:
         if reasoning.get("evolution_insights"):
             try:
                 self._agent.reflect(f"loop_{int(time.time())}", "success")
-                if self._session_count % 5 == 0:
-                    evo_changes = self._agent.evolver.evolve()
+                evo_changes = self._maybe_evolve()
             except Exception:
                 pass
         cycle_log.append({"phase": "evolve", "changes": len(evo_changes)})
@@ -882,22 +926,28 @@ class SOMA:
             agent = orch._agents.get(aid)
             if agent is None:
                 continue
+            # v2.0.18 修复：loop()/reason() 内部走的都是 self._agent，不临时换掉
+            # 的话每个专家跑的都是同一个主 agent，"独立运行"名不副实。
+            # （原先构造了一个 temp_soma 却从未使用，注释里的"agent 不同"也没做到。）
+            prev_agent = self._agent
             try:
-                # 用该Agent的视角运行loop
-                temp_soma = type(self).__new__(type(self))
-                temp_soma._config = agent.config
-                temp_soma._agent = agent
-                temp_soma._session_count = 0
-                temp_soma._orchestrator = None
-                result = self.loop(problem)  # 用当前SOMA的loop（但agent不同）
+                self._agent = agent
+                result = self.loop(problem)
                 individual[aid] = {
                     "answer": result.get("final_answer", "")[:500],
-                    "confidence": result.get("cycle_log", [{}])[1].get("confidence", 0.5),
+                    "confidence": next(
+                        (e.get("confidence", 0.5)
+                         for e in result.get("cycle_log", [])
+                         if e.get("phase") == "reason"),
+                        0.5,
+                    ),
                 }
                 if result.get("actions"):
                     all_actions.append(f"[{aid}]: {result['actions'].get('actions','')[:300]}")
             except Exception:
                 individual[aid] = {"answer": f"[{aid} 分析失败]", "confidence": 0}
+            finally:
+                self._agent = prev_agent
 
         # Phase 2: 交叉验证
         try:
@@ -932,11 +982,16 @@ class SOMA:
 
     # ── v2.0.2: 自主行动执行 ──────────────────────────────────
 
-    def execute(self, problem: str, actions: str = "") -> dict:
+    def execute(self, problem: str, actions: str = "", origin: str = "user") -> dict:
         """行动执行 — 把 loop() 生成的建议转化为实际执行步骤。
 
         执行内容: 1)记录决策到记忆 2)触发进化 3)生成下一步计划
         返回: {executed, next_steps, memory_recorded, evolution_triggered}
+
+        origin: 这条执行计划的来源（"user" / "autonomous"）。自主循环自己产生的
+        计划会带上 "autonomous" 标记，generate_goals() 据此跳过它们 —— 否则
+        「自主目标 → 执行 → 写成新计划 → 又被当作新目标」会无限自我嵌套
+        （v2.0.18 冒烟中实测到该问题）。
         """
         results = {"executed": [], "next_steps": "", "memory_recorded": 0, "evolution_triggered": False}
 
@@ -950,7 +1005,8 @@ class SOMA:
             self.remember(
                 f"执行计划: {problem[:100]} → {actions[:300]}",
                 importance=0.8,
-                context={"type": "execution_plan", "problem": problem[:100]},
+                context={"type": "execution_plan", "problem": problem[:100],
+                         "origin": origin},
             )
             results["executed"].append("decision_logged")
             results["memory_recorded"] = 1
@@ -978,38 +1034,88 @@ class SOMA:
     # ── v2.0.10: 全自主认知循环闭环 ────────────────────────────
 
     def run_autonomous(
-        self, goal: str, max_rounds: int = 3,
-        feedback_fn=None,
+        self, goal: str = None, max_rounds: int = 3,
+        feedback_fn=None, max_goals: int = 1,
     ) -> dict:
-        """全自主认知循环：给定目标，迭代「感知→推理→行动→检查」直到完成或达上限。
+        """全自主认知循环：迭代「感知→推理→行动→检查」直到完成、停滞或达上限。
 
         与 loop() 的区别：loop() 是单轮认知闭环；run_autonomous() 把多轮认知
         串成自主执行，每轮携带上轮结果继续推进目标，直到：
           - 外部反馈函数 feedback_fn 判定完成（最可靠）
           - 有 LLM key 时由 LLM 判断目标是否达成
-          - 否则跑满 max_rounds（保守，不提前误停）
+          - 无 LLM 时由本地启发式识别"停滞"（连续两轮结论相同 / 本轮没有任何行动）
+          - 否则跑满 max_rounds
+
+        v2.0.18：goal 可以不给 —— 此时由 SOMA 自己生成一个目标（见 generate_goals()）；
+        没有可用目标时直接返回 stop_reason="no_goal"，不空转。
 
         Args:
-            goal: 要自主完成的目标/问题
+            goal: 要自主完成的目标/问题；None 表示由 SOMA 自己生成
             max_rounds: 最大迭代轮数（默认 3）
             feedback_fn: 可选外部完成判断函数 `fn(round_result, execution) -> bool`
+            max_goals: goal 为 None 时，从生成的目标里最多挑几个（实际取优先级最高的一个）
 
         Returns:
-            {goal, completed, rounds, round_count, final_answer, elapsed_ms}
+            {goal, completed, stop_reason, rounds, round_count, final_answer, elapsed_ms}
+
+            stop_reason ∈ completed / stalled / max_rounds / no_goal / error。
+            注意 stalled 只表示"不再有进展"，**不等于完成** —— 无 LLM 时本地启发式
+            没有能力判断目标是否真的达成，它只识别停滞，不会谎报完成。
         """
         t0 = time.time()
+
+        if goal is None:
+            generated = self.generate_goals(max_goals=max_goals)
+            if not generated:
+                return {
+                    "goal": "", "completed": False, "stop_reason": "no_goal",
+                    "rounds": [], "round_count": 0, "final_answer": "",
+                    "elapsed_ms": round((time.time() - t0) * 1000, 1),
+                }
+            goal = generated[0]["goal"]
+
         rounds = []
         context = goal
         completed = False
+        stop_reason = "max_rounds"
+        consecutive_errors = 0
+        prev_answer = ""
 
         for i in range(max_rounds):
-            # 单轮认知闭环（感知→推理→行动→反馈→进化）
-            round_result = self.loop(context, max_cycles=1)
+            try:
+                # 单轮认知闭环（感知→推理→行动→反馈→进化）
+                round_result = self.loop(context, max_cycles=1)
 
-            # 提取本轮行动文本并执行
-            actions_obj = round_result.get("actions", {})
-            actions_text = actions_obj.get("actions", "") if isinstance(actions_obj, dict) else ""
-            execution = self.execute(context, actions_text)
+                # 提取本轮行动文本并执行
+                actions_obj = round_result.get("actions", {})
+                actions_text = (
+                    actions_obj.get("actions", "") if isinstance(actions_obj, dict) else ""
+                )
+                # origin="autonomous" 标记：这条计划是自主循环自己产的，
+                # 不要再被 generate_goals() 当作新的待办目标收回去
+                execution = self.execute(context, actions_text, origin="autonomous")
+            except Exception:
+                consecutive_errors += 1
+                _log.warning(
+                    "自主循环第 %d 轮失败（连续第 %d 次）",
+                    i + 1, consecutive_errors, exc_info=True,
+                )
+                if consecutive_errors >= AUTONOMOUS_MAX_CONSECUTIVE_ERRORS:
+                    stop_reason = "error"
+                    break
+                # 指数退避后重试本轮 —— 写锁竞争、LLM 抖动这类瞬时故障
+                # 不该直接把整个目标判死
+                time.sleep(min(
+                    AUTONOMOUS_RETRY_BASE_SECONDS * (2 ** (consecutive_errors - 1)),
+                    AUTONOMOUS_RETRY_MAX_SECONDS,
+                ))
+                continue
+            consecutive_errors = 0
+
+            verdict, verdict_reason = self._judge_goal(
+                goal, round_result, execution, feedback_fn,
+                prev_answer=prev_answer, actions_text=actions_text,
+            )
 
             rounds.append({
                 "round": i + 1,
@@ -1017,16 +1123,21 @@ class SOMA:
                 "answer": round_result.get("final_answer", ""),
                 "actions": actions_text[:300],
                 "execution": execution,
+                "verdict": verdict,
+                "verdict_reason": verdict_reason,
             })
 
-            # 完成判断
-            if self._check_goal_complete(goal, round_result, execution, feedback_fn):
-                completed = True
+            if verdict == "complete":
+                completed, stop_reason = True, "completed"
+                break
+            if verdict == "stalled":
+                stop_reason = "stalled"
                 break
 
             # 未完成：携带本轮结果继续推进
-            next_answer = round_result.get("final_answer", "")[:300]
-            next_steps = execution.get("next_steps", "")[:300]
+            prev_answer = str(round_result.get("final_answer", ""))
+            next_answer = prev_answer[:300]
+            next_steps = str(execution.get("next_steps", ""))[:300]
             context = (
                 f"{goal}\n\n"
                 f"[第 {i + 1} 轮结果]\n"
@@ -1038,23 +1149,220 @@ class SOMA:
         return {
             "goal": goal,
             "completed": completed,
+            "stop_reason": stop_reason,
             "rounds": rounds,
             "round_count": len(rounds),
             "final_answer": rounds[-1]["answer"] if rounds else "",
             "elapsed_ms": round((time.time() - t0) * 1000, 1),
         }
 
-    def _check_goal_complete(
-        self, goal: str, round_result: dict, execution: dict,
-        feedback_fn=None,
-    ) -> bool:
-        """判断目标是否达成。
+    # ── v2.0.18: 自主目标来源 + 跨会话整合 + 后台常驻 ──────────
 
-        优先级：外部反馈函数 → LLM（有 key）→ 本地兜底（返回 False，跑满轮数）。
+    def _goal_gen(self) -> GoalGenerator:
+        if self._goal_generator is None:
+            self._goal_generator = GoalGenerator(self)
+        return self._goal_generator
+
+    def _recent_goal_record(self) -> list:
+        """近期已推进目标的原始记录（持久化在 episodic 的 KV 表里，跨进程有效）。"""
+        try:
+            raw = self._agent.memory.episodic.meta_get(META_RECENT_GOALS, []) or []
+        except Exception:
+            return []
+        if not isinstance(raw, list):
+            return []
+        cutoff = time.time() - RECENT_GOAL_WINDOW_HOURS * 3600
+        out = []
+        for r in raw:
+            if not isinstance(r, dict):
+                continue
+            try:
+                at = float(r.get("at", 0))
+            except (TypeError, ValueError):
+                continue
+            if at >= cutoff:
+                out.append(r)
+        return out
+
+    def _recent_goal_keys(self) -> set:
+        return {str(r["key"]) for r in self._recent_goal_record() if r.get("key")}
+
+    def _mark_goal_advanced(self, key: str) -> None:
+        """记录一个目标已推进，供下次生成时去重；失败不影响调用方。"""
+        if not key:
+            return
+        try:
+            store = self._agent.memory.episodic
+        except Exception:
+            return
+        try:
+            recent = self._recent_goal_record()
+            recent.append({"key": key, "at": time.time()})
+            store.meta_set(META_RECENT_GOALS, recent[-200:])
+        except Exception:
+            _log.debug("记录已推进目标失败", exc_info=True)
+
+    def generate_goals(self, max_goals: int = 3, user_id: str = "") -> list:
+        """自己找出值得推进的目标，按优先级排序（v2.0.18）。
+
+        四个来源：过期的状态类记忆、尚未澄清的记忆冲突、跨会话遗留的执行计划、
+        被埋没的重要记忆。每个目标都带 source 与 evidence，可追溯到具体记忆 ——
+        不凭空造目标，产不出就返回空列表。
+
+        近期（24 小时内）已推进过的目标不会重复产出，避免每次都推同一件事。
+        返回 [{key, goal, source, priority, evidence}]。
+
+        user_id (v2.0.18.2)：只从该用户的记忆里生成目标。**多租户部署必须传** ——
+        留空是「系统级、不按用户过滤」的旧语义，会把不同用户的记忆混进同一个
+        目标集（goal 文本里直接内嵌记忆原文），只适用于单租户部署。
+        """
+        try:
+            goals = self._goal_gen().generate(
+                max_goals=max_goals, recent_keys=self._recent_goal_keys(),
+                user_id=user_id,
+            )
+        except Exception:
+            _log.warning("自主目标生成失败", exc_info=True)
+            return []
+        return [g.to_dict() for g in goals]
+
+    def run_self_directed(
+        self, max_goals: int = 1, max_rounds: int = 2, user_id: str = "",
+    ) -> dict:
+        """自主跑一个自己生成的目标，并说明为什么选它（v2.0.18）。
+
+        与 run_autonomous(goal=None) 的区别：这里把选中目标的来源与证据一并返回，
+        调用方能知道"它为什么决定做这件事"，而不是只拿到一个结论。
+
+        user_id (v2.0.18.2)：目标的来源范围。多租户部署必须传，否则会挑到
+        别的用户的目标（见 generate_goals 的同名说明）。
+        """
+        goals = self.generate_goals(max_goals=max_goals, user_id=user_id)
+        if not goals:
+            return {
+                "goal": "", "goal_key": "", "goal_source": "", "goal_evidence": [],
+                "other_goals": [], "completed": False, "stop_reason": "no_goal",
+                "rounds": [], "round_count": 0, "final_answer": "", "elapsed_ms": 0.0,
+            }
+        target = goals[0]
+        result = self.run_autonomous(target["goal"], max_rounds=max_rounds)
+        result["goal_source"] = target.get("source", "")
+        result["goal_key"] = target.get("key", "")
+        result["goal_evidence"] = target.get("evidence", [])
+        result["other_goals"] = [g["goal"] for g in goals[1:]]
+        self._mark_goal_advanced(target.get("key", ""))
+        return result
+
+    def integrate_session(self) -> dict:
+        """跨会话整合（v2.0.18）：识别会话边界并收集上次会话留下的待办。
+
+        返回 {is_new_session, gap_seconds, gap_human, pending_goals, pending_count,
+        elapsed_ms}。
+
+        本方法只读状态 + 记录会话边界，**不主动推进任何目标** —— 推进与否交给
+        调用方（或后台常驻循环）决定，避免"调一次整合就顺带触发一堆 LLM 调用"。
+        """
+        t0 = time.time()
+        store = None
+        try:
+            store = self._agent.memory.episodic
+        except Exception:
+            store = None
+
+        last_end = None
+        if store is not None:
+            try:
+                last_end = store.meta_get(META_LAST_SESSION_END)
+            except Exception:
+                last_end = None
+
+        gap = None
+        if isinstance(last_end, (int, float)):
+            gap = max(0.0, time.time() - float(last_end))
+        is_new_session = gap is None or gap > SESSION_GAP_SECONDS
+
+        goals = self.generate_goals(max_goals=5)
+
+        if store is not None:
+            try:
+                store.meta_set(META_LAST_SESSION_END, time.time())
+            except Exception:
+                pass
+
+        return {
+            "is_new_session": bool(is_new_session),
+            "gap_seconds": round(gap, 1) if gap is not None else None,
+            "gap_human": human_gap(gap),
+            "pending_goals": goals,
+            "pending_count": len(goals),
+            "elapsed_ms": round((time.time() - t0) * 1000, 1),
+        }
+
+    def _background_runner(self) -> BackgroundRunner:
+        if self._background is None:
+            self._background = BackgroundRunner(self, self._config)
+        return self._background
+
+    def start_background(self) -> dict:
+        """启动后台常驻自主循环。
+
+        默认关闭：只有显式把 autonomous_background_enabled 配成 True 才允许启动，
+        否则直接拒绝。开启后是一条 daemon 线程，任何时刻最多一个 tick 在跑，
+        单次 tick 有墙钟上限，连续失败会自动停驻。
+        """
+        return self._background_runner().start()
+
+    def stop_background(self, timeout: float = 10.0) -> dict:
+        """停止后台常驻循环，等待当前 tick 结束（不强杀线程）。"""
+        if self._background is None:
+            return {"stopped": True, "was_running": False, "message": ""}
+        return self._background.stop(timeout=timeout)
+
+    def background_status(self) -> dict:
+        """后台常驻循环的状态快照（未启动过也返回完整结构）。"""
+        if self._background is None:
+            return {
+                "enabled": bool(getattr(
+                    self._config, "autonomous_background_enabled", False)),
+                "running": False,
+                "tick_in_progress": False,
+                "ticks": 0,
+                "failures": 0,
+                "consecutive_failures": 0,
+                "interval": int(getattr(
+                    self._config, "autonomous_background_interval", 3600)),
+                "started_at": None,
+                "stopped_reason": "",
+                "last_result": None,
+            }
+        return self._background.status()
+
+    def run_background_tick(self) -> dict:
+        """同步跑一次后台 tick —— 不需要真开线程，便于验证与测试。"""
+        return self._background_runner().run_once()
+
+    def _judge_goal(
+        self, goal: str, round_result: dict, execution: dict, feedback_fn=None,
+        prev_answer: str = "", actions_text: str = "",
+    ) -> tuple:
+        """判断目标进展，返回 (verdict, reason)。
+
+        verdict ∈ {"complete", "stalled", "continue"}：
+
+        - complete：有确凿依据认为目标已达成（外部反馈函数 / LLM 判定）
+        - stalled：本轮相对上轮没有实质进展（本地启发式，无 LLM 时的主要信号）
+        - continue：仍在推进中
+
+        优先级：外部反馈函数 → LLM → 本地启发式。
+
+        本地启发式**只判停滞、不判完成** —— 无 LLM 时 SOMA 没有依据声称目标
+        已达成，谎报完成比多跑几轮更糟。这一点在 v2.0.18 之前是缺失的：当时
+        无 LLM 一律返回 False，唯一的表现就是闷头跑满轮数、外部看不出原因。
         """
         if feedback_fn is not None:
             try:
-                return bool(feedback_fn(round_result, execution))
+                if bool(feedback_fn(round_result, execution)):
+                    return "complete", "外部反馈函数判定完成"
             except Exception:
                 pass
 
@@ -1066,12 +1374,37 @@ class SOMA:
                     f"判断目标是否已达成？只回答 true 或 false。"
                 )
                 resp = self._agent._call_llm(prompt, "")[:20].strip().lower()
-                return "true" in resp
+                if "true" in resp:
+                    return "complete", "LLM 判定目标已达成"
+                return "continue", "LLM 判定目标未达成"
             except Exception:
                 pass
 
-        # 本地兜底：保守处理，不提前误停（跑满 max_rounds）
-        return False
+        cur = str(round_result.get("final_answer", "")).strip()
+        if prev_answer and cur and cur == prev_answer.strip():
+            return "stalled", "本轮结论与上一轮完全相同，没有新进展"
+        executed = execution.get("executed") if isinstance(execution, dict) else None
+        if (
+            not (actions_text or "").strip()
+            and not executed
+            and not ((execution or {}).get("next_steps") or "").strip()
+        ):
+            return "stalled", "本轮没有产生任何行动或后续步骤"
+        return "continue", "仍在推进中"
+
+    def _check_goal_complete(
+        self, goal: str, round_result: dict, execution: dict,
+        feedback_fn=None,
+    ) -> bool:
+        """判断目标是否达成（bool 视图）。
+
+        优先级：外部反馈函数 → LLM（有 key）→ 本地兜底（返回 False，跑满轮数）。
+        需要区分"完成 / 停滞 / 继续"三态时用 _judge_goal —— 停滞不算完成。
+        """
+        verdict, _ = self._judge_goal(
+            goal, round_result, execution, feedback_fn,
+        )
+        return verdict == "complete"
 
     def _has_llm(self) -> bool:
         """当前是否配置了 LLM（有 key 或非 mock 模型）。"""
@@ -1079,6 +1412,59 @@ class SOMA:
             getattr(self._config, "llm_api_key", "")
             or getattr(self._config, "llm_model", "mock") != "mock"
         )
+
+    # ── v2.0.18: 进化触发（取代散落的硬编码 % 5 / % 10 / % 30） ──
+
+    def _evolution_sample_count(self) -> int:
+        """当前规律样本总数（成功+失败），读不到时返回 -1。
+
+        与 MetaEvolver.evolve() 内部用的 total_samples 同源，取自内存里的
+        _law_stats，不额外查库。
+        """
+        stats = getattr(getattr(self._agent, "evolver", None), "_law_stats", None)
+        if not isinstance(stats, dict):
+            return -1
+        try:
+            return sum(
+                int(s.get("successes", 0)) + int(s.get("failures", 0))
+                for s in stats.values() if isinstance(s, dict)
+            )
+        except Exception:
+            return -1
+
+    def _is_deep_evolution_due(self) -> bool:
+        """是否到深度进化节拍（默认每 interval×deep_multiple 次会话）。"""
+        interval = max(1, int(getattr(self._config, "evolution_interval", 5)))
+        multiple = max(1, int(getattr(self._config, "evolution_deep_multiple", 6)))
+        return self._session_count > 0 and self._session_count % (interval * multiple) == 0
+
+    def _maybe_evolve(self, force: bool = False) -> list:
+        """按配置节拍触发一次进化，未到节拍或无需进化时返回空列表。
+
+        除了次数节拍，还有一道"脏标记"：自上次进化以来规律样本数没有增长时
+        直接跳过 —— 没有新数据可学，跑一遍进化只是空转。所以把
+        evolution_interval 调小只会让它更及时，不会带来额外开销。
+        """
+        interval = max(1, int(getattr(self._config, "evolution_interval", 5)))
+        if self._session_count <= 0 or self._session_count % interval != 0:
+            return []
+
+        samples = self._evolution_sample_count()
+        if (
+            not force
+            and samples >= 0
+            and self._last_evolve_samples is not None
+            and samples == self._last_evolve_samples
+        ):
+            return []
+
+        try:
+            changes = self._agent.evolver.evolve(force=force)
+        except Exception:
+            _log.warning("进化执行失败（不影响本轮）", exc_info=True)
+            return []
+        self._last_evolve_samples = samples
+        return changes or []
 
     def _mock_respond(self, problem, foci=None, activated=None):
         """无 LLM 时的 mock 响应"""
@@ -1355,6 +1741,24 @@ class SOMA:
         返回 {"reloaded_vectors": N, "total": M}。
         """
         return self._agent.reload()
+
+    def prune_stale_vectors(self, background: bool = True) -> dict:
+        """清理语义索引里「记忆已删除但向量仍在」的残留（v2.0.18）。
+
+        faiss 无法精确删除向量，记忆被删除后索引里的残条会一直占着 top_k 名额，
+        并让删除后的下一次搜索触发同步全量重建。本方法只清理这部分：从内存索引
+        取出仍然有效的向量重建，**不重新编码**；默认后台执行，不阻塞调用方。
+
+        返回 {"pruned": 移除条数, "remaining": 剩余条数,
+              "rebuilt": 是否已重建, "scheduled": 是否已调度后台重建}。
+        查询当前残留量用 count_stale_vectors()。
+        """
+        return self._agent.memory.episodic.prune_stale_vectors(
+            background=background)
+
+    def count_stale_vectors(self) -> int:
+        """语义索引里过期（对应记忆已被删除）的向量条数（v2.0.18）。"""
+        return self._agent.memory.episodic.count_stale_vectors()
 
     def decompose(self, problem: str) -> list:
         return self._agent.decompose(problem)
@@ -1697,6 +2101,12 @@ class SOMA:
 
     def close(self) -> None:
         """关闭底层 agent 及所有子组件连接"""
+        # v2.0.18: 先停后台常驻循环 —— 否则它会在线程里继续读已经关掉的库
+        if self._background is not None:
+            try:
+                self._background.stop(timeout=10.0)
+            except Exception:
+                _log.warning("停止后台自主循环失败", exc_info=True)
         self._agent.close()
         if self._capture_pipeline is not None:
             self._capture_pipeline.close()

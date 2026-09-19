@@ -8,6 +8,7 @@ import networkx as nx
 
 from soma.abc import BaseMemoryStore
 from soma.base import MemoryUnit
+from soma.db import close_store_connection, open_store_connection
 
 _log = logging.getLogger("soma.memory.semantic")
 
@@ -21,8 +22,7 @@ class SemanticStore(BaseMemoryStore):
             persist_dir = Path(os.environ.get("SOMA_DATA_DIR", "soma_data"))
         persist_dir.mkdir(parents=True, exist_ok=True)
         self._db_path = persist_dir / "semantic.db"
-        self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
-        self._conn.row_factory = sqlite3.Row
+        self._conn = open_store_connection(self._db_path)
         self._create_table()
         self._load_from_db()
 
@@ -196,9 +196,12 @@ class SemanticStore(BaseMemoryStore):
             try:
                 params = [fts_query] + time_params
                 sql = f"""
+                    -- 2.0.18.2：同 search_utils.py，写成 rowid IN (子查询)，
+                    -- 避免 SQLite 逐行去 FTS 虚拟表探导致的固定开销。
                     SELECT st.* FROM semantic_triples st
-                    INNER JOIN semantic_fts fts ON st.rowid = fts.rowid
-                    WHERE semantic_fts MATCH ?
+                    WHERE st.rowid IN (
+                        SELECT rowid FROM semantic_fts WHERE semantic_fts MATCH ?
+                    )
                     {time_clause} {ns_clause}
                     ORDER BY st.confidence DESC
                     LIMIT ?
@@ -346,4 +349,4 @@ class SemanticStore(BaseMemoryStore):
         return self.count()
 
     def close(self):
-        self._conn.close()
+        close_store_connection(self._conn)

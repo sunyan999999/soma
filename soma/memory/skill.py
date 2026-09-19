@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from soma.abc import BaseMemoryStore
 from soma.base import MemoryUnit
+from soma.db import close_store_connection, open_store_connection
 from soma.memory.context_utils import normalize_context, parse_context
 
 
@@ -18,8 +19,7 @@ class SkillStore(BaseMemoryStore):
             persist_dir = Path("skill_data")
         persist_dir.mkdir(parents=True, exist_ok=True)
         self._db_path = persist_dir / "skills.db"
-        self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
-        self._conn.row_factory = sqlite3.Row
+        self._conn = open_store_connection(self._db_path)
         self._create_table()
 
     def _create_table(self):
@@ -60,6 +60,15 @@ class SkillStore(BaseMemoryStore):
         )
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_skill_group ON skills(shared_group_id)"
+        )
+        # v2.0.18.3: 与记忆表同源的索引选择问题。`WHERE user_id = ? AND agent_id = ?`
+        # （skill.py 的去重查询就是这个组合）会被计划器选成 idx_skill_agent ——
+        # agent_id 近乎覆盖全表。实测 2 万行时 2.2ms → 0.02ms。真实部署里技能表
+        # 通常远小于记忆表，绝对收益在 0.1ms 量级；加它主要是让两张表的同类查询
+        # 口径一致，不留下「记忆表修了、技能表没修」的半截状态。
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_skill_user_agent "
+            "ON skills(user_id, agent_id)"
         )
         self._create_fts5()
         self._conn.commit()
@@ -189,4 +198,4 @@ class SkillStore(BaseMemoryStore):
         return row[0] if row else 0
 
     def close(self):
-        self._conn.close()
+        close_store_connection(self._conn)

@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from soma.abc import BaseMemoryStore
+from soma.db import close_store_connection, open_store_connection
 
 _log = logging.getLogger("soma.memory.scene")
 
@@ -29,8 +30,7 @@ class SceneStore(BaseMemoryStore):
         self._db_path = persist_dir / f"{collection_name}.db"
         self._md_dir = persist_dir / collection_name
         self._md_dir.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
-        self._conn.row_factory = sqlite3.Row
+        self._conn = open_store_connection(self._db_path)
         self._create_table()
 
     def _create_table(self):
@@ -170,7 +170,7 @@ class SceneStore(BaseMemoryStore):
 
     def close(self):
         """关闭数据库连接"""
-        self._conn.close()
+        close_store_connection(self._conn)
 
     # ── 基类兼容接口 ──
 

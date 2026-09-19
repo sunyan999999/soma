@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 
 from litellm import completion
 
-from soma.base import ActivatedMemory, Focus
+from soma.base import STATE_TTL_DAYS, ActivatedMemory, Focus
 from soma.config import SOMAConfig, load_config
 from soma.embedder import SOMAEmbedder
 from soma.engine import WisdomEngine
@@ -18,6 +18,75 @@ from soma.retry import llm_retry
 from soma.zhongdao import ZhongdaoEngine
 
 _log = logging.getLogger(__name__)
+
+
+def _memory_time_note(am: ActivatedMemory) -> str:
+    """注入用的记忆时间标注（v2.0.18）。
+
+    口径与 explain_activation() 的 age_days 同源，只转成中文表述
+    （MemoryUnit.age_label），不另造名词。仅当 memory_type 与激活来源不同名时
+    才附带类型（scene/profile/external 等），避免 "来源: episodic, 类型: episodic"
+    这类冗余。
+
+    异常安全：注入路径不得因格式化失败而中断，任一步出错退回空串。
+    """
+    try:
+        mem = am.memory
+        label = mem.age_label()
+        mt = getattr(mem, "memory_type", "") or ""
+        if mt and mt != getattr(am, "source", ""):
+            return f"{label}, 类型: {mt}"
+        return label
+    except Exception:
+        return ""
+
+
+def _staleness_block(am: ActivatedMemory) -> str:
+    """状态类记忆过期的提醒（v2.0.18），无则返回空串。
+
+    对应 MemoryUnit.is_state_stale()：nature=state 且超过 STATE_TTL_DAYS(30 天)。
+    这正是 2026-08「失眠串台」的对症处 —— 远期状态必须标注，否则 LLM 会把它
+    当作当前状态。返回内容自带前导换行，便于直接拼在记忆条目之后。
+    """
+    try:
+        note = am.memory.staleness_note()
+    except Exception:
+        return ""
+    return f"\n  {note}" if note else ""
+
+
+_MIN_STALE_STATE_OVERLAP = 2
+
+
+def _char_set(text: str) -> set:
+    """取字符串中的有效字符集（字母/数字/汉字），用于廉价的中文相关性判断。
+
+    这里刻意不用 bigram：中文近义词常常不共享二元组（「睡眠」与「失眠」的共同
+    二元组为空），用二元组会把该提醒的状态漏掉。按单字取交集则共享「睡」「眠」，
+    既便宜又够用。
+    """
+    return {c for c in (text or "") if c.isalnum()}
+
+
+def _stale_state_block(stale_states: List[ActivatedMemory]) -> str:
+    """过期状态记忆的独立注入块（v2.0.18），无则返回空串。
+
+    为什么不并进普通记忆参考：这些条目的共同点就是「已经很久没更新」，需要 LLM
+    把它们当作可能失效的旧信息而不是事实。单独成块 + 明确的抬头，比在参考列表
+    里挂一行小字更容易被遵循。返回内容自带前后换行，便于直接嵌进 prompt 模板。
+    """
+    if not stale_states:
+        return ""
+    items = "\n".join(
+        f"- ({_memory_time_note(am)}) {am.memory.content[:200]}"
+        for am in stale_states
+    )
+    return (
+        "\n## 可能已过期的状态记录\n"
+        "以下状态记录已超过时效窗口，可能已变化 —— "
+        "不得直接当作当前状态回复；确需使用须先向用户确认：\n"
+        f"{items}\n"
+    )
 
 
 class SOMA_Agent:
@@ -325,8 +394,12 @@ class SOMA_Agent:
         else:
             self._last_reasoning = []
 
-        # Step 3: 合成 Prompt
-        prompt = self._build_prompt(problem, foci, activated)
+        # Step 3: 合成 Prompt（v2.0.18: 过期状态记忆单独成块注入，见 _stale_state_memories）
+        # v2.0.18.1: 必须把 user_id 传下去 —— 漏传会让过期状态跨用户注入
+        prompt = self._build_prompt(
+            problem, foci, activated,
+            self._stale_state_memories(problem, user_id=user_id),
+        )
 
         # Step 4: 调用 LLM
         answer = self._call_llm(prompt, user_id)
@@ -505,14 +578,83 @@ class SOMA_Agent:
             print(f"[soma] 录制会话失败 (dir={self.config.episodic_persist_dir}): {e}",
                   file=sys.stderr)
 
+    def _stale_state_memories(
+        self, problem: str, limit: int = 2, user_id: str = "",
+    ) -> List[ActivatedMemory]:
+        """挑出与当前问题相关、且已过时效窗口的 state 记忆（v2.0.18）。
+
+        为什么必须单开一趟：主激活路径按「规律权重 × 近因衰减」打分，7 天半衰期
+        之下 score 掉得极快，而 ranker 有 threshold(0.05) 闸门 —— 实测（库里只有
+        这一条、问法最相关）7 天前 score=0.0997 还能注入，14 天起就彻底取不到；
+        而 is_state_stale() 判的是 30 天以上。两个条件互斥，过期状态永远进不了
+        prompt。更糟的是「我最近睡眠怎么样」这类口语问题被判为 L1，连反视角检索
+        都不跑，过期状态完全无声 —— 这正是 2026-08「失眠串台」的场景。
+
+        v2.0.18.1 两处修正，均由接入方生产验证发现：
+
+        - **用户作用域**：原先调用 query_by_filters 时不传 user_id，而该函数是
+          「传了才过滤」——多租户下 A 的过期状态会因与 B 的问题共享 ≥2 个汉字而
+          注入 **B 的 prompt**（跨用户泄漏）。现按 user_id 过滤，语义与主检索路径
+          一致：空串表示不过滤（单用户部署的常态），传值则严格限定该用户。
+        - **候选池方向**：原先按 timestamp DESC 取「最近 50 条 state」，而本方法
+          只要超 30 天的 —— 两个条件方向相反，数据量大时几乎必然取空（接入方在
+          26,977 条的生产库上造了 60/95 天前的 state 记忆，该块仍不触发，功能
+          等于死的）。现按 older_than_days=STATE_TTL_DAYS 直取过期子集，与
+          is_state_stale() 同源，不再依赖「最近 50 条」这个反方向的窗口。
+
+        代价可控：不开向量检索，用共同汉字数（≥2）与问题做相关性过滤 —— 要求
+        2 个字是为了挡掉「我今天心情不好」这类只共享一个常见字的偶然命中。
+
+        异常安全：注入是增强而非必需，任何一步失败退回空列表。
+        """
+        try:
+            store = getattr(getattr(self, "memory", None), "episodic", None)
+            if store is None or not problem:
+                return []
+            probe = _char_set(problem)
+            if not probe:
+                return []
+            scored = []
+            for mem in store.query_by_filters(
+                nature="state", older_than_days=STATE_TTL_DAYS,
+                limit=50, user_id=user_id,
+            ):
+                if not mem.is_state_stale():
+                    continue
+                shared = len(probe & _char_set(mem.content))
+                if shared < _MIN_STALE_STATE_OVERLAP:
+                    continue
+                scored.append((shared, mem.importance, mem))
+            if not scored:
+                return []
+            scored.sort(key=lambda t: (t[0], t[1]), reverse=True)
+            return [
+                ActivatedMemory(
+                    memory=mem,
+                    activation_score=float(shared),
+                    source="episodic",
+                    match_rationale="过期状态提醒（已超时效窗口）",
+                )
+                for shared, _imp, mem in scored[:limit]
+            ]
+        except Exception as e:
+            _log.warning("过期状态检索失败: %s", e)
+            return []
+
     def _build_prompt(
         self,
         problem: str,
         foci: List[Focus],
         memories: List[ActivatedMemory],
+        stale_states: Optional[List[ActivatedMemory]] = None,
     ) -> str:
-        """构建 LLM Prompt：L1轻量直答 / L2+完整推理框架（v1.1.1 复杂度自适应）"""
+        """构建 LLM Prompt：L1轻量直答 / L2+完整推理框架（v1.1.1 复杂度自适应）
+
+        stale_states: 已过时效窗口的 state 记忆（_stale_state_memories），
+        默认 None 表示不注入该块 —— 保持既有调用方的行为不变。
+        """
         complexity = getattr(self, '_current_complexity', 2)
+        stale_text = _stale_state_block(stale_states or [])
 
         # ── L1 轻量模式：简单问答，遵守用户长度约束 ────────
         if complexity == 1:
@@ -531,13 +673,16 @@ class SOMA_Agent:
             if memories:
                 parts = []
                 for i, am in enumerate(memories[:3]):
-                    parts.append(f"[参考{i+1}] {am.memory.content[:200]}")
+                    parts.append(
+                        f"[参考{i+1}] ({_memory_time_note(am)}) "
+                        f"{am.memory.content[:200]}{_staleness_block(am)}"
+                    )
                 memory_text = "## 参考信息\n" + "\n".join(parts)
 
             prompt = f"""你是一位智者，善于简洁有力地回答问题。
 
 {memory_text}
-
+{stale_text}
 ## 当前问题
 {problem}
 
@@ -590,8 +735,9 @@ class SOMA_Agent:
         # ── 记忆参考 ─────────────────────────────────────────
         if memories:
             memory_text = "\n\n".join(
-                f"**[参考 {i+1}]** (来源: {am.source}, 关联度: {am.activation_score:.3f})\n"
-                f"{am.memory.content}"
+                f"**[参考 {i+1}]** (来源: {am.source}, 关联度: {am.activation_score:.3f}, "
+                f"{_memory_time_note(am)})\n"
+                f"{am.memory.content}{_staleness_block(am)}"
                 for i, am in enumerate(memories)
             )
         else:
@@ -604,8 +750,9 @@ class SOMA_Agent:
             anti_parts = []
             for i, am in enumerate(anti_memories):
                 anti_parts.append(
-                    f"**[反面参考 {i+1}]** (关联度: {am.activation_score:.3f})\n"
-                    f"{am.memory.content}"
+                    f"**[反面参考 {i+1}]** (关联度: {am.activation_score:.3f}, "
+                    f"{_memory_time_note(am)})\n"
+                    f"{am.memory.content}{_staleness_block(am)}"
                 )
             anti_text = (
                 "\n## 反面视角与潜在矛盾\n"
@@ -620,9 +767,11 @@ class SOMA_Agent:
             for i, (am_a, am_b, score) in enumerate(self.hub.last_conflicts):
                 conflict_parts.append(
                     f"**矛盾 {i+1}** (冲突度: {score:.2f})\n"
-                    f"- 记忆A [{am_a.source}, 关联度 {am_a.activation_score:.3f}]: "
+                    f"- 记忆A [{am_a.source}, 关联度 {am_a.activation_score:.3f}, "
+                    f"{_memory_time_note(am_a)}]: "
                     f"{am_a.memory.content[:200]}\n"
-                    f"- 记忆B [{am_b.source}, 关联度 {am_b.activation_score:.3f}]: "
+                    f"- 记忆B [{am_b.source}, 关联度 {am_b.activation_score:.3f}, "
+                    f"{_memory_time_note(am_b)}]: "
                     f"{am_b.memory.content[:200]}"
                 )
             conflict_text = (
@@ -654,6 +803,7 @@ class SOMA_Agent:
 {memory_text}
 {anti_text}
 {conflict_text}
+{stale_text}
 ## 当前问题
 {problem}
 

@@ -106,6 +106,44 @@ class SOMAConfig(BaseModel):
     scene_retrieval_weight: float = 0.3             # 场景块检索权重
     profile_retrieval_weight: float = 0.5           # 画像条目检索权重
 
+    # ═══ v2.0.18: 自主与稳固 ═══
+    # 进化触发节奏 —— 取代此前散落在 respond()/chat()/loop() 里的硬编码 % 5 / % 10 / % 30。
+    # 三个入口此前各不相同（respond 每 10 次、chat 每 5 次、loop 只看 % 5），现统一走
+    # 同一对配置；另有"脏标记"兜底：自上次进化以来没有新反思样本时直接跳过，
+    # 所以间隔调小不会造成空转。
+    evolution_interval: int = 5              # 每N次会话触发一次常规进化
+    evolution_deep_multiple: int = 6         # 每 N×interval 次触发一次强制深度进化（5×6=30，与原节奏一致）
+
+    # 后台常驻自主循环 —— 默认关闭，必须显式开启。
+    # 开启后会有一条 daemon 线程周期性自生成目标并推进，会持续读写真库；
+    # 未显式开启时 start_background() 直接拒绝，不静默启动。
+    autonomous_background_enabled: bool = False
+    autonomous_background_interval: int = 3600      # 两次 tick 的间隔（秒）
+    autonomous_background_max_runtime: int = 120    # 单次 tick 最长运行秒数，超出即放弃本轮剩余目标
+    autonomous_background_max_goals: int = 1        # 单次 tick 最多推进几个自主目标
+    # 后台循环要为其生成目标的用户（v2.0.18.2）。留空 = 单租户语义（不按用户
+    # 过滤）；"*" = 每 tick 自动枚举库里的用户轮转；也可写逗号分隔的用户 id。
+    # 多租户部署必须显式配置。留空时若库里**确实有多个用户**，循环会拒绝产出
+    # 目标（fail-safe，原因见 BackgroundRunner.status()["last_skip_reason"]），
+    # 而不是把不同用户的记忆混进同一个目标集。
+    autonomous_background_user_ids: str = ""
+    autonomous_background_max_users_per_tick: int = 5  # 每 tick 最多覆盖几个用户（轮转）
+    autonomous_background_backoff_base: float = 30.0  # 失败退避基数（秒），按失败次数指数增长
+    autonomous_background_max_failures: int = 5     # 连续失败达此次数后自动停驻，不再重试
+
+    # 自主目标判定阈值（v2.0.18）
+    autonomous_conflict_priority: float = 0.70      # 未解决记忆冲突的优先级
+    autonomous_plan_priority: float = 0.60          # 跨会话遗留执行计划的优先级
+    autonomous_stale_state_priority: float = 0.50   # 过期状态类记忆的优先级基值
+    autonomous_buried_importance: float = 0.70      # 判定"重要却被埋没"的重要性下限
+    autonomous_buried_age_days: float = 14.0        # ……且年龄超过此天数
+
+    # 多专家共享 SQLite 连接（v2.0.18）—— 默认关闭。
+    # 开启后，同一进程内指向同一 db 文件的连接会复用同一条（引用计数管理），
+    # 减少多专家架构下的文件句柄数与 WAL 写锁竞争。单实例场景无收益（各 store
+    # 连的是不同文件）。事务语义与适用范围见 soma/db.py 模块文档。
+    shared_sqlite_connection: bool = False
+
     # Lazily loaded framework config
     framework: Optional[FrameworkConfig] = None
 

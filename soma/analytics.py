@@ -8,6 +8,8 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from soma.db import close_store_connection, open_store_connection
+
 
 class AnalyticsStore:
     """会话分析存储 — SQLite 持久化，追踪每次 chat 的完整数据"""
@@ -19,8 +21,7 @@ class AnalyticsStore:
             persist_dir = Path(persist_dir)
         persist_dir.mkdir(parents=True, exist_ok=True)
         self._db_path = persist_dir / "analytics.db"
-        self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
-        self._conn.row_factory = sqlite3.Row
+        self._conn = open_store_connection(self._db_path)
         self._create_tables()
 
     def _create_tables(self):
@@ -871,4 +872,4 @@ class AnalyticsStore:
         return archived
 
     def close(self):
-        self._conn.close()
+        close_store_connection(self._conn)
