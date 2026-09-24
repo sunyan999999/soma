@@ -777,6 +777,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#v2019" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v2.0.19 新增：记忆管理与真实用量
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#v2019_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        v2.0.19 新增：数据模型
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -995,6 +1017,105 @@
 </tr>
 </tbody>
 </table>
+<h3 id="v2019">v2.0.19 新增：记忆管理与真实用量<a class="headerlink" href="#v2019" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>签名</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.memories</code></td>
+<td><code>-&gt; MemoryApi</code></td>
+<td>只读属性，记忆管理单一出口（见下表）</td>
+</tr>
+<tr>
+<td><code>.token_usage</code></td>
+<td><code>-&gt; dict</code></td>
+<td>只读属性，累计真实 token 用量快照</td>
+</tr>
+<tr>
+<td><code>.recent_usage(n)</code></td>
+<td><code>-&gt; list[dict]</code></td>
+<td>最近 n 次调用明细（最新在前）</td>
+</tr>
+<tr>
+<td><code>.usage</code></td>
+<td><code>-&gt; UsageRecorder</code></td>
+<td>只读属性，<code>on_usage(cb)</code> / <code>reset()</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>MemoryApi</code>（经 <code>soma.memories</code> 取用，不要自己 new）：</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>.list(user_id, agent_id, nature, min_importance, days, after, order_by, limit, preview)</code></td>
+<td>键集游标分页列举；<code>order_by</code> = recent / importance</td>
+</tr>
+<tr>
+<td><code>.get(memory_id, user_id)</code></td>
+<td>读一条全文；非本人返回 None</td>
+</tr>
+<tr>
+<td><code>.search(query, top_k, user_id, agent_id, group_id, max_age_days)</code></td>
+<td>语义检索，与 <code>query_memory</code> 同一召回链路</td>
+</tr>
+<tr>
+<td><code>.update(memory_id, user_id, content, importance, nature, context)</code></td>
+<td>改字段；content 变了连带重算 hash 与向量</td>
+</tr>
+<tr>
+<td><code>.delete(memory_id, user_id, hard, reason)</code></td>
+<td>删除，<strong>默认归档</strong>（可 restore）；<code>hard=True</code> 才真删</td>
+</tr>
+<tr>
+<td><code>.archived(...)</code> / <code>.restore(memory_id, user_id)</code></td>
+<td>最近删除 / 反悔（恢复时重建向量）</td>
+</tr>
+<tr>
+<td><code>.export_memories(user_id, nature, path, order_by, batch, limit)</code></td>
+<td>导出；给 <code>path</code> 则流式写 NDJSON，不入内存</td>
+</tr>
+<tr>
+<td><code>.iter_memories(...)</code></td>
+<td>生成器逐批遍历，供迁移与同步</td>
+</tr>
+</tbody>
+</table>
+<p><strong>共同约定</strong>：<code>user_id=""</code> 表示该维度不限（单租户常态）；多租户必须显式传，
+否则等于全库可见 —— 与 <code>query_by_filters</code> 一致。跨用户读写一律返回「不存在」
+而不是「无权限」，避免泄露 id 归属。</p>
+<p><strong>游标不可跨 <code>order_by</code> 复用</strong>（抛 <code>ValueError</code>），也不会因中途增删而错位。</p>
+<p>→ <a href="../guides/memory-management_zh/">记忆管理与真实用量</a></p>
+<h3 id="v2019_1">v2.0.19 新增：数据模型<a class="headerlink" href="#v2019_1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>类</th>
+<th>字段</th>
+<th style="text-align: center;">稳定性</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TokenUsage</code></td>
+<td><code>prompt_tokens, completion_tokens, total_tokens, model, user_id, purpose, latency_ms, estimated, timestamp</code></td>
+<td style="text-align: center;">冻结</td>
+</tr>
+</tbody>
+</table>
+<p><code>estimated=True</code> 表示该条由字符估算兜底（provider 未返回 usage）—— <strong>不可用于
+计费</strong>。SOMA 一定把这个标记带到出口，接入方必须区分。</p>
 <h2 id="_4">高级接口（稳定但不推荐直接使用）<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
 <p>这些类暴露给需要深度定制的用户，接口保持稳定但内部实现可能优化：</p>
 <ul>
@@ -1006,7 +1127,7 @@
 <h2 id="_5">内部接口（可能变化）<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h2>
 <p>以下模块的 API 不承诺兼容：</p>
 <ul>
-<li><code>soma.memory.*</code> — 记忆存储实现细节</li>
+<li><code>soma.memory.*</code> — 记忆存储实现细节（<strong>请走 <code>soma.memories</code>，不要穿透 <code>_conn</code> 拼裸 SQL —— v2.0.19 起已有正式接口）</strong></li>
 <li><code>soma.hub</code> — ActivationHub 管道</li>
 <li><code>soma.engine</code> — WisdomEngine</li>
 <li><code>soma.vector_store</code> — 向量搜索后端</li>
