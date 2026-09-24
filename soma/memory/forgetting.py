@@ -9,6 +9,7 @@
 SOMA 方案：三层遗忘（时间衰减/访问频率/冗余清理），归档而非真删除。
 """
 import logging
+import sqlite3
 import time
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
@@ -55,10 +56,25 @@ class ForgettingEngine:
                 memory_type TEXT DEFAULT 'episodic',
                 user_id TEXT NOT NULL DEFAULT '',
                 session_id TEXT NOT NULL DEFAULT '',
+                agent_id TEXT NOT NULL DEFAULT '',
+                shared_group_id TEXT NOT NULL DEFAULT '',
+                nature TEXT NOT NULL DEFAULT 'event',
                 archived_at REAL NOT NULL,
                 archive_reason TEXT NOT NULL DEFAULT 'decay'
             )
         """)
+        # v2.0.19: 早期归档表没有这三列 —— 缺列会让「恢复」丢掉业务性质
+        # （state 记忆恢复后变成 event，时效窗口就此失效）。幂等补列。
+        for col, col_def in [
+            ("agent_id", "TEXT NOT NULL DEFAULT ''"),
+            ("shared_group_id", "TEXT NOT NULL DEFAULT ''"),
+            ("nature", "TEXT NOT NULL DEFAULT 'event'"),
+        ]:
+            try:
+                self._conn.execute(
+                    "ALTER TABLE episodic_archived ADD COLUMN %s %s" % (col, col_def))
+            except sqlite3.OperationalError:
+                pass  # 列已存在
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_archived_at ON episodic_archived(archived_at DESC)"
         )
@@ -122,8 +138,7 @@ class ForgettingEngine:
 
         # Layer 1 & 2: 计算所有记忆强度，找候选
         rows = self._conn.execute(
-            """SELECT id, importance, timestamp, access_count, memory_type, content
-               FROM episodic_memories
+            """SELECT * FROM episodic_memories
                WHERE importance > 0 AND user_id = ?
                ORDER BY importance ASC LIMIT 500""",
             (user_id,),
@@ -157,15 +172,19 @@ class ForgettingEngine:
                 """INSERT OR IGNORE INTO episodic_archived
                    (id, content, content_hash, timestamp, importance,
                     access_count, context_json, memory_type, user_id,
-                    session_id, archived_at, archive_reason)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    session_id, agent_id, shared_group_id, nature,
+                    archived_at, archive_reason)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (row["id"], row["content"],
                  row["content_hash"] if "content_hash" in row.keys() else "",
                  row["timestamp"], row["importance"], row["access_count"],
                  row["context_json"] if "context_json" in row.keys() else "{}",
                  row["memory_type"] if "memory_type" in row.keys() else "episodic",
-                 user_id,
+                 row["user_id"] if "user_id" in row.keys() else user_id,
                  row["session_id"] if "session_id" in row.keys() else "",
+                 row["agent_id"] if "agent_id" in row.keys() else "",
+                 row["shared_group_id"] if "shared_group_id" in row.keys() else "",
+                 row["nature"] if "nature" in row.keys() else "event",
                  now, reason),
             )
             # 从主表移除
@@ -179,6 +198,44 @@ class ForgettingEngine:
             )
 
         return results
+
+    def archive_row(self, row, reason: str = "user_delete") -> bool:
+        """归档并删除一条已取出的记忆（v2.0.19，供用户侧删除复用）。
+
+        与 run_forgetting_pass 的自动归档走同一张表，用 archive_reason 区分
+        来源（user_delete / decay / cold）。归档失败就不删 —— 宁可删不掉，
+        也不能让一条记忆既不在主表、又没进归档。
+        """
+        keys = row.keys()
+        try:
+            self._conn.execute(
+                """INSERT OR REPLACE INTO episodic_archived
+                   (id, content, content_hash, timestamp, importance,
+                    access_count, context_json, memory_type, user_id,
+                    session_id, agent_id, shared_group_id, nature,
+                    archived_at, archive_reason)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (row["id"], row["content"],
+                 row["content_hash"] if "content_hash" in keys else "",
+                 row["timestamp"], row["importance"], row["access_count"],
+                 row["context_json"] if "context_json" in keys else "{}",
+                 row["memory_type"] if "memory_type" in keys else "episodic",
+                 row["user_id"] if "user_id" in keys else "",
+                 row["session_id"] if "session_id" in keys else "",
+                 row["agent_id"] if "agent_id" in keys else "",
+                 row["shared_group_id"] if "shared_group_id" in keys else "",
+                 row["nature"] if "nature" in keys else "event",
+                 time.time(), reason),
+            )
+            self._conn.execute(
+                "DELETE FROM episodic_memories WHERE id = ?", (row["id"],))
+            self._conn.commit()
+        except sqlite3.Error:
+            _log.warning("归档失败, memory_id=%s", str(row["id"])[:8], exc_info=True)
+            return False
+
+        _log.info("记忆归档: %s (%s)", str(row["id"])[:8], reason)
+        return True
 
     def recall_archived(
         self, query: str = "", user_id: str = "", top_k: int = 20
@@ -211,12 +268,16 @@ class ForgettingEngine:
         self._conn.execute(
             """INSERT OR IGNORE INTO episodic_memories
                (id, content, content_hash, timestamp, importance,
-                access_count, context_json, memory_type, user_id, session_id)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                access_count, context_json, memory_type, user_id, session_id,
+                agent_id, shared_group_id, nature)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (row["id"], row["content"], row["content_hash"], row["timestamp"],
              row["importance"], row["access_count"],
              row["context_json"] if "context_json" in row.keys() else "{}",
-             row["memory_type"], row["user_id"], row["session_id"]),
+             row["memory_type"], row["user_id"], row["session_id"],
+             row["agent_id"] if "agent_id" in row.keys() else "",
+             row["shared_group_id"] if "shared_group_id" in row.keys() else "",
+             row["nature"] if "nature" in row.keys() else "event"),
         )
         self._conn.execute("DELETE FROM episodic_archived WHERE id = ?", (memory_id,))
         self._conn.commit()

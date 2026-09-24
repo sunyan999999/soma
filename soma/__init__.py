@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "2.0.18.3"
+    __version__ = "2.0.19"
 
 from soma.config import SOMAConfig, load_config
 from soma.db import set_shared_enabled
@@ -29,6 +29,8 @@ from soma.memory.scene import SceneStore
 from soma.memory.profile import ProfileStore
 from soma.memory.capture import CapturePipeline, CaptureConfig
 from soma.code_memory import CodeAnalyzer, CodeStructure
+from soma.memory_api import MemoryApi
+from soma.usage import TokenUsage, UsageRecorder
 from soma.memory_manager import MemoryManager, MaintenanceReport, ConflictReport
 from soma.knowledge_gate import KnowledgeGate, GateResult, ExternalKnowledge
 from soma.graph_builder import AutoGraphBuilder, GraphBuildReport
@@ -66,6 +68,9 @@ __all__ = [
     "SOMAAutoGenMemory",
     "AuditLogger",
     "RBACManager",
+    "MemoryApi",
+    "TokenUsage",
+    "UsageRecorder",
     "CodeAnalyzer",
     "CodeStructure",
     "MemoryManager",
@@ -1979,6 +1984,53 @@ class SOMA:
                 "solve_multi() 需要在 orchestration_mode='multi' 模式下使用。"
             )
         return self._orchestrator.solve(problem, strategy=strategy)
+
+    # ── v2.0.19: 记忆管理与真实用量（接入方正式入口） ────────
+
+    @property
+    def memories(self) -> MemoryApi:
+        """记忆管理的单一出口（列举 / 读取 / 编辑 / 删除 / 恢复 / 导出）。
+
+        接入方请用它，不要再穿透 soma._agent.memory.episodic._conn 拼裸 SQL ——
+        那条路没有作用域（多用户会互相看到），且把表结构变成了对外契约。
+
+        示例::
+
+            page = soma.memories.list(user_id="u1", limit=20)
+            for m in page["items"]:
+                print(m["created_at"], m["nature"], m["content"][:40])
+            soma.memories.update(m_id, content="记错了，应该是……")
+            soma.memories.delete(m_id)          # 归档，可 restore 反悔
+        """
+        if not hasattr(self, "_memory_api"):
+            self._memory_api = MemoryApi(
+                self._agent.memory.episodic, agent=self._agent)
+        return self._memory_api
+
+    @property
+    def usage(self):
+        """真实 token 用量的记录器（可注册回调 / 清零）。
+
+        上报计费系统就挂回调：soma.usage.on_usage(lambda u: bill(u.to_dict()))
+        回调在锁外执行，慢回调不会拖住并发线程。
+        """
+        return self._agent.usage
+
+    @property
+    def token_usage(self) -> dict:
+        """累计真实 token 用量快照（与 stats 同为 property）。
+
+        {"calls", "prompt_tokens", "completion_tokens", "total_tokens",
+         "estimated_calls", "by_model": {model: {...}}}
+
+        estimated_calls > 0 表示有若干条不是 provider 给的、而是本地按字符估的
+        —— 那部分不能拿去计费。
+        """
+        return self._agent.usage.snapshot()
+
+    def recent_usage(self, n: int = 20) -> list:
+        """最近 n 次 LLM 调用的明细（最新在前），含 model / user_id / estimated。"""
+        return self._agent.usage.recent(n)
 
     # ── 记忆健康管理 ──────────────────────────────────────────
 

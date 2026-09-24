@@ -1,4 +1,4 @@
-# SOMA v2.0.18.3 — AI Agent 认知内核
+# SOMA v2.0.19 — AI Agent 认知内核
 
 <p align="center">
   <strong>Wisdom over Memory — 智慧超越记忆</strong><br>
@@ -28,7 +28,7 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 
 **为什么用 SOMA 而非向量数据库？** 传统记忆库（ChromaDB、Mem0）只管存和搜。SOMA **先思考再检索**：7条思维规律组成推理网络，分析问题的维度决定了要激活什么记忆。结果是能系统拆解问题的 Agent，而不是只会模式匹配的机器人。
 
-| | 向量数据库 | Mem0 | **SOMA v2.0.18.3** |
+| | 向量数据库 | Mem0 | **SOMA v2.0.19** |
 |---|---|---|---|
 | 存取记忆 | ✓ | ✓ | ✓ |
 | 推理框架 | ✗ | ✗ | **✓ 7条思维规律** |
@@ -46,13 +46,13 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 <p align="center">
   <a href="https://github.com/sunyan999999/soma"><img src="https://img.shields.io/github/stars/sunyan999999/soma?style=social" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-2.0.18.3-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-2.0.19-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/python-3.10%2B-green" alt="Python"></a>
   <a href="#基准测试"><img src="https://img.shields.io/badge/语义召回-100%25-brightgreen" alt="语义召回率"></a>
   <a href="#基准测试"><img src="https://img.shields.io/badge/综合评分-87.5%2F100-blue" alt="综合评分"></a>
   <a href="#"><img src="https://img.shields.io/badge/测试-1043-brightgreen" alt="测试"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/变更日志-v2.0.18.3-success" alt="变更日志"></a>
-  <a href="#"><img src="https://img.shields.io/badge/里程碑-2.0.18.3-ff6b6b" alt="里程碑"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/变更日志-v2.0.19-success" alt="变更日志"></a>
+  <a href="#"><img src="https://img.shields.io/badge/里程碑-2.0.19-ff6b6b" alt="里程碑"></a>
 </p>
 
 📖 **[English README](README.md)** | **[文档](https://sunyan999999.github.io/soma/)** | **[变更日志](CHANGELOG.md)** | **[贡献指南](CONTRIBUTING.md)**
@@ -80,7 +80,7 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 
 从 v0.1 埋下的每一颗种子，到 v2.0.6 长成的智能体共享网络：
 
-| 能力线 | 核心问题 | v2.0.18.3 的答案 |
+| 能力线 | 核心问题 | v2.0.19 的答案 |
 |---|---|---|
 | **记忆** | AI如何像人一样管理记忆？ | 三层架构：碎片 → 场景 → 画像 |
 | **推理** | 找到信息后如何用来思考？ | 因果链 + 冲突检测 + 跨域类比 |
@@ -96,7 +96,7 @@ answer = soma.respond("如何系统性地分析公司增长瓶颈？")
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                         SOMA v2.0.18.3 — 认知内核                                 │
+│                         SOMA v2.0.19 — 认知内核                                 │
 │                                                                                │
 │  ┌──────────────────────────────────────────────────────────────────┐        │
 │  │  L3 用户画像 — "理解你是个什么样的人"                                │        │
@@ -227,6 +227,22 @@ soma.reclassify_nature()                              # 存量回填：默认 dr
 ```
 
 → [记忆时效：三层机制详解](docs/guides/memory-recency_zh.md)
+
+#### 用户能查看、改掉、删掉 SOMA 记住的事
+
+「AI 记住了我什么」不该是黑箱。v2.0.19 起这是正式接口，不再是内部实现细节：
+
+```python
+soma.memories.list(user_id="u1")                       # 给用户看：谁的记忆、多久以前、什么性质
+soma.memories.update(mid, content="记错了，应该是……")   # 让用户改：连带重算 hash 与向量
+soma.memories.delete(mid)                              # 让用户删：默认归档，还能 restore 反悔
+soma.token_usage                                       # 真实 token（provider 原值，估算的会标注）
+```
+
+接入方此前只能穿透私有属性拼裸 SQL —— 没有作用域（多用户互相可见），改内容还会
+留下失步的向量。现在这条路封进接口，并登记进 API 稳定性承诺。
+
+→ [记忆管理与真实用量](docs/guides/memory-management_zh.md)
 
 ### 3. 双向激活 — 加权 RRF 混合检索
 
@@ -367,7 +383,7 @@ result = tool.run("分析这个问题...")
 
 ## 基准测试
 
-SOMA v2.0.18.3 — 使用生产数据，1118 测试通过，5轮统计基准测试：
+SOMA v2.0.19 — 使用生产数据，1170 测试通过，5轮统计基准测试：
 
 ### 综合评分: 92.6/100
 
@@ -383,7 +399,7 @@ SOMA v2.0.18.3 — 使用生产数据，1118 测试通过，5轮统计基准测�
 
 | 系统 | Recall@5 | 推理框架 | 三层记忆 | 进化 | 多Agent | 觉察 |
 |--------|:---:|:---:|:---:|:---:|:---:|:---:|
-| **SOMA v2.0.18.3** | **100%** | **✓** | **✓** | **✓** | **✓** | **✓** |
+| **SOMA v2.0.19** | **100%** | **✓** | **✓** | **✓** | **✓** | **✓** |
 | ChromaDB | 2.5% | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Mem0 | * | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Zep | * | ✗ | ✗ | ✗ | ✗ | ✗ |

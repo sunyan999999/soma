@@ -1,5 +1,6 @@
 import hashlib
 import logging
+import threading
 import time
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
@@ -15,6 +16,12 @@ from soma.hub import ActivationHub
 from soma.memory.core import MemoryCore
 from soma.quality import QualityEvaluator
 from soma.retry import llm_retry
+from soma.usage import (
+    TokenUsage,
+    UsageRecorder,
+    estimate_tokens,
+    extract_usage,
+)
 from soma.zhongdao import ZhongdaoEngine
 
 _log = logging.getLogger(__name__)
@@ -227,7 +234,9 @@ class SOMA_Agent:
         _warmup = getattr(self.embedder, "warmup", None) if self.embedder else None
         if _warmup is not None and not getattr(self.embedder, "is_loaded", False):
             # v1.1.1: 后台预热嵌入模型（不阻塞构造）
-            import threading
+            # v2.0.19: 这里原本有一句函数内的 import threading —— 它会把 threading
+            # 变成整个 __init__ 的局部名，令其后构造 threading.local() 的那行在
+            # 赋值之前就 UnboundLocalError。模块顶部已导入，删掉局部导入。
             threading.Thread(
                 target=_warmup, daemon=True, name="soma-embedder-warmup",
             ).start()
@@ -269,6 +278,12 @@ class SOMA_Agent:
 
         # LLM 短时缓存（避免相同 prompt 重复调用）
         self._llm_cache: Dict[str, tuple] = {}
+
+        # v2.0.19: 真实 token 用量。_call_ctx 把 user_id 带到实际发请求的那一层
+        # —— 多专家编排下 LLM 调用来自多个线程（v1.1.0 并行分发），所以用
+        # thread-local 而不是实例属性，否则并发时用量会记到别人的账上。
+        self.usage = UsageRecorder()
+        self._call_ctx = threading.local()
 
         # 保存最近一次构建的 prompt（供仪表盘可视化）
         self._last_prompt: str = ""
@@ -831,7 +846,12 @@ class SOMA_Agent:
             if time.time() - ts < ttl:
                 return answer
 
-        answer = self._do_llm_call(prompt)
+        # 命中缓存 = 没有真实请求 = 不产生 token，因此计数只发生在 _do_llm_call
+        self._call_ctx.user_id = user_id
+        try:
+            answer = self._do_llm_call(prompt)
+        finally:
+            self._call_ctx.user_id = ""
 
         # 缓存结果
         self._llm_cache[cache_key] = (time.time(), answer)
@@ -854,8 +874,12 @@ class SOMA_Agent:
             kwargs["api_key"] = self.config.llm_api_key
         if self.config.llm_base_url:
             kwargs["api_base"] = self.config.llm_base_url
+        t0 = time.time()
         response = completion(**kwargs)
-        return response.choices[0].message.content
+        answer = response.choices[0].message.content or ""
+        self._record_usage(response, prompt, answer, "respond",
+                          latency_ms=int((time.time() - t0) * 1000))
+        return answer
 
     # ── v0.6.0 因果抽取 ─────────────────────────────────
 
@@ -872,8 +896,44 @@ class SOMA_Agent:
             kwargs["api_key"] = self.config.llm_api_key
         if self.config.llm_base_url:
             kwargs["api_base"] = self.config.llm_base_url
+        t0 = time.time()
         response = completion(**kwargs)
-        return response.choices[0].message.content
+        result = response.choices[0].message.content or ""
+        self._record_usage(response, extract_prompt, result, "causal_extraction",
+                          latency_ms=int((time.time() - t0) * 1000))
+        return result
+
+    # ── v2.0.19: 真实 token 用量 ─────────────────────────────
+
+    def _current_user_id(self) -> str:
+        """当前线程正在为哪个 user 调用模型（无上下文时空串）。"""
+        return getattr(self._call_ctx, "user_id", "") or ""
+
+    def _record_usage(
+        self, response: Any, prompt: str, completion_text: str, purpose: str,
+        latency_ms: int = 0,
+    ) -> TokenUsage:
+        """把 provider 返回的 usage 记账；provider 没给就用字符估算兜底。
+
+        兜底记录一定带 estimated=True —— 估算值不能拿去计费，接入方必须能
+        区分这两种来源，否则用量页就是在骗人。
+        """
+        usage = extract_usage(response)
+        if usage is None:
+            usage = TokenUsage(
+                prompt_tokens=estimate_tokens(prompt),
+                completion_tokens=estimate_tokens(completion_text),
+                estimated=True,
+            )
+        usage.model = usage.model or (self.config.llm_model or "")
+        usage.user_id = self._current_user_id()
+        usage.purpose = purpose
+        usage.latency_ms = latency_ms
+        return self.usage.record(usage)
+
+    def token_usage(self) -> Dict[str, Any]:
+        """累计真实 token 用量（含 by_model 与 estimated_calls 诚实标注）。"""
+        return self.usage.snapshot()
 
     def _extract_causal_relations(self, problem: str, answer: str) -> None:
         """从回答中自动抽取因果关系，存入语义记忆库。

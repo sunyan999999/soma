@@ -44,6 +44,44 @@ v0.4.0 起，以下公共接口遵循语义化版本承诺：**主版本号变�
 |------|:--:|
 | `SOMAConfig` | 冻结 — 字段可新增不可移除 |
 
+### v2.0.19 新增：记忆管理与真实用量
+
+| 方法 | 签名 | 说明 |
+|------|------|------|
+| `.memories` | `-> MemoryApi` | 只读属性，记忆管理单一出口（见下表） |
+| `.token_usage` | `-> dict` | 只读属性，累计真实 token 用量快照 |
+| `.recent_usage(n)` | `-> list[dict]` | 最近 n 次调用明细（最新在前） |
+| `.usage` | `-> UsageRecorder` | 只读属性，`on_usage(cb)` / `reset()` |
+
+`MemoryApi`（经 `soma.memories` 取用，不要自己 new）：
+
+| 方法 | 说明 |
+|------|------|
+| `.list(user_id, agent_id, nature, min_importance, days, after, order_by, limit, preview)` | 键集游标分页列举；`order_by` = recent / importance |
+| `.get(memory_id, user_id)` | 读一条全文；非本人返回 None |
+| `.search(query, top_k, user_id, agent_id, group_id, max_age_days)` | 语义检索，与 `query_memory` 同一召回链路 |
+| `.update(memory_id, user_id, content, importance, nature, context)` | 改字段；content 变了连带重算 hash 与向量 |
+| `.delete(memory_id, user_id, hard, reason)` | 删除，**默认归档**（可 restore）；`hard=True` 才真删 |
+| `.archived(...)` / `.restore(memory_id, user_id)` | 最近删除 / 反悔（恢复时重建向量） |
+| `.export_memories(user_id, nature, path, order_by, batch, limit)` | 导出；给 `path` 则流式写 NDJSON，不入内存 |
+| `.iter_memories(...)` | 生成器逐批遍历，供迁移与同步 |
+
+**共同约定**：`user_id=""` 表示该维度不限（单租户常态）；多租户必须显式传，
+否则等于全库可见 —— 与 `query_by_filters` 一致。跨用户读写一律返回「不存在」
+而不是「无权限」，避免泄露 id 归属。
+
+**游标不可跨 `order_by` 复用**（抛 `ValueError`），也不会因中途增删而错位。
+
+→ [记忆管理与真实用量](guides/memory-management_zh.md)
+
+### v2.0.19 新增：数据模型
+
+| 类 | 字段 | 稳定性 |
+|----|------|:--:|
+| `TokenUsage` | `prompt_tokens, completion_tokens, total_tokens, model, user_id, purpose, latency_ms, estimated, timestamp` | 冻结 |
+
+`estimated=True` 表示该条由字符估算兜底（provider 未返回 usage）—— **不可用于
+计费**。SOMA 一定把这个标记带到出口，接入方必须区分。
 ## 高级接口（稳定但不推荐直接使用）
 
 这些类暴露给需要深度定制的用户，接口保持稳定但内部实现可能优化：
@@ -57,7 +95,7 @@ v0.4.0 起，以下公共接口遵循语义化版本承诺：**主版本号变�
 
 以下模块的 API 不承诺兼容：
 
-- `soma.memory.*` — 记忆存储实现细节
+- `soma.memory.*` — 记忆存储实现细节（**请走 `soma.memories`，不要穿透 `_conn` 拼裸 SQL —— v2.0.19 起已有正式接口）**
 - `soma.hub` — ActivationHub 管道
 - `soma.engine` — WisdomEngine
 - `soma.vector_store` — 向量搜索后端

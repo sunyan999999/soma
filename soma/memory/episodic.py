@@ -13,6 +13,9 @@ from soma.db import close_store_connection, open_store_connection
 from soma.memory.context_utils import normalize_context, parse_context
 
 _log = logging.getLogger("soma.memory.episodic")
+# 单页返回上限 —— 管理页与导出都靠它兜住「一次拉爆内存」
+_LIST_MAX_LIMIT = 1000
+
 
 
 class EpisodicStore(BaseMemoryStore):
@@ -119,6 +122,11 @@ class EpisodicStore(BaseMemoryStore):
         )
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_episodic_group ON episodic_memories(shared_group_id)"
+        )
+        # v2.0.19: 管理页的「最重要的记忆」按 importance 倒序取 —— 没索引就是
+        # 全表排序。SQLite 可以反向扫普通索引，故不必建表达式索引。
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_episodic_importance ON episodic_memories(importance)"
         )
         # v2.0.18.3: (user_id, agent_id) 复合索引。生产 hub 调用恒带这两个条件，
         # 而 SQLite 会放着选择性更好的 idx_episodic_user 不用，去扫
@@ -582,6 +590,237 @@ class EpisodicStore(BaseMemoryStore):
                 continue
         return out
 
+    # ── v2.0.19: 用户可见的记忆管理原语（只读列举 / 更新 / 归档删除） ──
+
+    def _ensure_archived_table(self) -> bool:
+        """确保归档表存在（表结构唯一定义在 ForgettingEngine，这里只负责触发）。
+
+        新库在第一次遗忘扫描之前没有 episodic_archived —— 直接查会抛
+        OperationalError，把「还没有任何东西被归档」误报成查询故障。
+        """
+        try:
+            from soma.memory.forgetting import ForgettingEngine
+            ForgettingEngine(self._conn)     # __init__ 里 _ensure_tables()，幂等
+            return True
+        except Exception:
+            _log.warning("归档表初始化失败", exc_info=True)
+            return False
+
+    def list_memories(
+        self,
+        *,
+        user_id: str = "",
+        agent_id: str = "",
+        nature: Optional[str] = None,
+        min_importance: Optional[float] = None,
+        days: float = 0,
+        older_than_days: float = 0,
+        after_key: Optional[float] = None,
+        after_id: str = "",
+        order_by: str = "recent",
+        limit: int = 50,
+    ) -> List[MemoryUnit]:
+        """按条件列举记忆（管理页 / 导出用），键集游标分页。
+
+        与 query_by_filters 的分工：那条服务于代码内的固定调用（自主循环取
+        候选），本条服务于「翻给用户看」—— 多一组游标参数，让接入方能连续
+        翻页而不漏不重。
+
+        分页用 (timestamp, id) 复合游标而不是 OFFSET：管理页翻到第 20 页时
+        若有人新增或删除记忆，OFFSET 会错位（同一条重复出现或整条跳过）。
+        传上一页最后一条的 timestamp + id 即可安全续翻。
+
+        order_by: "recent"（默认，按时间倒序）或 "importance"（按重要性倒序，
+        管理页的「最重要的记忆」用）。两者都用 (排序键, id) 复合游标，
+        after_key 传的就是上一页最后一条的那个排序键。
+
+        user_id 为空串 = 不按用户过滤（单租户常态）；多租户必须显式传，
+        否则等于全库可见 —— 与 query_by_filters 同一约定。
+        """
+        if order_by not in ("recent", "importance"):
+            raise ValueError("order_by 只能是 recent / importance，收到 " + repr(order_by))
+        sql = "SELECT * FROM episodic_memories WHERE 1=1 "
+        params: List[Any] = []
+        if user_id:
+            sql += "AND user_id = ? "
+            params.append(user_id)
+        if agent_id:
+            sql += "AND agent_id = ? "
+            params.append(agent_id)
+        if nature:
+            sql += "AND nature = ? "
+            params.append(nature)
+        if min_importance is not None:
+            sql += "AND importance >= ? "
+            params.append(float(min_importance))
+        if days > 0:
+            sql += "AND timestamp >= ? "
+            params.append(datetime.now(timezone.utc).timestamp() - days * 86400)
+        if older_than_days > 0:
+            sql += "AND timestamp < ? "
+            params.append(datetime.now(timezone.utc).timestamp() - older_than_days * 86400)
+        if after_key is not None and after_id:
+            # 行值比较的展开写法 —— 兼容不支持 (a,b) < (?,?) 的旧 SQLite
+            key = "timestamp" if order_by == "recent" else "importance"
+            sql += "AND (" + key + " < ? OR (" + key + " = ? AND id < ?)) "
+            params.extend([float(after_key), float(after_key), after_id])
+        order = "timestamp" if order_by == "recent" else "importance"
+        sql += "ORDER BY " + order + " DESC, id DESC LIMIT ?"
+        params.append(max(1, min(int(limit), _LIST_MAX_LIMIT)))
+
+        try:
+            rows = self._conn.execute(sql, params).fetchall()
+        except sqlite3.Error:
+            _log.warning("list_memories 查询失败", exc_info=True)
+            return []
+
+        out: List[MemoryUnit] = []
+        for row in rows:
+            try:
+                out.append(self._row_to_memory(row))
+            except Exception:
+                continue      # 单行坏数据不能拖垮整页（与 query_by_filters 一致）
+        return out
+
+    def update(
+        self,
+        memory_id: str,
+        *,
+        content: Optional[str] = None,
+        importance: Optional[float] = None,
+        nature: Optional[str] = None,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        """更新一条记忆的字段，并保持一致性（内容变了要重算 hash 与向量）。
+
+        接入方此前只能裸 SQL 改 content —— 那样 content_hash 与向量都留在
+        旧值上：去重判断失准，语义搜索还在召回改前的内容。本方法把「改什么、
+        连带重算什么」收在一处。
+
+        只更新显式传入的字段（None = 不动该字段）。返回 False 表示该 id 不存在。
+        """
+        fields: List[str] = []
+        params: List[Any] = []
+
+        if content is not None:
+            fields.append("content = ?")
+            params.append(content)
+            fields.append("content_hash = ?")
+            params.append(self._compute_hash(content))
+        if importance is not None:
+            fields.append("importance = ?")
+            params.append(max(0.0, min(1.0, float(importance))))
+        if nature is not None:
+            if nature not in ("state", "fact", "event"):
+                raise ValueError("nature 必须是 state/fact/event，收到 " + repr(nature))
+            fields.append("nature = ?")
+            params.append(nature)
+        if context is not None:
+            fields.append("context_json = ?")
+            params.append(json.dumps(normalize_context(context), ensure_ascii=False))
+
+        if not fields:
+            return self.get(memory_id) is not None
+
+        params.append(memory_id)
+        try:
+            cur = self._conn.execute(
+                "UPDATE episodic_memories SET " + ", ".join(fields) + " WHERE id = ?",
+                params,
+            )
+            self._conn.commit()
+        except sqlite3.Error:
+            _log.warning("update 失败, memory_id=%s", memory_id[:8], exc_info=True)
+            return False
+        if cur.rowcount == 0:
+            return False
+
+        # 内容变了 → 向量必须重算，否则语义搜索仍返回改前内容（FTS5 由触发器自动同步）
+        if content is not None:
+            self._reindex_vector(memory_id, content)
+        return True
+
+    def _reindex_vector(self, memory_id: str, content: str) -> bool:
+        """重新编码并写入向量（编码失败只降级索引，不影响内容已更新的事实）。"""
+        if not self._use_vector or self._embedder is None:
+            return False
+        try:
+            vec = self._embedder.encode(content)
+            self._vector_index.store_vector(self._conn, memory_id, vec)
+            return True
+        except Exception as e:
+            _log.warning(
+                "向量重算失败，memory_id=%s，内容已更新但该条暂缺语义索引"
+                "（下次查询会自动重建补全）。原因: %s", memory_id[:8], e)
+            return False
+
+    def archive_and_delete(
+        self, memory_id: str, reason: str = "user_delete"
+    ) -> bool:
+        """删除一条记忆，但先归档 —— 用户点删除之后还能反悔。
+
+        与 ForgettingEngine 的归档走同一张表（episodic_archived），用
+        archive_reason 区分来源。硬删除请走 delete()（遗忘清理用），
+        用户侧默认不该硬删。
+        """
+        row = self._conn.execute(
+            "SELECT * FROM episodic_memories WHERE id = ?", (memory_id,)
+        ).fetchone()
+        if row is None:
+            return False
+
+        from soma.memory.forgetting import ForgettingEngine
+        engine = ForgettingEngine(self._conn)
+        if not engine.archive_row(row, reason=reason):
+            return False
+
+        # 行已不在主表 —— 顺手清掉向量，免得 faiss 里留着对不上记忆的幽灵条目
+        if self._use_vector and self._vector_index is not None:
+            try:
+                self._vector_index.delete_vector(self._conn, memory_id)
+            except Exception:
+                _log.warning("归档后清向量失败, memory_id=%s", memory_id[:8],
+                             exc_info=True)
+        return True
+
+    def list_archived(
+        self, *, user_id: str = "", limit: int = 50
+    ) -> List[Dict[str, Any]]:
+        """列举归档记忆（供「最近删除 / 可恢复」界面）。
+
+        不复用 ForgettingEngine.recall_archived —— 那里 user_id="" 是**字面**
+        条件（只查未指定用户的归档行），而本模块的约定是「空 = 不限」，两者
+        语义相反：照抄会让单传 user_id 的调用永远查不到东西。
+        """
+        if not self._ensure_archived_table():
+            return []
+        sql = "SELECT * FROM episodic_archived WHERE 1=1 "
+        params: List[Any] = []
+        if user_id:
+            sql += "AND user_id = ? "
+            params.append(user_id)
+        sql += "ORDER BY archived_at DESC LIMIT ?"
+        params.append(max(1, min(int(limit), _LIST_MAX_LIMIT)))
+        try:
+            rows = self._conn.execute(sql, params).fetchall()
+        except sqlite3.Error:
+            _log.warning("list_archived 查询失败", exc_info=True)
+            return []
+        return [dict(r) for r in rows]
+
+    def get_archived(self, memory_id: str) -> Optional[Dict[str, Any]]:
+        """按 id 取一条归档记忆（不存在返回 None）。"""
+        if not self._ensure_archived_table():
+            return None
+        try:
+            row = self._conn.execute(
+                "SELECT * FROM episodic_archived WHERE id = ?", (memory_id,)
+            ).fetchone()
+        except sqlite3.Error:
+            _log.warning("get_archived 查询失败", exc_info=True)
+            return None
+        return dict(row) if row else None
+
     def distinct_user_ids(self, limit: int = 500) -> List[str]:
         """库里出现过的非空 user_id，按记忆条数降序（v2.0.18.2）。
 
@@ -657,10 +896,22 @@ class EpisodicStore(BaseMemoryStore):
         return engine.recall_archived(query=query, user_id=user_id, top_k=top_k)
 
     def restore_archived(self, memory_id: str) -> bool:
-        """恢复一条归档记忆"""
+        """恢复一条归档记忆（v2.0.19: 连带重建向量）。
+
+        归档时向量随行一起被清掉（delete_vector 置 NULL）—— 只回插主表的话，
+        恢复出来的记忆 vector 为空，语义搜索再也召不回它，等于「恢复」只恢复了
+        一半。这里补一次重编码。
+        """
         from soma.memory.forgetting import ForgettingEngine
         engine = ForgettingEngine(self._conn)
-        return engine.restore(memory_id)
+        if not engine.restore(memory_id):
+            return False
+        row = self._conn.execute(
+            "SELECT content FROM episodic_memories WHERE id = ?", (memory_id,)
+        ).fetchone()
+        if row is not None:
+            self._reindex_vector(memory_id, row["content"])
+        return True
 
     def import_knowledge(
         self, source_path: str, user_id: str = "", session_id: str = ""

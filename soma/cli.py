@@ -325,6 +325,133 @@ def cmd_learn(args):
 
 
 # ═══════════════════════════════════════════════════════════════
+# v2.0.19: 记忆管理与用量子命令
+# ═══════════════════════════════════════════════════════════════
+
+def cmd_memories(args):
+    """列举 / 编辑 / 查看记忆（管理侧入口，作用域显式）"""
+    try:
+        soma = _get_soma(getattr(args, "project", ""))
+        api = soma.memories
+
+        mid = getattr(args, "id", "")
+        uid = getattr(args, "user_id", "") or ""
+
+        # 改写模式必须先判：否则下面的「只看」分支会先 return，改写永远走不到
+        content = getattr(args, "set_content", "")
+        if mid and content:
+            out = api.update(mid, user_id=uid, content=content)
+            print(json.dumps(out, ensure_ascii=False, indent=2))
+            soma.close()
+            return 0 if out.get("ok") else 1
+
+        if mid:
+            out = api.get(mid, user_id=uid)
+            if out is None:
+                print(json.dumps({"error": "记忆不存在或不属于该用户"},
+                                  ensure_ascii=False))
+                soma.close()
+                return 1
+            print(json.dumps(out, ensure_ascii=False, indent=2))
+            soma.close()
+            return 0
+
+        out = api.list(
+            user_id=getattr(args, "user_id", "") or "",
+            nature=getattr(args, "nature", "") or None,
+            order_by=getattr(args, "order", "recent"),
+            limit=getattr(args, "limit", 20),
+            preview=getattr(args, "preview", 80),
+        )
+        print(json.dumps(out, ensure_ascii=False, indent=2))
+        if out.get("next_cursor"):
+            print("\n（还有更多：--after <next_cursor> 续翻）", file=sys.stderr)
+        soma.close()
+        return 0
+    except Exception as e:
+        print(json.dumps({"error": str(e)}, ensure_ascii=False))
+        return 1
+
+
+def cmd_forget(args):
+    """删除一条记忆（默认归档，可 --restore 反悔）"""
+    try:
+        soma = _get_soma(getattr(args, "project", ""))
+        api = soma.memories
+        uid = getattr(args, "user_id", "") or ""
+
+        if getattr(args, "list_archived", False):
+            print(json.dumps(api.archived(user_id=uid, limit=args.limit),
+                              ensure_ascii=False, indent=2))
+            soma.close()
+            return 0
+
+        if getattr(args, "restore", ""):
+            out = api.restore(args.restore, user_id=uid)
+            print(json.dumps(out, ensure_ascii=False, indent=2))
+            soma.close()
+            return 0 if out.get("ok") else 1
+
+        if not args.id:
+            print(json.dumps({"error": "需要给出记忆 id，或用 --list/--restore"},
+                              ensure_ascii=False))
+            soma.close()
+            return 1
+
+        out = api.delete(args.id, user_id=uid, hard=getattr(args, "hard", False))
+        print(json.dumps(out, ensure_ascii=False, indent=2))
+        if out.get("archived"):
+            print("\n（已归档，可 soma forget --restore %s 恢复）" % args.id,
+                  file=sys.stderr)
+        soma.close()
+        return 0 if out.get("ok") else 1
+    except Exception as e:
+        print(json.dumps({"error": str(e)}, ensure_ascii=False))
+        return 1
+
+
+def cmd_export(args):
+    """导出记忆为 JSON / NDJSON（备份、迁移、云端同步）"""
+    try:
+        soma = _get_soma(getattr(args, "project", ""))
+        out = soma.memories.export_memories(
+            user_id=getattr(args, "user_id", "") or "",
+            nature=getattr(args, "nature", "") or None,
+            path=getattr(args, "output", "") or "",
+            limit=getattr(args, "limit", 0),
+        )
+        # 导到文件时不把条目再打一遍屏，只报计数与路径
+        if args.output:
+            out.pop("items", None)
+        print(json.dumps(out, ensure_ascii=False, indent=2))
+        soma.close()
+        return 0
+    except Exception as e:
+        print(json.dumps({"error": str(e)}, ensure_ascii=False))
+        return 1
+
+
+def cmd_usage(args):
+    """真实 token 用量（累计快照 / 最近明细）"""
+    try:
+        soma = _get_soma(getattr(args, "project", ""))
+        if getattr(args, "recent", 0):
+            out = soma.recent_usage(args.recent)
+        else:
+            out = soma.token_usage
+        print(json.dumps(out, ensure_ascii=False, indent=2))
+        if not args.recent and out.get("estimated_calls"):
+            print("\n（注意：%d 次调用没有 provider 返回的真实 usage，"
+                  "按字符估算并已标记 estimated=true —— 这部分不能用于计费）"
+                  % out["estimated_calls"], file=sys.stderr)
+        soma.close()
+        return 0
+    except Exception as e:
+        print(json.dumps({"error": str(e)}, ensure_ascii=False))
+        return 1
+
+
+# ═══════════════════════════════════════════════════════════════
 # CLI 定义
 # ═══════════════════════════════════════════════════════════════
 
@@ -493,6 +620,62 @@ def build_parser() -> argparse.ArgumentParser:
     p_rp.add_argument("--rollback", type=str, default="",
                        help="按备份文件回滚一次修复")
 
+    # memories（v2.0.19）
+    p_mem = sub.add_parser("memories",
+                           help="列举 / 查看 / 编辑记忆（管理侧入口）")
+    _add_project_arg(p_mem)
+    p_mem.add_argument("--id", type=str, default="",
+                        help="看/改某一条记忆的全文")
+    p_mem.add_argument("--set-content", type=str, default="",
+                        help="配合 --id：改写这条记忆的内容")
+    p_mem.add_argument("--user-id", type=str, default="",
+                        help="只看某用户（多租户必须显式传）")
+    p_mem.add_argument("--nature", type=str, default="",
+                        choices=["", "state", "fact", "event"],
+                        help="只按业务性质筛选")
+    p_mem.add_argument("--order", type=str, default="recent",
+                        choices=["recent", "importance"],
+                        help="排序维度 (默认 recent)")
+    p_mem.add_argument("-n", "--limit", type=int, default=20,
+                        help="返回条数 (默认20)")
+    p_mem.add_argument("--preview", type=int, default=80,
+                        help="每条截断到 N 字 (0=不截断，默认80)")
+
+    # forget（v2.0.19）
+    p_fg = sub.add_parser("forget",
+                          help="删除记忆（默认归档，可恢复）/ 列出归档 / 恢复")
+    _add_project_arg(p_fg)
+    p_fg.add_argument("id", nargs="?", default="", help="要删除的记忆 id")
+    p_fg.add_argument("--user-id", type=str, default="",
+                       help="多租户下校验归属")
+    p_fg.add_argument("--hard", action="store_true",
+                       help="真删除（不留归档，不可恢复）")
+    p_fg.add_argument("--list", action="store_true", dest="list_archived",
+                       help="列出最近删除（可恢复）的记忆")
+    p_fg.add_argument("--restore", type=str, default="",
+                       help="从归档恢复某条记忆")
+    p_fg.add_argument("-n", "--limit", type=int, default=20,
+                       help="--list 时返回条数 (默认20)")
+
+    # export（v2.0.19）
+    p_ex = sub.add_parser("export", help="导出记忆（备份 / 迁移 / 同步）")
+    _add_project_arg(p_ex)
+    p_ex.add_argument("--user-id", type=str, default="",
+                       help="只导某用户")
+    p_ex.add_argument("--nature", type=str, default="",
+                       choices=["", "state", "fact", "event"],
+                       help="只按业务性质导出")
+    p_ex.add_argument("-o", "--output", type=str, default="",
+                       help="写到文件（NDJSON，一行一条）；不传则打屏")
+    p_ex.add_argument("-n", "--limit", type=int, default=0,
+                       help="最多导出条数 (0=不限)")
+
+    # usage（v2.0.19）
+    p_us = sub.add_parser("usage", help="真实 token 用量（provider 返回值）")
+    _add_project_arg(p_us)
+    p_us.add_argument("--recent", type=int, default=0,
+                       help="看最近 N 次调用明细（默认看累计快照）")
+
     return parser
 
 
@@ -515,6 +698,10 @@ def main():
         "graph": cmd_graph,
         "reclassify": cmd_reclassify,
         "repair-context": cmd_repair_context,
+        "memories": cmd_memories,
+        "forget": cmd_forget,
+        "export": cmd_export,
+        "usage": cmd_usage,
     }
 
     handler = dispatch.get(args.command)

@@ -7,6 +7,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.19] — 2026-09-25
+
+把接入方**已经在用裸 SQL 做的事**收成正式接口。架构规划 §4.1 列为「现在必须定
+（便宜且锁死，以后再改极贵）」的 SOMA 侧四项，本轮全部落地 —— 因为 soma-agent 的
+记忆管理页已经写完了，它此刻正穿透私有属性读库。等代码再长一轮就收不动了。
+
+### 新增
+
+- **`soma.memories` —— 记忆管理正式出口**（`soma/memory_api.py`）
+  - `list / get / search / update / delete / archived / restore / export_memories / iter_memories`
+  - **作用域在 SQL 层生效**，不是查完再在 Python 里筛 —— 后者既慢，又容易在改代码时
+    漏掉一处就泄库
+  - 键集游标分页（`(排序键, id)`）而非 OFFSET：管理页翻到第 20 页时中途增删不会错位
+  - `order_by="importance"` 支撑「最重要的记忆」视图（并补 `idx_episodic_importance`，
+    否则该查询是全表排序）
+  - **跨用户读写一律返回「不存在」而不是「无权限」** —— 后者会泄露「这个 id 属于别人」
+  - 删除**默认归档**，可 `restore` 反悔；`hard=True` 才真删
+  - `export_memories(path=...)` 流式写 NDJSON / `iter_memories` 逐批遍历 ——
+    26k 条的库不再一次性进内存
+- **`soma.token_usage` —— 真实 token 用量**（`soma/usage.py`）
+  - 取 `litellm` 响应的 provider 原值；取不到才按字符估算，**且一定标 `estimated=True`**
+  - 缓存命中不重复计费（命中即无真实请求）；provider 回全 0 视为缺失走估算
+  - `user_id` 走 thread-local 上下文 —— 多专家编排（v1.1.0 并行分发）下 6 线程
+    并发实测各记各的账，不串
+  - `soma.usage.on_usage(cb)`：回调在锁外执行，接入方发 HTTP 不会拖住并发线程；
+    回调抛异常不影响主链路
+  - **SOMA 不算钱、不管额度**（§4.3「现在绝对不碰」）—— 只负责把真实用量交出去
+- **CLI**：`soma memories / forget / export / usage` 四个子命令，全部支持 `--project`
+- 顶层导出 `MemoryApi` / `TokenUsage` / `UsageRecorder`；上述接口登记进
+  [API 稳定性承诺](docs/api_stability.md)，兼容至 1.0.0
+
+### 修复
+
+- **【P1】归档/恢复丢字段 —— 记忆时间感知静默失效**
+  `episodic_archived` 表从来没有 `agent_id` / `shared_group_id` / `nature` 三列，
+  `restore` 也不写回。后果不止丢数据：**一条 state 记忆归档再恢复就退化成
+  event，时效窗口就此永不触发** —— 正是 2.0.13/2.0.14 花两版建起来的那道防线，被一次
+  恢复悄悄抹掉。补列 + 幂等迁移（旧归档库自动 `ALTER`）+ 恢复写回三列。
+- **【P1】遗忘扫描的 SELECT 只取 6 列** —— `context_json` / `session_id` / `nature` 在归档时
+  被丢掉，恢复出来的是没有上下文、没有业务性质的空壳。改为 `SELECT *`。
+- **新库归档表未建即查询报错** —— `episodic_archived` 由 ForgettingEngine 懒建，没跑过
+  遗忘的新库里它不存在；`archived()` 现在确保表存在并返回空列表，而不是把
+  「还没有任何东西被归档」误报成 OperationalError。
+
+### 设计说明（为什么不顺手做 §4.1 剩下的那项）
+
+架构规划里还挂着一项「高 importance 的衰减豁免」（标注：中高成本、改内核公式）。
+**本轮刻意不做**，理由同 §3.4：时间衰减对所有记忆一视同仁是真问题，但解法是
+「把重要记忆**提取**成不衰减的形态」（L2/L3 分层，能力现成），而不是给衰减公式
+开个例外口子 —— 后者会让 2.0.13 那条「近因衰减是主防线」的结论不再成立，
+接入方据以写的 `max_age_days` / `is_stale` 语义全部漂移。
+
+### 测试
+
+- 新增 `tests/test_memory_api_usage.py`（52 项）：作用域（含越权返回 not_found）、
+  游标不漏不重 / 跨维度拒绝复用 / 坏游标报错、update 连带重算 hash 与向量、
+  删除→归档→恢复且 nature 与向量都回来、空库不报错、导出两模式、
+  provider 真实值原样记账 / 估算兜底标 estimated / 缓存不重复计费 / 6 线程按用户归属、
+  回调异常隔离、CLI 参数解析
+- 向量路径用注入的假 embedder 驱动（`FakeEmbedder`，16 维），CI 不下载 66MB 模型
+- 全量 **1170 passed**（1118 + 52），零回归
+
 ## [2.0.18.3] — 2026-09-19
 
 接入方在 2.0.18.2 生产复验里定位的一条**性能缺陷**修复版。一处索引缺失，同时拖慢

@@ -1,4 +1,4 @@
-# SOMA v2.0.18.3 — The Cognitive Kernel for AI Agents
+# SOMA v2.0.19 — The Cognitive Kernel for AI Agents
 
 <p align="center">
   <strong>Wisdom over Memory — 智慧超越记忆</strong><br>
@@ -28,7 +28,7 @@ answer = soma.respond("How to analyze our growth bottleneck?")
 
 **Why SOMA instead of a vector database?** Traditional memory (ChromaDB, Mem0) stores and retrieves. SOMA **thinks first**: a 7-law reasoning network decomposes problems *before* fetching memories. The result: agents that systematically analyze, not just pattern-match.
 
-| | Vector DBs | Mem0 | **SOMA v2.0.18.3** |
+| | Vector DBs | Mem0 | **SOMA v2.0.19** |
 |---|---|---|---|
 | Stores & retrieves | ✓ | ✓ | ✓ |
 | Reasoning framework | ✗ | ✗ | **✓ 7 thinking laws** |
@@ -46,12 +46,12 @@ answer = soma.respond("How to analyze our growth bottleneck?")
 <p align="center">
   <a href="https://github.com/sunyan999999/soma"><img src="https://img.shields.io/github/stars/sunyan999999/soma?style=social" alt="GitHub stars"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/version-2.0.18.3-blue" alt="Version"></a>
+  <a href="#"><img src="https://img.shields.io/badge/version-2.0.19-blue" alt="Version"></a>
   <a href="#"><img src="https://img.shields.io/badge/python-3.10%2B-green" alt="Python"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/semantic_recall-100%25-brightgreen" alt="Semantic Recall"></a>
   <a href="#benchmarks"><img src="https://img.shields.io/badge/overall_score-87.5%2F100-blue" alt="Overall Score"></a>
   <a href="#"><img src="https://img.shields.io/badge/tests-1043-brightgreen" alt="Tests"></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v2.0.18.3-success" alt="Changelog"></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/changelog-v2.0.19-success" alt="Changelog"></a>
   <a href="#"><img src="https://img.shields.io/badge/milestone-2.0.4-ff6b6b" alt="Milestone"></a>
 </p>
 
@@ -87,7 +87,7 @@ answer = soma.respond("How to analyze our growth bottleneck?")
 
 Every capability line that started as a seed in v0.1 has grown into a complete system:
 
-| Capability Line | Core Question | v2.0.18.3 Answer |
+| Capability Line | Core Question | v2.0.19 Answer |
 |---|---|---|
 | **Memory** | How can AI manage memory like humans do? | Three-tier: fragments → scenes → profile |
 | **Reasoning** | How to use information to think? | Causal chains + conflict detection + cross-domain analogy |
@@ -103,7 +103,7 @@ Every capability line that started as a seed in v0.1 has grown into a complete s
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
-│                         SOMA v2.0.18.3 — Cognitive Kernel                         │
+│                         SOMA v2.0.19 — Cognitive Kernel                         │
 │                                                                                │
 │  ┌──────────────────────────────────────────────────────────────────┐        │
 │  │  L3 User Profile — "Knows who you are"                             │        │
@@ -239,6 +239,24 @@ soma.reclassify_nature()                                          # backfill: dr
 
 → [Memory recency: the three mechanisms](docs/guides/memory-recency.md)
 
+#### Users can see, correct, and delete what SOMA remembers
+
+"What the AI knows about me" should not be a black box. Since v2.0.19 this is a
+first-class interface rather than an implementation detail:
+
+```python
+soma.memories.list(user_id="u1")                        # show the user: what, when, what kind
+soma.memories.update(mid, content="No — it should be…") # let them fix it: hash + vector recomputed
+soma.memories.delete(mid)                               # let them delete: archived, restorable
+soma.token_usage                                        # real tokens (provider values; estimates flagged)
+```
+
+Integrators previously had to reach through private attributes and write raw SQL
+— no scoping (users could see each other's memories), and edits left vectors
+stale. That path is now behind an interface and registered in the API stability
+commitment.
+
+→ [Memory management & real token usage](docs/guides/memory-management.md)
 ### 3. Bidirectional Activation — Hybrid RRF
 
 Memories are matched through **weighted Reciprocal Rank Fusion**:
@@ -421,7 +439,7 @@ SOMA has been used in production across two distinct codebases — a Go-based CL
 
 ## Benchmarks
 
-SOMA v2.0.18.3 — benchmarked with 1,050 production memories from digital twin project testing (5 runs, statistical output):
+SOMA v2.0.19 — benchmarked with 1,050 production memories from digital twin project testing (5 runs, statistical output):
 
 ### Overall Score: 87.5/100
 
@@ -451,7 +469,7 @@ SOMA v2.0.18.3 — benchmarked with 1,050 production memories from digital twin 
 
 | System | Recall@5 | Reasoning | Three-Tier Memory | Evolution | Multi-Agent | Awareness |
 |--------|:---:|:---:|:---:|:---:|:---:|:---:|
-| **SOMA v2.0.18.3** | **100%** | **✓** | **✓** | **✓** | **✓** | **✓** |
+| **SOMA v2.0.19** | **100%** | **✓** | **✓** | **✓** | **✓** | **✓** |
 | ChromaDB | 2.5% | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Mem0 | * | ✗ | ✗ | ✗ | ✗ | ✗ |
 | Zep | * | ✗ | ✗ | ✗ | ✗ | ✗ |
