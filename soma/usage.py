@@ -1,6 +1,6 @@
 """真实 token 用量记录 —— 保存 LLM provider 返回的 usage，供接入方计量与排障。
 
-为什么需要：SOMA 核心此前不暴露 token usage，接入方（soma-agent 的用量页）
+为什么需要：SOMA 核心此前不暴露 token usage，接入方的用量页
 只能按「字符数 / 2」估算。估算值不能用于计费，也对不上 provider 账单。
 
 本模块只做一件事：把 provider 返回的真实数字留下来，并交给需要它的人。
