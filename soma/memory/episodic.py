@@ -196,6 +196,29 @@ class EpisodicStore(BaseMemoryStore):
                 "SELECT rowid, content, context_json FROM episodic_memories"
             )
 
+    def recent_contents(
+        self, user_id: str = "", agent_id: str = "", limit: int = 5,
+    ) -> List[str]:
+        """最近 N 条记忆的**内容**（给写入质量门控查重用，2026-10-20）。
+
+        只要内容，不要整条记录 —— 门控只需要做"归一化后是不是同一句"这个
+        判断，把 context / 向量全读出来是浪费。
+
+        作用域和写入对齐（`user_id` + `agent_id`）：**别人的记忆不该挡住你的**。
+        """
+        try:
+            rows = self._conn.execute(
+                "SELECT content FROM episodic_memories "
+                "WHERE user_id = ? AND agent_id = ? "
+                "ORDER BY timestamp DESC LIMIT ?",
+                (user_id, agent_id, max(1, int(limit))),
+            ).fetchall()
+            return [r["content"] for r in rows if r["content"]]
+        except Exception as e:                       # noqa: BLE001
+            # 查不到就当"没有最近记忆" —— **门控绝不能因为查重失败而挡住写入**
+            _log.warning("读取最近记忆失败（跳过查重）: %s", e)
+            return []
+
     def _compute_hash(self, content: str) -> str:
         return hashlib.sha256(content.encode("utf-8")).hexdigest()
 

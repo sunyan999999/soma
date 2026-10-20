@@ -1,5 +1,8 @@
+import logging
 import time as _time_module
 from typing import Any, Dict, List, Optional, Set
+
+_log = logging.getLogger(__name__)
 
 from soma.base import RECENCY_HALF_LIFE_DAYS, ActivatedMemory, Focus, MemoryUnit
 from soma.config import SOMAConfig
@@ -36,6 +39,10 @@ class MemoryCore:
         self.profile_store = profile_store
         self._scene_retrieval_weight = config.scene_retrieval_weight
         self._profile_retrieval_weight = config.profile_retrieval_weight
+        # ★ 写入质量门控（2026-10-20）—— 见 `soma/memory/quality.py`。
+        #   默认开：不挡的话"你好/好的/嗯"会和真正重要的事在同一个池子里
+        #   竞争 top_k，噪音压倒信号。
+        self._quality_gate = bool(getattr(config, "memory_quality_gate", True))
 
     def attach_stores(self, scene_store=None, profile_store=None) -> None:
         """v0.10.0: 延迟注入分层记忆存储（供 SOMA._ensure_layered_memory 调用）"""
@@ -58,7 +65,30 @@ class MemoryCore:
         """存储情节记忆
 
         v2.0.14: nature 业务性质（state 状态类/时效强 / fact 事实技能类/长期 / event 事件）。
+        v2.0.20: **写入质量门控**（`memory_quality_gate`，默认开）。
+
+        ## 门控挡什么、不挡什么
+
+        挡：**纯寒暄**（"你好"/"好的"/"嗯"）、**无实质内容**（"。。。"）、
+        **归一化后与最近记忆完全相同**（用户把同一句话说两遍）。
+
+        **不按长度挡** —— "用户叫孙岩"只有 6 个字，但它是这个库里最值钱的东西。
+
+        被挡时返回**空串**（不是 id），并在日志里记一行原因 ——
+        用户问"我刚才说的你怎么没记住"时，要查得到为什么。
+
+        关掉：`config.memory_quality_gate = False`（有些接入方要存全量日志）。
         """
+        if self._quality_gate:
+            from soma.memory.quality import should_store
+            ok, why = should_store(
+                content,
+                recent=self.episodic.recent_contents(
+                    user_id=user_id, agent_id=agent_id, limit=5),
+            )
+            if not ok:
+                _log.info("[记忆门控] 未写入（%s）：%s", why, str(content)[:60])
+                return ""
         return self.episodic.add(
             content, context, importance,
             user_id=user_id, session_id=session_id,
@@ -168,12 +198,36 @@ class MemoryCore:
                 score += 1.0 / (rrf_k + kw_rank[mid])
             if mid in graph_kw_rank:
                 score += 0.5 / (rrf_k + graph_kw_rank[mid])
-            # 时间衰减因子
+            # 时间衰减因子 + 重要性
+            #
+            # ★★ 2026-10-20 修（"越用越懂"的机制基础）★★
+            #
+            #   原来这两行是：
+            #       time_penalty = exp(-days / 7)      # 半衰期写死 7 天
+            #       score *= time_penalty              # **不乘 importance**
+            #
+            #   两个后果叠在一起：
+            #     · 30 天后任何记忆权重都不足 1.4%（`exp(-30/7)`）；
+            #     · 排序时**不知道哪条重要** —— "用户叫孙岩"和"今天天气不错"
+            #       被乘上同一个系数。
+            #
+            #   结果就是用户说的「越用越不懂」：聊了三个月，它不记得你是谁。
+            #
+            #   现在：
+            #     · 半衰期用 `mem.effective_half_life()`（重要性 / 性质 / 回忆次数
+            #       都参与，见 `base.MemoryUnit`）；
+            #     · 再乘一次 `importance`，让"重要的"在同样新旧时排得更前。
+            #       这一项和 `MemoryUnit.relevance_potential()` 的口径一致 ——
+            #       两套衰减机制以前不一致，那是审计 C01 那类问题的来源。
             mem = vec_mem.get(mid) or kw_mem.get(mid) or graph_kw_mem.get(mid)
             if mem is not None:
                 days = (now_ts - mem.timestamp) / 86400.0
-                time_penalty = math.exp(-max(days, 0) / RECENCY_HALF_LIFE_DAYS)
-                score *= time_penalty
+                half_life = mem.effective_half_life()
+                time_penalty = math.exp(-max(days, 0) / half_life)
+                importance = max(0.0, min(1.0, float(mem.importance or 0.0)))
+                # 重要性作为**权重**而不是**闸门**：importance 低的记忆不是
+                # 被排除，只是排得靠后（0.1 仍然有 10% 的权重，不是 0）。
+                score *= time_penalty * (0.3 + 0.7 * importance)
             rrf_scores[mid] = score
 
         # 4. 按 RRF 分数降序排列

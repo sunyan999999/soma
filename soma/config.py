@@ -91,7 +91,21 @@ class SOMAConfig(BaseModel):
 
     # ═══ v0.10.0: 记忆分层（L2 Scene + L3 Profile） ═══
     # L2 场景块 — 从多条情节记忆中提取的主题聚合
-    scene_extraction_enabled: bool = False          # 是否启用自动场景提取
+    #
+    # ★★ **2026-10-20 默认改成开启** ★★
+    #
+    #   v0.10.0 引入时是 `False`，理由是"提取要调 LLM，怕接入方没准备好"。
+    #   但结果是：**L2/L3 这两层从来没被启用过** —— 场景不聚合、画像不更新，
+    #   而"越用越懂"恰恰全靠这两层（单条情节记忆只能记住"说过什么"，
+    #   说不出"这个人是什么样"）。
+    #
+    #   现在的判断：
+    #     · **没有真 LLM 时**会自动降级（extractor 为 None，见 `_ensure_layered_memory`），
+    #       不会白跑、不会报错；
+    #     · 提取是**批量**的（每 N 条场景一次），不是每句话一次，成本可控；
+    #     · 想关的人可以 `disable_layered_memory()` 或改这个配置 —— **能力默认开着，
+    #       而不是默认关着等一个永远不会来的"启用"**。
+    scene_extraction_enabled: bool = True           # 是否启用自动场景提取
     scene_extraction_warmup: int = 5                # warmup 稳定阈值：N条新记忆后触发
     scene_extraction_warmup_enabled: bool = True    # 是否启用 warmup 递增（1→2→4→N）
     scene_extraction_min_interval: int = 300        # 两次捕获最小间隔（秒）
@@ -99,8 +113,20 @@ class SOMAConfig(BaseModel):
     scene_extraction_idle_timeout: int = 600        # 无新记忆后空闲超时（秒）
 
     # L3 用户画像 — 从多个场景块中提取稳定用户特征
-    profile_extraction_enabled: bool = False        # 是否启用自动画像提取
+    #
+    # ★ **2026-10-20 一起改成默认开启**：只开 L2（场景）不开 L3（画像）等于
+    #   只记住"聊过什么话题"、却永远说不出"这个人是什么样" ——
+    #   而"越用越懂"恰恰是后者。两者是一对，拆开没意义。
+    #
+    #   成本：每 `profile_extraction_scene_interval`（默认 10）个场景才跑一次
+    #   LLM 提取，不是每句话一次。没有真 LLM 时 extractor 为 None、自动跳过。
+    profile_extraction_enabled: bool = True         # 是否启用自动画像提取
     profile_extraction_scene_interval: int = 10     # 每N个新场景触发一次画像更新
+
+    # 写入质量门控（2026-10-20）—— 挡纯寒暄 / 无内容 / 归一化后重复。
+    # 见 `soma/memory/quality.py`。默认开：不挡的话"你好/好的/嗯"会和真正
+    # 重要的事在同一个池子里竞争 top_k。要存全量日志的接入方可以关掉。
+    memory_quality_gate: bool = True
 
     # 检索权重 — Scene/Profile 参与 MemoryCore 检索时的 RRF 权重
     scene_retrieval_weight: float = 0.3             # 场景块检索权重

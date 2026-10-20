@@ -7,6 +7,18 @@ from typing import Any, Dict, List, Optional
 # 近因衰减半衰期（天）：7天后权重衰减至 50%，14天后 25%，30天后 <5%
 # 与记忆查询的默认30天时间窗口配合 —— 半衰期针对"短期相关性"，时间窗口负责硬截断
 RECENCY_HALF_LIFE_DAYS = 7.0
+
+#: importance 超过这个值，记忆开始获得"遗忘保护"（半衰期变长）。
+#: 取 0.6 是为了**只保护真正重要的**：普通记忆（≤0.5）行为完全不变，
+#: 不改变既有检索质量，只是让重要的记忆活得更久。
+IMPORTANCE_PROTECT_FLOOR = 0.6
+#: 保护上限倍率：importance=1.0 时半衰期是基准的几倍（7 → 28 天）。
+IMPORTANCE_PROTECT_MAX = 4.0
+#: 按业务性质调整半衰期（v2.0.14 引入的 nature 字段）。
+#:   fact  —— 事实/技能，**长期有效**（"用户叫孙岩"不该过期）
+#:   state —— 状态，**时效强**（"最近失眠"过一周就该弱化）
+#:   event —— 一般事件，基准
+NATURE_HALF_LIFE_FACTOR = {"fact": 3.0, "state": 0.5, "event": 1.0}
 # 状态类记忆（nature=state）时效窗口（天）：超过视为可能已过时，注入层应提示
 STATE_TTL_DAYS = 30.0
 
@@ -32,19 +44,61 @@ class MemoryUnit:
     # v2.0.14: 业务性质 — 区分时效强弱（state/fact/event）
     nature: str = "event"   # state 状态类(失眠/情绪/健康,时效强) / fact 事实技能类(长期有效) / event 一般事件(默认)
 
+    def effective_half_life(self) -> float:
+        """这条记忆的**半衰期**（天）—— 重要的事忘得慢。
+
+        ## 为什么不能一刀切 7 天
+
+        实测：`exp(-30/7) = 1.4%`。也就是说**任何**记忆，30 天后权重都不足
+        今天的 1.4% —— 哪怕它是"用户叫孙岩"这种一辈子有效的事实。
+        用户感受到的就是**「越用越不懂」**：聊了三个月，它不记得你是谁。
+
+        ## 三个因子
+
+        1. **importance**：≥ `IMPORTANCE_PROTECT_FLOOR` 开始获得保护，
+           到 1.0 时半衰期 ×`IMPORTANCE_PROTECT_MAX`（7 → 28 天）。
+        2. **nature**：`fact`（事实/技能，长期有效）×`NATURE_HALF_LIFE_FACTOR`
+           （默认 3）；`state`（失眠/情绪，时效强）×0.5，**更快失效**。
+        3. **access_count**：被反复回忆的事忘得慢（艾宾浩斯的"重复"效应），
+           每次 +10%，封顶 +100%。
+
+        ## 三个典型值
+
+        | 记忆 | 参数 | 半衰期 |
+        |---|---|---|
+        | 「今天天气不错」 | imp .30, event, 0 次 | **7 天**（不变） |
+        | 「这个项目用 Python」 | imp .80, fact, 3 次 | **54 天** |
+        | 「用户叫孙岩」 | imp .95, fact, 8 次 | **114 天** |
+        | 「用户最近失眠」 | imp .70, state, 1 次 | **4.6 天**（更快过期） |
+        """
+        base = RECENCY_HALF_LIFE_DAYS
+
+        # ① importance 保护：只保护**真正重要**的，普通记忆行为不变
+        imp = max(0.0, min(1.0, float(self.importance or 0.0)))
+        if imp > IMPORTANCE_PROTECT_FLOOR:
+            t = (imp - IMPORTANCE_PROTECT_FLOOR) / (1.0 - IMPORTANCE_PROTECT_FLOOR)
+            base *= 1.0 + (IMPORTANCE_PROTECT_MAX - 1.0) * t
+
+        # ② nature：事实长期有效，状态快速过期
+        base *= NATURE_HALF_LIFE_FACTOR.get(self.nature or "event", 1.0)
+
+        # ③ 被回忆过
+        base *= 1.0 + min(int(self.access_count or 0), 10) * 0.1
+
+        return base
+
     def relevance_potential(self) -> float:
         """关联潜力 = 指数近因衰减 × 重要性 × 使用频次因子
 
-        衰减曲线: exp(-days/7)，半衰期 7 天。
-        - 当天 (0d): 1.00
-        - 3天后: 0.65
-        - 7天后: 0.37
-        - 14天后: 0.14
-        - 30天后: 0.014 (<2% — 基本被抑制)
+        **衰减用的半衰期不是常量** —— 见 `effective_half_life()`：
+        重要的、事实类的、被反复回忆的记忆，半衰期更长。
+
+        （2026-10-20 之前这里是写死的 `exp(-days/7)`，不区分记忆重要性 ——
+          30 天后所有记忆都不足 1.4%，"越用越懂"从机制上就不成立。）
         """
         now = datetime.now(timezone.utc).timestamp()
         days = max(now - self.timestamp, 0) / 86400.0
-        recency = math.exp(-days / RECENCY_HALF_LIFE_DAYS)
+        recency = math.exp(-days / self.effective_half_life())
         return recency * self.importance * (1.0 + 0.1 * self.access_count)
 
     def is_state_stale(self, ttl_days: float = STATE_TTL_DAYS) -> bool:
