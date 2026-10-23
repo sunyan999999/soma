@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.20] — 2026-10-23
+
+「越用越懂」的机制基础。这一版不改 API，但改了**记忆会不会被忘掉**。
+
+### 新增
+
+- **分级半衰期**（`MemoryUnit.effective_half_life()`）
+  - 半衰期不再写死 7 天，由三个因子决定：
+    `importance` > 0.6 开始保护（1.0 时 ×4，7 → 28 天）、
+    `nature=fact` ×3 / `state` ×0.5、`access_count` 每次 +10%（封顶 +100%）
+  - **普通记忆（importance ≤ 0.6）行为完全不变** —— 只保护真正重要的
+  - 效果：`用户叫孙岩`（0.95/fact/8 次）半衰期 **137 天**，
+    90 天后权重仍有 0.55；同期的琐碎记忆照旧快速衰减
+- **写入质量门控**（`soma/memory/quality.py`）
+  - 挡纯寒暄（**精确**匹配）、无实质内容、归一化后与最近记忆完全相同
+  - **不按长度挡**（"用户叫孙岩" 6 个字照样记）
+  - **重复只做归一化全等**，不做包含/相似度（避免误杀真信息）
+  - 配置 `memory_quality_gate=False` 可关
+
+### 变更
+
+- **L2 场景提取 / L3 画像提取默认开启**
+  （`scene_extraction_enabled` / `profile_extraction_enabled` 由 `False` 改为 `True`）
+  - 这两层自 v0.10.0 引入起**从未被启用过** —— `enable_layered_memory()`
+    没有任何地方调用。而"越用越懂"全靠它们：单条情节记忆只能记住
+    "说过什么"，说不出"这个人是什么样"
+  - 没有真 LLM 时 extractor 为 None，自动降级，不白跑不报错
+  - 提取是批量的（每 N 条场景一次），成本可控
+  - 仍可用 `disable_layered_memory()` 或配置关闭
+
+### 修复
+
+- **检索排序丢失重要性**（`memory/core.py:_hybrid_search`）
+  - 原来时间衰减只乘 `exp(-days/7)`，**不乘 importance** ——
+    「用户叫孙岩」和「今天天气不错」被乘上同一个系数
+  - 现在与 `relevance_potential()` 用同一套语义（`effective_half_life` + importance 权重）
+  - 两套衰减机制以前各写一套，是审计 C01「多套机制互相冲突」的形状
+
+### 升级须知
+
+- **行为变化**：L2/L3 默认开启后，`remember()` 会批量触发场景/画像提取
+  （需要真 LLM）。若接入方对成本敏感，显式设 `scene_extraction_enabled=False`。
+- **不兼容**：无。API 签名未变；被门控挡掉时 `remember()` 返回空串（原为总返回 id）。
+- 全量测试 1220 passed（原 1170）。
+
+---
+
 ## [2.0.19] — 2026-09-25
 
 把接入方**已经在用裸 SQL 做的事**收成正式接口。架构规划 §4.1 列为「现在必须定

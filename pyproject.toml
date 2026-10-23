@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "soma-wisdom"
-version = "2.0.19"
+version = "2.0.20"
 description = "SOMA: Somatic Wisdom Architecture — Wisdom over Memory"
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -71,6 +71,53 @@ ranker = "soma.hub._ranker:MMRRanker"
 
 [tool.hatch.build.targets.wheel]
 packages = ["soma"]
+
+# ── sdist 里该带什么（2026-10-23）────────────────────────────────
+#
+# ## 之前的问题
+#
+# 构建后端是 **hatchling**（不是 setuptools），所以仓库根目录的 `MANIFEST.in`
+# **对它完全无效** —— 我加过一个，构建后内部文档照样在包里（实测发现）。
+#
+# 默认行为下 hatch 的 sdist 会把仓库里的**大部分文件**都收进去，包括：
+#   · 10 份 `TEST_REPORT_v*.md`（某版本的测试快照）
+#   · `QODER_TEST_HANDBOOK.md`（给特定协作方的测试手册）
+#   · `docs/plan-*.md`（开发计划）
+# 这些是**内部开发记录**，对一个装包的用户没有任何价值，
+# 还会让人误以为它们是发布说明。
+#
+# ## 现在
+#
+# 显式声明 `include` 白名单 —— **只带使用者需要的东西**。
+# `tests/` 保留：从 sdist 装的开发者应该能跑测试。
+#
+# ⚠️ 改这里之后必须**重新构建并核对**（`tar -tzf dist/*.tar.gz`），
+#    不能只看构建成功。
+[tool.hatch.build.targets.sdist]
+include = [
+  "soma/",
+  "tests/",
+  "README.md",
+  "README_zh.md",
+  "CHANGELOG.md",
+  "LICENSE",
+  "SECURITY.md",
+  "CONTRIBUTING.md",
+  "CODE_OF_CONDUCT.md",
+  "ROADMAP.md",
+  "API_STABILITY.md",
+  "INTRO.md",
+  "pyproject.toml",
+]
+exclude = [
+  "TEST_REPORT_*.md",
+  "QODER_TEST_HANDBOOK.md",
+  "docs/plan-*.md",
+  "docs/*研究笔记.md",
+  "docs/pi-*.md",
+  "dist/",
+  "build/",
+]
 
 [tool.ruff]
 line-length = 100
