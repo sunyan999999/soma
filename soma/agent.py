@@ -1036,6 +1036,18 @@ class SOMA_Agent:
         agent_id/group_id（原行为），向后兼容。
         v2.0.12: 支持 max_age_days 时间窗口硬截断（如 30 天内），
         返回结果含 timestamp/age_days（时间感知）。
+
+        ⚠️ v2.0.20.1 起**结果集明显变大**：这条路径不再按相关度阈值过滤
+        （`threshold=0.0`），因为用户主动搜"艾灸"就该看到所有含"艾灸"的
+        记忆 —— 包括很久以前的。接入侧务必：
+
+        - **用 `top_k` 限制条数**（默认 5），别假设"反正会被阈值筛掉"；
+        - 需要只保留近期内容时显式传 `max_age_days`；
+        - 展示给用户时建议按 `age_days` 标注时间，否则陈年记忆和新记忆
+          看起来一样新鲜。
+
+        自动召回（`chat()` / `reason()` 内部注入 prompt 的那条路）**行为不变**，
+        仍按 0.3 阈值筛选。
         """
         from soma.engine import _extract_keywords
 

@@ -206,16 +206,37 @@ class TestMockRespondUserScope:
         assert not bare, f"还有没传 user_id 的调用点：{bare}"
 
     def test_real_mock_call_respects_user_scope(self, tmp_path):
-        """★ 端到端：A 的记忆不该出现在 B 的 mock 回答里。"""
+        """★ 端到端：A 的记忆不该出现在 B 的 mock 回答里，但 B 自己的要出现。
+
+        ⚠️ 两个假绿陷阱（下游实测踩过第一个）：
+
+        1. **查询词不能含被检查的密钥** —— `_mock_respond` 会把 problem 原文
+           回显进回答（"从 N 个维度分析「{problem}」"）。查询词里带"机密"字样，
+           那么不管隔离有没有生效，回答里都会出现它 → 假阳性。
+           这里查询词是「艾灸」，密钥是「私密笔记」，不重叠。
+
+        2. **必须有正例** —— 只断言"A 的内容不在"是不够的：如果 B 一条记忆
+           都没有、激活返回空，回答里当然什么都没有，判据会对着一个**坏的**
+           user_id（比如被改成常量 ""）照样绿。所以 B 要存自己的记忆，
+           并断言它**出现**了。
+        """
         from soma import SOMA
 
         s = SOMA(llm="mock", persist_dir=str(tmp_path),
                  use_vector_search=False, warmup_on_init=False)
         try:
             s.remember("用户A的私密笔记：我在研究艾灸", user_id="A", importance=0.9)
-            out_b = s._mock_respond("艾灸", user_id="B")
+            s.remember("用户B的备忘：艾灸排期在周四", user_id="B", importance=0.9)
+
+            query = "艾灸"   # 中性词，不含任何密钥
+            assert query not in ("私密笔记", "备忘"), "查询词污染了判据"
+
+            out_b = s._mock_respond(query, user_id="B")
             assert "用户A的私密笔记" not in out_b, (
                 "B 的 mock 回答里出现了 A 的记忆 —— user_id 没生效")
+            assert "用户B的备忘" in out_b, (
+                "B 自己的记忆没出现 —— 激活结果为空，"
+                "「不含 A」是假绿（改成常量 user_id 也会绿）")
         finally:
             try:
                 s.close()
