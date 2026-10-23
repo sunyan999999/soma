@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.20.1] — 2026-10-23
+
+下游生产环境（单用户 2 万+ 条记忆、跨用户会话）实测上报的三条。都**不改 API 签名**。
+
+### 修复
+
+- **用户主动搜索查不到老记忆**（最重要的一条）
+  - 现象：库里有"艾灸"相关记忆，`search_memory("艾灸")` 返回 0 条。
+  - 线上原诊断是"中文短词 trigram 建不出二元组"，**不成立** ——
+    `query_by_keywords` 对 `len(kw) < 3` 本来就走 LIKE 兜底，底层能查到。
+  - 真因在上一层：`hub.activate()` 的 `threshold=0.3` 是给**自动召回**用的
+    （只把够相关的注入 prompt），但 `query_memory()` 是**用户主动搜索** ——
+    一条 100 天前、importance=0.5 的记忆 `relevance_potential ≈ 0.0007`，
+    被阈值全滤掉，用户看到的是"什么都没找到"。
+  - 修：`ActivationHub.activate()` 新增 `threshold` 参数（None = 实例默认），
+    `query_memory()` 传 `0.0`。**自动召回的阈值一个字没动。**
+- **前置过滤扫描上限写死**（`_MAX_FILTER_SCAN = 10000`）
+  - 生产有单用户 2 万+ 条记忆的账号 —— 那种账号每次向量搜索都因"子集超上限"
+    退回「全局检索 + 30 倍候选」，既慢、召回又可能不足。
+  - 修：默认提到 50000，并**真正接上配置** `SOMAConfig.vector_filter_scan_limit`
+    （构造参数 → `EpisodicStore` → `NumpyVectorIndex`）。
+  - 第二道闸 `_MAX_FILTER_SHARE`（子集占全库 >15% 不做前置过滤）仍在 ——
+    所以提高上限不会让超大账号拖垮查询。
+- **无 LLM 的 mock 路径跨用户泄漏**
+  - `SOMA._mock_respond()` 调 `hub.activate(foci)` **不传 user_id** ——
+    无 LLM 时会把所有用户的记忆都激活出来，和 `reason()` / `chat()` 口径不一致。
+  - 修：加 `user_id` 参数并传下去，三个调用点都补上
+    （顺带清掉 `chat()` 里连写两遍 `answer = ...` 的复制粘贴残留）。
+- 同时合并 `ActivationHub.activate()` 里两段连续 docstring
+  （第二段成了普通表达式，等于没生效）。
+
+### 判据
+
+`tests/test_ekko_feedback_20261023.py`（11 条），三条都做了注入自证：
+
+| 注入 | 变红的判据 |
+|---|---|
+| `query_memory` 去掉 `threshold=0.0` | `test_old_memory_found_by_keyword` |
+| `_MAX_FILTER_SCAN` 退回 10000 且不准传 | `test_default_raised` |
+| `_mock_respond` 不传 user_id | `test_passes_user_id_to_activate`、`test_real_mock_call_respects_user_scope` |
+| `MemoryCore` 不把配置传给索引 | `test_config_actually_reaches_instance` |
+
+---
+
 ## [2.0.20] — 2026-10-23
 
 「越用越懂」的机制基础。这一版不改 API，但改了**记忆会不会被忘掉**。

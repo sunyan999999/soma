@@ -42,7 +42,9 @@ class NumpyVectorIndex:
     # v2.0.18.2: 前置过滤时「按条件取向量 + 精确内积」的扫描上限。取到这么多条还
     # 没命中，说明该用户/分组已经接近全库规模 —— 那时全局候选里的占比也高，
     # post-filter 的召回损失很小，逐条精确扫描反而更贵，于是退回全局检索。
-    _MAX_FILTER_SCAN = 10000
+    # 2026-10-23：默认 10000 → 50000（生产有单用户 2 万+ 条，
+    # 10000 会让那种账号永远走退化路径）。实例可用 `filter_scan_limit` 覆盖。
+    _MAX_FILTER_SCAN = 50000
     # 退回全局检索时多取的候选倍数 —— 仍要按条件过滤，取太少等于没修
     _DEGRADED_FETCH_FACTOR = 30
     # 过滤子集占全库的比例上限。超过它就不做前置过滤 —— 子集这么大时全局候选里
@@ -51,9 +53,22 @@ class NumpyVectorIndex:
     # 走的就是这条，行为与 v2.0.18.1 完全一致。
     _MAX_FILTER_SHARE = 0.15
 
-    def __init__(self, db_path: Path, vector_dim: int):
+    def __init__(self, db_path: Path, vector_dim: int,
+                 filter_scan_limit: Optional[int] = None):
+        """`filter_scan_limit`：前置过滤子集的扫描上限（None = 用类默认）。
+
+        ★ 2026-10-23 加（生产反馈）：原来是写死的类常量 10000，而生产有
+        单用户记忆量超过 2 万的账号 —— 那种账号的每次向量搜索都会
+        「子集超上限 → 退回全局检索 + 30 倍候选」，既慢、召回又可能不足。
+
+        第二道闸 `_MAX_FILTER_SHARE`（子集占全库 >15% 就不做前置过滤）
+        仍在，所以提高上限不会让超大账号拖垮查询 —— 它会被 share 那道挡住。
+        """
         self._db_path = db_path
         self._vector_dim = vector_dim
+        self._filter_scan_limit = (int(filter_scan_limit)
+                                   if filter_scan_limit is not None
+                                   else self._MAX_FILTER_SCAN)
         self._faiss_index = None
         self._faiss_id_to_mem: dict = {}
         self._mem_to_faiss_id: dict = {}
@@ -425,11 +440,11 @@ class NumpyVectorIndex:
         n = int(row[0]) if row else 0
         if n == 0:
             return [], 1
-        if n > self._MAX_FILTER_SCAN:
+        if n > self._filter_scan_limit:
             _log.warning(
                 "前置过滤子集 %d 条超过扫描上限 %d，退回全局检索 + post-filter "
-                "（该条件下召回可能不足，建议排查是否有超大用户）",
-                n, self._MAX_FILTER_SCAN)
+                "（该条件下召回可能不足；可用 vector_filter_scan_limit 调高上限）",
+                n, self._filter_scan_limit)
             return None, self._DEGRADED_FETCH_FACTOR
         # 子集大到接近全库时前置过滤没有收益（全局候选里本来就有足够多该用户的
         # 记忆），而逐条读向量比 faiss 慢。**这里倍数取 1**：post-filter 在这种

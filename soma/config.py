@@ -55,6 +55,12 @@ class SOMAConfig(BaseModel):
     embedding_model_name: str = "BAAI/bge-small-zh-v1.5"
     use_vector_search: bool = True
     vector_dim: int = 512  # BAAI/bge-small-zh-v1.5 实际输出512维
+    # 前置过滤（按 user_id / 条件取向量子集）的单次扫描上限，2026-10-23。
+    # 子集超过它就退回「全局检索 + post-filter」，既慢召回又可能不足 ——
+    # 生产有单用户 2 万+ 条记忆的账号，原写死 10000 会让那种账号永远走退化路径。
+    # 第二道闸 _MAX_FILTER_SHARE（子集占全库 >15% 不做前置过滤）仍在，
+    # 所以调高不会让超大账号拖垮查询。
+    vector_filter_scan_limit: int = 50000
     embedder_device: str = "cpu"  # "cpu" | "cuda"
     # v2.0.8: 构造时是否立即加载/预热嵌入模型（避免首个请求热路径卡 30-100s）
     warmup_on_init: bool = False

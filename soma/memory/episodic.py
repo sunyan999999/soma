@@ -28,6 +28,7 @@ class EpisodicStore(BaseMemoryStore):
         embedder=None,
         use_vector_search: bool = False,
         mmap_size: int = 0,
+        filter_scan_limit: Optional[int] = None,
     ):
         persist_dir.mkdir(parents=True, exist_ok=True)
         self._db_path = persist_dir / f"{collection_name}.db"
@@ -44,7 +45,9 @@ class EpisodicStore(BaseMemoryStore):
             from soma.vector_store import NumpyVectorIndex
 
             dim = embedder.dimension if embedder else 512
-            self._vector_index = NumpyVectorIndex(self._db_path, dim)
+            # 2026-10-23: 前置过滤扫描上限可配（见 SOMAConfig.vector_filter_scan_limit）
+            self._vector_index = NumpyVectorIndex(
+                self._db_path, dim, filter_scan_limit=filter_scan_limit)
             self._vector_index.ensure_table(self._conn)
             # 维度迁移：清除嵌入模型变更导致的不兼容旧向量
             stale = self._vector_index.clear_incompatible_vectors(self._conn)

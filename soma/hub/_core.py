@@ -44,9 +44,9 @@ class ActivationHub:
 
     def activate(self, foci: List[Focus], user_id: str = "", laws=None,
                  agent_id: str = "", group_id: str = "",
-                 max_age_days: Optional[float] = None) -> List[ActivatedMemory]:
-        """
-        双向激活：对每个 Focus 查询 MemoryCore，全局合并排序。
+                 max_age_days: Optional[float] = None,
+                 threshold: Optional[float] = None) -> List[ActivatedMemory]:
+        """双向激活：对每个 Focus 查询 MemoryCore，全局合并排序。
 
         1. 每个 Focus 过取 top_k * 2 条结果
         2. 计算 activation_score = focus.weight × memory.relevance_potential()
@@ -55,6 +55,17 @@ class ActivationHub:
         5. MMR 多样性重排 + 阈值过滤，返回 Top-K
         6. v0.8.0: 冲突检测降权 + 记忆→焦点反向传播
         v2.0.12: max_age_days 时间窗口硬截断（透传给底层查询）。
+
+        `threshold`（2026-10-23）：**本次调用**的相关度下限，None = 用实例
+        默认值（0.3）。默认阈值是给**自动召回**用的 —— 只有足够相关的记忆才
+        值得注入 prompt，老的低重要记忆被滤掉是对的。
+
+        但 `query_memory()` 是**用户主动搜索**：用户明确搜"艾灸"，他要的是
+        所有含"艾灸"的记忆。按相关度阈值筛会出现「底层查到 2 条、上层返回
+        0 条」，用户看到的是"什么都没找到"。实测（100 天前 importance=0.5）：
+            query_by_keywords           → 2 条
+            activate(threshold=0.3)     → 1 条   ← 老的被滤掉
+        所以 `query_memory()` 传 0.0。
         """
         candidates: Dict[str, list] = {}
 
@@ -103,8 +114,9 @@ class ActivationHub:
                         penalized.add(id(am_b))
                 mmr_pool.sort(key=lambda am: am.activation_score, reverse=True)
 
+        _thr = self.threshold if threshold is None else threshold
         results = self.ranker.rerank(
-            mmr_pool, self.top_k, self.threshold, self.mmr_lambda,
+            mmr_pool, self.top_k, _thr, self.mmr_lambda,
         )
 
         # v0.8.0: 反向传播 — 高激活记忆建议新的思维焦点

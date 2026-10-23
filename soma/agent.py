@@ -1055,6 +1055,17 @@ class SOMA_Agent:
                 agent_id=agent_id or self.agent_id,
                 group_id=group_id or self.group_id,
                 max_age_days=max_age_days,
+                # ★ **用户主动搜索不过相关度阈值**（2026-10-23）。
+                #
+                #   `threshold=0.3` 是给**自动召回**用的（只有够相关的才注入
+                #   prompt）。但这里是用户明确搜一个词 —— 他要的是
+                #   「库里所有含这个词的记忆」。
+                #
+                #   实测：一条 100 天前、importance=0.5 的记忆，底层
+                #   `query_by_keywords` 能查到，经 `activate` 却返回 0 条
+                #   （relevance_potential ≈ 0.0007 < 0.3）。用户看到的是
+                #   「什么都没找到」—— 而库里有。
+                threshold=0.0,
             )
         finally:
             self.hub.top_k = original_top_k

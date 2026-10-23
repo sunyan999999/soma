@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "2.0.20"
+    __version__ = "2.0.20.1"
 
 from soma.config import SOMAConfig, load_config
 from soma.db import set_shared_enabled
@@ -261,7 +261,7 @@ class SOMA:
                 "SOMA.respond() LLM调用失败，回退到mock响应:\n%s",
                 traceback.format_exc(),
             )
-            answer = self._mock_respond(problem)
+            answer = self._mock_respond(problem, user_id=user_id)
             mock_fallback = True
         self._session_count += 1
         outcome = "failure" if mock_fallback else "success"
@@ -452,9 +452,9 @@ class SOMA:
                 "SOMA.chat() LLM调用失败，回退到mock响应:\n%s",
                 traceback.format_exc(),
             )
-            answer = self._mock_respond(problem, foci, activated)
-            mock_fallback = True
-            answer = self._mock_respond(problem, foci, activated)
+            # ⚠️ 这里原来连写了两遍 `answer = ...` / `mock_fallback = True`
+            #   （复制粘贴残留）—— 第二遍纯属重复，已合并。
+            answer = self._mock_respond(problem, foci, activated, user_id=user_id)
             mock_fallback = True
 
         # v0.6.0: 因果抽取
@@ -1471,12 +1471,18 @@ class SOMA:
         self._last_evolve_samples = samples
         return changes or []
 
-    def _mock_respond(self, problem, foci=None, activated=None):
-        """无 LLM 时的 mock 响应"""
+    def _mock_respond(self, problem, foci=None, activated=None, user_id=None):
+        """无 LLM 时的 mock 响应。
+
+        ★ `user_id`（2026-10-23）：mock 路径以前调 `hub.activate(foci)` **不传
+        `user_id`** —— 于是无 LLM 时会把**所有用户**的记忆都激活出来，和
+        `reason()` / `chat()` 的口径不一致。生产反馈点名了这一条。
+        """
         if foci is None:
             foci = self._agent.decompose(problem)
         if activated is None:
-            activated = self._agent.hub.activate(foci)
+            activated = self._agent.hub.activate(
+                foci, user_id=user_id or "")
         parts = [f"## 问题拆解\n从 {len(foci)} 个维度分析「{problem}」："]
         for f in foci:
             parts.append(f"- **{f.law_id}**（权重 {f.weight:.2f}）：{f.dimension[:120]}")

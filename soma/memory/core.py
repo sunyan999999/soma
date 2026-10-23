@@ -28,6 +28,9 @@ class MemoryCore:
             embedder=embedder,
             use_vector_search=use_vector,
             mmap_size=config.sqlite_mmap_size,  # v2.0.17
+            # 2026-10-23: 前置过滤扫描上限（生产有单用户 2 万+ 条记忆）
+            filter_scan_limit=getattr(
+                config, "vector_filter_scan_limit", None),
         )
         self.semantic = SemanticStore(config.episodic_persist_dir)
         self.skill = SkillStore(config.episodic_persist_dir)
