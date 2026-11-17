@@ -249,12 +249,19 @@ class CapturePipeline:
         config: CaptureConfig,
         scene_extractor: Optional[SceneExtractor] = None,
         profile_extractor: Optional[ProfileExtractor] = None,
+        memory_provider: Optional[Callable[[str], List[Dict]]] = None,
     ):
         self._scene_store = scene_store
         self._profile_store = profile_store
         self._cfg = config
         self._scene_extractor = scene_extractor or SceneExtractor()
         self._profile_extractor = profile_extractor or ProfileExtractor()
+        # ★ 2026-11-17: 记忆来源。以前 `capture_scenes()` 里硬编码 `return 0`
+        #   （注释写着"实际提取逻辑在 capture_from_memories()"），而唯一自动
+        #   调用链 `remember() → on_new_memory() → capture_scenes()` 从不到达
+        #   提取 —— 所以「自动场景提取」自 v0.10.0 起就是个空壳。
+        #   现在由外部注入取数回调：uid → [{"content": ..., "importance": ...}]
+        self._memory_provider = memory_provider
 
         # 每用户状态
         self._new_count: Dict[str, int] = {}           # 新记忆计数
@@ -325,10 +332,26 @@ class CapturePipeline:
             if now - last_cap < self._cfg.scene_min_interval:
                 return 0
 
-        # 收集近期记忆 — 这里记忆由 SceneExtractor 通过传入的列表提供
-        # SceneExtractor 需要从外部注入记忆列表
-        # 此处 SceneStore 只存储结果，不直接管理 episodic 数据
-        return 0  # 实际提取逻辑在 capture_from_memories()
+        # ★ 2026-11-17: 这里以前是 `return 0`，注释写着「实际提取逻辑在
+        #   capture_from_memories()」—— 但没有任何调用方会走到那边：
+        #   `remember() → on_new_memory() → capture_scenes()` 这条唯一的自动
+        #   链路每次都在这里返回 0，所以自动场景提取从来没真正跑过。
+        #
+        #   现在通过注入的 `memory_provider` 取近期记忆，再交给
+        #   `capture_from_memories()` 走完整提取流程。
+        #   没有 provider（老调用方直接构造 CapturePipeline）时保持原行为，
+        #   仍返回 0 —— 向后兼容，不改变既有语义。
+        if self._memory_provider is None:
+            return 0
+        try:
+            memories = self._memory_provider(uid)
+        except Exception as exc:
+            _log.warning("取近期记忆失败，跳过本次场景提取: %s", exc)
+            return 0
+        if not memories:
+            return 0
+        # force=True：间隔保护已在上面检查过，避免 capture_from_memories 再查一次
+        return self.capture_from_memories(memories, user_id=uid, force=True)
 
     def capture_from_memories(
         self, memories: List[Dict], user_id: str = "", force: bool = False,

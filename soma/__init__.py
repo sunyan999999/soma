@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "2.0.20.1"
+    __version__ = "2.0.21"
 
 from soma.config import SOMAConfig, load_config
 from soma.db import set_shared_enabled
@@ -141,9 +141,16 @@ class SOMA:
         zhongdao_penalty_factor: float = 0.20,
         zhongdao_boost_factor: float = 0.15,
         zhongdao_min_samples: int = 5,
-        # v0.10.0: 记忆分层
-        scene_extraction_enabled: bool = False,
-        profile_extraction_enabled: bool = False,
+        # v0.10.0: 记忆分层。
+        # ★ 2026-11-17: 默认值改成 None = **跟随 SOMAConfig**（当前 True）。
+        #   原来这里写 False，而构造 SOMAConfig 时是显式传参（第 183 行），
+        #   于是**门面默认值反过来覆盖了配置默认值** —— 结果：
+        #     · soma/config.py 里设 True（2.0.20 改的）→ 对 SOMA() 用户完全无效
+        #     · 配了环境变量/配置也不生效，除非调用方逐个显式传 True
+        #   两处默认值必然打架，改成 None 让 SOMAConfig 成为唯一真源；
+        #   显式传 True/False 依然照旧有效。
+        scene_extraction_enabled: Optional[bool] = None,
+        profile_extraction_enabled: Optional[bool] = None,
         symbolic_memory_enabled: bool = False,
         # v2.0.18: 后台常驻自主循环。默认关闭 —— 开启后才允许 start_background()
         # 真正起线程；只是构造时传 True 也不会自动启动，仍需显式调用。
@@ -180,8 +187,6 @@ class SOMA:
             orchestration_mode=orchestration_mode,
             orchestration_top_k=orchestration_top_k,
             orchestration_consensus=orchestration_consensus,
-            scene_extraction_enabled=scene_extraction_enabled,
-            profile_extraction_enabled=profile_extraction_enabled,
             autonomous_background_enabled=autonomous_background_enabled,
             autonomous_background_interval=autonomous_background_interval,
             autonomous_background_max_runtime=autonomous_background_max_runtime,
@@ -195,6 +200,12 @@ class SOMA:
             zhongdao_min_samples=zhongdao_min_samples,
             shared_sqlite_connection=shared_sqlite_connection,
         )
+        # ★ 2026-11-17: 分层开关默认跟随配置；显式传值才覆盖（见参数处的注释）。
+        if scene_extraction_enabled is not None:
+            self._config.scene_extraction_enabled = bool(scene_extraction_enabled)
+        if profile_extraction_enabled is not None:
+            self._config.profile_extraction_enabled = bool(profile_extraction_enabled)
+
         # v2.0.18: 共享开关是进程级的，必须在任何 store 建立连接之前设置。
         # 多专家架构下让指向同一 db 文件的 store 复用同一条连接。
         set_shared_enabled(self._config.shared_sqlite_connection)
@@ -1863,6 +1874,9 @@ class SOMA:
                 profile_extractor=ProfileExtractor(
                     llm_call=lambda prompt: self._agent._call_llm(prompt, "")
                 ) if self._config.llm_model != "mock" else None,
+                # ★ 2026-11-17: 取近期情节记忆喂给场景提取器。
+                #   以前没有这个来源，capture_scenes() 只能 return 0。
+                memory_provider=self._recent_memories_for_capture,
             )
             if not self._config.scene_extraction_enabled:
                 self._capture_pipeline.disable()
@@ -1872,6 +1886,29 @@ class SOMA:
                 scene_store=self._scene_store,
                 profile_store=self._profile_store,
             )
+
+    def _recent_memories_for_capture(self, user_id: str) -> List[Dict]:
+        """给场景提取器取近期情节记忆（2026-11-17）。
+
+        `CapturePipeline` 不持有 episodic store（它只管场景/画像存储），
+        所以记忆来源要由外部喂。取该用户最近 N 条 —— N 按 warmup 门槛
+        放大 4 倍，保证攒够一次触发的素材。
+
+        `user_id` 为空串时不过滤（单租户常态），与 `list_memories` 同一约定。
+        """
+        limit = max(int(self._config.scene_extraction_warmup) * 4, 20)
+        memories = self._agent.memory.episodic.list_memories(
+            user_id=user_id or "", limit=limit, order_by="recent",
+        )
+        return [
+            {
+                "id": m.id,
+                "content": m.content,
+                "importance": m.importance,
+                "timestamp": m.timestamp,
+            }
+            for m in memories
+        ]
 
     def enable_layered_memory(
         self, scene_warmup: int = 5, profile_interval: int = 10,

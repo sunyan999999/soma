@@ -7,6 +7,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.21] — 2026-11-17
+
+**L2 场景 / L3 画像：从「开关打开了」到「真的转起来」。**
+
+2.0.20 宣称这两层默认开启，下游实测 `scenes 0 / profile_entries 0`。当时的归因
+（「要攒够场景才出画像」）是错的 —— 真实情况是**三重断点**叠在一起：
+
+### 修复
+
+1. **双减默认值**（致命）
+   - `soma/config.py` 里是 `True`，但 `SOMA.__init__` 自己有一份
+     `scene_extraction_enabled: bool = False`，并且用它**显式**构造 SOMAConfig：
+     ```python
+     SOMAConfig(scene_extraction_enabled=scene_extraction_enabled)
+     ```
+     门面默认值反向覆盖了配置默认值。走 `SOMA()` 的接入方拿到的永远是 `False`。
+   - 修：门面参数改 `Optional[bool] = None`，`None` = **跟随 SOMAConfig**；
+     显式传 `True/False` 仍然有效。配置层成为唯一真源，消除双减。
+
+2. **`capture_scenes()` 硬编码 `return 0`**（致命）
+   ```python
+   return 0  # 实际提取逻辑在 capture_from_memories()
+   ```
+   而唯一自动链路 `remember() → on_new_memory() → capture_scenes()` 每次都停在
+   这一行 —— `capture_from_memories()` 只有手工传 `memories` 才能到达。
+   「自动场景提取」自 v0.10.0 引入起来就没自动过。
+
+3. **没有记忆来源**
+   `CapturePipeline` 不持有 episodic store，`SceneExtractor` 需要的记忆列表没人喂。
+   修：新增 `memory_provider` 注入（`uid → [{"content": ...}]`），
+   由 `SOMA` 接到 `episodic.list_memories()`。**没传 provider 时保持原行为返回 0**，
+   老调用方语义不变。
+
+### 行为变化（接入方必读）
+
+- **默认开始产生 LLM 调用**。触发规则：
+  - 渐进预热：首次阈值 1（第一条记忆就产出场景），之后 1→2→4→5 翻倍
+  - 成本闸：`scene_min_interval` 默认 **300 秒** —— 两次捕获之间至少隔 5 分钟
+  - 画像：累计场景数达到 `profile_scene_interval`（默认 10）才更新一次
+  - 粗算上限：每用户 **每小时最多 12 次**场景提取 LLM 调用
+- **想关掉**：`SOMA(scene_extraction_enabled=False, profile_extraction_enabled=False)`
+  或设配置项；关掉后一条 LLM 都不调（有判据钉死）。
+- **mock 模式不产出**：`llm="mock"` 时提取器走 `_default_extract()` 返回空 ——
+  无模型无法做语义抽取，这是既有设计。
+
+### 判据
+
+`tests/test_layered_memory_actually_works.py`（16 条），四道注入全部变红：
+
+| 注入 | 变红 |
+|---|---|
+| 门面参数默认改回 `False` | 8 条（默认值、显式覆盖、结构性判据） |
+| `capture_scenes` 改回 `return 0` | 4 条 |
+| provider 永远返回空 | 5 条 |
+| 不注入 `memory_provider` | 5 条 |
+
+另有两条不 fake 提取器的**真实路径**判据：`prompt → JSON → 落库` 全跑通，
+以及 LLM 返回废话时 `remember()` 不被炸掉。
+
+全量回归 **1245 passed**。
+
+---
+
 ## [2.0.20.1] — 2026-10-23
 
 下游生产环境（单用户 2 万+ 条记忆、跨用户会话）实测上报的三条。都**不改 API 签名**。
