@@ -676,7 +676,10 @@ def run_wisdom_benchmark(agent, ablation_data: Optional[Dict] = None) -> WisdomB
     details["category_hits"] = dict(category_hits)
 
     # 2. 思维多样性 — 熵值 + 基尼系数
-    total = sum(law_hits.values())
+    # ★ 2026-11-17: 分母只算 7 个**基本规律**。`combo_*` 是「两个规律同时
+    #   触发」时追加的复合视角（engine.py 阶段 2.5），它不是第 8 个规律——
+    #   把它算进 total 会让 probs 之和 < 1，熵值失真。
+    total = sum(law_hits.get(l, 0) for l in all_laws)
     if total > 0:
         probs = np.array([law_hits.get(l, 0) / total for l in all_laws])
         # 熵值: H = -Σ p_i * log(p_i), 归一化到 [0,1]
@@ -731,9 +734,26 @@ def run_wisdom_benchmark(agent, ablation_data: Optional[Dict] = None) -> WisdomB
                 cross_domain_total += 1
 
         # 规律精准度：实际触发的规律 ∩ 预期规律
+        #
+        # ★ 2026-11-17 修两个口径错误（原来这个指标算成了「触发量/预期量」）：
+        #
+        # 1) **分子曾是 `len(actual)`** —— 只数触发了几个、不看对不对，
+        #    所以结果能超过 1.0（实测 1.2143）。语义上这不是「召回率」，
+        #    而且方向是反的：**乱触发越多，分数越高**。
+        #    正确的召回率是 |actual ∩ expected| / |expected|。
+        #
+        # 2) **`combo_*` 不需要显式排除**：它是两个规律同时命中时追加的
+        #    复合视角（engine.py 阶段 2.5），id 形如 `combo_a_b`，而预期
+        #    数据集里只有 7 个基本规律 —— 所以 `actual & expected` 天然把
+        #    combo 过滤掉了。
+        #
+        #    ⚠️ 曾经在这里写过 `if not f.law_id.startswith("combo_")`，注入
+        #    验证发现**删掉它判据全绿** —— 说明它是冗余的，只会制造「已经
+        #    处理过 combo」的错觉。真正需要排除 combo 的是多样性熵的分母
+        #    （见上面第 2 节），那处有独立判据盯着。
         expected = set(q.get("expected_laws", []))
-        actual = set(f.law_id for f in foci)
-        law_hit_total += len(actual)
+        actual = {f.law_id for f in foci}
+        law_hit_total += len(actual & expected)
         law_expected_total += len(expected)
         if expected:
             bm.decomposition_precision += len(actual & expected) / len(expected)

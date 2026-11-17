@@ -52,6 +52,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **mock 模式不产出**：`llm="mock"` 时提取器走 `_default_extract()` 返回空 ——
   无模型无法做语义抽取，这是既有设计。
 
+### 顺带修正：智慧基准的尺子是坏的
+
+排查「智慧分 75.4 是唯一短板」时先拉细分，结果发现问题在**尺子**上：
+
+```python
+law_hit_total += len(actual)     # ← 数了触发几个，不看对不对
+bm.law_recall = law_hit_total / law_expected_total
+```
+
+这不是召回率，是「触发量 / 预期量」。两个后果：
+
+- **能超过 1.0** —— 实测 `law_recall = 1.2143`（121%），一眼就是错的
+- **方向是反的** —— 乱触发越多分越高，把七个规律全触发一遍就能拿高分，
+  哪怕一个都没猜对
+
+实测：预期规律 42 个、实际触发 51 个、**真命中只有 22 个**
+→ 旧尺子 1.2143，真召回 **0.5238**。
+
+修：分子改成 `len(actual & expected)`（命中量）。
+
+另修多样性熵的分母：`combo_*` 是两个规律同时命中时追加的**复合视角**
+（`engine.py` 阶段 2.5），不是第 8 个规律。算进分母会让 `probs` 之和 < 1，
+熵值失真。改为只统计 7 个基本规律。
+
+> ⚠️ **接入方注意**：这两处修正会让 `wisdom` 分数**明显下降**（本地实测
+> 该项贡献从 21.8 分降到 9.9 分）。**这不是能力回退，是尺子变准了。**
+> 历史基准记录按旧口径算，不可与新数直接对比。
+
+判据 `tests/test_wisdom_benchmark_honesty.py`（8 条），两道注入变红
+（分子改回 `len(actual)` → 2 条；熵分母改回含 combo → 1 条）。
+
+> 还试过在 `actual` 里显式排除 `combo_*`，注入验证**删掉它判据全绿**
+> —— 说明是冗余的（`& expected` 天然过滤），已删除，免得制造
+> 「已经处理过 combo」的错觉。
+
 ### 判据
 
 `tests/test_layered_memory_actually_works.py`（16 条），四道注入全部变红：
