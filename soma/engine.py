@@ -1,3 +1,4 @@
+import hashlib
 import random
 import re
 from typing import List
@@ -111,6 +112,20 @@ class WisdomEngine(BaseFrameworkEngine):
         # 关键词只提取一次，多个 focus 复用，避免重复 jieba 分词
         problem_keywords = _extract_keywords(problem)
 
+        # ★ 2026-11-18: 以**问题文本**为随机种子，替代全局 random。
+        #
+        #   原来这里用的是模块级 `random`，于是同一个问题每次 decompose
+        #   结果都可能不同。实测（15 题基准，同一份代码连跑 10 次）：
+        #     recall 在 0.5476 ~ 0.6667 之间跳动，**极差 11.9 个百分点**
+        #   后果：任何小于 ~12 个百分点的改进都测不出来，基准形同虚设。
+        #
+        #   用问题哈希做种子后：
+        #     · 同一个问题 → 永远同样的结果（可复现、可比较）
+        #     · 不同问题 → 仍然有不同的探索/抖动（多样性保留）
+        _seed = int.from_bytes(
+            hashlib.sha256(problem.encode("utf-8")).digest()[:8], "big")
+        _rng = random.Random(_seed)
+
         # ── 阶段1: 关键词直接匹配 ────────────────────────
         for law in self.laws:
             matched_triggers = [
@@ -133,7 +148,7 @@ class WisdomEngine(BaseFrameworkEngine):
             triggered_ids = {f.law_id for f in foci}
             unexplored = [l for l in self.laws if l.id not in triggered_ids]
             if unexplored:
-                chosen = random.choice(unexplored)
+                chosen = _rng.choice(unexplored)
                 foci.append(Focus(
                     law_id=chosen.id,
                     dimension=(
@@ -208,7 +223,7 @@ class WisdomEngine(BaseFrameworkEngine):
             # 3b: 语义也匹配不到则加权随机选取
             if not foci:
                 weights = [law.weight for law in self.laws]
-                top_law = random.choices(self.laws, weights=weights, k=1)[0]
+                top_law = _rng.choices(self.laws, weights=weights, k=1)[0]
                 dimension = f"从「{top_law.name}」视角审视：{top_law.description}。应用于问题：「{problem}」"
                 keywords = problem_keywords + top_law.triggers
                 foci.append(
@@ -230,7 +245,7 @@ class WisdomEngine(BaseFrameworkEngine):
 
         foci.sort(
             key=lambda f: f.weight * (1.0 + _context_score(f))
-            + random.uniform(-0.003, 0.003),
+            + _rng.uniform(-0.003, 0.003),
             reverse=True,
         )
         return foci
