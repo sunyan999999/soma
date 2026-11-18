@@ -224,8 +224,21 @@ class SOMA_Agent:
         self.embedder = embedder
         self._owns_embedder = False
         if self.embedder is None and config.use_vector_search:
-            self.embedder = SOMAEmbedder(config)
-            self._owns_embedder = True
+            # ★ 2026-11-24（全量测试暴露的真实问题）：这里原来直接
+            #   `SOMAEmbedder(config)` —— 每个 SOMA 实例都建一个自己的嵌入器，
+            #   各自惰性加载一份 ONNX 会话。v2.0.16 做了进程级单例
+            #   `get_shared_embedder()`，但**这条主路径从来没接上**
+            #   （`_shared_key` 不含 persist_dir，本来就该共享）。
+            #
+            #   后果：N 个 SOMA 实例 = N 份 ONNX 模型。实测跑全量测试时
+            #   onnxruntime 直接 `bad allocation`（内存耗尽）；生产上按用户
+            #   建实例的接入方（get_soma(user_id)）同样会踩。
+            #
+            #   现在走单例，`_owns_embedder=False` —— 生命周期由
+            #   `release_shared_embedders()` 管，单个实例的 close() 不释放它。
+            from soma.embedder import get_shared_embedder
+            self.embedder = get_shared_embedder(config)
+            self._owns_embedder = False
 
         # 预热：用 getattr 探测，因为 warmup / is_loaded 是 SOMAEmbedder 的扩展，
         # 不在 BaseEmbedder 契约内 —— 注入第三方 embedder 时不能假定它们存在。

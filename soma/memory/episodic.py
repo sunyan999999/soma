@@ -48,7 +48,7 @@ class EpisodicStore(BaseMemoryStore):
         #   写路径（update / delete / archive / restore）主动失效。
         self._get_cache: "OrderedDict[str, Any]" = OrderedDict()
         self._get_cache_ttl = 2.0
-        self._get_cache_max = 512
+        self._get_cache_max = 4096   # 下游配的是 4096；512 在 3 万条库上容易被打穿
 
         self._create_table()
         self._vector_index = None

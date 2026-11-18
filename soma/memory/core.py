@@ -19,6 +19,11 @@ class MemoryCore:
     #   截到 4 个；送给 FTS 的整表截到 10 个（focus 自带词排在前面）。
     #   依据：FTS5 trigram 的 OR 查询成本随词数近似线性（4 词 13ms → 18 词 62ms），
     #   下游 32k 库实测这一项占激活耗时 60%+。
+    #
+    #   ⚠️ 这两个是**类属性默认值**，实例可覆盖（构造 MemoryCore 后赋值即可），
+    #   用于接入方做「封顶 vs 不封顶」的 A/B 对照：
+    #       core._GRAPH_KEYWORD_CAP = 999
+    #       core._FTS_KEYWORD_CAP = 999
     _GRAPH_KEYWORD_CAP = 4
     _FTS_KEYWORD_CAP = 10
 
@@ -30,6 +35,9 @@ class MemoryCore:
         profile_store=None,
     ):
         use_vector = config.use_vector_search and embedder is not None
+        # 关键词上限做成实例属性（类默认值见类定义），便于接入方做 A/B 对照
+        self._GRAPH_KEYWORD_CAP = type(self)._GRAPH_KEYWORD_CAP
+        self._FTS_KEYWORD_CAP = type(self)._FTS_KEYWORD_CAP
         self.episodic = EpisodicStore(
             config.episodic_persist_dir,
             embedder=embedder,

@@ -7,6 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.31] — 2026-11-24
+
+**两大项：wisdom 走 v2-normalized 归一化口径；嵌入器单例终于接上了线。**
+
+### ⚠️ 口径变更：wisdom 改为 v2-normalized
+
+下游三组对照（同一份代码，只换库）证明 wisdom 里有 42 分权重是
+**结构性依赖环境**的：
+
+| 环境 | wisdom |
+|---|---|
+| 生产 32,233 条（用户聊天记忆）| 64.5 |
+| 干净小库 20 条 | 72.9 |
+| 小库 + 按基准 tags 种 50 条 | 91.2 |
+
+归一化三项：
+
+| 项 | 原逻辑 | 新逻辑 |
+|---|---|---|
+| `mem_precision` (12) | 「记忆语料是否与基准题同源」，用真实聊天记录时必然 ≈0 | 交集为 0 时**不计入**，12 分权重按比例分给其他六项 |
+| `cross_domain` (10) | 非语义激活 / 总激活（**占比**，库越大越低）| 每查询非语义激活数 / 2.0（**绝对量**）|
+| `efficiency` (10) | 200ms 硬阈值，32k 库 548ms 直接 0 分 | 预算 = `100×(1+log10(N/1000))`，1k→100ms / 10k→200ms / 100k→300ms，实际耗时达预算 2 倍才归零 |
+
+返回值新增：
+
+- `caliber` = `"v2-normalized"`（**口径标记，历史数据靠它区分**）
+- `wisdom_legacy`（旧公式的值，保留对照）
+- `wisdom_items` / `wisdom_weights`（每项归一化值与实际权重）
+- `wisdom_meta`（`mem_precision_applicable` / `cross_per_query` / `efficiency_budget_ms`）
+
+> 本地实测：同一环境 `wisdom 81.0`（新）vs `75.6`（legacy）。
+> **历史数据需要重新标注口径**（下游会把他们 id<=183 标成旧口径）。
+
+### ★ 嵌入器单例：v2.0.16 做了机制，主路径一直没接
+
+全量测试时 onnxruntime 报 `bad allocation`，顺着查下去：
+
+```python
+# soma/agent.py（修改前）
+if self.embedder is None and config.use_vector_search:
+    self.embedder = SOMAEmbedder(config)      # ← 每个实例各建一个
+    self._owns_embedder = True
+```
+
+而 v2.0.16 早就做了 `get_shared_embedder()`（key = 模型名 + 维度，不含
+persist_dir，本来就该共享），**但这条主路径从来没接上**。
+
+后果：**N 个 SOMA 实例 = N 份 ONNX 会话**。测试里几十个实例就撑爆内存；
+生产上按用户建实例的接入方（`get_soma(user_id)`）同样会踩。
+
+修：改走 `get_shared_embedder(config)`，`_owns_embedder = False`
+（生命周期由 `release_shared_embedders()` 管，单实例 close() 不释放）。
+
+实测：5 个 SOMA 实例 → 1 个 embedder 对象；全量测试从 `bad allocation`
+崩溃变为 **1341 passed**，耗时 195s → 159s。
+
+### 其他
+
+- `_GRAPH_KEYWORD_CAP` / `_FTS_KEYWORD_CAP` 改为**实例可覆盖**（类属性默认
+  仍是 4/10），供接入方做「封顶 vs 不封顶」的 A/B 对照
+- `episodic.get()` 缓存上限 512 → **4096**（与下游配置对齐，3 万条库上
+  512 容易被击穿）
+
+### 判据
+
+- `tests/test_wisdom_caliber.py`（12 条），三道注入全红
+- `tests/test_embedder_sharing.py` 两个旧判据按新语义重写，并新增
+  「3 个实例必须共享同一 embedder」的核心回归
+
+全量回归 **1341 passed**。
+
+---
+
 ## [2.0.30] — 2026-11-24
 
 **第三个性能热点：图谱把关键词膨胀 5 倍。** 下游 32k 条库做了阶段级归因，

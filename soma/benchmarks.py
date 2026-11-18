@@ -151,6 +151,112 @@ def normalize_score(raw_value: float, data_count: int, metric: str) -> float:
         return 50.0  # 未知指标中庸分
 
 
+
+# ═══════════════════════════════════════════════════════════════
+# wisdom 归一化（v2-normalized 口径，2026-11-24）
+# ═══════════════════════════════════════════════════════════════
+#
+# 背景：同一份能力在不同库规模下测出的 wisdom 差别巨大。下游做了三组对照
+# （同一份代码，只换库）：
+#
+#   生产 32,233 条（用户聊天记忆）  → wisdom 64.5
+#   干净小库 20 条                  → wisdom 72.9
+#   小库 + 按基准 tags 种 50 条     → wisdom 91.2
+#
+# 差的 26 分里，42 分权重的三项是**结构性依赖环境**的：
+#
+#   mem_precision (12 分)  测的是「记忆语料是否与基准题同源」—— 用真实聊天
+#                          记录时必然接近 0，「进化论」「组织变革」这类基准
+#                          tag 在用户记忆里根本不存在。种入带 tag 的记忆后
+#                          0.034 → 0.932。
+#   cross_domain  (10 分)  原来是「非语义激活 / 总激活」的**占比**。库越大、
+#                          语义命中越多，这个占比单调下降 —— 等于惩罚规模化。
+#   efficiency    (10 分)  原来 200ms 硬阈值。32k 库实测 548ms 直接 0 分，
+#                          而优化到 344ms 仍拿 0。
+#
+# 归一化（caliber = v2-normalized）：
+#   · mem_precision —— 语料不同源（tag 交集为 0）时**不计入**，权重按比例
+#     分给其他六项。这不是放水：它本来就没测推理能力。
+#   · cross_domain  —— 改成「每查询的非语义激活数」，除以 2.0 饱和
+#     （每查询 2 个独立来源的激活算满分）。这是绝对量，不随库规模漂移。
+#   · efficiency    —— 预算随库规模对数增长：
+#         budget_ms = 100 * (1 + log10(max(N, 1000) / 1000))
+#       1k 库 → 100ms，10k → 200ms，100k → 300ms。
+#       实际耗时达到预算的 2 倍时该项归 0。
+#
+# 旧公式保留为 `wisdom_legacy`，便于历史对照。
+
+CALIBER_VERSION = "v2-normalized"
+
+_WISDOM_WEIGHTS = {
+    "coverage": 22.0,
+    "law_recall": 18.0,
+    "diversity": 18.0,
+    "mem_precision": 12.0,
+    "relevance": 10.0,
+    "cross_domain": 10.0,
+    "efficiency": 10.0,
+}
+
+
+def _clamp01(value) -> float:
+    try:
+        return max(0.0, min(1.0, float(value or 0)))
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _efficiency_budget_ms(corpus_size: int) -> float:
+    """该库规模下的「合理激活预算」。"""
+    import math as _m
+    return 100.0 * (1.0 + _m.log10(max(int(corpus_size or 0), 1000) / 1000.0))
+
+
+def _wisdom_normalized(wis: Dict[str, float], corpus_size: int) -> Dict[str, Any]:
+    """把 wisdom 的 7 项归一化到 [0,1] 再加权。返回分数 + 可解释的分项。"""
+    coverage = _clamp01(wis.get("decomposition_coverage"))
+    law_recall = _clamp01(wis.get("law_recall"))
+    diversity = _clamp01(wis.get("thinking_diversity_entropy"))
+    relevance = _clamp01(wis.get("memory_relevance_score"))
+
+    n_q = max(1, int(wis.get("n_queries_scored", 0) or 0))
+    cross_acts = float(wis.get("cross_domain_activations", 0) or 0)
+    cross_per_query = cross_acts / n_q
+    cross_domain = _clamp01(cross_per_query / 2.0)
+
+    avg_ms = (float(wis.get("avg_decompose_time_ms", 0) or 0)
+              + float(wis.get("avg_activate_time_ms", 0) or 0))
+    budget = _efficiency_budget_ms(corpus_size)
+    efficiency = 0.5 if avg_ms <= 0 else _clamp01(1.0 - avg_ms / (2.0 * budget))
+
+    unions = int(wis.get("tag_unions", 0) or 0)
+    inter = int(wis.get("tag_intersections", 0) or 0)
+    mem_precision_applicable = unions > 0 and inter > 0
+    mem_precision = _clamp01(inter / unions) if unions > 0 else 0.0
+
+    items = {
+        "coverage": coverage, "law_recall": law_recall, "diversity": diversity,
+        "mem_precision": mem_precision, "relevance": relevance,
+        "cross_domain": cross_domain, "efficiency": efficiency,
+    }
+    weights = dict(_WISDOM_WEIGHTS)
+    if not mem_precision_applicable:
+        dropped = weights.pop("mem_precision")
+        scale = (sum(weights.values()) + dropped) / max(sum(weights.values()), 1e-9)
+        weights = {k: v * scale for k, v in weights.items()}
+
+    score = sum(items[k] * weights[k] for k in weights)
+    return {
+        "score": round(score, 1),
+        "items": {k: round(v, 4) for k, v in items.items()},
+        "weights": {k: round(v, 2) for k, v in weights.items()},
+        "mem_precision_applicable": mem_precision_applicable,
+        "cross_per_query": round(cross_per_query, 3),
+        "efficiency_budget_ms": round(budget, 1),
+        "avg_activate_ms": round(avg_ms, 1),
+    }
+
+
 def normalize_scores(
     raw_scores: Dict[str, float],
     data_count: int,
@@ -227,8 +333,10 @@ def normalize_scores(
             synthesis * 10,
             1,
         )
+        wisdom_legacy = wisdom
     else:
-        # 无消融数据时，合成增益10分按比例分配
+        # 无消融数据时，合成增益10分按比例分配 —— 这是**旧口径**，
+        # 保留为 wisdom_legacy 供历史对照（见下方 v2-normalized）
         wisdom = round(
             coverage * 22 +
             law_recall * 18 +
@@ -239,6 +347,12 @@ def normalize_scores(
             efficiency * 10,
             1,
         )
+        wisdom_legacy = wisdom
+
+    # ★ v2-normalized：归一化后重算 wisdom（旧值存在 wisdom_legacy）
+    _wisdom_detail = _wisdom_normalized(raw_scores, data_count)
+    wisdom_legacy = wisdom
+    wisdom = _wisdom_detail["score"]
 
     # 进化分 — 改评质量为评数量
     # 原: total_reflections / 30 → 新: 最近 N 次反思成功率
@@ -276,6 +390,17 @@ def normalize_scores(
         ),
         "data_scale": raw_scores.get("data_scale_name", "unknown"),
         "data_count": data_count,
+        # ★ 口径标记：历史数据靠它区分，不靠分数本身猜
+        "caliber": CALIBER_VERSION,
+        "wisdom_legacy": wisdom_legacy,
+        "wisdom_items": _wisdom_detail["items"],
+        "wisdom_weights": _wisdom_detail["weights"],
+        "wisdom_meta": {
+            "mem_precision_applicable": _wisdom_detail["mem_precision_applicable"],
+            "cross_per_query": _wisdom_detail["cross_per_query"],
+            "efficiency_budget_ms": _wisdom_detail["efficiency_budget_ms"],
+            "avg_activate_ms": _wisdom_detail["avg_activate_ms"],
+        },
     }
 
 
@@ -853,6 +978,9 @@ def run_wisdom_benchmark(
     details["avg_activate_time_ms"] = bm.avg_activate_time_ms
     details["tag_intersections"] = tag_intersections
     details["tag_unions"] = tag_unions
+    # v2-normalized 需要绝对量（不是占比）：非语义激活总数 / 参与评分的查询数
+    details["cross_domain_activations"] = cross_domain_total
+    details["n_queries_scored"] = n_q
 
     bm.details = details
     return bm
@@ -1006,6 +1134,10 @@ def calculate_scores_v2(run: BenchmarkRun) -> Dict[str, float]:
             "memory_precision": run.wisdom.memory_precision,
             "memory_relevance_score": run.wisdom.memory_relevance_score,
             "cross_domain_activation_rate": run.wisdom.cross_domain_activation_rate,
+            "cross_domain_activations": run.wisdom.details.get("cross_domain_activations", 0),
+            "n_queries_scored": run.wisdom.details.get("n_queries_scored", 0),
+            "tag_intersections": run.wisdom.details.get("tag_intersections", 0),
+            "tag_unions": run.wisdom.details.get("tag_unions", 0),
             "avg_decompose_time_ms": run.wisdom.avg_decompose_time_ms,
             "avg_activate_time_ms": run.wisdom.avg_activate_time_ms,
             "synthesis_gain_depth_pct": run.wisdom.synthesis_gain_depth_pct,

@@ -132,13 +132,33 @@ class TestFacadeInjection:
         finally:
             s.close()
 
-    def test_selfbuilt_embedder_is_owned(self, tmp_path, no_real_load):
+    def test_default_embedder_is_shared_not_owned(self, tmp_path, no_real_load):
+        """★ 语义变更（2026-11-24）：默认构造走**进程级单例**，实例不拥有它。
+
+        原来是「每个 SOMA 自建一个 embedder 并拥有它」，实测跑全量测试时
+        onnxruntime 直接 `bad allocation`（N 个实例 = N 份 ONNX 会话）。
+        v2.0.16 的单例机制本来就是为这个设计的，只是这条主路径没接上。
+
+        现在 `_owns_embedder` 恒为 False —— 生命周期由
+        `release_shared_embedders()` 管。
+        """
         s = _facade(tmp_path, use_vector_search=True)
         try:
             assert isinstance(s._agent.embedder, SOMAEmbedder)
-            assert s._agent._owns_embedder is True
+            assert s._agent._owns_embedder is False, (
+                "实例仍宣称拥有 embedder —— 会导致每实例一份 ONNX 会话")
         finally:
             s.close()
+
+    def test_multiple_instances_share_one_embedder(self, tmp_path, no_real_load):
+        """★ 核心回归：多个实例必须复用同一个嵌入器对象。"""
+        stores = [_facade(tmp_path, name=f"m{i}", use_vector_search=True) for i in range(3)]
+        try:
+            ids = {id(s._agent.embedder) for s in stores}
+            assert len(ids) == 1, f"3 个实例拿到 {len(ids)} 个 embedder —— 没共享"
+        finally:
+            for s in stores:
+                s.close()
 
     def test_no_embedder_when_vector_search_off(self, tmp_path):
         s = _facade(tmp_path, use_vector_search=False)
@@ -156,13 +176,22 @@ class TestFacadeInjection:
 
 
 class TestLifecycle:
-    def test_selfbuilt_closed_on_instance_close(self, tmp_path, monkeypatch, no_real_load):
+    def test_shared_not_closed_on_instance_close(self, tmp_path, monkeypatch, no_real_load):
+        """★ 语义变更：实例 close() **不能**释放共享单例。
+
+        否则第一个实例关闭会把所有实例正在用的会话拆掉
+        （多 worker / 多用户实例场景下就是灾难）。
+        """
+        from soma.embedder import release_shared_embedders
+        release_shared_embedders()
         calls = []
         monkeypatch.setattr(SOMAEmbedder, "close", lambda self: calls.append(self))
         s = _facade(tmp_path, use_vector_search=True)
         assert calls == [], "构造阶段不该释放"
         s.close()
-        assert len(calls) == 1, "自建实例 close() 必须释放自己的 ONNX 会话"
+        assert calls == [], (
+            "实例 close() 释放了共享的嵌入器 —— 其它实例会拿到死会话")
+        release_shared_embedders()
 
     def test_injected_not_closed_on_instance_close(self, tmp_path):
         """关键回归点：多实例共享时，第一个 close 的实例不能释放共享会话"""
