@@ -349,8 +349,12 @@ class MemoryCore:
 
         # 查询语义记忆（namespace 编码隔离: agent_id 或 user_id）
         sem_namespace = agent_id or user_id
+        # ★ 2026-11-25（下游生产实测）：必须 `include_global=True`。
+        #   他们的 15,312 条三元组全部 namespace=''（全局知识），而这里传
+        #   `agent_id or user_id` —— 查 namespace='1' 返回 0 行，知识图谱
+        #   对真实用户完全没生效，每次只是空转。
         semantic_results = self.semantic.query_by_keywords(
-            fts_keywords, top_k, namespace=sem_namespace,
+            fts_keywords, top_k, namespace=sem_namespace, include_global=True,
         )
         for mem in semantic_results:
             matched = [kw for kw in all_keywords if kw.lower() in mem.content.lower()]

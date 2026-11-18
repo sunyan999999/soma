@@ -33,6 +33,7 @@ def fts5_keyword_search(
     agent_id: str = "",
     group_col: str = "",
     group_id: str = "",
+    max_like_keywords: int = 3,
 ) -> List[Any]:
     """FTS5 trigram + LIKE 降级的双路径关键词搜索。
 
@@ -46,12 +47,18 @@ def fts5_keyword_search(
 
     search_cols 指定 LIKE 搜索的目标列，例如 ["content", "context_json"]。
     FTS 搜索使用 fts_table MATCH，列已在 FTS 虚拟表定义中固定。
+
+    `max_like_keywords`（2026-11-25，下游生产实测）：LIKE `%x%` 用不上索引，
+    每个短词都要在**每一行**上评估 —— 成本 O(词数 × 行数)。32k 库实测
+    4 词 55ms / 8 词 94ms / 10 词 111ms，而一次 activate 会传 8~20 个
+    2 字词。截到前 N 个（调用方保证主关键词排前面）能砍掉大头。
     """
     if not keywords:
         return []
 
     fts_keywords = [kw for kw in keywords if len(kw) >= 3]
-    like_keywords = [kw for kw in keywords if len(kw) < 3]
+    # 短词走 LIKE 全表扫描，数量必须封顶（见 docstring）
+    like_keywords = [kw for kw in keywords if len(kw) < 3][:max(1, max_like_keywords)]
 
     seen_ids: set = set()
     results: List[Any] = []

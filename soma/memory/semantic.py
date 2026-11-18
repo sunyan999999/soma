@@ -172,13 +172,33 @@ class SemanticStore(BaseMemoryStore):
         self, keywords: List[str], top_k: int = 5,
         namespace: str = "",
         max_age_days: Optional[float] = None,
+        include_global: bool = False,
+        max_like_keywords: int = 3,
     ) -> List[MemoryUnit]:
+        """按关键词查语义三元组。
+
+        `include_global`（2026-11-25，下游实测）：为 True 时，除了 `namespace`
+        精确匹配，**还纳入 `namespace = ''` 的全局知识**。
+
+        为什么需要：下游生产有 15,312 条三元组**全部** namespace = ''（全局
+        知识，如「数字分身—基于—命理八字」），而 `MemoryCore.query` 传的是
+        `agent_id or user_id` —— 查 `namespace='1'` 返回 0 行。
+        结果：**知识图谱对真实用户完全没生效**，每次只是空转 0.3ms。
+
+        `namespace=''` 在本方法的历史语义是「不过滤」（返回所有用户的三元组），
+        不是「只查全局」—— 所以不能靠它来修。
+        """
         if not keywords:
             return []
 
         results: List[MemoryUnit] = []
         seen_ids: set = set()
-        ns_clause = "AND st.namespace = ?" if namespace else ""
+        if namespace and include_global:
+            ns_clause = "AND (st.namespace = ? OR st.namespace = '')"
+        elif namespace:
+            ns_clause = "AND st.namespace = ?"
+        else:
+            ns_clause = ""
         time_clause = ""
         time_params = []
         if max_age_days is not None:
@@ -233,13 +253,25 @@ class SemanticStore(BaseMemoryStore):
                 _log.info("语义 FTS5 搜索语法错误，降级到 LIKE 搜索")
 
         # 路径2: LIKE 兜底（短关键词，SQLite 查询确保 namespace 过滤正确）
-        like_keywords = [kw for kw in keywords if len(kw) < 3]
+        #
+        # ★ 2026-11-25（下游生产实测）：两个改动。
+        #   1) `include_global` 也必须在这里生效 —— 这条路径是**独立构造 SQL** 的，
+        #      不走上面的 `ns_clause`，第一版修完发现全局知识在 FTS 路径能查到、
+        #      在短词路径查不到，行为不一致。
+        #   2) `max_like_keywords`：LIKE '%x%' 用不上索引，每个词都要在
+        #      **每一行**上评估一次 —— 成本是 O(词数 × 行数)。下游实测
+        #      4 词 55ms / 8 词 94ms / 10 词 111ms（32k 库），而一次 activate
+        #      会传 8~20 个 2 字词。截到 3 个（focus 自带词排前面）能砍掉大头。
+        like_keywords = [kw for kw in keywords if len(kw) < 3][:max(1, max_like_keywords)]
         remaining = top_k - len(results)
         if like_keywords and remaining > 0:
             conditions = [] if max_age_days is None else ["st.created_at >= ?"]
             params: list = [] if max_age_days is None else time_params.copy()
             if namespace:
-                conditions.append("st.namespace = ?")
+                if include_global:
+                    conditions.append("(st.namespace = ? OR st.namespace = '')")
+                else:
+                    conditions.append("st.namespace = ?")
                 params.append(namespace)
             if seen_ids:
                 # 用 rowid 构造唯一 ID 去重: sem_edge_{subject}_{predicate}_{object}

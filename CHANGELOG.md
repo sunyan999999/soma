@@ -7,6 +7,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.33] — 2026-11-25
+
+**知识图谱对真实用户没生效（功能性缺口）+ 短词 LIKE 全表扫描。**
+
+### ★ 修复 1：语义三元组的全局知识通道（功能性，比性能更严重）
+
+下游生产实测：
+
+```
+semantic_triples 共 15,312 条，全部 namespace = ''（全局知识）
+                    样本：「数字分身—基于—命理八字」「大运流年—影响—运势走向」
+MemoryCore.query 里 sem_namespace = agent_id or user_id
+生产聊天传 user_id='1' → 查 namespace='1' 返回 0 行
+```
+
+**15,312 条知识等于白存**，每次查询只是空转 0.3ms。
+
+修：`query_by_keywords(include_global=True)` —— SQL 变成
+`AND (st.namespace = ? OR st.namespace = '')`。
+
+两个容易踩的点：
+
+- `namespace=''` 在本方法的历史语义是「**不过滤**」（返回所有用户的），
+  不是「只查全局」—— 所以不能靠传空串来修
+- FTS 路径和 LIKE 路径是**两段独立构造的 SQL**，第一版只改了 FTS 路径，
+  短词查询仍然查不到全局知识（行为不一致），已一并修
+
+### 修复 2：短关键词 LIKE 封顶
+
+FTS5 trigram 只接受 ≥3 字；1~2 字词走 `LIKE '%kw%'`，用不上索引，
+每个词都要在**每一行**上评估 —— 成本 O(词数 × 行数)。
+
+下游 32k 库实测：4 词 55ms / 8 词 94ms / 10 词 111ms，而一次 activate
+会传 8~20 个 2 字词 → `episodic.query_by_keywords` 61.4ms × 18 次
+= **184ms/激活（占 53%）**。
+
+修：新增 `max_like_keywords`（默认 3），`episodic` 与 `semantic` 两处都用。
+调用方保证主关键词排前面。
+
+本地 2 万条实测：10 词 15.8ms → 3 词 10.3ms，**命中数不变**（前 3 个词就能
+填满 top_k）。
+
+> ⚠️ 截断的真实代价：如果查询依赖的是第 4 个之后的短词，会查不到。
+> 判据 `test_cap_limits_like_terms` 专门记录了这个行为（构造「只有第 5 个词
+> 能命中」的场景）。
+
+> 根治方案是「写入时 jieba 分词存 tokens 列 + FTS5 unicode61 索引」，
+> 让 2 字词也能走索引。工程量大，列入后续。
+
+### 判据
+
+`tests/test_semantic_global_and_like.py`（8 条），三道注入全红：
+
+| 注入 | 变红 |
+|---|---|
+| `include_global` 恒 False | 2 条 |
+| LIKE 不截断 | `test_cap_limits_like_terms` |
+| semantic LIKE 路径漏改 | `test_short_keyword_finds_global` |
+
+全量回归 **1358 passed**。
+
+---
+
 ## [2.0.32] — 2026-11-24
 
 **排序稳定性判据 + 文本编码缓存。并行暂缓，附原因。**
