@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.29] — 2026-11-24
+
+**两个真实的性能热点（下游 32k 条生产库实测）。纯性能优化，语义零变化。**
+
+### 热点 1：`count_indexed()` 每次搜索全表扫描
+
+```sql
+SELECT COUNT(*) FROM episodic_memories WHERE vector IS NOT NULL
+```
+
+`vector IS NOT NULL` 走不了索引。本地 3 万条实测 **100ms**（下游 65ms）。
+而 `similarity_search` 每次调用都查它一次做 DB/faiss 一致性检查 ——
+**一次激活 4~6 次**，等于 300~600ms 的纯重复劳动，占激活耗时 40%+。
+
+修：缓存 + **双探针**失效
+
+| 探针 | 覆盖场景 |
+|---|---|
+| `PRAGMA data_version` | **其他连接**提交（跨进程 / 跨实例）|
+| `conn.total_changes` | **本连接**写入（零成本属性，不触发查询）|
+
+> ⚠️ 第一版只用 `data_version`，被自己的自愈判据抓出来了 ——
+> `data_version` 只反映其他连接的提交，同一连接里的 UPDATE 它看不见，
+> 于是「索引与 DB 失步自愈」那个测试读到了陈旧的 0。加 `total_changes`
+> 后才正确。
+
+实测：**100ms → 0.006ms**，一次激活 5 次可省约 **500ms**。
+
+### 热点 2：`episodic.get()` 的 N+1
+
+`query_by_vector` 对每个候选都调 `get(mid)`（单行 SELECT），同一条记忆在一次
+激活里被反复 hydration。下游 SQL 抓取：2 次 activate 共 3,122 条 SQL，
+同一 id 的 `SELECT * WHERE id=?` 重复 10 次。
+
+修：LRU（上限 512）+ **2 秒 TTL**。记忆是追加型的，2 秒陈旧对召回无影响；
+写路径（`update` / `delete` / `archive_and_delete` / `restore_archived`）主动失效。
+
+### 顺带修一个原有小 bug
+
+`increment_access()` 的返回值原来是 `self._conn.total_changes > 0` ——
+那是**连接累计**写入数，只要写过任何东西就永远为真。改为本次 UPDATE 的
+`rowcount`。并且它现在会同步更新缓存对象里的 `access_count`
+（不然缓存会让召回排序读到旧值）。
+
+### 判据
+
+`tests/test_cache_correctness.py`（9 条），三道注入全红：
+
+| 注入 | 变红 |
+|---|---|
+| 去掉 `total_changes` 探针 | `test_same_connection_write_invalidates` |
+| `update` 不失效 get 缓存 | `test_update_visible` |
+| `increment_access` 不同步缓存 | `test_increment_visible_through_cache` |
+
+**只测正确性不测速度** —— 速度判据依赖机器和数据量，放 CI 只会变成 flaky。
+速度用一次性脚本测（数据已记在上面）。
+
+全量回归 **1320 passed**。
+
+---
+
 ## [2.0.28] — 2026-11-24
 
 **分层抽样评测入口 —— 解决「两套口径没法比」的问题。**

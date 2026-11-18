@@ -2,7 +2,9 @@ import hashlib
 import json
 import logging
 import sqlite3
+import time
 import uuid
+from collections import OrderedDict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -37,6 +39,16 @@ class EpisodicStore(BaseMemoryStore):
         self._use_vector = use_vector_search and embedder is not None
         # v2.0.17: SQLite 内存映射大小（字节），0 = 禁用。见 SOMAConfig.sqlite_mmap_size
         self._mmap_size = max(0, int(mmap_size))
+        # ★ 2026-11-24（下游生产实测，32k 条规模）：`get()` 的 N+1。
+        #   `query_by_vector` 对每个候选都调一次 `self.get(mid)`（单行 SELECT），
+        #   同一条记忆在一次激活里被反复 hydration —— SQL 抓取显示 2 次 activate
+        #   共 3,122 条 SQL，其中同一个 id 的 SELECT 重复 10 次。
+        #
+        #   缓存策略：LRU + 2 秒 TTL。记忆是追加型的，2 秒陈旧对召回无影响；
+        #   写路径（update / delete / archive / restore）主动失效。
+        self._get_cache: "OrderedDict[str, Any]" = OrderedDict()
+        self._get_cache_ttl = 2.0
+        self._get_cache_max = 512
 
         self._create_table()
         self._vector_index = None
@@ -458,16 +470,34 @@ class EpisodicStore(BaseMemoryStore):
         return len(ids)
 
     def get(self, memory_id: str) -> Optional[MemoryUnit]:
+        now = time.time()
+        cached = self._get_cache.get(memory_id)
+        if cached is not None:
+            expires_at, unit = cached
+            if expires_at > now:
+                self._get_cache.move_to_end(memory_id)
+                return unit
+            self._get_cache.pop(memory_id, None)
+
         row = self._conn.execute(
             "SELECT * FROM episodic_memories WHERE id = ?", (memory_id,)
         ).fetchone()
-        return self._row_to_memory(row) if row else None
+        unit = self._row_to_memory(row) if row else None
+        self._get_cache[memory_id] = (now + self._get_cache_ttl, unit)
+        if len(self._get_cache) > self._get_cache_max:
+            self._get_cache.popitem(last=False)      # 淘汰最久未用的
+        return unit
+
+    def _invalidate_get_cache(self, memory_id: str) -> None:
+        """写路径调用：该条的下次读取必须回库。"""
+        self._get_cache.pop(memory_id, None)
 
     def delete(self, memory_id: str) -> bool:
         cursor = self._conn.execute(
             "DELETE FROM episodic_memories WHERE id = ?", (memory_id,)
         )
         self._conn.commit()
+        self._invalidate_get_cache(memory_id)
         return cursor.rowcount > 0
 
     def count(self) -> int:
@@ -755,6 +785,7 @@ class EpisodicStore(BaseMemoryStore):
                 params,
             )
             self._conn.commit()
+            self._invalidate_get_cache(memory_id)
         except sqlite3.Error:
             _log.warning("update 失败, memory_id=%s", memory_id[:8], exc_info=True)
             return False
@@ -807,6 +838,7 @@ class EpisodicStore(BaseMemoryStore):
             except Exception:
                 _log.warning("归档后清向量失败, memory_id=%s", memory_id[:8],
                              exc_info=True)
+        self._invalidate_get_cache(memory_id)
         return True
 
     def list_archived(
@@ -893,13 +925,28 @@ class EpisodicStore(BaseMemoryStore):
         return self._use_vector
 
     def increment_access(self, memory_id: str) -> bool:
-        """递增记忆的访问计数并持久化"""
-        self._conn.execute(
+        """递增记忆的访问计数并持久化。
+
+        2026-11-24：get() 加了缓存后，这里必须**同步更新缓存对象**而不是
+        让它失效 —— 激活流程是「get 出来 → 算分 → increment_access」，
+        失效会让下一次 get 回库，缓存等于白加。
+
+        顺带修一个原有小 bug：返回值原来用 `self._conn.total_changes > 0`
+        判断，那是**连接累计**写入数，只要写过任何东西就永远为真 ——
+        改成本次 UPDATE 的 rowcount。
+        """
+        cursor = self._conn.execute(
             "UPDATE episodic_memories SET access_count = access_count + 1 WHERE id = ?",
             (memory_id,),
         )
         self._conn.commit()
-        return self._conn.total_changes > 0
+        if cursor.rowcount > 0:
+            cached = self._get_cache.get(memory_id)
+            if cached is not None:
+                expires_at, unit = cached
+                if expires_at > time.time() and unit is not None:
+                    unit.access_count = int(unit.access_count or 0) + 1
+        return cursor.rowcount > 0
 
     # ── v0.7.0 记忆智能 ─────────────────────────────────
 
@@ -932,6 +979,7 @@ class EpisodicStore(BaseMemoryStore):
         engine = ForgettingEngine(self._conn)
         if not engine.restore(memory_id):
             return False
+        self._invalidate_get_cache(memory_id)   # 恢复后内容/字段都可能变了
         row = self._conn.execute(
             "SELECT content FROM episodic_memories WHERE id = ?", (memory_id,)
         ).fetchone()

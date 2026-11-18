@@ -75,6 +75,19 @@ class NumpyVectorIndex:
         self._index_type = "none"
         self._cached_count = -1
         self._incremental_adds = 0
+        # ★ 2026-11-24（下游生产实测，32k 条规模）：`count_indexed()` 是
+        #   `SELECT COUNT(*) WHERE vector IS NOT NULL` —— 这个条件走不了索引，
+        #   32,233 行要全表扫描，单次 65ms。而 `similarity_search` 每次调用都
+        #   查一次做 DB/faiss 一致性检查，一次激活 4~6 次 → 260~390ms 纯重复
+        #   扫描，占激活耗时 40%+。
+        #
+        #   缓存两层保护：
+        #     · `PRAGMA data_version` —— 只有**其他连接**提交后才变化，是廉价
+        #       的跨进程探针；本连接的写入由 `invalidate_count_cache()` 主动失效
+        #     · TTL 兜底（300s），防止探针在某些 SQLite 配置下不灵敏
+        self._count_indexed_cache: Optional[int] = None
+        self._count_indexed_dv: Optional[int] = None
+        self._count_indexed_at: float = 0.0
         self._rebuild_busy = False    # v2.0.14: 后台重建进行中标志（防止并发重建）
         # v2.0.18: 保护「索引对象 + 两个 ID 映射」这三件套的一致性。后台重建是逐个
         # 赋值替换它们的，主线程若在中间读，会拿到「旧索引 + 新映射」这类错配组合，
@@ -324,6 +337,8 @@ class NumpyVectorIndex:
         v2.0.18: 整段持 _state_lock —— 「写库 + 入索引」必须相对搜索侧的重建保持
         原子。否则重建已经把这条读进快照、这里又增量加一次，索引就多出一条重复
         （表现为 ntotal 比 DB 有效数大，且再也对不上）。
+
+        2026-11-24: 写完失效 count_indexed 缓存（本连接写入不改变 data_version）。
         """
         import faiss
 
@@ -334,6 +349,8 @@ class NumpyVectorIndex:
                 (blob, memory_id),
             )
             conn.commit()
+            # 2026-11-24: 本连接写入不会改变 PRAGMA data_version，必须主动失效
+            self.invalidate_count_cache()
 
             # 增量添加到 FAISS 索引（v2.0.2: 批量保存，减少磁盘IO）
             if self._faiss_index is not None:
@@ -594,6 +611,8 @@ class NumpyVectorIndex:
                 "UPDATE episodic_memories SET vector = NULL WHERE id = ?",
                 (memory_id,),
             )
+            # 2026-11-24: 向量数变了，count_indexed 缓存立刻作废
+            self.invalidate_count_cache()
             conn.commit()
             # 删除后无法从 HNSW 索引中精确移除，标记为过期
             if memory_id in self._mem_to_faiss_id:
@@ -727,11 +746,58 @@ class NumpyVectorIndex:
         finally:
             self._rebuild_busy = False
 
+    # 缓存有效期（秒）。设得比较长是因为有 data_version 兜底 —— 真正的
+    # 失效信号是「别的连接提交过」，TTL 只是最后一道保险。
+    _COUNT_CACHE_TTL = 300.0
+
+    def invalidate_count_cache(self) -> None:
+        """本连接写入了新向量/删除了记忆后调用，让下一次 count_indexed 重算。
+
+        `PRAGMA data_version` 只反映**其他连接**的提交，本连接自己的改动
+        它看不见 —— 所以写入路径必须显式失效，否则缓存会一直停在旧值。
+        """
+        self._count_indexed_cache = None
+        self._count_indexed_dv = None
+        self._count_indexed_at = 0.0
+
+    def _count_probe(self, conn):
+        """返回缓存探针键 —— 任何写入都该让它变化。
+
+        ★ 两个探针缺一不可：
+          · `PRAGMA data_version` —— **其他连接**提交后变化（跨进程/跨实例）
+          · `conn.total_changes`  —— **本连接**的累计写入数（零成本属性，
+            不触发查询）。data_version 看不见自己连接上的改动，只靠它会让
+            「同一连接里直接 UPDATE 了 vector」这种情况读到陈旧值 ——
+            实测就是它在 self-heal 判据上翻车的。
+        """
+        try:
+            dv = conn.execute("PRAGMA data_version").fetchone()[0]
+        except Exception:
+            return None
+        return (dv, conn.total_changes)
+
     def count_indexed(self, conn) -> int:
+        now = time.time()
+        probe = self._count_probe(conn)
+        # ① TTL 内且探针未变 → 直接返回缓存
+        if (self._count_indexed_cache is not None
+                and probe is not None
+                and probe == self._count_indexed_dv
+                and now - self._count_indexed_at < self._COUNT_CACHE_TTL):
+            return self._count_indexed_cache
+
         row = conn.execute(
             "SELECT COUNT(*) FROM episodic_memories WHERE vector IS NOT NULL"
         ).fetchone()
-        return row[0] if row else 0
+        value = int(row[0]) if row else 0
+        if probe is not None:
+            self._count_indexed_dv = probe
+            self._count_indexed_at = time.time()
+            self._count_indexed_cache = value
+        else:
+            # 探针不可用时不缓存，下次照常全表算（宁慢勿错）
+            self._count_indexed_cache = None
+        return value
 
     def clear_incompatible_vectors(self, conn) -> int:
         """清除维度不匹配的旧向量，返回清除数量"""
