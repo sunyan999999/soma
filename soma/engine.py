@@ -54,6 +54,22 @@ def _extract_keywords(text: str, max_keywords: int = 10) -> List[str]:
     return unique[:max_keywords]
 
 
+# 语义兜底的相似度阈值（2026-11-24 从 0.35 提到 0.42）。
+#
+# 依据：用 6 类普通问题（技术/排障/优化/业务/编码/运维）实测，
+# 0.35 时这些问题一共触发 14 个规律（「这个函数为什么报内存溢出」会
+# 匹配到演进视角、「公司明年预算多少」也匹配到演进视角）—— 短问题与
+# 规律签名的余弦相似度普遍虚高。
+#
+# 实测 0.35 / 0.42 / 0.50 / 0.58 四档（50 题基准 + 6 类普通问题）：
+#   0.35  recall 0.6319  precision 0.4919  普通问题触发 14
+#   0.42  recall 0.6389  precision 0.5027  普通问题触发  8   ← 甜点
+#   0.50  recall 0.5347  precision 0.4936  普通问题触发  8
+#   0.58  recall 0.5278  precision 0.4872  普通问题触发  8
+# 0.42 是唯一「基准不降、误触发降 43%」的档位；再往上 recall 断崖。
+_SEMANTIC_MATCH_THRESHOLD = 0.42
+
+
 class WisdomEngine(BaseFrameworkEngine):
     """思维框架引擎 — 基于规律图谱拆解问题为分析焦点"""
 
@@ -277,7 +293,7 @@ class WisdomEngine(BaseFrameworkEngine):
                 continue
 
             sim = float(np.dot(problem_vec, sig_vec) / (problem_norm * sig_norm))
-            if sim > 0.35:  # 语义相似度阈值
+            if sim > _SEMANTIC_MATCH_THRESHOLD:
                 matches.append((law, sim))
 
         # 按相似度 × 权重排序，取前3个
