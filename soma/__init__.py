@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "2.0.22"
+    __version__ = "2.0.23"
 
 from soma.config import SOMAConfig, load_config
 from soma.db import set_shared_enabled
@@ -1973,13 +1973,48 @@ class SOMA:
         self._ensure_layered_memory()
         return self._capture_pipeline.update_profile(user_id, force=force)
 
-    def get_layered_stats(self) -> Dict[str, Any]:
-        """返回分层记忆统计。"""
+    def get_layered_stats(self, user_id: str = "") -> Dict[str, Any]:
+        """返回分层记忆统计。
+
+        `user_id`（2026-11-18）：传了就看该用户的捕获状态；不传（默认）保持
+        原行为，只给全库计数。
+
+        ★ 监控要点：`consecutive_failures` / `total_failures` 长期 >0 且
+        `scenes` 不涨，说明 L2 在静默降级（LLM key 失效 / 额度耗尽）。
+        生产上曾因这个信号不可见，排查花了很久。
+        """
         self._ensure_layered_memory()
         base = self.stats
         base["scenes"] = self._scene_store.count()
         base["profile_entries"] = self._profile_store.count()
+        # get_state 对空 user_id 也有效（单租户语义 = 不按用户过滤）
+        state = self._capture_pipeline.get_state(user_id)
+        base["capture"] = {
+            k: state.get(k) for k in (
+                "enabled", "consecutive_failures", "total_failures",
+                "last_capture_time", "last_detail", "capture_lease",
+            )
+        }
         return base
+
+    def get_last_capture_detail(self, user_id: str = "") -> Dict[str, Any]:
+        """最近一次捕获的明细：{extracted, created, skipped, reason, error}。
+
+        ★ 2026-11-18：`capture_scenes()` 返回 int（新增条数），但调用方分不清
+        「提取到了但被去重」和「压根没提取」—— 生产上因此误判过 L2 没跑起来。
+        reason 的取值：
+
+            ok             真的新增了
+            no_new         提取到了，但标题全部已存在（去重）
+            empty_extract  LLM 没返回任何场景
+            locked         另一个进程正在捕获 / 还在冷却期
+            no_memories    该用户没有可用的近期记忆
+            no_provider    没接 memory_provider（老构造方式）
+            provider_error 取记忆时抛异常
+            failed         LLM 调用失败（error 字段有原因）
+        """
+        self._ensure_layered_memory()
+        return self._capture_pipeline.get_state(user_id).get("last_detail") or {}
 
     # ── v0.9.2: 多Agent编排便利方法 ──────────────────────────
 

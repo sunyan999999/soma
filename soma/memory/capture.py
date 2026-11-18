@@ -269,6 +269,14 @@ class CapturePipeline:
         self._last_capture_time: Dict[str, float] = {}  # 上次捕获时间
         self._last_memory_time: Dict[str, float] = {}   # 最后新记忆时间
         self._total_scenes_created: Dict[str, int] = {} # 累计创建场景数
+        # ★ 2026-11-18: 失败可见性 —— 连续失败要能升级成 ERROR 并计数，
+        #   否则 LLM key 失效时 L2 会静默归零（生产踩过）。
+        self._consecutive_failures: Dict[str, int] = {}
+        self._total_failures: Dict[str, int] = {}
+        # ★ 2026-11-18: 最近一次捕获的明细，供 capture_scenes_detailed() 读取。
+        #   调用方需要区分「提取到了但被去重」与「压根没提取」——
+        #   只看 int 返回值分不出来（生产上因此误判过 L2 没跑起来）。
+        self._last_detail: Dict[str, Dict] = {}
         self._enabled = True
 
     # ── 公共 API ──
@@ -342,13 +350,25 @@ class CapturePipeline:
         #   没有 provider（老调用方直接构造 CapturePipeline）时保持原行为，
         #   仍返回 0 —— 向后兼容，不改变既有语义。
         if self._memory_provider is None:
+            self._last_detail[uid] = {
+                "extracted": 0, "created": 0, "skipped": 0,
+                "reason": "no_provider", "error": None,
+            }
             return 0
         try:
             memories = self._memory_provider(uid)
         except Exception as exc:
             _log.warning("取近期记忆失败，跳过本次场景提取: %s", exc)
+            self._last_detail[uid] = {
+                "extracted": 0, "created": 0, "skipped": 0,
+                "reason": "provider_error", "error": str(exc),
+            }
             return 0
         if not memories:
+            self._last_detail[uid] = {
+                "extracted": 0, "created": 0, "skipped": 0,
+                "reason": "no_memories", "error": None,
+            }
             return 0
         # force=True：间隔保护已在上面检查过，避免 capture_from_memories 再查一次
         return self.capture_from_memories(memories, user_id=uid, force=True)
@@ -365,6 +385,33 @@ class CapturePipeline:
             if now - last_cap < self._cfg.scene_min_interval:
                 return 0
 
+        # ★ 2026-11-18: 跨进程互斥。多 worker 部署时每个进程都有一份
+        #   CapturePipeline，进程内节流管不到彼此 —— 同一批记忆会被各抽一次。
+        #   租约拿不到就直接跳过（不是失败，是「别人在做」）。
+        lease_owner = self._scene_store.try_begin_capture(
+            uid, force=force, min_interval=self._cfg.scene_min_interval,
+        )
+        if lease_owner is None:
+            _log.debug("跳过场景提取：另一个进程正在捕获或仍在冷却期（user=%s）", uid)
+            self._last_detail[uid] = {
+                "extracted": 0, "created": 0, "skipped": 0,
+                "reason": "locked", "error": None,
+            }
+            return 0
+
+        try:
+            return self._capture_locked(
+                memories, uid, force=force, now=now,
+            )
+        finally:
+            self._scene_store.end_capture(
+                uid, lease_owner, cooldown=self._cfg.scene_min_interval,
+            )
+
+    def _capture_locked(
+        self, memories: List[Dict], uid: str, *, force: bool, now: float,
+    ) -> int:
+        """拿到租约后的实际提取流程。"""
         # 获取已有场景标题去重
         existing_scenes = self._scene_store.get_scenes(user_id=uid, top_k=50)
         existing_titles = [s["title"] for s in existing_scenes]
@@ -373,9 +420,34 @@ class CapturePipeline:
         try:
             extracted = self._scene_extractor.extract(memories, existing_titles)
         except Exception as exc:
-            _log.warning("场景提取失败（LLM 调用异常）: %s", exc)
+            # ★ 2026-11-18: 失败可见性。生产上曾因 LLM key 失效导致**每一次**
+            #   抽取都失败，但只有一行 WARNING，场景恒为 0 却没人发现
+            #   （下游排查花了不少时间）。现在连续失败会升级成 ERROR 并计数。
+            self._consecutive_failures[uid] = \
+                self._consecutive_failures.get(uid, 0) + 1
+            self._total_failures[uid] = self._total_failures.get(uid, 0) + 1
+            n = self._consecutive_failures[uid]
+            if n == 1:
+                _log.warning("场景提取失败（LLM 调用异常，第 1 次）: %s", exc)
+            elif n < 3:
+                _log.warning("场景提取连续失败 %d 次: %s", n, exc)
+            else:
+                _log.error(
+                    "场景提取已连续失败 %d 次（user=%s）—— L2 处于静默降级状态，"
+                    "请检查 LLM 配置/额度。最近一次错误: %s", n, uid, exc,
+                )
+            self._last_detail[uid] = {
+                "extracted": 0, "created": 0, "skipped": 0,
+                "reason": "failed", "error": str(exc),
+            }
             return 0
+        # 成功一次就清零连续失败
+        self._consecutive_failures[uid] = 0
         if not extracted:
+            self._last_detail[uid] = {
+                "extracted": 0, "created": 0, "skipped": 0,
+                "reason": "empty_extract", "error": None,
+            }
             return 0
 
         created = 0
@@ -394,6 +466,25 @@ class CapturePipeline:
                 _log.warning("场景创建失败: %s", exc)
         after_count = self._scene_store.count(uid)
         created = max(0, after_count - before_count)
+
+        # ★ 2026-11-18: 返回值口径要能区分「提取了但全被去重」和「压根没提取」。
+        #   生产上踩过：remember() 已经自动捕获过 3 条，随后手动
+        #   capture_scenes(force=True) 返回 0，而表里确实有 3 条 —— 调用方
+        #   据此误判「L2 没跑起来」，排查了很久。真相是本次提取的标题全部
+        #   已存在（add_scene 同用户同标题去重），所以新增 0 条。
+        if extracted and created == 0:
+            _log.info(
+                "场景提取完成但无新增（user=%s）：提取 %d 条，标题全部已存在"
+                "（去重）。当前累计 %d 条。",
+                uid, len(extracted), after_count,
+            )
+        self._last_detail[uid] = {
+            "extracted": len(extracted),
+            "created": created,
+            "skipped": max(0, len(extracted) - created),
+            "reason": "ok" if created > 0 else "no_new",
+            "error": None,
+        }
 
         self._last_capture_time[uid] = now
         self._total_scenes_created[uid] = (
@@ -493,6 +584,12 @@ class CapturePipeline:
             "total_scenes": self._total_scenes_created.get(uid, 0),
             "scene_count": self._scene_store.count(uid),
             "profile_count": self._profile_store.count(uid),
+            # ★ 2026-11-18: 失败可见性 —— 这两个数长期 >0 且 scene_count 不涨，
+            #   说明 L2 在静默降级（LLM key 失效 / 额度耗尽）。
+            "consecutive_failures": self._consecutive_failures.get(uid, 0),
+            "total_failures": self._total_failures.get(uid, 0),
+            "capture_lease": self._scene_store.capture_lease_state(uid),
+            "last_detail": self._last_detail.get(uid),
         }
 
     def disable(self):

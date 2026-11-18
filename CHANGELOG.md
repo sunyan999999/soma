@@ -7,6 +7,89 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.23] — 2026-11-18
+
+**L2 上生产后暴露的三个工程问题。** 下游在 `uvicorn --workers 3` / 162 用户
+的真实环境下实测报告。
+
+### 修复
+
+1. **多进程重复捕获**（最重要）
+   - 现象：同一批记忆被三个 worker 各抽一次，产出语义重复、措辞不同的场景
+     ```
+     日志：捕获完成: user=1, 场景=6, 累计场景=6（两个 worker 各打一次）
+     表里：12 条，标题成对出现
+           「信任体系与文化赋能」vs「信任体系与企业文化落地」
+     ```
+   - 根因：`CapturePipeline` 的节流状态（`_last_capture_time` 等）都是
+     **进程内**的，管不到别的 worker
+   - 修：`scenes.db` 里加 `capture_lease` 表做**跨进程租约**
+     （SQLite 天然跨进程、WAL + busy_timeout 已配好、不需要 fcntl /
+     portalocker 等额外依赖）
+     - `in_flight_until` —— 防并发
+     - `cooldown_until` —— 跨进程的 `last_capture_time`
+     - `force=True` 跳过冷却，但仍不能与正在进行的捕获并发
+     - 崩溃留下的租约靠过期自愈
+   - ⚠️ **第一版实现有竞态**：写成「SELECT 判断 → INSERT」，两个线程并发时
+     都读到「没有行」于是都插了进去（实测两个都拿到租约）。SQLite 的
+     `with conn` 是 deferred 事务，SELECT 不开写锁 —— 必须用**单条**
+     `INSERT ... ON CONFLICT ... WHERE` 让数据库在写锁下完成判断。
+
+2. **`capture_scenes()` 返回 0 但数据已在库里**
+   - 现象：`remember()` 已自动捕获过，再手动 `capture_scenes(force=True)`
+     返回 0，而表里确实有数据 —— 调用方据此误判「L2 没跑起来」
+   - 真相：本次提取的标题全部已存在（`add_scene` 同用户同标题去重），
+     新增确实是 0。**返回值没错，是语义不够清楚。**
+   - 修：
+     - `get_last_capture_detail(user_id)` 返回
+       `{extracted, created, skipped, reason, error}`
+     - `reason` 取值：`ok` / `no_new`（提取了但全重复）/ `empty_extract` /
+       `locked`（别的进程在做）/ `no_memories` / `no_provider` /
+       `provider_error` / `failed`
+     - `created == 0` 且 `extracted > 0` 时打 INFO 说明原因
+
+3. **抽取失败静默**
+   - 现象：LLM key 失效时每一次抽取都失败，只有一行 WARNING，`scenes` 恒为 0
+     却没人发现（下游排查花了很久）
+   - 修：连续失败计数，第 1 次 WARNING、第 3 次起升级 **ERROR**；
+     成功一次即清零；`get_layered_stats()` 暴露 `consecutive_failures` /
+     `total_failures` / `capture_lease`
+
+### 关于「注入是否撑长 prompt」（下游的疑问）
+
+**不是。** 场景/画像注入本来就是有界的：
+
+| 层 | 条数上限 | 附加过滤 |
+|---|---|---|
+| 场景 | `max(top_k // 2, 2)` | 必须命中前 5 个关键词之一 |
+| 画像 | `top_k` | `min_confidence=0.3` 且必须命中关键词 |
+
+默认 `top_k=5` 时最多 2 条场景 + 5 条画像，每条 100 字上下。下游实测升级后
+回复字数反而**下降 29%**（中位 1122→1002），也印证冗长与注入无关。
+
+### 抽取的 token 成本（供接入方设上限）
+
+每次捕获：`memory_provider` 取 `max(warmup×4, 20)` = **20 条**记忆，
+每条截断 300 字符 → prompt 约 6000 字符（中文约 **3000~4000 input tokens**），
+输出为场景 JSON，约 **500~1500 output tokens**。
+配合 `scene_min_interval=300s`，单用户上限约 12 次/小时。
+
+### 判据
+
+`tests/test_capture_multiprocess.py`（12 条），三道注入全红：
+
+| 注入 | 变红 |
+|---|---|
+| 去掉租约互斥 | 3 条（含线程级并发 `test_concurrent_only_one_wins`）|
+| 连续失败不计数 | 2 条 |
+| 明细不写 reason | 2 条 |
+
+并发判据额外跑了 10 轮，0 异常。
+
+全量回归 **1277 passed**。
+
+---
+
 ## [2.0.22] — 2026-11-18
 
 **先让尺子量得准，再谈优化。**

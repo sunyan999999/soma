@@ -8,7 +8,9 @@ Scene（场景块）是对多条情节记忆的主题聚合。SceneStore 采用�
 
 import json
 import logging
+import os
 import sqlite3
+import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -73,7 +75,105 @@ class SceneStore(BaseMemoryStore):
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_scenes_importance ON scenes(importance DESC)"
         )
+        # ★ 2026-11-18: 跨进程捕获租约（见 try_begin_capture 的说明）
+        self._conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS capture_lease (
+                user_id TEXT PRIMARY KEY,
+                owner TEXT NOT NULL DEFAULT '',
+                in_flight_until REAL NOT NULL DEFAULT 0,
+                cooldown_until REAL NOT NULL DEFAULT 0
+            )
+            """
+        )
         self._conn.commit()
+
+    # ── 跨进程捕获租约（2026-11-18）─────────────────────────────
+    #
+    # 背景：生产用 uvicorn --workers 3，每个 worker 各持一份 SOMA 实例，
+    # CapturePipeline 的节流状态（_last_capture_time 等）都是**进程内**的。
+    # 结果：同一批记忆被三个 worker 各抽一次，产出语义重复、措辞不同的场景
+    # （实测：「信任体系与文化赋能」vs「信任体系与企业文化落地」）。
+    #
+    # 用 SQLite 做租约是这里最自然的选择：它本来就跨进程共享，不需要额外
+    # 依赖（fcntl 在 Windows 上没有、portalocker 要装包），scenes.db 已经
+    # 是 WAL + busy_timeout=15s。
+    #
+    # 两个时间字段：
+    #   in_flight_until —— 正在抽取中，防止并发（第二个 worker 直接跳过）
+    #   cooldown_until  —— 抽取完成后的冷却期，等价于**跨进程的**
+    #                      _last_capture_time；force=True 可跳过冷却，
+    #                      但仍不能与正在进行的捕获并发。
+
+    def try_begin_capture(
+        self, user_id: str, *, force: bool = False,
+        min_interval: float = 300.0, lease_seconds: float = 180.0,
+    ) -> Optional[str]:
+        """尝试获取跨进程捕获租约。
+
+        返回 owner 标识（拿到时）；返回 None 表示**这次不该抽**（别人正在
+        抽，或还在冷却期）。异常时 fail-open：返回一个伪 owner 让调用方
+        照常执行 —— 拿不到锁最多是回到重复捕获，比整个功能停摆好。
+        """
+        owner = f"{os.getpid()}-{uuid.uuid4().hex[:8]}"
+        now = time.time()
+        try:
+            # ⚠️ 必须是**单条**条件写入。第一版写成「SELECT 判断 → INSERT」，
+            #    两个线程并发时都读到「没有行」，于是都插进去了（实测两个都
+            #    拿到租约）。SQLite 的 `with conn` 是 deferred 事务，SELECT
+            #    不开启写锁 —— 读-判断-写天然有竞态。
+            #    放在一条 INSERT ... ON CONFLICT ... WHERE 里，由数据库在写锁
+            #    保护下完成判断，才是原子的。
+            with self._conn:
+                cur = self._conn.execute(
+                    "INSERT INTO capture_lease"
+                    "(user_id, owner, in_flight_until, cooldown_until) "
+                    "VALUES(?, ?, ?, 0) "
+                    "ON CONFLICT(user_id) DO UPDATE SET "
+                    "owner = excluded.owner, "
+                    "in_flight_until = excluded.in_flight_until "
+                    "WHERE capture_lease.in_flight_until <= ? "
+                    "  AND (? = 1 OR capture_lease.cooldown_until <= ?)",
+                    (user_id, owner, now + lease_seconds,
+                     now, 1 if force else 0, now),
+                )
+            if cur.rowcount == 0:
+                return None          # 别人正在抽 / 还在冷却期
+            return owner
+        except sqlite3.Error:
+            _log.warning("获取捕获租约失败，本次不加锁（fail-open）", exc_info=True)
+            return f"unlocked-{owner}"
+
+    def end_capture(
+        self, user_id: str, owner: str, *, cooldown: float = 300.0,
+    ) -> None:
+        """释放租约并进入冷却。owner 不匹配（或没拿到锁）时静默无操作。"""
+        try:
+            with self._conn:
+                self._conn.execute(
+                    "UPDATE capture_lease SET in_flight_until = 0, cooldown_until = ? "
+                    "WHERE user_id = ? AND owner = ?",
+                    (time.time() + cooldown, user_id, owner),
+                )
+        except sqlite3.Error:
+            _log.debug("释放捕获租约失败（可忽略，靠过期自愈）", exc_info=True)
+
+    def capture_lease_state(self, user_id: str) -> Dict[str, float]:
+        """只读查看租约状态（诊断/监控用）。"""
+        try:
+            row = self._conn.execute(
+                "SELECT in_flight_until, cooldown_until FROM capture_lease "
+                "WHERE user_id = ?", (user_id,),
+            ).fetchone()
+        except sqlite3.Error:
+            return {}
+        if row is None:
+            return {}
+        now = time.time()
+        return {
+            "in_flight_for_s": max(0.0, float(row["in_flight_until"]) - now),
+            "cooldown_for_s": max(0.0, float(row["cooldown_until"]) - now),
+        }
 
     # ── 公共 API ──
 
