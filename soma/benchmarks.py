@@ -960,6 +960,11 @@ def run_wisdom_benchmark(
     #   吐到 details 里，避免被读成「50 题的综合结论」。
     n_q = len(_scored)
     details["sample_mode"] = sample
+    # ★ 2026-11-24（下游要求）：caliber 也要下放到 wisdom 维度本身。
+    #   原来只有 `calculate_scores_v2` 的四维总分带 caliber，而跑
+    #   `run_wisdom_benchmark(sample=...)` 拿到的对象没有 —— 面板并排展示
+    #   三种抽样口径时，新旧数据混在一起仍需人工判断。
+    details["caliber"] = CALIBER_VERSION
     details["scored_questions"] = n_q
     details["scored_categories"] = dict(
         Counter(q.get("category", "?") for q in _scored))

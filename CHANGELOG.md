@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.32] — 2026-11-24
+
+**排序稳定性判据 + 文本编码缓存。并行暂缓，附原因。**
+
+### 新增：`encode()` 的文本级 LRU
+
+`encode()` 单条 4~9ms，而 `focus.dimension` 这类文本在激活流程里每次都被
+重新编码。加 256 条 LRU。
+
+**关键细节：缓存命中不计入延迟统计。** 否则
+`_total_encode_ms / _total_encodes` 会被大量 0ms 命中稀释，健康监控
+（单次 > 150ms 判不健康）再也发现不了真实退化。有判据钉死。
+
+实测：同一文本 20 次调用 → 只真编码 1 次，其余 0.0005ms（5000× 量级）。
+
+### 新增：`wisdom` 维度自己带 `caliber`
+
+原来只有 `calculate_scores_v2` 的四维总分带 `caliber`，跑
+`run_wisdom_benchmark(sample=...)` 拿到的对象没有 —— 面板并排展示三种
+抽样口径时，新旧数据混在一起仍需人工判断。现在 `details["caliber"]` 也有了。
+
+### 关于 `_hybrid_search` 并行：这版没做，附数据
+
+下游建议三路并行省 ~100ms，并要求「激活排序稳定性」判据。先测了现状：
+
+**本地 5 次 `query()` 的激活序列完全一致** —— 这是已经成立的不变量。
+
+但查到一个硬约束：SQLite 在 `check_same_thread=False` 下 `threadsafety=3`
+（serialized），**同一连接内的 SQL 调用在内部串行**。三个通道共用
+`self._conn`，并行拿不到真实收益，却要引入连接竞争和合并顺序问题。
+要真并行得给每条线程独立连接，那又是 WAL 快照一致性和创建开销的另一笔账。
+
+所以这版先：
+- 把「排序稳定」钉成常驻判据（`test_hybrid_stability.py` 9 条）
+- 做确定的编码缓存
+- 并行留到有明确收益证据时再评估
+
+### 判据
+
+| 注入 | 变红 |
+|---|---|
+| 缓存命中计入延迟统计 | 2 条 |
+| 激活排序引入随机 | `test_query_order_is_stable` |
+
+全量回归 **1350 passed**（耗时 148s，比 2.0.30 的 195s 明显下降）。
+
+---
+
 ## [2.0.31] — 2026-11-24
 
 **两大项：wisdom 走 v2-normalized 归一化口径；嵌入器单例终于接上了线。**

@@ -3,6 +3,8 @@ import threading
 import time
 from typing import Dict, List, Optional
 
+from collections import OrderedDict
+
 import numpy as np
 
 from soma.abc import BaseEmbedder
@@ -27,6 +29,13 @@ class SOMAEmbedder(BaseEmbedder):
         self._warmed_up = False
         # 延迟监控
         self._last_encode_ms: float = 0.0
+        # ★ 2026-11-24（下游实测）：`encode()` 单条 4~9ms，而 focus.dimension
+        #   这类文本在激活流程里每次都被重新编码。加文本级 LRU。
+        #   缓存命中的**不记入延迟统计** —— 否则会把真实编码延迟稀释掉，
+        #   健康监控（LATENCY_HEALTHY_THRESHOLD_MS）就失去意义。
+        self._encode_cache: "OrderedDict[str, np.ndarray]" = OrderedDict()
+        self._encode_cache_max = 256
+        self._encode_cache_hits = 0
         self._total_encodes: int = 0
         self._total_encode_ms: float = 0.0
         self._peak_encode_ms: float = 0.0
@@ -86,13 +95,27 @@ class SOMAEmbedder(BaseEmbedder):
         return self._model is not None
 
     def encode(self, text: str) -> np.ndarray:
+        """编码单条文本（带文本级 LRU）。
+
+        ⚠️ 返回的是**缓存里的同一个 ndarray**，调用方不得原地修改它
+        （现有调用方都只读：点积、写入 SQLite blob）。
+        """
+        cached = self._encode_cache.get(text)
+        if cached is not None:
+            self._encode_cache.move_to_end(text)
+            self._encode_cache_hits += 1
+            return cached
+
         self._ensure_model()
         t0 = time.perf_counter()
         vecs = list(self._model.embed([text]))
         elapsed = (time.perf_counter() - t0) * 1000
         self._record_latency(elapsed)
-        arr = np.asarray(vecs[0], dtype=np.float32)
-        return SOMAEmbedder.normalize(arr)
+        arr = SOMAEmbedder.normalize(np.asarray(vecs[0], dtype=np.float32))
+        self._encode_cache[text] = arr
+        if len(self._encode_cache) > self._encode_cache_max:
+            self._encode_cache.popitem(last=False)
+        return arr
 
     def encode_batch(self, texts: List[str]) -> np.ndarray:
         self._ensure_model()
