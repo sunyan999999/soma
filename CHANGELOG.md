@@ -7,6 +7,84 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.27] — 2026-11-24
+
+**跨进程冷却被内部 `force=True` 绕过（P1）。这是 2.0.23 租约修复留下的口子。**
+
+### 问题
+
+2.0.23 加了 `capture_lease` 做跨进程互斥，但**冷却没真正生效**。
+
+下游生产实测（3 个 worker、user=1）：
+
+```
+14:49:43  PID 3245000  新建 6
+14:50:30  PID 3245001  新建 6    ← 47 秒后又抽了一次（冷却应为 300 秒）
+14:52:17  PID 3244999  新建 1
+14:53:07  PID 3245001  新建 6
+14:53:43  PID 3245000  新建 3
+```
+
+10 次捕获里约 5 次属于「冷却绕过型重复」，产出语义重复的场景
+（「团队沟通成本系统改善」vs「12至20人团队沟通成本系统改善」）。
+
+**根因（我写的）**：
+
+```python
+# capture_scenes() 末尾
+return self.capture_from_memories(memories, user_id=uid, force=True)
+#                                                              ^^^^^^^^^^
+# 本意是「进程内的间隔检查上面已经做过了」，但 force 会透传到
+# try_begin_capture，让 `(force=1 OR cooldown<=now)` 短路 ——
+# 把跨进程冷却整个绕过。
+```
+
+`force` 一个标志承担了两种语义：「我是个内部调用」和「跳过冷却」。
+
+### 修复
+
+1. **透传调用方的 force**（不是写死 `True`）—— 手动 `capture_scenes(force=True)`
+   仍跳过冷却；自动链路（`on_new_memory` 传 `force=False`）走完整跨进程冷却
+2. **删掉两套冷却状态**：`capture_scenes` 和 `capture_from_memories` 里的
+   进程内 `_last_capture_time` 检查都删了，统一由 DB 租约判断。
+   两套状态各自为政时，进程内那套会先挡住调用，且不在 `_last_detail`
+   里留原因 —— 调用方看不到「为什么没抽」
+
+### ★ 为什么之前的判据抓不到
+
+单实例/单线程测不出来：进程内的 `_last_capture_time` 会先一步挡住，
+根本走不到 DB 租约那一层。
+
+新增**两进程判据** `test_cross_process_cooldown_blocks_second_worker`：
+进程 A 捕获后，全新实例 B 在冷却期内必须返回 `reason='locked'`。
+
+注入验证：把 `force=force` 改回 `force=True`，**只有这一条判据变红**，
+其余 13 条全绿 —— 正好证明其他判据确实没有区分力。
+
+### 附带：基准「只评前 15 题」显式化
+
+下游核对标注时发现 `run_wisdom_benchmark` 的规律召回/精准度只评
+`test_questions[:15]`，而数据集有 50 题，且这 15 题恰好全是
+「跨域推理」+「深层归因」，不代表全貌。
+
+不改变评测方式（改抽样会再次切断历史可比性），但：
+- `details` 里新增 `scored_questions` / `scored_categories`
+- docstring 写明「50 题分两部分评」
+
+### 判据
+
+`tests/test_capture_multiprocess.py` 增至 14 条：
+
+| 注入 | 变红 |
+|---|---|
+| `capture_scenes` 内部改回 `force=True` | **仅 1 条**（两进程判据）|
+
+另加对照判据 `test_manual_force_still_skips_cooldown`，保证手动触发语义没被改坏。
+
+全量回归 **1305 passed**。
+
+---
+
 ## [2.0.26] — 2026-11-24
 
 **wisdom 短板攻坚第一轮：让日常表达能被识别，让短问题不被过度触发。**

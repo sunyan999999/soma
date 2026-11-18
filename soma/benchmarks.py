@@ -616,7 +616,18 @@ def _load_test_dataset() -> List[Dict[str, Any]]:
 
 
 def run_wisdom_benchmark(agent, ablation_data: Optional[Dict] = None) -> WisdomBenchmark:
-    """运行智慧推理维度基准测试 — 使用标准30题数据集"""
+    """运行智慧推理维度基准测试。
+
+    数据集 50 题（`_load_test_dataset()`），但分两部分评：
+
+    · **拆解覆盖率 / 规律多样性**：跑全部 50 题（便宜，不调记忆）
+    · **规律召回 / 精准度 / 记忆指标**：只跑**前 15 题**
+      （`test_questions[:15]`，要 activate，控制耗时）
+
+    ⚠️ 前 15 题恰好全是「跨域推理」+「深层归因」两类，**不代表 50 题全貌**。
+    实际评了多少题、类别分布如何，见 `details["scored_questions"]` 与
+    `details["scored_categories"]`。
+    """
     bm = WisdomBenchmark()
     details = {}
 
@@ -771,7 +782,23 @@ def run_wisdom_benchmark(agent, ablation_data: Optional[Dict] = None) -> WisdomB
             tag_unions += len(activated_tags | expected_tags) if (activated_tags | expected_tags) else 1
 
     # 汇总
+    #
+    # ⚠️ 2026-11-24（下游发现）：`law_recall` / `decomposition_precision` /
+    #   记忆相关指标只评**前 15 题**（`test_questions[:15]`），而数据集有 50 题。
+    #   这个子集恰好是 cross_01~10 + attribution_01~05 —— 全是跨域推理与
+    #   深层归因，**不代表 50 题全貌**。
+    #
+    #   两个后果：
+    #     · 对外报的 law_recall 只代表这个子集
+    #     · 排在 34~48 位的题（strategy_* / design_*）里的标注问题不影响当前分数
+    #
+    #   这里不改变评测方式（改抽样会再次切断历史可比性），但把子集信息显式
+    #   吐到 details 里，避免被读成「50 题的综合结论」。
     n_q = len(test_questions[:15])
+    _scored = test_questions[:15]
+    details["scored_questions"] = n_q
+    details["scored_categories"] = dict(
+        Counter(q.get("category", "?") for q in _scored))
     bm.memory_relevance_score = round(sum(scores) / len(scores), 4) if scores else 0
     bm.cross_domain_activation_rate = round(cross_domain_total / len(scores), 3) if scores else 0
     bm.decomposition_precision = round(bm.decomposition_precision / max(1, n_q), 4)

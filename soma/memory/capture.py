@@ -333,12 +333,10 @@ class CapturePipeline:
         if not self._enabled:
             return 0
         uid = user_id or ""
-        now = time.time()
-
-        if not force:
-            last_cap = self._last_capture_time.get(uid, 0)
-            if now - last_cap < self._cfg.scene_min_interval:
-                return 0
+        # ★ 2026-11-24: 这里原来还有一段**进程内**的冷却检查
+        #   （`_last_capture_time`）。它和 DB 租约的 cooldown 是两套状态 ——
+        #   多 worker 下各记各的，而且会先于 DB 判定挡住调用，导致
+        #   `_last_detail` 里看不到原因。统一交给 `try_begin_capture` 判断。
 
         # ★ 2026-11-17: 这里以前是 `return 0`，注释写着「实际提取逻辑在
         #   capture_from_memories()」—— 但没有任何调用方会走到那边：
@@ -370,8 +368,19 @@ class CapturePipeline:
                 "reason": "no_memories", "error": None,
             }
             return 0
-        # force=True：间隔保护已在上面检查过，避免 capture_from_memories 再查一次
-        return self.capture_from_memories(memories, user_id=uid, force=True)
+        # ★ 2026-11-24（下游生产实测，P1）：这里原来写死 `force=True`，
+        #   注释是「间隔保护已在上面检查过」—— 但上面查的是**进程内**的
+        #   `_last_capture_time`，而跨进程冷却在 DB 租约里。硬编码 force=True
+        #   透传到 `try_begin_capture` 后会走 `(force=1 OR cooldown<=now)` 的
+        #   短路分支，**把跨进程冷却整个绕过**。
+        #
+        #   实测：user=1 在 4 分钟内被 3 个 worker 轮流捕获 5 次（间隔 36~107 秒，
+        #   而冷却应是 300 秒），产出语义重复的场景
+        #   （「团队沟通成本系统改善」vs 「12至20人团队沟通成本系统改善」）。
+        #
+        #   修：透传调用方的 force —— 手动 `capture_scenes(force=True)` 仍跳过
+        #   冷却；自动链路（on_new_memory 传 force=False）走完整跨进程冷却。
+        return self.capture_from_memories(memories, user_id=uid, force=force)
 
     def capture_from_memories(
         self, memories: List[Dict], user_id: str = "", force: bool = False,
@@ -380,10 +389,9 @@ class CapturePipeline:
         uid = user_id or ""
         now = time.time()
 
-        if not force:
-            last_cap = self._last_capture_time.get(uid, 0)
-            if now - last_cap < self._cfg.scene_min_interval:
-                return 0
+        # ★ 2026-11-24: 删掉进程内的 `_last_capture_time` 冷却检查 ——
+        #   冷却的唯一真相源是下面的 DB 租约。两套状态各自为政时，进程内
+        #   那套会先挡住调用，且不在 `_last_detail` 里留下原因。
 
         # ★ 2026-11-18: 跨进程互斥。多 worker 部署时每个进程都有一份
         #   CapturePipeline，进程内节流管不到彼此 —— 同一批记忆会被各抽一次。

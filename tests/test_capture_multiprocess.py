@@ -166,6 +166,61 @@ class TestPipelineLeaseIntegration:
             p1._profile_store.close()
             p2._profile_store.close()
 
+    def test_cross_process_cooldown_blocks_second_worker(self, tmp_path):
+        """★★ 两进程判据：A 捕获后，全新实例 B 在冷却期内必须被挡住。
+
+        这是下游生产实测踩出来的坑，**单实例判据测不出来**：
+
+        原来的 `capture_scenes()` 内部写死 `capture_from_memories(force=True)`
+        —— 那个 True 本意是「上面的进程内间隔已查过」，但它会透传到
+        `try_begin_capture`，让 `(force=1 OR cooldown<=now)` 短路，
+        **把跨进程冷却整个绕过**。
+
+        实测后果：user=1 在 4 分钟内被 3 个 worker 轮流捕获 5 次
+        （间隔 36~107 秒，冷却应是 300 秒），产出语义重复的场景。
+
+        单实例下为什么测不出：进程内的 `_last_capture_time` 会先一步挡住，
+        根本走不到 DB 租约那一层。
+        """
+        p1 = _pipeline(tmp_path)
+        p2 = _pipeline(tmp_path)          # 全新实例 = 全新进程内状态
+        try:
+            n1 = p1.capture_scenes("u1", force=False)
+            assert n1 == 1, f"进程 A 没捕获取胜：{n1}"
+
+            n2 = p2.capture_scenes("u1", force=False)
+            assert n2 == 0, (
+                f"进程 B 在冷却期内又捕获了 {n2} 条 —— "
+                f"内部 force 绕过了跨进程 cooldown")
+            d2 = p2.get_state("u1").get("last_detail") or {}
+            assert d2.get("reason") == "locked", (
+                f"进程 B 没被租约挡住（reason={d2.get('reason')}）—— "
+                f"如果拿到锁去重了会显示 no_new，同样说明冷却失效")
+        finally:
+            for p in (p1, p2):
+                p._scene_store.close()
+                p._profile_store.close()
+
+    def test_manual_force_still_skips_cooldown(self, tmp_path):
+        """对照：手动 force=True 仍要能跳过冷却（否则手动触发就废了）。
+
+        但仍受 in_flight 约束 —— 这里是串行，所以能拿到锁。
+        """
+        p = _pipeline(tmp_path)
+        try:
+            assert p.capture_scenes("u1", force=False) == 1
+            # 立刻再来一次，force=True —— 应拿到锁（reason 不是 locked），
+            # 只因标题去重而新增 0 条
+            n2 = p.capture_scenes("u1", force=True)
+            d = p.get_state("u1").get("last_detail") or {}
+            assert d.get("reason") != "locked", (
+                f"手动 force 被冷却挡住了（reason={d.get('reason')}）—— "
+                f"手动触发语义被改坏")
+            assert n2 == 0 and d.get("reason") == "no_new"
+        finally:
+            p._scene_store.close()
+            p._profile_store.close()
+
     def test_concurrent_only_one_wins(self, tmp_path):
         """★ 真并发：两个线程同时抢同一个用户的租约，只能有一个成功。
 
