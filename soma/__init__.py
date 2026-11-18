@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "2.0.23"
+    __version__ = "2.0.24"
 
 from soma.config import SOMAConfig, load_config
 from soma.db import set_shared_enabled
@@ -2012,6 +2012,13 @@ class SOMA:
             no_provider    没接 memory_provider（老构造方式）
             provider_error 取记忆时抛异常
             failed         LLM 调用失败（error 字段有原因）
+
+        ⚠️ **这是进程内状态**：`_last_detail` 存在当前进程的内存里。
+        在 CLI 新进程里调用会返回 `{}`（属正常），多 worker 部署下每个
+        worker 各记各的。监控请读**当前 worker 内**的值
+        （`get_layered_stats(user_id)["capture"]["last_detail"]`），
+        不要跨进程/重启后回查。持久化的部分只有 `capture_lease` 表
+        （冷却期与 L3 阈值）和场景/画像本身。
         """
         self._ensure_layered_memory()
         return self._capture_pipeline.get_state(user_id).get("last_detail") or {}

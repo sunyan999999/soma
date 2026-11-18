@@ -500,13 +500,27 @@ class CapturePipeline:
                 self._warmup_threshold[uid] = self._cfg.scene_warmup
 
         _log.info(
-            "捕获完成: user=%s, 场景=%d, 累计场景=%d",
-            uid, created, self._total_scenes_created.get(uid, 0),
+            "捕获完成: user=%s, 场景=%d, 累计场景=%d, 库里共 %d 条"
+            "（reason=%s, 提取 %d 条, 去重 %d 条）",
+            uid, created, self._total_scenes_created.get(uid, 0), after_count,
+            "ok" if created > 0 else "no_new",
+            len(extracted), max(0, len(extracted) - created),
         )
 
         # 检查是否触发 Profile 更新
-        total = self._total_scenes_created.get(uid, 0)
-        if total > 0 and total % self._cfg.profile_scene_interval == 0:
+        #
+        # ★ 2026-11-24（下游生产实测）：原来这里是
+        #     total = self._total_scenes_created.get(uid, 0)   # 进程内内存
+        #     if total > 0 and total % interval == 0:          # 必须正好整除
+        #   实测场景增长 8 → 13 → 19 → 25，每次都跨过 10/20 → **一次都没触发过**，
+        #   用户攒了 19 条场景，画像是 0。
+        #
+        #   现在：计数用库里的真实场景数（持久 + 跨进程），阈值存 capture_lease，
+        #   「>= 阈值就触发并推进」，并用带条件的 UPDATE 保证多 worker 下只触发一次。
+        total = self._scene_store.count(uid)
+        if total > 0 and self._scene_store.try_advance_profile_marker(
+            uid, total, self._cfg.profile_scene_interval,
+        ):
             self.update_profile(uid, force=force)
 
         return created

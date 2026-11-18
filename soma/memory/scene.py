@@ -82,11 +82,75 @@ class SceneStore(BaseMemoryStore):
                 user_id TEXT PRIMARY KEY,
                 owner TEXT NOT NULL DEFAULT '',
                 in_flight_until REAL NOT NULL DEFAULT 0,
-                cooldown_until REAL NOT NULL DEFAULT 0
+                cooldown_until REAL NOT NULL DEFAULT 0,
+                last_profile_at INTEGER NOT NULL DEFAULT 0
             )
             """
         )
+        # 旧库补列（幂等）—— last_profile_at 是 2.0.24 加的
+        try:
+            self._conn.execute(
+                "ALTER TABLE capture_lease ADD COLUMN "
+                "last_profile_at INTEGER NOT NULL DEFAULT 0"
+            )
+        except sqlite3.OperationalError:
+            pass
         self._conn.commit()
+
+    def try_advance_profile_marker(
+        self, user_id: str, current_total: int, interval: int,
+    ) -> bool:
+        """是否该更新 L3 画像：**达到或超过**阈值就触发，并把阈值推进。
+
+        ★ 2026-11-24（下游生产实测）：原来的触发条件是
+
+            total = self._total_scenes_created.get(uid, 0)   # 进程内内存计数
+            if total > 0 and total % profile_scene_interval == 0:
+
+        两个缺陷叠加，导致 L3 **几乎永不触发**：
+
+        1. **必须"正好"是 10 的整数倍**。实测场景增长序列是
+           8 → 13 → 19 → 25（每次捕获 3~8 条），每次都跨过 10/20，
+           永远不相等 → 一次都没触发过。批量不固定时这是必然踩中的。
+        2. **计数是进程内的内存字典**，不持久、不跨 worker。CLI 新进程里读到
+           的是空 dict，重启归零，多 worker 各记各的。
+
+        修法：计数改用库里的真实场景数（`scene_store.count()`，天然持久且跨
+        进程），阈值存在这张表里。判断改成「>= 阈值就触发并推进」，用一条
+        带条件的 UPDATE 保证跨进程原子（多个 worker 同时到达也只有一次生效）。
+
+        返回 True 表示本次调用赢得了这次画像更新。
+        """
+        if interval <= 0:
+            interval = 1
+        try:
+            with self._conn:
+                # 保证有行（首次可能还没有租约记录）
+                self._conn.execute(
+                    "INSERT OR IGNORE INTO capture_lease"
+                    "(user_id, owner, in_flight_until, cooldown_until, last_profile_at) "
+                    "VALUES(?, '', 0, 0, 0)", (user_id,),
+                )
+                cur = self._conn.execute(
+                    "UPDATE capture_lease SET last_profile_at = ? "
+                    "WHERE user_id = ? AND last_profile_at + ? <= ?",
+                    (current_total, user_id, interval, current_total),
+                )
+            return cur.rowcount > 0
+        except sqlite3.Error:
+            _log.warning("推进 L3 画像标记失败", exc_info=True)
+            return False
+
+    def profile_marker(self, user_id: str) -> int:
+        """当前画像标记（该用户上次更新画像时的场景数），用于诊断。"""
+        try:
+            row = self._conn.execute(
+                "SELECT last_profile_at FROM capture_lease WHERE user_id = ?",
+                (user_id,),
+            ).fetchone()
+        except sqlite3.Error:
+            return 0
+        return int(row["last_profile_at"]) if row is not None else 0
 
     # ── 跨进程捕获租约（2026-11-18）─────────────────────────────
     #

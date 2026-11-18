@@ -7,6 +7,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.24] — 2026-11-24
+
+**L3 画像的自动触发：从「永不命中」到「达到阈值就触发」。**
+
+下游生产实测：用户已积累 **19 条场景**（阈值 10），`profile_entries` 一直是 **0**。
+
+### 修复
+
+`capture.py` 的触发条件有两处叠加缺陷：
+
+```python
+total = self._total_scenes_created.get(uid, 0)          # ① 进程内内存计数
+if total > 0 and total % self._cfg.profile_scene_interval == 0:   # ② 必须正好整除
+    self.update_profile(uid, force=force)
+```
+
+1. **必须"正好"是 10 的整数倍**。实测场景增长序列是 **8 → 13 → 19 → 25**
+   （每次捕获 3~8 条），每次都跨过 10/20，永远不相等 → **一次都没触发过**。
+   批量不固定时这是必然踩中的。
+2. **计数是进程内的内存字典**，不持久、不跨 worker。CLI 新进程读到空 dict，
+   重启归零，多 worker 各记各的 —— 进一步稀释命中概率。
+
+修法：
+
+- 计数改用库里的真实场景数（`scene_store.count(user_id)`），天然持久 + 跨进程
+- 阈值存在 `capture_lease.last_profile_at`（旧库自动 ALTER 补列）
+- 判断改成「**`total >= marker + interval` 就触发并推进**」，用一条带条件的
+  UPDATE 保证多 worker 同时到达时只触发一次
+
+实测序列 8 → 13 → 19 → 25 的触发结果：`False → True → False → True`。
+
+### 其他
+
+- 捕获日志带上 `reason` / 提取条数 / 去重条数（下游建议），便于直接判断
+  是「正常新增」「全量去重」还是「被别的进程锁住」
+- `get_last_capture_detail()` 的 docstring 明确标注**它是进程内状态**：
+  CLI 新进程返回 `{}` 属正常，监控要读当前 worker 内的值
+
+### 判据
+
+`tests/test_profile_trigger.py`（7 条），三道注入全红：
+
+| 注入 | 变红 |
+|---|---|
+| 判断改回「正好整除」+ 内存计数 | 3 条 |
+| 只把计数改回内存 | 3 条 |
+| `try_advance_profile_marker` 改回整除逻辑 | 4 条（含 8→13→19→25 序列）|
+
+全量回归 **1284 passed**。
+
+---
+
 ## [2.0.23] — 2026-11-18
 
 **L2 上生产后暴露的三个工程问题。** 下游在 `uvicorn --workers 3` / 162 用户
