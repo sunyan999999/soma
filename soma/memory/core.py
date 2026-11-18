@@ -15,6 +15,13 @@ from soma.memory.skill import SkillStore
 class MemoryCore:
     """统一记忆存储门面"""
 
+    # ★ 2026-11-24：FTS 查询的关键词上限。图谱扩展的邻居只做辅助，
+    #   截到 4 个；送给 FTS 的整表截到 10 个（focus 自带词排在前面）。
+    #   依据：FTS5 trigram 的 OR 查询成本随词数近似线性（4 词 13ms → 18 词 62ms），
+    #   下游 32k 库实测这一项占激活耗时 60%+。
+    _GRAPH_KEYWORD_CAP = 4
+    _FTS_KEYWORD_CAP = 10
+
     def __init__(
         self,
         config: SOMAConfig,
@@ -290,8 +297,21 @@ class MemoryCore:
         keywords = focus.keywords
 
         # v0.8.0: 语义图谱扩展关键词 — 邻居概念参与检索
-        graph_keywords = self._expand_via_semantic_graph(keywords)
+        #
+        # ★ 2026-11-24（下游生产 32k 条实测）：图谱扩展会把关键词从 4~6 个
+        #   膨胀到**中位 21 个、最多 37 个**，而 `semantic.query_by_keywords`
+        #   内部是 FTS5 trigram 的 OR 查询，成本随词数近似线性：
+        #       4 词 13.1ms / 8 词 24.2ms / 14 词 46.4ms / 18 词 61.7ms
+        #   实测 58.5ms/次 × 6 次/激活 = 351ms，是激活里最大的一块。
+        #
+        #   两层截断，主关键词优先：
+        #     · 图谱邻居只保留 4 个（它本来就是辅助通道）
+        #     · 传给 FTS 的列表截到 10 个（focus 自带词在前，天然优先）
+        #   `all_keywords` 仍保留完整列表用于 match_rationale 展示。
+        graph_keywords = self._expand_via_semantic_graph(
+            keywords, max_terms=self._GRAPH_KEYWORD_CAP)
         all_keywords = list(dict.fromkeys(keywords + graph_keywords))
+        fts_keywords = all_keywords[:self._FTS_KEYWORD_CAP]
 
         # 查询情节记忆 — 混合搜索或关键词
         if self.episodic.use_vector and self._embedder is not None:
@@ -304,7 +324,7 @@ class MemoryCore:
         else:
             activated: List[ActivatedMemory] = []
             episodic_results = self.episodic.query_by_keywords(
-                all_keywords, top_k, user_id=user_id,
+                fts_keywords, top_k, user_id=user_id,
                 agent_id=agent_id, group_id=group_id,
                 max_age_days=max_age_days,
             )
@@ -322,7 +342,7 @@ class MemoryCore:
         # 查询语义记忆（namespace 编码隔离: agent_id 或 user_id）
         sem_namespace = agent_id or user_id
         semantic_results = self.semantic.query_by_keywords(
-            all_keywords, top_k, namespace=sem_namespace,
+            fts_keywords, top_k, namespace=sem_namespace,
         )
         for mem in semantic_results:
             matched = [kw for kw in all_keywords if kw.lower() in mem.content.lower()]

@@ -7,6 +7,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.30] — 2026-11-24
+
+**第三个性能热点：图谱把关键词膨胀 5 倍。** 下游 32k 条库做了阶段级归因，
+这是激活耗时里最大的一块。
+
+### 问题
+
+`MemoryCore.query()` 里，图谱扩展后的关键词被**原样**送给 FTS：
+
+```python
+graph_keywords = self._expand_via_semantic_graph(keywords)   # 默认 max_terms=8
+all_keywords = list(dict.fromkeys(keywords + graph_keywords))
+self.semantic.query_by_keywords(all_keywords, ...)
+```
+
+focus 自带关键词只有 4~6 个，**扩展后中位 21 个、最多 37 个**。
+而 FTS5 trigram 的 OR 查询成本随词数近似线性：
+
+```
+4 词 → 13.1ms    8 词 → 24.2ms    14 词 → 46.4ms    18 词 → 61.7ms
+```
+
+实测 58.5ms/次 × 6 次/激活 = **351ms**，占激活耗时 60%。
+
+### 修复
+
+两层截断，主关键词优先：
+
+| 常量 | 值 | 作用 |
+|---|---|---|
+| `_GRAPH_KEYWORD_CAP` | 4 | 图谱邻居只留 4 个（它是辅助通道）|
+| `_FTS_KEYWORD_CAP` | 10 | 送 FTS 的列表截到 10 个（focus 自带词在前，天然优先）|
+
+`all_keywords` 仍保留完整列表用于 `match_rationale` 展示。
+
+### 召回影响（实测）
+
+造了 8 条三元组的小图谱（1 跳 3 词 + 2 跳 5 词）：
+
+```
+max_terms=8 → ['整体性','反馈回路','矛盾分析','延迟','增强回路','对立统一','取舍','杠杆点']
+max_terms=4 → ['整体性','反馈回路','矛盾分析','延迟']
+```
+
+丢掉的全是 **2 跳**邻居（权重 0.36，1 跳是 0.6）。召回条数 7 → 7 不变。
+基准 recall/precision 也完全不变（0.6667 / 0.5106）。
+
+> ⚠️ 判据第一版是自证循环：直接调 `_expand_via_semantic_graph(max_terms=4)`
+> 当然满足上限。注入「调用处改回 999」**判据照样绿**。改成 spy 抓
+> `query()` 实际传的参数才抓住。
+
+### 顺带：`relevance` clamp 到 [0,1]
+
+`memory_relevance_score` 是 `activation_score` 的均值，而 `activation_score`
+本身可以 > 1（`focus.weight × relevance_potential × 各种加成`）。下游两次
+实测出现过 **1.185** 和 **1.0012** —— 10 分的项能贡献 11.85 分，权重超发。
+
+> 判据同样第一版是假绿：只填 `relevance` 时总分才 11 分，去掉 clamp
+> 也超不过 100。必须把其他项也灌满才测得出。
+
+### 判据
+
+`tests/test_keyword_cap.py`（8 条），三道注入全红：
+
+| 注入 | 变红 |
+|---|---|
+| FTS 改回全量词 | `test_fts_receives_capped_list` |
+| 图谱扩展不限词数 | `test_query_passes_cap` |
+| `relevance` 去掉 clamp | `test_relevance_capped_at_one` |
+
+全量回归 **1328 passed**。
+
+### 与下游三步优化的累积效果（同库 32,234 条）
+
+| 指标 | 优化前 | v2.0.30 |
+|---|---|---|
+| activate 均耗 | 794.7ms | **≈344ms** |
+| semantic.query_by_keywords | 58.5ms | **29.0ms** |
+
+---
+
 ## [2.0.29] — 2026-11-24
 
 **两个真实的性能热点（下游 32k 条生产库实测）。纯性能优化，语义零变化。**

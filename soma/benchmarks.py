@@ -202,7 +202,12 @@ def normalize_scores(
     # 记忆精准度：激活tag与预期tag的Jaccard
     mem_precision = (wis.get("memory_precision", 0) or 0)
     # 记忆关联度得分
-    relevance = (wis.get("memory_relevance_score", 0) or 0)
+    # ★ 2026-11-24（下游两次实测）：`memory_relevance_score` 是
+    #   `activation_score` 的均值，而 activation_score 本身可以 > 1
+    #   （focus.weight × relevance_potential × 各种加成）—— 实测出现过
+    #   1.185 和 1.0012，导致这一项「权重超发」（10 分的项能贡献 11.85 分）。
+    #   按 [0,1] clamp。
+    relevance = min(1.0, max(0.0, wis.get("memory_relevance_score", 0) or 0))
     # 跨域激活率
     cross_domain = (wis.get("cross_domain_activation_rate", 0) or 0)
     # 效率分：拆解+激活延迟越低越好（<100ms满分）
