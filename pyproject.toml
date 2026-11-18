@@ -97,6 +97,8 @@ packages = ["soma"]
 include = [
   "soma/",
   "tests/",
+  # 面向使用者的正式文档（v2.0.25 起）—— 排除规则见下方 exclude
+  "docs/guides/",
   "README.md",
   "README_zh.md",
   "CHANGELOG.md",
