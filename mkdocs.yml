@@ -38,6 +38,7 @@ nav:
   - API 参考: api/index.md
   - 自定义指南: guides/customization.md
   - 记忆时效: guides/memory-recency_zh.md
+  - 分层记忆运维: guides/layered-memory_zh.md
   - 对比分析:
     - SOMA vs Mem0: articles/soma-vs-mem0.md
     - SOMA vs Letta: articles/soma-vs-letta.md
