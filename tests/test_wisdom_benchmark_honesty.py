@@ -165,3 +165,76 @@ class TestDecompositionPrecision:
         with_combo = _run(["combo_first_principles_systems_thinking"])
         assert with_combo.decomposition_precision == 0.0, (
             f"combo 拉高了精准度：{with_combo.decomposition_precision}")
+
+
+class TestSamplingModes:
+    """★ 抽样口径（2026-11-24 新增）。
+
+    背景：原来固定 `test_questions[:15]`，而这 15 题恰好全是
+    「跨域推理 10 + 深层归因 5」—— 没有战略决策/创新设计/经验借鉴。
+    下游核对标注时发现，对外报的 law_recall 只代表这个子集。
+    """
+
+    def test_default_is_first15_for_compat(self):
+        """默认必须还是 first15 —— 改了会切断历史数据可比性。"""
+        import inspect
+        sig = inspect.signature(run_wisdom_benchmark)
+        assert sig.parameters["sample"].default == "first15"
+
+    def test_first15_is_biased(self):
+        """留档：first15 的类别分布确实是偏置的（不是缺陷，是已知事实）。"""
+        from soma.benchmarks import _sample_questions, _load_test_dataset
+        picked = _sample_questions(_load_test_dataset(), "first15")
+        cats = {q.get("category") for q in picked}
+        assert cats == {"跨域推理", "深层归因"}, (
+            f"前 15 题的类别变了：{cats} —— 如果数据集顺序调整过，"
+            f"历史分数的可比性要重新评估")
+
+    def test_stratified_is_balanced(self):
+        """分层抽样每类都要有，且总题数仍是 15（便于与 first15 对照）。"""
+        from soma.benchmarks import _sample_questions, _load_test_dataset
+        picked = _sample_questions(_load_test_dataset(), "stratified")
+        assert len(picked) == 15
+        cats = [q.get("category") for q in picked]
+        assert len(set(cats)) == 5, f"分层后仍只有 {set(cats)} 类"
+        for c in set(cats):
+            assert cats.count(c) == 3, f"{c} 抽了 {cats.count(c)} 题（应为 3）"
+
+    def test_all_covers_dataset(self):
+        from soma.benchmarks import _sample_questions, _load_test_dataset
+        qs = _load_test_dataset()
+        assert len(_sample_questions(qs, "all")) == len(qs)
+
+    def test_sample_mode_recorded_in_details(self):
+        """口径必须出现在 details 里，否则读分数的人不知道是哪种。"""
+        bm = _run_with_mode("stratified")
+        assert bm.details.get("sample_mode") == "stratified"
+        assert bm.details.get("scored_questions") == 15
+        assert bm.details.get("scored_categories")
+
+    def test_stratified_is_reproducible(self):
+        a = _run_with_mode("stratified")
+        b = _run_with_mode("stratified")
+        assert a.law_recall == b.law_recall
+
+
+def _run_with_mode(mode):
+    """用一个固定的假 agent 跑指定抽样模式。"""
+    return run_wisdom_benchmark(
+        _FixedAgent(["first_principles", "systems_thinking"]), sample=mode)
+
+
+class _FixedHub:
+    def activate(self, foci, **kw):
+        return []
+
+
+class _FixedAgent:
+    def __init__(self, law_ids):
+        self._law_ids = law_ids
+        self.hub = _FixedHub()
+
+    def decompose(self, problem):
+        from soma.base import Focus
+        return [Focus(law_id=lid, dimension=f"x{lid}", keywords=["t"],
+                      weight=1.0, rationale="r") for lid in self._law_ids]

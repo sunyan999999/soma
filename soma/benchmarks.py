@@ -615,7 +615,40 @@ def _load_test_dataset() -> List[Dict[str, Any]]:
     return data.get("questions", [])
 
 
-def run_wisdom_benchmark(agent, ablation_data: Optional[Dict] = None) -> WisdomBenchmark:
+def _sample_questions(questions: List[Dict], sample: str) -> List[Dict]:
+    """按方式挑参与评分的题目（2026-11-24 新增分层抽样）。
+
+    背景：原来固定用 `questions[:15]`，而这 15 题恰好全是「跨域推理」+
+    「深层归因」两类 —— 完全没有战略决策 / 创新设计 / 经验借鉴。下游核对
+    标注时发现，对外报的 law_recall 其实只代表这个子集。
+
+    sample:
+      · "first15"    —— 前 15 题（默认，保持与历史数据可比）
+      · "stratified" —— 按类别分层，每类取同样的题数（约 15 题）
+      · "all"        —— 全部题（慢，但最全面）
+    """
+    if sample == "all":
+        return list(questions)
+    if sample == "stratified":
+        by_cat: Dict[str, List[Dict]] = {}
+        for q in questions:
+            by_cat.setdefault(q.get("category", "综合"), []).append(q)
+        if not by_cat:
+            return []
+        target = 15
+        per = max(1, target // len(by_cat))
+        picked: List[Dict] = []
+        # 按类别名排序保证可复现（dict 顺序依赖数据集文件，虽然也稳定，
+        # 但排序后更不容易被上游的数据顺序调整影响）
+        for cat in sorted(by_cat):
+            picked.extend(by_cat[cat][:per])
+        return picked[:target]
+    return list(questions[:15])
+
+
+def run_wisdom_benchmark(
+    agent, ablation_data: Optional[Dict] = None, sample: str = "first15",
+) -> WisdomBenchmark:
     """运行智慧推理维度基准测试。
 
     数据集 50 题（`_load_test_dataset()`），但分两部分评：
@@ -716,7 +749,8 @@ def run_wisdom_benchmark(agent, ablation_data: Optional[Dict] = None) -> WisdomB
             bm.synthesis_gain_structure_pct = 60.0  # 从消融实验硬数据
             bm.synthesis_gain_specificity_pct = 11.0
 
-    # 4. 记忆-问题关联度 + 新评估指标 — 取前15题控制耗时
+    # 4. 记忆-问题关联度 + 新评估指标 — 抽样（默认前15题，控制耗时）
+    _scored = _sample_questions(test_questions, sample)
     scores = []
     cross_domain_total = 0
     cross_domain_hits = 0
@@ -727,7 +761,7 @@ def run_wisdom_benchmark(agent, ablation_data: Optional[Dict] = None) -> WisdomB
     decompose_times = []
     activate_times = []
 
-    for q in test_questions[:15]:
+    for q in _scored:
         # 计时：拆解
         t0 = time.time()
         foci = agent.decompose(q["problem"])
@@ -794,8 +828,8 @@ def run_wisdom_benchmark(agent, ablation_data: Optional[Dict] = None) -> WisdomB
     #
     #   这里不改变评测方式（改抽样会再次切断历史可比性），但把子集信息显式
     #   吐到 details 里，避免被读成「50 题的综合结论」。
-    n_q = len(test_questions[:15])
-    _scored = test_questions[:15]
+    n_q = len(_scored)
+    details["sample_mode"] = sample
     details["scored_questions"] = n_q
     details["scored_categories"] = dict(
         Counter(q.get("category", "?") for q in _scored))
