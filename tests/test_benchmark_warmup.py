@@ -58,6 +58,14 @@ class _FakeMemory:
         self.episodic = _FakeEpisodic()
 
 
+class FakeFocus:
+    """只有 dimension —— 预热真正 encode 的就是这个字段。"""
+
+    def __init__(self, problem: str):
+        self.law_id = "law"
+        self.dimension = f"dimension:{problem}"
+
+
 class FakeAgent:
     """记录预热走过的路径，不碰真模型、不碰真库。"""
 
@@ -71,7 +79,7 @@ class FakeAgent:
 
     def decompose(self, problem: str):
         self.log.append(("decompose", problem))
-        return [f"focus:{problem}"]
+        return [FakeFocus(problem)]
 
     def activate(self, foci, user_id: str = ""):
         self.log.append(("activate", tuple(foci)))
@@ -175,14 +183,46 @@ def test_warmup_failure_does_not_break_the_run():
     assert result.scores["wisdom"].mean == 77.0
 
 
-def test_warmup_question_count_is_respected():
+def test_warmup_activate_count_is_respected():
+    """`questions` 控制真跑 activate 的题数；拆解数由 warmup_dataset_size 决定。"""
     log: List = []
     agent = FakeAgent(log=log, embedder=FakeEmbedder())
 
-    _warmup_process_caches(agent, questions=1)
+    _warmup_process_caches(agent, questions=1, warmup_dataset_size=5)
 
+    activates = [e for e in log if e[0] == "activate"]
     decomposes = [e for e in log if e[0] == "decompose"]
-    assert len(decomposes) == 1
+    assert len(activates) == 1, f"activate 跑了 {len(activates)} 题"
+    assert len(decomposes) == 5, f"decompose 跑了 {len(decomposes)} 题"
+
+
+def test_all_dimensions_are_encoded():
+    """★ 预热必须把数据集拆解出的**全部** dimension 文本编码一遍。
+
+    下游实测：15 题产生 70 条唯一 dimension，逐条首次编码 10.7ms；
+    预热只拆 3 题时，剩下 67 条全落在首轮计分里（164ms/次）。
+    """
+    agent = FakeAgent(log=[], embedder=FakeEmbedder(is_loaded=True))
+
+    _warmup_process_caches(agent, questions=1, warmup_dataset_size=5)
+
+    # fixture 的数据集 5 题，每题 1 条 dimension
+    assert len(agent.embedder.encode_calls) == 5, (
+        f"只编码了 {len(agent.embedder.encode_calls)} 条 dimension，"
+        f"应为 5 条")
+
+def test_dimension_encode_deduplicates(monkeypatch):
+    """同一题重复出现时，dimension 只编码一次。"""
+    monkeypatch.setattr(
+        benchmarks, "_load_test_dataset",
+        lambda: [{"problem": "同一个问题"} for _ in range(5)],
+    )
+    agent = FakeAgent(log=[], embedder=FakeEmbedder(is_loaded=True))
+
+    _warmup_process_caches(agent, questions=1, warmup_dataset_size=5)
+
+    assert len(agent.embedder.encode_calls) == 1, (
+        f"去重失效，编码了 {len(agent.embedder.encode_calls)} 次")
 
 
 def test_warmup_synchronously_loads_embedder():

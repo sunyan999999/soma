@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.36] — 2026-11-19
+
+**预热覆盖评测真正会用到的 dimension 集合 + memory 查询路径。**
+
+下游在 2.0.35 上验证后剩下的唯一问题：预热后首轮仍比稳态多 **164ms/次**
+（15 题合计 2,462ms）。他们的 cProfile 把范围缩到两处：
+
+```
+SQL 耗时两遍持平（2.953s vs 2.916s）→ 排除 FTS trigram 段
+非 SQL 的 C 级 self-time：pass1 1.915s vs pass2 0.56s
+  其中确认：嵌入器文本 LRU 冷启动 ≈0.75s
+             15 题拆解产生 70 条唯一 dimension 文本（10.7ms/条）
+             预热只拆 3 题，剩下 67 条全落在首轮
+  剩余 ≈1.5s：向量检索首次页缓存（自写的 3 条样本触发不了 32k 行索引读）
+```
+
+### 改进 1：预热拆解到评测的真实深度
+
+新增 `warmup_dataset_size`（默认 15，与 wisdom 的 first15 抽样对齐）。
+预热不再只拆 `warmup_questions`（3）题，而是拆到评测会用到的全部题目，
+把去重后的 `focus.dimension` 文本**全部 encode 一遍**。
+
+### 改进 2：memory 小样改用真实问题
+
+原来只查刚写进去的 3 条样本 —— 那触发不了真实规模的检索路径。
+改为用数据集里的真实问题查一次，让向量索引的首次页读也提前发生。
+
+### 实测（本地 800 条库，首轮 15 题）
+
+| 预热模式 | 预热耗时 | 首轮 15 题总耗时 | activate 中位 | max |
+|---|---|---|---|---|
+| 2.0.35（拆 3 题） | 0.99s | **1,260ms** | 79.9ms | 131.9ms |
+| 2.0.36（拆 15 题） | 1.43s | **335ms** | 20.6ms | 34.3ms |
+
+首轮降 **73%**，预热多花 0.44s —— 净收益 0.93s，且这 0.93s 原本完全落在
+计分轮里（直接影响 efficiency 与 wisdom）。
+
+### 判据
+
+`tests/test_benchmark_warmup.py` 新增 2 条：
+
+| 判据 | 注入后 |
+|---|---|
+| `test_all_dimensions_are_encoded` | 去掉 `_encode_all_dimensions(...)` 变红 |
+| `test_dimension_encode_deduplicates` | 同上变红 |
+
+`test_warmup_question_count_is_respected` 改名为
+`test_warmup_activate_count_is_respected`：现在 `questions` 控制 activate
+的题数，拆解数由 `warmup_dataset_size` 决定 —— 两个量已解耦。
+
+全量回归 **1381 passed × 3 轮**零回归。
+
+---
+
 ## [2.0.35] — 2026-11-19
 
 **评估路径可区分 + 预热不再打死共享实例 + 预热覆盖 memory 路径 + L1 时间量化。**

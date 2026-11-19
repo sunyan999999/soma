@@ -1317,8 +1317,17 @@ def _warmup_memory_path(agent, user_id: str = "") -> None:
             )
             if mid:
                 ids.append(mid)
-        if ids:
-            agent.query_memory("预热写入样本", top_k=3, user_id=user_id)
+        # ★ v2.0.36：用**真实数据集问题**查，而不是只查刚写的样本。
+        #
+        # 下游 cProfile 显示，预热只跑 activate + 写后查样本时，首轮仍多
+        # 约 1.5s。那部分不在 SQL（两遍耗时持平），而在向量检索路径的
+        # 首次页缓存 —— 自写的 3 条样本触发不了 32k 行的索引页读取。
+        # 用真实问题查一次，才能把这条路径的冷成本提前付掉。
+        probe = "预热检索：系统思维与第一性原理如何应用"
+        dataset = _load_test_dataset()
+        if dataset:
+            probe = dataset[-1]["problem"]
+        agent.query_memory(probe, top_k=5, user_id=user_id)
     finally:
         for mid in ids:
             try:
@@ -1327,8 +1336,46 @@ def _warmup_memory_path(agent, user_id: str = "") -> None:
                 pass
 
 
+# 与 `run_wisdom_benchmark` 的默认抽样（first15）对齐：这 15 题的 focus
+# dimension 文本才是评测真正会编码的集合。
+WISDOM_SCORED_QUESTIONS = 15
+
+
+def _encode_all_dimensions(agent, foci_groups: List[List[Any]]) -> int:
+    """把 focus.dimension 文本全部 encode 一遍，返回去重后的条数。
+
+    下游 32k 实测（2.0.35）：预热只跑 3 题时首轮仍比稳态多 164ms/次。
+    cProfile 排除了 SQL（两遍耗时持平），定位到**嵌入器文本 LRU**：
+
+        15 题拆解共产生 70 条唯一 dimension 文本
+        逐条首次编码 0.747s（10.7ms/条），命中后 0.0001s
+
+    预热 3 题覆盖不到这 70 条，它们全落在首轮计分里。
+    """
+    emb = getattr(agent, "embedder", None)
+    encode = getattr(emb, "encode", None)
+    if not callable(encode):
+        return 0
+
+    seen: set = set()
+    encoded = 0
+    for foci in foci_groups:
+        for f in foci:
+            text = getattr(f, "dimension", "")
+            if not text or text in seen:
+                continue
+            seen.add(text)
+            try:
+                encode(text)
+                encoded += 1
+            except Exception:
+                pass
+    return encoded
+
+
 def _warmup_process_caches(
     agent, questions: int = 3, user_id: str = "", memory_sample: bool = True,
+    warmup_dataset_size: int = WISDOM_SCORED_QUESTIONS,
 ) -> None:
     """把「每个进程只付一次」的冷启动成本提前付掉。
 
@@ -1352,14 +1399,25 @@ def _warmup_process_caches(
         if callable(sync_warmup) and not getattr(emb, "is_loaded", False):
             sync_warmup()
 
-    # 2)+3) 真跑几题：同时触发分词、嵌入编码与首次 SQLite 读
+    # 2) 拆解到评测真正会用到的深度，再统一把 dimension 文本 encode 掉。
+    #    只拆 `questions` 题时，后面 12 题的 70 条 dimension 会全落在首轮。
+    size = max(int(warmup_dataset_size), int(questions), 0)
+    foci_groups: List[List[Any]] = []
+    for q in _load_test_dataset()[:size]:
+        try:
+            foci_groups.append(agent.decompose(q["problem"]))
+        except Exception:
+            foci_groups.append([])
+
+    _encode_all_dimensions(agent, foci_groups)
+
+    # 3) 前 N 题真跑 activate：覆盖检索、多焦点合并与 MMR 重排路径
     heated = 0
-    for q in _load_test_dataset()[:max(0, questions)]:
-        foci = agent.decompose(q["problem"])
+    for foci in foci_groups[:max(0, questions)]:
         agent.hub.activate(foci, user_id=user_id)
         heated += 1
 
-    if heated == 0 and emb is not None:
+    if not foci_groups and emb is not None:
         # 数据集缺失/为空时的兜底：至少把模型和分词走一遍
         emb.encode("预热：系统思维与第一性原理")
 
@@ -1375,6 +1433,7 @@ def run_multi_benchmark(
     ablation_data: Optional[Dict] = None,
     warmup: bool = True,
     warmup_questions: int = 3,
+    warmup_dataset_size: int = WISDOM_SCORED_QUESTIONS,
     user_id: str = "",
     dispose_agents: bool = False,
 ) -> MultiRunResult:
@@ -1388,7 +1447,11 @@ def run_multi_benchmark(
         warmup: 正式计分前是否先跑一个不计分的预热阶段（默认开启）。
             关掉它，首轮会把 ONNX 加载等冷启动成本算进 activate 平均耗时，
             让 wisdom 的均值被首轮拖低数个百分点。见 `_warmup_process_caches`。
-        warmup_questions: 预热阶段跑几道题（默认 3；1 道就能触发全部一次性成本）
+        warmup_questions: 预热阶段真跑几道 activate（默认 3）
+        warmup_dataset_size: 预热阶段拆解到第几题（默认 15，与 wisdom 的
+            first15 抽样对齐）。**这个比 warmup_questions 重要**：15 题会
+            产生约 70 条不同的 focus dimension 文本，每一处首次编码约
+            10.7ms；拆少了它们就全落在首轮计分里（下游实测差 164ms/次）。
         user_id: 透传给 activate 与预热。空串 = 历史口径（不过滤命名空间）；
             传了 = 用户真实路径。两条路径分数可差 14 分，不可混比。
         dispose_agents: 是否在轮次结束时 `close()` 由 factory 产生的 agent
@@ -1427,7 +1490,9 @@ def run_multi_benchmark(
             warm_agent = agent_factory()
             try:
                 _warmup_process_caches(
-                    warm_agent, warmup_questions, user_id=user_id)
+                    warm_agent, warmup_questions, user_id=user_id,
+                    warmup_dataset_size=warmup_dataset_size,
+                )
                 warmup_performed = True
             finally:
                 # 共享实例绝不能关（见 dispose_agents 的说明）
