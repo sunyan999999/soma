@@ -40,6 +40,7 @@ nav:
   - 记忆时效: guides/memory-recency_zh.md
   - 分层记忆运维: guides/layered-memory_zh.md
   - 语义命名空间约定: guides/namespace-convention_zh.md
+  - 激活确定性: guides/activation-determinism_zh.md
   - 对比分析:
     - SOMA vs Mem0: articles/soma-vs-mem0.md
     - SOMA vs Letta: articles/soma-vs-letta.md

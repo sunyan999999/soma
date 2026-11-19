@@ -109,7 +109,16 @@ class MemoryUnit:
         if self.memory_type == "semantic":
             return self.importance * (1.0 + 0.1 * self.access_count)
 
-        now = datetime.now(timezone.utc).timestamp()
+        # ★ v2.0.35（下游 32k 实测）：`now` 量化到秒。
+        #
+        # 不量化时，同一批记忆在连续两次查询里得到的分数略有不同 —— 每次
+        # 调用晚 0.3~0.5s，days 变大，recency 单调下降 1e-9~1e-6。这个量级
+        # 足够在 top_k 的「近并列」边界上翻转结果：下游 38 条抖动**全部**
+        # 来自这一条，且 38/38 都是单调下降（不是随机）。
+        #
+        # 量化到秒后，同一秒内的重复调用位级一致；跨秒仍会漂移，那是真实
+        # 时间流逝，不是缺陷（详见 docs/guides/activation-determinism_zh.md）。
+        now = math.floor(datetime.now(timezone.utc).timestamp())
         days = max(now - self.timestamp, 0) / 86400.0
         recency = math.exp(-days / self.effective_half_life())
         return recency * self.importance * (1.0 + 0.1 * self.access_count)

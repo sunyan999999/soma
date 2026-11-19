@@ -504,6 +504,8 @@ class AnalyticsStore:
                 # v2.0.34: 这几次 run 的分数有没有含冷启动 —— 看历史数据时必须知道
                 "warmup_performed": getattr(multi_result, "warmup_performed", False),
                 "warmup_s": getattr(multi_result, "warmup_s", 0.0),
+                # v2.0.35：两条评估路径的分数不可比（生产实测差 14 分）
+                "eval_path": getattr(multi_result, "eval_path", ""),
                 "scores": {
                     k: {
                         "mean": s.mean, "std": s.std,

@@ -44,6 +44,20 @@ class FakeEmbedder:
         return [0.0]
 
 
+class _FakeEpisodic:
+    def __init__(self):
+        self.deleted: List[str] = []
+
+    def delete(self, mid: str) -> bool:
+        self.deleted.append(mid)
+        return True
+
+
+class _FakeMemory:
+    def __init__(self):
+        self.episodic = _FakeEpisodic()
+
+
 class FakeAgent:
     """记录预热走过的路径，不碰真模型、不碰真库。"""
 
@@ -52,20 +66,30 @@ class FakeAgent:
         self.embedder = embedder
         self.closed = False
         self.hub = self  # 预热用 agent.hub.activate，这里让 agent 自己当 hub
+        self.memory = _FakeMemory()
+        self._n = 0
 
     def decompose(self, problem: str):
         self.log.append(("decompose", problem))
         return [f"focus:{problem}"]
 
-    def activate(self, foci):
+    def activate(self, foci, user_id: str = ""):
         self.log.append(("activate", tuple(foci)))
+        return []
+
+    def remember(self, content, context=None, importance=0.5, user_id="", **kw):
+        self._n += 1
+        return f"warm_{self._n}"
+
+    def query_memory(self, q, top_k=5, user_id="", **kw):
         return []
 
     def close(self):
         self.closed = True
 
 
-def _fake_run_full_benchmark(agent, ablation_data=None, version=""):
+def _fake_run_full_benchmark(agent, ablation_data=None, version="",
+                             user_id="", eval_path=None):
     """替换真实四维评测：本文件只测调度逻辑，不测分数怎么算。"""
     return BenchmarkRun(
         version=version,
@@ -113,8 +137,10 @@ def test_warmup_runs_before_scoring_and_is_not_counted():
     verbs = [entry[0] for entry in warm_agent.log]
     assert "decompose" in verbs
     assert "activate" in verbs
-    # 预热 agent 用完必须关掉，否则数据库句柄会累积
-    assert warm_agent.closed is True
+    # v2.0.35：默认**不**关闭 —— 下游的 factory 常返回进程级共享实例，
+    # 关掉会连带关掉共享 SQLite 连接，下一轮直接崩。
+    # 需要关闭时显式传 dispose_agents=True（见 test_benchmark_eval_path.py）。
+    assert warm_agent.closed is False
 
 
 def test_warmup_disabled_makes_no_extra_agent():

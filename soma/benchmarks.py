@@ -479,6 +479,11 @@ class BenchmarkRun:
     scalability: ScalabilityBenchmark = field(default_factory=ScalabilityBenchmark)
     scores: Dict[str, float] = field(default_factory=dict)  # 综合评分 0-100
     data_scale: str = "small"  # small / medium / large
+    # v2.0.35（下游要求）：这次评的是哪条路径。
+    #   "namespaceless" —— 不传 user_id，不过滤命名空间（历史面板口径）
+    #   "per_user"      —— 传了 user_id，只查该用户 + 全局事实（用户真实路径）
+    # 两条路径的分数可以差 14 分（生产实测 82.8 vs 68.9），混在一起不可比。
+    eval_path: str = ""
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -778,6 +783,7 @@ def _sample_questions(questions: List[Dict], sample: str) -> List[Dict]:
 
 def run_wisdom_benchmark(
     agent, ablation_data: Optional[Dict] = None, sample: str = "first15",
+    user_id: str = "",
 ) -> WisdomBenchmark:
     """运行智慧推理维度基准测试。
 
@@ -899,7 +905,9 @@ def run_wisdom_benchmark(
 
         # 计时：激活
         t1 = time.time()
-        activated = agent.hub.activate(foci)
+        # v2.0.35：user_id 透传给 activate。空串 = 历史口径（不过滤命名空间）；
+        # 传了就是用户真实走的路径（只查该用户 + 全局事实）。
+        activated = agent.hub.activate(foci, user_id=user_id)
         activate_times.append((time.time() - t1) * 1000)
 
         for am in activated:
@@ -965,6 +973,9 @@ def run_wisdom_benchmark(
     #   `run_wisdom_benchmark(sample=...)` 拿到的对象没有 —— 面板并排展示
     #   三种抽样口径时，新旧数据混在一起仍需人工判断。
     details["caliber"] = CALIBER_VERSION
+    # 同 caliber 的意义：两条评估路径的分数不可比，必须和分数一起落库
+    details["eval_path"] = "per_user" if user_id else "namespaceless"
+    details["eval_user_id"] = user_id
     details["scored_questions"] = n_q
     details["scored_categories"] = dict(
         Counter(q.get("category", "?") for q in _scored))
@@ -1167,15 +1178,36 @@ def calculate_scores(run: BenchmarkRun) -> Dict[str, float]:
     return calculate_scores_v2(run)
 
 
-def run_full_benchmark(agent, ablation_data: Optional[Dict] = None, version: str = "") -> BenchmarkRun:
-    """运行完整三维+伸缩性基准测试"""
+def run_full_benchmark(
+    agent,
+    ablation_data: Optional[Dict] = None,
+    version: str = "",
+    user_id: str = "",
+    eval_path: Optional[str] = None,
+) -> BenchmarkRun:
+    """运行完整三维+伸缩性基准测试
+
+    `user_id`（v2.0.35，下游实测）：
+
+    空串 = **历史面板口径**，检索不过滤命名空间。在有多租户数据的库上，
+    这会把所有用户的记忆和导航图边一起搜出来 —— 候选被无标签的图边淹没，
+    记忆标签交集归零、`mem_precision_applicable` 变 false，12 分被按比例
+    分给其余项，分数**虚高**。
+
+    传 user_id = **用户真实走的路径**（只查该用户 + 全局事实）。
+    下游生产实测同一份库两条路径差 14 分（82.8 vs 68.9），
+    所以 `eval_path` 必须和分数一起记录，否则历史数据没法比。
+    """
     if not version:
         version = _get_version()
+    if eval_path is None:
+        eval_path = "per_user" if user_id else "namespaceless"
+
     print("🧠 运行记忆维度基准...")
     memory = run_memory_benchmark(agent)
 
-    print("💡 运行智慧推理维度基准...")
-    wisdom = run_wisdom_benchmark(agent, ablation_data)
+    print(f"💡 运行智慧推理维度基准... (eval_path={eval_path})")
+    wisdom = run_wisdom_benchmark(agent, ablation_data, user_id=user_id)
 
     print("🧬 运行进化闭环维度基准...")
     evolution = run_evolution_benchmark(agent)
@@ -1192,6 +1224,7 @@ def run_full_benchmark(agent, ablation_data: Optional[Dict] = None, version: str
         evolution=evolution,
         scalability=scalability,
         data_scale=data_scale_from_count(data_count).value,
+        eval_path=eval_path,
     )
     run.scores = calculate_scores_v2(run)
     return run
@@ -1239,6 +1272,8 @@ class MultiRunResult:
     #   否则只能靠 std 变小去猜。
     warmup_performed: bool = False
     warmup_s: float = 0.0
+    # v2.0.35：这些分数评的是哪条路径（namespaceless / per_user）
+    eval_path: str = ""
 
 
 def compute_statistics(name: str, values: List[float]) -> RunStatistics:
@@ -1262,7 +1297,39 @@ def compute_statistics(name: str, values: List[float]) -> RunStatistics:
     )
 
 
-def _warmup_process_caches(agent, questions: int = 3) -> None:
+def _warmup_memory_path(agent, user_id: str = "") -> None:
+    """把「第一次写记忆」的成本提前付掉。
+
+    下游 32k 库实测（2.0.34）：预热只跑 activate 时，首轮仍比稳态多 77ms
+    （per_user 路径 157ms）。原因是 memory 维度先写后查，而 32k 库上的
+    首次写入要触发 WAL 段分配、索引页分配和 FTS 段生成 —— 这些只在第一次付。
+
+    写 3 条、查 1 次、再删掉：只留成本，不留数据。
+    """
+    ids: List[str] = []
+    try:
+        for i in range(3):
+            mid = agent.remember(
+                f"预热写入样本 {i} — 用于提前触发首次写入与索引分配",
+                {"domain": "预热", "type": "warmup"},
+                importance=0.1,
+                user_id=user_id,
+            )
+            if mid:
+                ids.append(mid)
+        if ids:
+            agent.query_memory("预热写入样本", top_k=3, user_id=user_id)
+    finally:
+        for mid in ids:
+            try:
+                agent.memory.episodic.delete(mid)
+            except Exception:
+                pass
+
+
+def _warmup_process_caches(
+    agent, questions: int = 3, user_id: str = "", memory_sample: bool = True,
+) -> None:
     """把「每个进程只付一次」的冷启动成本提前付掉。
 
     首轮 activate 慢不是因为数据规模，而是三笔进程级的一次性账：
@@ -1289,12 +1356,16 @@ def _warmup_process_caches(agent, questions: int = 3) -> None:
     heated = 0
     for q in _load_test_dataset()[:max(0, questions)]:
         foci = agent.decompose(q["problem"])
-        agent.hub.activate(foci)
+        agent.hub.activate(foci, user_id=user_id)
         heated += 1
 
     if heated == 0 and emb is not None:
         # 数据集缺失/为空时的兜底：至少把模型和分词走一遍
         emb.encode("预热：系统思维与第一性原理")
+
+    # 4) memory 维度小样：首轮还多的那 77~157ms 来自「第一次写入」
+    if memory_sample:
+        _warmup_memory_path(agent, user_id=user_id)
 
 
 def run_multi_benchmark(
@@ -1304,6 +1375,8 @@ def run_multi_benchmark(
     ablation_data: Optional[Dict] = None,
     warmup: bool = True,
     warmup_questions: int = 3,
+    user_id: str = "",
+    dispose_agents: bool = False,
 ) -> MultiRunResult:
     """多轮独立基准测试 — 每轮新建 agent，隔离数据库
 
@@ -1316,6 +1389,19 @@ def run_multi_benchmark(
             关掉它，首轮会把 ONNX 加载等冷启动成本算进 activate 平均耗时，
             让 wisdom 的均值被首轮拖低数个百分点。见 `_warmup_process_caches`。
         warmup_questions: 预热阶段跑几道题（默认 3；1 道就能触发全部一次性成本）
+        user_id: 透传给 activate 与预热。空串 = 历史口径（不过滤命名空间）；
+            传了 = 用户真实路径。两条路径分数可差 14 分，不可混比。
+        dispose_agents: 是否在轮次结束时 `close()` 由 factory 产生的 agent
+            （**含预热用那个**）。
+
+            ⚠️ v2.0.35，默认 **False**：下游常见的 `agent_factory` 返回的是
+            进程级**共享实例**（全站共用一个 SOMA），`close()` 会把共享的
+            SQLite 连接关掉，下一轮直接
+            `sqlite3.ProgrammingError: Cannot operate on a closed database`。
+            不关最坏是多留几个实例（进程退出即回收），关错是直接崩 ——
+            代价不对称，所以默认保守。
+
+            自己每次新建临时实例的调用方（如 CLI）应显式传 True 避免泄漏。
 
     ★ 下游实测（2.0.33）：首轮 avg_activate 910ms → wisdom 71.8，
       后三轮 210ms → 77.6，**5.8 分的极差全部来自冷启动**。
@@ -1340,13 +1426,16 @@ def run_multi_benchmark(
         try:
             warm_agent = agent_factory()
             try:
-                _warmup_process_caches(warm_agent, warmup_questions)
+                _warmup_process_caches(
+                    warm_agent, warmup_questions, user_id=user_id)
                 warmup_performed = True
             finally:
-                try:
-                    warm_agent.close()
-                except Exception:
-                    pass
+                # 共享实例绝不能关（见 dispose_agents 的说明）
+                if dispose_agents:
+                    try:
+                        warm_agent.close()
+                    except Exception:
+                        pass
         except Exception as e:  # 预热不是评测的一部分，坏了也不能拖垮评测
             print(f"  ⚠️ 预热失败，按原样继续（首轮会含冷启动）: {e}")
         warmup_s = round(time.time() - _t_warm, 2)
@@ -1358,7 +1447,10 @@ def run_multi_benchmark(
         print(f"{'='*50}")
         agent = agent_factory()
         try:
-            run = run_full_benchmark(agent, ablation_data=ablation_data, version=version)
+            run = run_full_benchmark(
+                agent, ablation_data=ablation_data, version=version,
+                user_id=user_id,
+            )
             raw_runs.append(run)
 
             # 收集综合评分（仅数值型）
@@ -1386,10 +1478,11 @@ def run_multi_benchmark(
                         detail_key = f"evolution/{key}"
                         all_details.setdefault(detail_key, []).append(float(val))
         finally:
-            try:
-                agent.close()
-            except Exception:
-                pass
+            if dispose_agents:
+                try:
+                    agent.close()
+                except Exception:
+                    pass
 
     # 计算统计指标
     score_stats = {}
@@ -1414,6 +1507,7 @@ def run_multi_benchmark(
         total_duration_s=round(duration, 1),
         warmup_performed=warmup_performed,
         warmup_s=warmup_s,
+        eval_path=(raw_runs[0].eval_path if raw_runs else ""),
     )
 
 
@@ -1450,6 +1544,8 @@ def generate_markdown_report(result: MultiRunResult) -> str:
     lines.append(f"| 测试轮次 | {result.runs} 轮独立运行 |")
     lines.append(f"| 数据规模 | {result.data_scale} |")
     lines.append(f"| 总耗时 | {result.total_duration_s}s |")
+    if result.eval_path:
+        lines.append(f"| 评估路径 | `{result.eval_path}` |")
     if result.warmup_performed:
         lines.append(f"| 预热 | 已执行（{result.warmup_s}s，不计入分数） |")
     lines.append("")
@@ -1511,6 +1607,7 @@ def generate_json_report(result: MultiRunResult) -> dict:
         "total_duration_s": result.total_duration_s,
         "warmup_performed": result.warmup_performed,
         "warmup_s": result.warmup_s,
+        "eval_path": result.eval_path,
         "scores": {
             key: {
                 "mean": s.mean,
@@ -1559,6 +1656,11 @@ def _parse_args():
         "--no-warmup", action="store_true",
         help="跳过计分前的预热阶段。默认会预热，测的是稳态而不是冷启动",
     )
+    parser.add_argument(
+        "--user-id", type=str, default="",
+        help="按该用户的真实路径评测（只查他的记忆 + 全局事实）。"
+             "不传 = 历史口径（不过滤命名空间），两条路径分数不可比",
+    )
     return parser.parse_args()
 
 
@@ -1579,6 +1681,9 @@ def main():
             runs=args.runs,
             version=args.version,
             warmup=not args.no_warmup,
+            user_id=args.user_id,
+            # CLI 每次都新建临时实例，关掉可以避免留下临时目录和连接
+            dispose_agents=True,
         )
 
         # 输出报告
@@ -1611,7 +1716,11 @@ def main():
         tmpdir = tempfile.mkdtemp(prefix="soma_bench_")
         soma = SOMA(persist_dir=tmpdir)
         try:
-            run = run_full_benchmark(soma._agent, version=args.version or _get_version())
+            run = run_full_benchmark(
+                soma._agent,
+                version=args.version or _get_version(),
+                user_id=args.user_id,
+            )
             print(f"\n综合评分: {run.scores.get('overall', 'N/A')}")
             for k, v in run.scores.items():
                 print(f"  {k}: {v}")

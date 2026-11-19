@@ -158,6 +158,30 @@ class TestTieBreakStability:
             f"同一三元组间隔 50ms 两次查询分数不同：{first!r} vs {second!r} —— "
             f"近因衰减用了查询时刻，会在并列边界上造成翻转")
 
+    def test_same_second_scores_are_bit_identical(self, soma):
+        """★ L1：同一秒内的两次激活，分数必须逐位相同。
+
+        近因衰减是时间函数（`exp(-days/half_life)`），`now` 精确到微秒时，
+        每次调用都会得到略微不同的分数（1e-9~1e-6），足以在近并列边界翻转。
+
+        2.0.35 把 `now` 量化到秒：同一秒内位级一致；跨秒仍漂移，那是真实
+        时间流逝（见 docs/guides/activation-determinism_zh.md）。
+        """
+        import time
+
+        foci = soma._agent.decompose("系统思维如何应用到产品设计")
+        for _ in range(20):
+            t0 = int(time.time())
+            a = [(x.memory.id, x.activation_score)
+                 for x in soma._agent.hub.activate(foci)]
+            b = [(x.memory.id, x.activation_score)
+                 for x in soma._agent.hub.activate(foci)]
+            if int(time.time()) == t0:      # 两次都在同一秒内完成
+                assert a == b, (
+                    "同一秒内两次激活的分数不同 —— now 没有量化到秒")
+                return
+        pytest.skip("20 次尝试都没能在同一秒内完成两次激活（机器太慢）")
+
     def test_tie_is_repeatable(self, tied):
         runs = {
             tuple(u.id for u in tied.query_by_keywords(["并列判据"], top_k=3))

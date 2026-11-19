@@ -7,6 +7,91 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.35] — 2026-11-19
+
+**评估路径可区分 + 预热不再打死共享实例 + 预热覆盖 memory 路径 + L1 时间量化。**
+
+下游在 2.0.34 上验证后发来的四条，这一版全部落地。
+
+### ★ 修复 1：预热 `close()` 会打死共享实例（下游直接崩）
+
+`run_multi_benchmark` 在预热结束和每轮结束时都会 `agent.close()`。
+但下游的 `agent_factory` 返回的是**进程级共享实例**（全站共用一个 SOMA），
+于是共享的 SQLite 连接被关掉：
+
+```
+sqlite3.ProgrammingError: Cannot operate on a closed database
+```
+
+他们第一次跑基准就崩在这里，只能退回去直接调 `_warmup_process_caches()`。
+
+修：新增 `dispose_agents: bool = False`（默认**不**关闭）。
+
+> 为什么默认不关：不关最坏是多留几个实例（进程退出即回收），
+> 关错是直接崩 —— 代价不对称。自己每次新建临时实例的调用方
+> （包括 CLI）显式传 `True`。
+
+### 新增 2：`run_full_benchmark(user_id=...)` + `eval_path`
+
+下游实测同一份库、同一版本，两条路径的 wisdom **差 14 分**：
+
+| 路径 | wisdom | 原因 |
+|---|---|---|
+| 不传 user_id（历史面板口径） | **82.8** | 不过滤命名空间，被 `wiki_graph` 的 1.5 万条图边淹没；带标签的记忆被挤出 top_k，`mem_precision_applicable` 变 false，12 分按比例分给其余项 → **虚高** |
+| `user_id='1'`（用户真实路径） | **68.9** | 只查该用户 + 全局事实，候选少、相关度真实 |
+
+`run_full_benchmark` / `run_wisdom_benchmark` / `run_multi_benchmark` 全部
+支持 `user_id`，并回传 `eval_path`（`namespaceless` / `per_user`）到
+`BenchmarkRun`、`MultiRunResult`、Markdown、JSON 和
+`benchmark_runs.multi_run_stats_json`。CLI 新增 `--user-id`。
+
+下游不用再 monkey-patch `hub.activate` 了。
+
+### 改进 3：预热覆盖 memory 维度
+
+2.0.34 的预热只跑 activate，首轮仍比稳态多 77ms（per_user 路径 157ms）。
+原因是 memory 维度先写后查，而 32k 库上首次写入要触发 WAL 段分配、
+索引页分配和 FTS 段生成。
+
+修：预热增加「写 3 条 → 查 1 次 → 删干净」的小样，且预热也带 `user_id`。
+
+### 改进 4：`days` 量化到秒（L1 位级确定性）
+
+下游 38 条抖动**全部**是 episodic，且 38/38 单调递减 —— 是时间函数，
+不是随机。根因是 `relevance_potential()` 的 `now` 精确到微秒，每次调用
+晚 0.3~0.5s，`days` 变大，`recency` 单调下降 1e-9~1e-6，足以在近并列
+边界翻转。
+
+修：`now = math.floor(...)`。同一秒内位级一致；跨秒仍漂移，那是真实时间
+流逝。新增 `docs/guides/activation-determinism_zh.md` 说明三层确定性
+（L1 位级 / L2 序列 / L3 集合）与验收门槛。
+
+### 下游验证结果（2.0.34 重建版）
+
+| 层 | 修复前 | 修复后 |
+|---|---|---|
+| L2 序列稳定 | 11/16 | **16/16** |
+| L3 集合稳定 | 12/16 | **16/16** |
+| 语义三元组抖动 | — | **0 条** |
+| CAP=3 三口径召回 | — | 与 2.0.33 **逐位一致** |
+
+### 判据
+
+`tests/test_benchmark_eval_path.py`（7 条）+ `test_hybrid_stability.py`
+新增 2 条（同秒位级一致、语义时间不变性）。
+
+注入验证：
+
+| 注入 | 变红 |
+|---|---|
+| 预热/轮次 `close()` 改回无条件 | `test_shared_instance_is_not_closed_by_default` |
+| `user_id` 不透传 | `test_per_user_when_user_id_given` |
+| 去掉 `math.floor` | `test_same_second_scores_are_bit_identical` |
+
+全量回归 **1379 passed × 3 轮**零回归。
+
+---
+
 ## [2.0.34] — 2026-11-19
 
 **多轮基准的首轮冷启动（wisdom 虚低 5.8 分）+ 激活重复不稳定 + 图谱邻居封顶 4 → 3。**
