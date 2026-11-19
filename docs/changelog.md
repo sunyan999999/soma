@@ -1,11 +1,2762 @@
-# Changelog
+# Changelog / 变更日志
 
-All notable changes to SOMA will be documented in this file.
+All notable changes to SOMA will be documented in this file. / 本文档记录 SOMA 所有重要变更。
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
+
+## [2.0.35] — 2026-11-19
+
+**评估路径可区分 + 预热不再打死共享实例 + 预热覆盖 memory 路径 + L1 时间量化。**
+
+下游在 2.0.34 上验证后发来的四条，这一版全部落地。
+
+### ★ 修复 1：预热 `close()` 会打死共享实例（下游直接崩）
+
+`run_multi_benchmark` 在预热结束和每轮结束时都会 `agent.close()`。
+但下游的 `agent_factory` 返回的是**进程级共享实例**（全站共用一个 SOMA），
+于是共享的 SQLite 连接被关掉：
+
+```
+sqlite3.ProgrammingError: Cannot operate on a closed database
+```
+
+他们第一次跑基准就崩在这里，只能退回去直接调 `_warmup_process_caches()`。
+
+修：新增 `dispose_agents: bool = False`（默认**不**关闭）。
+
+> 为什么默认不关：不关最坏是多留几个实例（进程退出即回收），
+> 关错是直接崩 —— 代价不对称。自己每次新建临时实例的调用方
+> （包括 CLI）显式传 `True`。
+
+### 新增 2：`run_full_benchmark(user_id=...)` + `eval_path`
+
+下游实测同一份库、同一版本，两条路径的 wisdom **差 14 分**：
+
+| 路径 | wisdom | 原因 |
+|---|---|---|
+| 不传 user_id（历史面板口径） | **82.8** | 不过滤命名空间，被 `wiki_graph` 的 1.5 万条图边淹没；带标签的记忆被挤出 top_k，`mem_precision_applicable` 变 false，12 分按比例分给其余项 → **虚高** |
+| `user_id='1'`（用户真实路径） | **68.9** | 只查该用户 + 全局事实，候选少、相关度真实 |
+
+`run_full_benchmark` / `run_wisdom_benchmark` / `run_multi_benchmark` 全部
+支持 `user_id`，并回传 `eval_path`（`namespaceless` / `per_user`）到
+`BenchmarkRun`、`MultiRunResult`、Markdown、JSON 和
+`benchmark_runs.multi_run_stats_json`。CLI 新增 `--user-id`。
+
+下游不用再 monkey-patch `hub.activate` 了。
+
+### 改进 3：预热覆盖 memory 维度
+
+2.0.34 的预热只跑 activate，首轮仍比稳态多 77ms（per_user 路径 157ms）。
+原因是 memory 维度先写后查，而 32k 库上首次写入要触发 WAL 段分配、
+索引页分配和 FTS 段生成。
+
+修：预热增加「写 3 条 → 查 1 次 → 删干净」的小样，且预热也带 `user_id`。
+
+### 改进 4：`days` 量化到秒（L1 位级确定性）
+
+下游 38 条抖动**全部**是 episodic，且 38/38 单调递减 —— 是时间函数，
+不是随机。根因是 `relevance_potential()` 的 `now` 精确到微秒，每次调用
+晚 0.3~0.5s，`days` 变大，`recency` 单调下降 1e-9~1e-6，足以在近并列
+边界翻转。
+
+修：`now = math.floor(...)`。同一秒内位级一致；跨秒仍漂移，那是真实时间
+流逝。新增 `docs/guides/activation-determinism_zh.md` 说明三层确定性
+（L1 位级 / L2 序列 / L3 集合）与验收门槛。
+
+### 下游验证结果（2.0.34 重建版）
+
+| 层 | 修复前 | 修复后 |
+|---|---|---|
+| L2 序列稳定 | 11/16 | **16/16** |
+| L3 集合稳定 | 12/16 | **16/16** |
+| 语义三元组抖动 | — | **0 条** |
+| CAP=3 三口径召回 | — | 与 2.0.33 **逐位一致** |
+
+### 判据
+
+`tests/test_benchmark_eval_path.py`（7 条）+ `test_hybrid_stability.py`
+新增 2 条（同秒位级一致、语义时间不变性）。
+
+注入验证：
+
+| 注入 | 变红 |
+|---|---|
+| 预热/轮次 `close()` 改回无条件 | `test_shared_instance_is_not_closed_by_default` |
+| `user_id` 不透传 | `test_per_user_when_user_id_given` |
+| 去掉 `math.floor` | `test_same_second_scores_are_bit_identical` |
+
+全量回归 **1379 passed × 3 轮**零回归。
+
+---
+
+## [2.0.34] — 2026-11-19
+
+**多轮基准的首轮冷启动（wisdom 虚低 5.8 分）+ 激活重复不稳定 + 图谱邻居封顶 4 → 3。**
+
+### 修复 1：`run_multi_benchmark` 增加不计分的预热阶段
+
+下游实测（2.0.33，`benchmark_runs id=187`，repeat=4 取中位）：
+
+```
+第 1 次 avg_activate 910.3ms → efficiency 0    → wisdom 71.8
+后 3 次 avg_activate 210~213ms → efficiency 0.58 → wisdom 77.6
+```
+
+**wisdom 的 5.8 分极差全部来自首轮。** 首轮慢不是数据规模问题，是三笔
+进程级的一次性成本：
+
+| 成本 | 为什么只在第一轮 |
+|---|---|
+| ONNX 嵌入模型加载 | `SOMA.__init__` 只起后台线程，请求进来时仍在等它 |
+| jieba 前缀词典构建 | 第一个分词调用建词典（约 0.4s） |
+| 嵌入器文本 LRU 为空 | focus 的维度文本每次重新编码 |
+
+三者都跨 agent 共享（embedder 进程级单例、jieba 模块级全局），所以在
+正式计分前用一个**用完即弃的 agent** 跑几题（默认 3 题）即可全部就位。
+
+```python
+run_multi_benchmark(agent_factory, runs=4)              # 默认预热
+run_multi_benchmark(agent_factory, runs=4, warmup=False)  # 回到旧行为
+```
+
+- 预热**不产出任何分数**，也不计入 `runs`
+- 预热失败只降级（打印警告后照常评测），不会让基准跑不起来
+- `MultiRunResult` 新增 `warmup_performed` / `warmup_s`，并在 Markdown /
+  JSON / `benchmark_runs.multi_run_stats_json` 三处可见 —— 读历史数据时
+  必须分得清「这次的分数含不含冷启动」
+- CLI 新增 `--no-warmup`
+
+> 这去掉的是**测量误差**，不是把慢的地方藏起来：预热后的分数是稳态表现，
+> 也就是真实请求会看到的表现。
+
+### 调整 2：`_GRAPH_KEYWORD_CAP` 4 → 3
+
+图谱扩展的邻居数（辅助通道）再收一个。
+
+本地对照（50 题 × 4 轮，同一实例热态 A/B，两轮取相同值）：
+
+```
+cap=4  召回 115 条  5.0ms/题
+cap=3  召回 115 条  4.8ms/题
+```
+
+下游 32k 生产库 A/B 结论一致（召回几乎不变，单次再省约 8ms）。依据是
+1 跳邻居权重高、排在前面；第 4 个之后被截掉的绝大多数是 2 跳，命中率很低。
+`test_one_hop_neighbours_survive` 继续盯着「1 跳邻居不能被截掉」这条底线。
+
+### 文档 3：`namespace` 约定（新增 `docs/guides/namespace-convention_zh.md`）
+
+下游把 1.5 万条 wiki 关联图写在 `namespace=''` 里，`include_global` 一开就
+把用户情节记忆挤掉 70%（192 → 58），而**分数面板看不出来**。文档把这个坑写清：
+
+- **写入的 `''`** = 全局共享；**查询的 `''`** = 不过滤（历史语义）——
+  两者不是一回事，所以要用 `include_global=True` 而不是传空串
+- 约定：`''` 只放能直接回答用户问题的**事实**；导航图/关系图用独立 namespace
+- 迁移不影响图扩展：`expand_query_terms` 走内存 NetworkX，不按 namespace 过滤
+- 附验证方法（语义激活占比 > 30% 基本可以确定混进了图边）
+
+mkdocs nav 已加入「语义命名空间约定」。
+
+### 判据
+
+`tests/test_benchmark_warmup.py`（8 条）。注入验证：把预热分支改成 `if False:`，
+3 条变红（预热未执行 / 失败降级 / 报告字段），恢复后 8 条全绿。
+
+`tests/test_keyword_cap.py` 8 条在 cap=3 下全绿。
+
+### 修复 3：激活结果重复不稳定（三个独立来源，逐一修掉）
+
+做 CAP 的 A/B 时发现的：**同一题在同一进程内重复 activate，结果不完全稳定。**
+50 题重复跑有 1 题在 top_k 边界二选一：
+
+```
+只在 A: 整体性 --[关联]--> 杠杆点
+只在 B: 反馈回路 --[关联]--> 延迟
+```
+
+拆开看是三个独立来源，缺一个都会继续抖：
+
+| # | 来源 | 修法 |
+|---|------|------|
+| 1 | 检索 SQL 只有 `ORDER BY confidence DESC`，并列时返回哪几行由执行计划决定 | 两处 SQL 补 `id DESC`（episodic 用 `rowid DESC`，即插入顺序） |
+| 2 | 图扩展 `sorted(key=-weight)` 在 1 跳/2 跳两档并列时取谁不定 | 次键按节点名排序 |
+| 3 | `relevance_potential()` 用当前时刻算近因，而语义三元组的 timestamp 是**查询时刻**构造的 → 分数每次漂移 1e-10 | `memory_type='semantic'` 跳过近因衰减（知识没有过期语义） |
+
+另外 `decompose` 里的 `list(set(...))` 改用 `list(dict.fromkeys(...))`：
+保序去重。原来 set 打乱了关键词顺序，而 `max_like_keywords` 的截断
+**假设主关键词排在前面** —— 这个假设在 set 下是不成立的。
+
+修复后实测（同样 50 题、两次完整 run）：
+
+```
+修复前：集合不同 1 题 / 顺序不同 6 题
+修复后：集合不同 0 题 / 顺序不同 0 题
+cap3 与 cap4 的召回差异也从 1 条归零（123 / 123）
+```
+
+> 第 3 条看似最小，却是最容易复发的一条：只要有人给语义 `MemoryUnit`
+> 填上真实时间戳又不改 `relevance_potential`，漂移就会回来。
+
+---
+
+## [2.0.33] — 2026-11-25
+
+**知识图谱对真实用户没生效（功能性缺口）+ 短词 LIKE 全表扫描。**
+
+### ★ 修复 1：语义三元组的全局知识通道（功能性，比性能更严重）
+
+下游生产实测：
+
+```
+semantic_triples 共 15,312 条，全部 namespace = ''（全局知识）
+                    样本：「数字分身—基于—命理八字」「大运流年—影响—运势走向」
+MemoryCore.query 里 sem_namespace = agent_id or user_id
+生产聊天传 user_id='1' → 查 namespace='1' 返回 0 行
+```
+
+**15,312 条知识等于白存**，每次查询只是空转 0.3ms。
+
+修：`query_by_keywords(include_global=True)` —— SQL 变成
+`AND (st.namespace = ? OR st.namespace = '')`。
+
+两个容易踩的点：
+
+- `namespace=''` 在本方法的历史语义是「**不过滤**」（返回所有用户的），
+  不是「只查全局」—— 所以不能靠传空串来修
+- FTS 路径和 LIKE 路径是**两段独立构造的 SQL**，第一版只改了 FTS 路径，
+  短词查询仍然查不到全局知识（行为不一致），已一并修
+
+### 修复 2：短关键词 LIKE 封顶
+
+FTS5 trigram 只接受 ≥3 字；1~2 字词走 `LIKE '%kw%'`，用不上索引，
+每个词都要在**每一行**上评估 —— 成本 O(词数 × 行数)。
+
+下游 32k 库实测：4 词 55ms / 8 词 94ms / 10 词 111ms，而一次 activate
+会传 8~20 个 2 字词 → `episodic.query_by_keywords` 61.4ms × 18 次
+= **184ms/激活（占 53%）**。
+
+修：新增 `max_like_keywords`（默认 3），`episodic` 与 `semantic` 两处都用。
+调用方保证主关键词排前面。
+
+本地 2 万条实测：10 词 15.8ms → 3 词 10.3ms，**命中数不变**（前 3 个词就能
+填满 top_k）。
+
+> ⚠️ 截断的真实代价：如果查询依赖的是第 4 个之后的短词，会查不到。
+> 判据 `test_cap_limits_like_terms` 专门记录了这个行为（构造「只有第 5 个词
+> 能命中」的场景）。
+
+> 根治方案是「写入时 jieba 分词存 tokens 列 + FTS5 unicode61 索引」，
+> 让 2 字词也能走索引。工程量大，列入后续。
+
+### 判据
+
+`tests/test_semantic_global_and_like.py`（8 条），三道注入全红：
+
+| 注入 | 变红 |
+|---|---|
+| `include_global` 恒 False | 2 条 |
+| LIKE 不截断 | `test_cap_limits_like_terms` |
+| semantic LIKE 路径漏改 | `test_short_keyword_finds_global` |
+
+全量回归 **1358 passed**。
+
+---
+
+## [2.0.32] — 2026-11-24
+
+**排序稳定性判据 + 文本编码缓存。并行暂缓，附原因。**
+
+### 新增：`encode()` 的文本级 LRU
+
+`encode()` 单条 4~9ms，而 `focus.dimension` 这类文本在激活流程里每次都被
+重新编码。加 256 条 LRU。
+
+**关键细节：缓存命中不计入延迟统计。** 否则
+`_total_encode_ms / _total_encodes` 会被大量 0ms 命中稀释，健康监控
+（单次 > 150ms 判不健康）再也发现不了真实退化。有判据钉死。
+
+实测：同一文本 20 次调用 → 只真编码 1 次，其余 0.0005ms（5000× 量级）。
+
+### 新增：`wisdom` 维度自己带 `caliber`
+
+原来只有 `calculate_scores_v2` 的四维总分带 `caliber`，跑
+`run_wisdom_benchmark(sample=...)` 拿到的对象没有 —— 面板并排展示三种
+抽样口径时，新旧数据混在一起仍需人工判断。现在 `details["caliber"]` 也有了。
+
+### 关于 `_hybrid_search` 并行：这版没做，附数据
+
+下游建议三路并行省 ~100ms，并要求「激活排序稳定性」判据。先测了现状：
+
+**本地 5 次 `query()` 的激活序列完全一致** —— 这是已经成立的不变量。
+
+但查到一个硬约束：SQLite 在 `check_same_thread=False` 下 `threadsafety=3`
+（serialized），**同一连接内的 SQL 调用在内部串行**。三个通道共用
+`self._conn`，并行拿不到真实收益，却要引入连接竞争和合并顺序问题。
+要真并行得给每条线程独立连接，那又是 WAL 快照一致性和创建开销的另一笔账。
+
+所以这版先：
+- 把「排序稳定」钉成常驻判据（`test_hybrid_stability.py` 9 条）
+- 做确定的编码缓存
+- 并行留到有明确收益证据时再评估
+
+### 判据
+
+| 注入 | 变红 |
+|---|---|
+| 缓存命中计入延迟统计 | 2 条 |
+| 激活排序引入随机 | `test_query_order_is_stable` |
+
+全量回归 **1350 passed**（耗时 148s，比 2.0.30 的 195s 明显下降）。
+
+---
+
+## [2.0.31] — 2026-11-24
+
+**两大项：wisdom 走 v2-normalized 归一化口径；嵌入器单例终于接上了线。**
+
+### ⚠️ 口径变更：wisdom 改为 v2-normalized
+
+下游三组对照（同一份代码，只换库）证明 wisdom 里有 42 分权重是
+**结构性依赖环境**的：
+
+| 环境 | wisdom |
+|---|---|
+| 生产 32,233 条（用户聊天记忆）| 64.5 |
+| 干净小库 20 条 | 72.9 |
+| 小库 + 按基准 tags 种 50 条 | 91.2 |
+
+归一化三项：
+
+| 项 | 原逻辑 | 新逻辑 |
+|---|---|---|
+| `mem_precision` (12) | 「记忆语料是否与基准题同源」，用真实聊天记录时必然 ≈0 | 交集为 0 时**不计入**，12 分权重按比例分给其他六项 |
+| `cross_domain` (10) | 非语义激活 / 总激活（**占比**，库越大越低）| 每查询非语义激活数 / 2.0（**绝对量**）|
+| `efficiency` (10) | 200ms 硬阈值，32k 库 548ms 直接 0 分 | 预算 = `100×(1+log10(N/1000))`，1k→100ms / 10k→200ms / 100k→300ms，实际耗时达预算 2 倍才归零 |
+
+返回值新增：
+
+- `caliber` = `"v2-normalized"`（**口径标记，历史数据靠它区分**）
+- `wisdom_legacy`（旧公式的值，保留对照）
+- `wisdom_items` / `wisdom_weights`（每项归一化值与实际权重）
+- `wisdom_meta`（`mem_precision_applicable` / `cross_per_query` / `efficiency_budget_ms`）
+
+> 本地实测：同一环境 `wisdom 81.0`（新）vs `75.6`（legacy）。
+> **历史数据需要重新标注口径**（下游会把他们 id<=183 标成旧口径）。
+
+### ★ 嵌入器单例：v2.0.16 做了机制，主路径一直没接
+
+全量测试时 onnxruntime 报 `bad allocation`，顺着查下去：
+
+```python
+# soma/agent.py（修改前）
+if self.embedder is None and config.use_vector_search:
+    self.embedder = SOMAEmbedder(config)      # ← 每个实例各建一个
+    self._owns_embedder = True
+```
+
+而 v2.0.16 早就做了 `get_shared_embedder()`（key = 模型名 + 维度，不含
+persist_dir，本来就该共享），**但这条主路径从来没接上**。
+
+后果：**N 个 SOMA 实例 = N 份 ONNX 会话**。测试里几十个实例就撑爆内存；
+生产上按用户建实例的接入方（`get_soma(user_id)`）同样会踩。
+
+修：改走 `get_shared_embedder(config)`，`_owns_embedder = False`
+（生命周期由 `release_shared_embedders()` 管，单实例 close() 不释放）。
+
+实测：5 个 SOMA 实例 → 1 个 embedder 对象；全量测试从 `bad allocation`
+崩溃变为 **1341 passed**，耗时 195s → 159s。
+
+### 其他
+
+- `_GRAPH_KEYWORD_CAP` / `_FTS_KEYWORD_CAP` 改为**实例可覆盖**（类属性默认
+  仍是 4/10），供接入方做「封顶 vs 不封顶」的 A/B 对照
+- `episodic.get()` 缓存上限 512 → **4096**（与下游配置对齐，3 万条库上
+  512 容易被击穿）
+
+### 判据
+
+- `tests/test_wisdom_caliber.py`（12 条），三道注入全红
+- `tests/test_embedder_sharing.py` 两个旧判据按新语义重写，并新增
+  「3 个实例必须共享同一 embedder」的核心回归
+
+全量回归 **1341 passed**。
+
+---
+
+## [2.0.30] — 2026-11-24
+
+**第三个性能热点：图谱把关键词膨胀 5 倍。** 下游 32k 条库做了阶段级归因，
+这是激活耗时里最大的一块。
+
+### 问题
+
+`MemoryCore.query()` 里，图谱扩展后的关键词被**原样**送给 FTS：
+
+```python
+graph_keywords = self._expand_via_semantic_graph(keywords)   # 默认 max_terms=8
+all_keywords = list(dict.fromkeys(keywords + graph_keywords))
+self.semantic.query_by_keywords(all_keywords, ...)
+```
+
+focus 自带关键词只有 4~6 个，**扩展后中位 21 个、最多 37 个**。
+而 FTS5 trigram 的 OR 查询成本随词数近似线性：
+
+```
+4 词 → 13.1ms    8 词 → 24.2ms    14 词 → 46.4ms    18 词 → 61.7ms
+```
+
+实测 58.5ms/次 × 6 次/激活 = **351ms**，占激活耗时 60%。
+
+### 修复
+
+两层截断，主关键词优先：
+
+| 常量 | 值 | 作用 |
+|---|---|---|
+| `_GRAPH_KEYWORD_CAP` | 4 | 图谱邻居只留 4 个（它是辅助通道）|
+| `_FTS_KEYWORD_CAP` | 10 | 送 FTS 的列表截到 10 个（focus 自带词在前，天然优先）|
+
+`all_keywords` 仍保留完整列表用于 `match_rationale` 展示。
+
+### 召回影响（实测）
+
+造了 8 条三元组的小图谱（1 跳 3 词 + 2 跳 5 词）：
+
+```
+max_terms=8 → ['整体性','反馈回路','矛盾分析','延迟','增强回路','对立统一','取舍','杠杆点']
+max_terms=4 → ['整体性','反馈回路','矛盾分析','延迟']
+```
+
+丢掉的全是 **2 跳**邻居（权重 0.36，1 跳是 0.6）。召回条数 7 → 7 不变。
+基准 recall/precision 也完全不变（0.6667 / 0.5106）。
+
+> ⚠️ 判据第一版是自证循环：直接调 `_expand_via_semantic_graph(max_terms=4)`
+> 当然满足上限。注入「调用处改回 999」**判据照样绿**。改成 spy 抓
+> `query()` 实际传的参数才抓住。
+
+### 顺带：`relevance` clamp 到 [0,1]
+
+`memory_relevance_score` 是 `activation_score` 的均值，而 `activation_score`
+本身可以 > 1（`focus.weight × relevance_potential × 各种加成`）。下游两次
+实测出现过 **1.185** 和 **1.0012** —— 10 分的项能贡献 11.85 分，权重超发。
+
+> 判据同样第一版是假绿：只填 `relevance` 时总分才 11 分，去掉 clamp
+> 也超不过 100。必须把其他项也灌满才测得出。
+
+### 判据
+
+`tests/test_keyword_cap.py`（8 条），三道注入全红：
+
+| 注入 | 变红 |
+|---|---|
+| FTS 改回全量词 | `test_fts_receives_capped_list` |
+| 图谱扩展不限词数 | `test_query_passes_cap` |
+| `relevance` 去掉 clamp | `test_relevance_capped_at_one` |
+
+全量回归 **1328 passed**。
+
+### 与下游三步优化的累积效果（同库 32,234 条）
+
+| 指标 | 优化前 | v2.0.30 |
+|---|---|---|
+| activate 均耗 | 794.7ms | **≈344ms** |
+| semantic.query_by_keywords | 58.5ms | **29.0ms** |
+
+---
+
+## [2.0.29] — 2026-11-24
+
+**两个真实的性能热点（下游 32k 条生产库实测）。纯性能优化，语义零变化。**
+
+### 热点 1：`count_indexed()` 每次搜索全表扫描
+
+```sql
+SELECT COUNT(*) FROM episodic_memories WHERE vector IS NOT NULL
+```
+
+`vector IS NOT NULL` 走不了索引。本地 3 万条实测 **100ms**（下游 65ms）。
+而 `similarity_search` 每次调用都查它一次做 DB/faiss 一致性检查 ——
+**一次激活 4~6 次**，等于 300~600ms 的纯重复劳动，占激活耗时 40%+。
+
+修：缓存 + **双探针**失效
+
+| 探针 | 覆盖场景 |
+|---|---|
+| `PRAGMA data_version` | **其他连接**提交（跨进程 / 跨实例）|
+| `conn.total_changes` | **本连接**写入（零成本属性，不触发查询）|
+
+> ⚠️ 第一版只用 `data_version`，被自己的自愈判据抓出来了 ——
+> `data_version` 只反映其他连接的提交，同一连接里的 UPDATE 它看不见，
+> 于是「索引与 DB 失步自愈」那个测试读到了陈旧的 0。加 `total_changes`
+> 后才正确。
+
+实测：**100ms → 0.006ms**，一次激活 5 次可省约 **500ms**。
+
+### 热点 2：`episodic.get()` 的 N+1
+
+`query_by_vector` 对每个候选都调 `get(mid)`（单行 SELECT），同一条记忆在一次
+激活里被反复 hydration。下游 SQL 抓取：2 次 activate 共 3,122 条 SQL，
+同一 id 的 `SELECT * WHERE id=?` 重复 10 次。
+
+修：LRU（上限 512）+ **2 秒 TTL**。记忆是追加型的，2 秒陈旧对召回无影响；
+写路径（`update` / `delete` / `archive_and_delete` / `restore_archived`）主动失效。
+
+### 顺带修一个原有小 bug
+
+`increment_access()` 的返回值原来是 `self._conn.total_changes > 0` ——
+那是**连接累计**写入数，只要写过任何东西就永远为真。改为本次 UPDATE 的
+`rowcount`。并且它现在会同步更新缓存对象里的 `access_count`
+（不然缓存会让召回排序读到旧值）。
+
+### 判据
+
+`tests/test_cache_correctness.py`（9 条），三道注入全红：
+
+| 注入 | 变红 |
+|---|---|
+| 去掉 `total_changes` 探针 | `test_same_connection_write_invalidates` |
+| `update` 不失效 get 缓存 | `test_update_visible` |
+| `increment_access` 不同步缓存 | `test_increment_visible_through_cache` |
+
+**只测正确性不测速度** —— 速度判据依赖机器和数据量，放 CI 只会变成 flaky。
+速度用一次性脚本测（数据已记在上面）。
+
+全量回归 **1320 passed**。
+
+---
+
+## [2.0.28] — 2026-11-24
+
+**分层抽样评测入口 —— 解决「两套口径没法比」的问题。**
+
+### 背景：2.0.26 的改进没有反映在官方分数上
+
+下游生产实测：2.0.24 → 2.0.27 的 `law_recall` **0.7619 → 0.7619**（完全不变），
+而我这边报的是 recall 0.6319 → 0.6667。
+
+**两边都对，只是分母不同**：
+
+| 口径 | 题目 | 2.0.26 前 | 2.0.26 后 |
+|---|---|---|---|
+| 我报的 | 全 50 题 | 0.6319 | 0.6667 |
+| `run_wisdom_benchmark` 实际用的 | 前 15 题 | 0.7381 | **0.7381** |
+
+前 15 题恰好是「跨域推理 10 + 深层归因 5」，全是**正式提问**
+（「生物进化论的自然选择原理对企业组织变革有什么启示」）。2.0.26 补的是
+**口语表达**（挑战/阻力/衰落/根本原因），打不到这批题；而语义阈值
+0.35→0.42 又收掉了少量语义兜底命中 —— 两个方向相抵，15 题上就是持平。
+
+### 新增：`sample` 参数
+
+```python
+run_wisdom_benchmark(agent, sample="first15")     # 默认，保持历史可比
+run_wisdom_benchmark(agent, sample="stratified")  # 5 类各 3 题，共 15 题
+run_wisdom_benchmark(agent, sample="all")         # 全部 50 题
+```
+
+实测（本地，有 embedder）：
+
+| 模式 | 题数 | 类别分布 | law_recall | precision |
+|---|---|---|---|---|
+| `first15` | 15 | 跨域 10 + 归因 5 | 0.7381 | 0.7444 |
+| `stratified` | 15 | 5 类各 3 | 0.6977 | 0.7111 |
+| `all` | 50 | 5 类各 10 | 0.6667 | 0.6733 |
+
+`stratified` 与 `all` 更接近，说明前 15 题确实偏乐观。
+
+**默认仍是 `first15`** —— 不改变历史数据的可比性。新口径的结果在
+`details["sample_mode"]` 里标注。
+
+### 记录一个已知问题（尚未修）
+
+下游用 8 条真实用户问句抽样，发现口语场景的误触发：
+
+```
+「今天上午在家做饭，下午去的父母家…」→ contradiction_analysis（兜底随机）
+「我适合的收费是？」              → pareto_principle（语义 0.379，兜底随机）
+「请以上面话题，写几篇文章」       → 3 个规律（语义 0.47~0.53，prompt 套壳）
+```
+
+定位到两个机制层面的事实：
+
+1. **`decompose` 保证至少返回一个焦点** —— 纯流水账走「兜底加权随机」，
+   看起来像误触发，实际是设计上不允许空结果
+2. **短句的语义相似度天然虚高** —— 「写几篇文章」这类元指令能到 0.53
+
+尚未修，因为任何改动都要先有足够的真实样本验证（不能为了压误触发
+把真问题的召回也压掉）。已列入下一轮。
+
+### 判据
+
+`tests/test_wisdom_benchmark_honesty.py` 增至 14 条：
+
+| 注入 | 变红 |
+|---|---|
+| 分层抽样退化成每类取 15 题 | `test_stratified_is_balanced` |
+| 默认模式改成 `all` | `test_default_is_first15_for_compat` |
+
+含一条留档判据：前 15 题必须仍是「跨域推理 + 深层归因」两类 ——
+如果数据集顺序被调整，历史分数的可比性要重新评估。
+
+全量回归 **1311 passed**。
+
+---
+
+## [2.0.27] — 2026-11-24
+
+**跨进程冷却被内部 `force=True` 绕过（P1）。这是 2.0.23 租约修复留下的口子。**
+
+### 问题
+
+2.0.23 加了 `capture_lease` 做跨进程互斥，但**冷却没真正生效**。
+
+下游生产实测（3 个 worker、user=1）：
+
+```
+14:49:43  PID 3245000  新建 6
+14:50:30  PID 3245001  新建 6    ← 47 秒后又抽了一次（冷却应为 300 秒）
+14:52:17  PID 3244999  新建 1
+14:53:07  PID 3245001  新建 6
+14:53:43  PID 3245000  新建 3
+```
+
+10 次捕获里约 5 次属于「冷却绕过型重复」，产出语义重复的场景
+（「团队沟通成本系统改善」vs「12至20人团队沟通成本系统改善」）。
+
+**根因（我写的）**：
+
+```python
+# capture_scenes() 末尾
+return self.capture_from_memories(memories, user_id=uid, force=True)
+#                                                              ^^^^^^^^^^
+# 本意是「进程内的间隔检查上面已经做过了」，但 force 会透传到
+# try_begin_capture，让 `(force=1 OR cooldown<=now)` 短路 ——
+# 把跨进程冷却整个绕过。
+```
+
+`force` 一个标志承担了两种语义：「我是个内部调用」和「跳过冷却」。
+
+### 修复
+
+1. **透传调用方的 force**（不是写死 `True`）—— 手动 `capture_scenes(force=True)`
+   仍跳过冷却；自动链路（`on_new_memory` 传 `force=False`）走完整跨进程冷却
+2. **删掉两套冷却状态**：`capture_scenes` 和 `capture_from_memories` 里的
+   进程内 `_last_capture_time` 检查都删了，统一由 DB 租约判断。
+   两套状态各自为政时，进程内那套会先挡住调用，且不在 `_last_detail`
+   里留原因 —— 调用方看不到「为什么没抽」
+
+### ★ 为什么之前的判据抓不到
+
+单实例/单线程测不出来：进程内的 `_last_capture_time` 会先一步挡住，
+根本走不到 DB 租约那一层。
+
+新增**两进程判据** `test_cross_process_cooldown_blocks_second_worker`：
+进程 A 捕获后，全新实例 B 在冷却期内必须返回 `reason='locked'`。
+
+注入验证：把 `force=force` 改回 `force=True`，**只有这一条判据变红**，
+其余 13 条全绿 —— 正好证明其他判据确实没有区分力。
+
+### 附带：基准「只评前 15 题」显式化
+
+下游核对标注时发现 `run_wisdom_benchmark` 的规律召回/精准度只评
+`test_questions[:15]`，而数据集有 50 题，且这 15 题恰好全是
+「跨域推理」+「深层归因」，不代表全貌。
+
+不改变评测方式（改抽样会再次切断历史可比性），但：
+- `details` 里新增 `scored_questions` / `scored_categories`
+- docstring 写明「50 题分两部分评」
+
+### 判据
+
+`tests/test_capture_multiprocess.py` 增至 14 条：
+
+| 注入 | 变红 |
+|---|---|
+| `capture_scenes` 内部改回 `force=True` | **仅 1 条**（两进程判据）|
+
+另加对照判据 `test_manual_force_still_skips_cooldown`，保证手动触发语义没被改坏。
+
+全量回归 **1305 passed**。
+
+---
+
+## [2.0.26] — 2026-11-24
+
+**wisdom 短板攻坚第一轮：让日常表达能被识别，让短问题不被过度触发。**
+
+先把「漏掉 / 多触发」拉出来看（50 题基准）：
+
+```
+漏掉（FN）最多：evolutionary_lens 13、contradiction_analysis 12、
+                inversion 11、pareto_principle 8
+多触发（FP）最多：systems_thinking 29、first_principles 16、inversion 15
+```
+
+两类问题根因不同。
+
+### 修复 1：触发词覆盖的是「术语」，不是「日常表达」
+
+用户说「这个方案落地的**挑战**是什么」，触发词表里是「矛盾/冲突/对立」；
+说「这个行业为什么在**衰落**」，表里是「演化/趋势/阶段」。
+
+补的是通用中文表达（不是基准题原文）：
+
+| 规律 | 新增 |
+|---|---|
+| 矛盾分析 | 挑战 / 阻力 / 障碍 / 张力 / 难点 |
+| 演进视角 | 多年 / 衰落 / 时代 / 长期 |
+| 二八法则 | 根本原因 |
+
+### 修复 2：语义兜底阈值 0.35 太松
+
+短问题与规律签名的余弦相似度普遍虚高。6 类普通问题（技术/排障/优化/业务/
+编码/运维）实测，0.35 时一共触发 **14** 个规律 —— 「这个函数为什么报内存
+溢出」会匹配到演进视角。
+
+四档实测：
+
+| 阈值 | recall | precision | 普通问题触发数 |
+|---|---|---|---|
+| 0.35 | 0.6319 | 0.4919 | 14 |
+| **0.42** | **0.6389** | **0.5027** | **8** ← 选中 |
+| 0.50 | 0.5347 | 0.4936 | 8 |
+| 0.58 | 0.5278 | 0.4872 | 8 |
+
+0.42 是唯一「基准不降、误触发降 43%」的档位；再往上 recall 断崖（很多题
+依赖 0.42~0.50 之间的匹配）。
+
+### 最终效果（全 50 题）
+
+| 指标 | 修前 | 修后 |
+|---|---|---|
+| recall | 0.6319 | **0.6667** |
+| precision | 0.4919 | **0.5106** |
+| 命中 | 91 | **96** |
+| 多余 | 94 | 92 |
+| 漏掉 | 53 | **48** |
+| 6 类普通问题总触发 | 14 | **8** |
+
+本地 wisdom 分（8 条记忆的小库）74.4 → **80.8**。
+
+### 一个需要说明的评估口径
+
+`precision` 目前只有 **0.51**，意味着「触发的一半规律不在标注里」。这**不
+等于能力差**：
+
+- 基准每道题只标注 2~3 个「预期规律」，而 SOMA 的设计目标是**多角度分析**
+  （触发 4~6 个视角是正常的）
+- 用「集合匹配」评估「多角度思维」，本质上是**惩罚多触发**
+- 也试过砍掉 `systems_thinking` 最宽泛的词（「结构」「关联」）来提
+  precision —— 实测**precision 反而下降**（0.5131 → 0.5105），因为那些词
+  同时也是真命中项
+
+所以本轮的优化方向是「补漏 + 压掉明显无关的触发」，而不是「压到贴合标注」。
+
+### 判据
+
+`tests/test_decompose_quality.py`（19 条），两道注入全红：
+
+| 注入 | 变红 |
+|---|---|
+| 语义阈值改回 0.35 | 2 条 |
+| 删掉日常表达词 | 5 条（含 recall 回归哨兵）|
+
+回归哨兵：全 50 题 recall ≥ 0.64 且 precision ≥ 0.49，低于即判红。
+
+全量回归 **1303 passed**。
+
+---
+
+## [2.0.25] — 2026-11-24
+
+**把 L2/L3 的运维知识沉淀成文档，并更正一处成本表述。** 纯文档改动，
+无代码变化、无行为变化。
+
+### 新增
+
+`docs/guides/layered-memory_zh.md` —— 分层记忆运维指南，覆盖：
+
+- 三层记忆的关系与产出方式
+- 开/关方式（含 `None` = 跟随配置的参数语义）
+- 触发规则（L2 渐进预热 + 冷却；L3 达到阈值即触发）
+- **成本：典型 vs 满负荷分开表述**（见下）
+- 监控指标与告警组合（`total_failures` 涨 且 `scenes` 不涨）
+- 多进程部署：`capture_lease` 三个字段的作用，不需要额外的文件锁
+- `get_last_capture_detail()` 的 8 种 `reason` 语义
+- 注入到 prompt 的体量上限
+- 基准测试的重复次数要求
+
+### 更正：一处会误导的成本表述
+
+之前的说法「单用户满负荷约 0.012 元/天」**把「典型」和「满负荷」混在了一起**。
+下游实测后的准确数字：
+
+| 场景 | 单用户日成本 |
+|---|---|
+| 典型（日写 20 条记忆）| ≈ **0.008 元** |
+| 满负荷（12 次/小时 × 24h）| ≈ **0.5 ~ 0.6 元** |
+
+**两者差 40~50 倍。** 0.012 更接近「典型」的量级，但被写成了「满负荷」，
+容易被误读成成本极低。文档里已分开表述。
+
+单次实测成本：场景抽取 ≈ 0.0016 元，画像更新 ≈ 0.0049 元（输出多，贵约 3 倍）。
+
+### 另记两条来自生产的注意事项
+
+- **`memory` 维度至少跑 3~4 次取中位** —— 下游实测只跑 2 次时出现过 40.7 的
+  离群值（极差 46.3，索引未落定）。`wisdom` 维度 1 次即可（v2.0.22 起可复现）。
+- **评测要区分「模型调用失败」与「回答得 0 分」** —— 失效的 API key 会让失败
+  伪装成「某模型能力差」，污染对比数据。
+
+---
+
+## [2.0.24] — 2026-11-24
+
+**L3 画像的自动触发：从「永不命中」到「达到阈值就触发」。**
+
+下游生产实测：用户已积累 **19 条场景**（阈值 10），`profile_entries` 一直是 **0**。
+
+### 修复
+
+`capture.py` 的触发条件有两处叠加缺陷：
+
+```python
+total = self._total_scenes_created.get(uid, 0)          # ① 进程内内存计数
+if total > 0 and total % self._cfg.profile_scene_interval == 0:   # ② 必须正好整除
+    self.update_profile(uid, force=force)
+```
+
+1. **必须"正好"是 10 的整数倍**。实测场景增长序列是 **8 → 13 → 19 → 25**
+   （每次捕获 3~8 条），每次都跨过 10/20，永远不相等 → **一次都没触发过**。
+   批量不固定时这是必然踩中的。
+2. **计数是进程内的内存字典**，不持久、不跨 worker。CLI 新进程读到空 dict，
+   重启归零，多 worker 各记各的 —— 进一步稀释命中概率。
+
+修法：
+
+- 计数改用库里的真实场景数（`scene_store.count(user_id)`），天然持久 + 跨进程
+- 阈值存在 `capture_lease.last_profile_at`（旧库自动 ALTER 补列）
+- 判断改成「**`total >= marker + interval` 就触发并推进**」，用一条带条件的
+  UPDATE 保证多 worker 同时到达时只触发一次
+
+实测序列 8 → 13 → 19 → 25 的触发结果：`False → True → False → True`。
+
+### 其他
+
+- 捕获日志带上 `reason` / 提取条数 / 去重条数（下游建议），便于直接判断
+  是「正常新增」「全量去重」还是「被别的进程锁住」
+- `get_last_capture_detail()` 的 docstring 明确标注**它是进程内状态**：
+  CLI 新进程返回 `{}` 属正常，监控要读当前 worker 内的值
+
+### 判据
+
+`tests/test_profile_trigger.py`（7 条），三道注入全红：
+
+| 注入 | 变红 |
+|---|---|
+| 判断改回「正好整除」+ 内存计数 | 3 条 |
+| 只把计数改回内存 | 3 条 |
+| `try_advance_profile_marker` 改回整除逻辑 | 4 条（含 8→13→19→25 序列）|
+
+全量回归 **1284 passed**。
+
+---
+
+## [2.0.23] — 2026-11-18
+
+**L2 上生产后暴露的三个工程问题。** 下游在 `uvicorn --workers 3` / 162 用户
+的真实环境下实测报告。
+
+### 修复
+
+1. **多进程重复捕获**（最重要）
+   - 现象：同一批记忆被三个 worker 各抽一次，产出语义重复、措辞不同的场景
+     ```
+     日志：捕获完成: user=1, 场景=6, 累计场景=6（两个 worker 各打一次）
+     表里：12 条，标题成对出现
+           「信任体系与文化赋能」vs「信任体系与企业文化落地」
+     ```
+   - 根因：`CapturePipeline` 的节流状态（`_last_capture_time` 等）都是
+     **进程内**的，管不到别的 worker
+   - 修：`scenes.db` 里加 `capture_lease` 表做**跨进程租约**
+     （SQLite 天然跨进程、WAL + busy_timeout 已配好、不需要 fcntl /
+     portalocker 等额外依赖）
+     - `in_flight_until` —— 防并发
+     - `cooldown_until` —— 跨进程的 `last_capture_time`
+     - `force=True` 跳过冷却，但仍不能与正在进行的捕获并发
+     - 崩溃留下的租约靠过期自愈
+   - ⚠️ **第一版实现有竞态**：写成「SELECT 判断 → INSERT」，两个线程并发时
+     都读到「没有行」于是都插了进去（实测两个都拿到租约）。SQLite 的
+     `with conn` 是 deferred 事务，SELECT 不开写锁 —— 必须用**单条**
+     `INSERT ... ON CONFLICT ... WHERE` 让数据库在写锁下完成判断。
+
+2. **`capture_scenes()` 返回 0 但数据已在库里**
+   - 现象：`remember()` 已自动捕获过，再手动 `capture_scenes(force=True)`
+     返回 0，而表里确实有数据 —— 调用方据此误判「L2 没跑起来」
+   - 真相：本次提取的标题全部已存在（`add_scene` 同用户同标题去重），
+     新增确实是 0。**返回值没错，是语义不够清楚。**
+   - 修：
+     - `get_last_capture_detail(user_id)` 返回
+       `{extracted, created, skipped, reason, error}`
+     - `reason` 取值：`ok` / `no_new`（提取了但全重复）/ `empty_extract` /
+       `locked`（别的进程在做）/ `no_memories` / `no_provider` /
+       `provider_error` / `failed`
+     - `created == 0` 且 `extracted > 0` 时打 INFO 说明原因
+
+3. **抽取失败静默**
+   - 现象：LLM key 失效时每一次抽取都失败，只有一行 WARNING，`scenes` 恒为 0
+     却没人发现（下游排查花了很久）
+   - 修：连续失败计数，第 1 次 WARNING、第 3 次起升级 **ERROR**；
+     成功一次即清零；`get_layered_stats()` 暴露 `consecutive_failures` /
+     `total_failures` / `capture_lease`
+
+### 关于「注入是否撑长 prompt」（下游的疑问）
+
+**不是。** 场景/画像注入本来就是有界的：
+
+| 层 | 条数上限 | 附加过滤 |
+|---|---|---|
+| 场景 | `max(top_k // 2, 2)` | 必须命中前 5 个关键词之一 |
+| 画像 | `top_k` | `min_confidence=0.3` 且必须命中关键词 |
+
+默认 `top_k=5` 时最多 2 条场景 + 5 条画像，每条 100 字上下。下游实测升级后
+回复字数反而**下降 29%**（中位 1122→1002），也印证冗长与注入无关。
+
+### 抽取的 token 成本（供接入方设上限）
+
+每次捕获：`memory_provider` 取 `max(warmup×4, 20)` = **20 条**记忆，
+每条截断 300 字符 → prompt 约 6000 字符（中文约 **3000~4000 input tokens**），
+输出为场景 JSON，约 **500~1500 output tokens**。
+配合 `scene_min_interval=300s`，单用户上限约 12 次/小时。
+
+### 判据
+
+`tests/test_capture_multiprocess.py`（12 条），三道注入全红：
+
+| 注入 | 变红 |
+|---|---|
+| 去掉租约互斥 | 3 条（含线程级并发 `test_concurrent_only_one_wins`）|
+| 连续失败不计数 | 2 条 |
+| 明细不写 reason | 2 条 |
+
+并发判据额外跑了 10 轮，0 异常。
+
+全量回归 **1277 passed**。
+
+---
+
+## [2.0.22] — 2026-11-18
+
+**先让尺子量得准，再谈优化。**
+
+2.0.21 修完基准口径后，准备攻「智慧短板」，第一步量可复现性就发现：
+**基准本身测不准**。
+
+### 修复
+
+1. **`decompose()` 的随机性**（基准不可复现的根因）
+   - 实测：同一份代码、同一进程，15 题基准连跑 10 次，
+     recall 在 **0.5476 ~ 0.6667** 之间跳动，**极差 11.9 个百分点**
+   - 后果：任何小于 ~12 个百分点的改进用单次测量都测不出来
+   - 三处模块级 `random`：阶段 1.5 探索因子、阶段 3 兜底、排序抖动
+   - 修：以**问题文本的 SHA256** 前 8 字节做种子 —— 同一问题结果稳定，
+     不同问题仍保留探索差异。修后连跑 10 次标准差 **0.000000**
+
+2. **跨域句式不触发类比推理**
+   - `analogical_reasoning` 的触发词原本全是显式类比词
+     （类比 / 相似 / 借鉴 / 跨界 / 迁移…）。但用户不会说「请用类比推理」，
+     他会说「围棋的弃子争先在产品设计中**如何应用**」
+   - 这类「A 领域的 X → B 领域」的结构没有显式词，实测 50 题里只触发 3 次
+   - 修：补 9 个跨域句式词 —— 如何应用 / 指导意义 / 应用到 / 用在 /
+     变通 / 有何启示 / 能用来解释 / 移植 / 能学到
+
+### 实测效果（15 题基准，可复现）
+
+| 指标 | 修前 | 修后 |
+|---|---|---|
+| 15 题 `law_recall` | 0.6190 | **0.7381** |
+| 连跑 10 次标准差 | 0.0420 | **0.000000** |
+| 全 50 题 命中 | 83 | **91** |
+| 全 50 题 漏掉 | 61 | **53** |
+| 全 50 题 多触发 | 92 | 94（+2）|
+| precision | 0.4743 | 0.4919 |
+
+### 数据标注质量的发现（不改数据集）
+
+数据集中有 16 道题标注了 `analogical_reasoning`，但其中 **6 道的标注本身
+牵强**：
+
+- `strategy_08`「行业老三的最优策略」= 竞争分析
+- `strategy_09`「数据网络效应 vs 用户网络效应」= 对比分析
+- `design_03/05/07/08` = 创新设计 / 归因 / 包容性设计
+
+它们都不是「借另一个领域的结构」，硬要求触发类比推理只能靠把触发词放宽到
+失去区分力。**判据只覆盖 5 道真跨域题，不改数据集标注** —— 改参考答案来让
+分数好看，是自欺。
+
+### 判据
+
+`tests/test_decompose_determinism.py`（10 条），两道注入变红：
+
+| 注入 | 变红 |
+|---|---|
+| 随机改回模块级 `random.choice` | 4 条（含 `test_benchmark_is_reproducible`）|
+| 删掉跨域句式触发词 | 2 条 |
+
+全量回归 **1265 passed**。
+
+> ⚠️ 接入方注意：`law_recall` 从 0.6190 升到 0.7381，带动 `wisdom` 分数上升。
+> 但**这是真提升**（命中变多、多触发几乎不变），且现在可复现 —— 重复测量结果
+> 完全一致，不再有 ±12 个百分点的抖动。
+
+---
+
+## [2.0.21] — 2026-11-17
+
+**L2 场景 / L3 画像：从「开关打开了」到「真的转起来」。**
+
+2.0.20 宣称这两层默认开启，下游实测 `scenes 0 / profile_entries 0`。当时的归因
+（「要攒够场景才出画像」）是错的 —— 真实情况是**三重断点**叠在一起：
+
+### 修复
+
+1. **双减默认值**（致命）
+   - `soma/config.py` 里是 `True`，但 `SOMA.__init__` 自己有一份
+     `scene_extraction_enabled: bool = False`，并且用它**显式**构造 SOMAConfig：
+     ```python
+     SOMAConfig(scene_extraction_enabled=scene_extraction_enabled)
+     ```
+     门面默认值反向覆盖了配置默认值。走 `SOMA()` 的接入方拿到的永远是 `False`。
+   - 修：门面参数改 `Optional[bool] = None`，`None` = **跟随 SOMAConfig**；
+     显式传 `True/False` 仍然有效。配置层成为唯一真源，消除双减。
+
+2. **`capture_scenes()` 硬编码 `return 0`**（致命）
+   ```python
+   return 0  # 实际提取逻辑在 capture_from_memories()
+   ```
+   而唯一自动链路 `remember() → on_new_memory() → capture_scenes()` 每次都停在
+   这一行 —— `capture_from_memories()` 只有手工传 `memories` 才能到达。
+   「自动场景提取」自 v0.10.0 引入起来就没自动过。
+
+3. **没有记忆来源**
+   `CapturePipeline` 不持有 episodic store，`SceneExtractor` 需要的记忆列表没人喂。
+   修：新增 `memory_provider` 注入（`uid → [{"content": ...}]`），
+   由 `SOMA` 接到 `episodic.list_memories()`。**没传 provider 时保持原行为返回 0**，
+   老调用方语义不变。
+
+### 行为变化（接入方必读）
+
+- **默认开始产生 LLM 调用**。触发规则：
+  - 渐进预热：首次阈值 1（第一条记忆就产出场景），之后 1→2→4→5 翻倍
+  - 成本闸：`scene_min_interval` 默认 **300 秒** —— 两次捕获之间至少隔 5 分钟
+  - 画像：累计场景数达到 `profile_scene_interval`（默认 10）才更新一次
+  - 粗算上限：每用户 **每小时最多 12 次**场景提取 LLM 调用
+- **想关掉**：`SOMA(scene_extraction_enabled=False, profile_extraction_enabled=False)`
+  或设配置项；关掉后一条 LLM 都不调（有判据钉死）。
+- **mock 模式不产出**：`llm="mock"` 时提取器走 `_default_extract()` 返回空 ——
+  无模型无法做语义抽取，这是既有设计。
+
+### 顺带修正：智慧基准的尺子是坏的
+
+排查「智慧分 75.4 是唯一短板」时先拉细分，结果发现问题在**尺子**上：
+
+```python
+law_hit_total += len(actual)     # ← 数了触发几个，不看对不对
+bm.law_recall = law_hit_total / law_expected_total
+```
+
+这不是召回率，是「触发量 / 预期量」。两个后果：
+
+- **能超过 1.0** —— 实测 `law_recall = 1.2143`（121%），一眼就是错的
+- **方向是反的** —— 乱触发越多分越高，把七个规律全触发一遍就能拿高分，
+  哪怕一个都没猜对
+
+实测：预期规律 42 个、实际触发 51 个、**真命中只有 22 个**
+→ 旧尺子 1.2143，真召回 **0.5238**。
+
+修：分子改成 `len(actual & expected)`（命中量）。
+
+另修多样性熵的分母：`combo_*` 是两个规律同时命中时追加的**复合视角**
+（`engine.py` 阶段 2.5），不是第 8 个规律。算进分母会让 `probs` 之和 < 1，
+熵值失真。改为只统计 7 个基本规律。
+
+> ⚠️ **接入方注意**：这两处修正会让 `wisdom` 分数**明显下降**（本地实测
+> 该项贡献从 21.8 分降到 9.9 分）。**这不是能力回退，是尺子变准了。**
+> 历史基准记录按旧口径算，不可与新数直接对比。
+
+判据 `tests/test_wisdom_benchmark_honesty.py`（8 条），两道注入变红
+（分子改回 `len(actual)` → 2 条；熵分母改回含 combo → 1 条）。
+
+> 还试过在 `actual` 里显式排除 `combo_*`，注入验证**删掉它判据全绿**
+> —— 说明是冗余的（`& expected` 天然过滤），已删除，免得制造
+> 「已经处理过 combo」的错觉。
+
+### 判据
+
+`tests/test_layered_memory_actually_works.py`（16 条），四道注入全部变红：
+
+| 注入 | 变红 |
+|---|---|
+| 门面参数默认改回 `False` | 8 条（默认值、显式覆盖、结构性判据） |
+| `capture_scenes` 改回 `return 0` | 4 条 |
+| provider 永远返回空 | 5 条 |
+| 不注入 `memory_provider` | 5 条 |
+
+另有两条不 fake 提取器的**真实路径**判据：`prompt → JSON → 落库` 全跑通，
+以及 LLM 返回废话时 `remember()` 不被炸掉。
+
+全量回归 **1245 passed**。
+
+---
+
+## [2.0.20.1] — 2026-10-23
+
+下游生产环境（单用户 2 万+ 条记忆、跨用户会话）实测上报的三条。都**不改 API 签名**。
+
+### 修复
+
+- **用户主动搜索查不到老记忆**（最重要的一条）
+  - 现象：库里有"艾灸"相关记忆，`search_memory("艾灸")` 返回 0 条。
+  - 线上原诊断是"中文短词 trigram 建不出二元组"，**不成立** ——
+    `query_by_keywords` 对 `len(kw) < 3` 本来就走 LIKE 兜底，底层能查到。
+  - 真因在上一层：`hub.activate()` 的 `threshold=0.3` 是给**自动召回**用的
+    （只把够相关的注入 prompt），但 `query_memory()` 是**用户主动搜索** ——
+    一条 100 天前、importance=0.5 的记忆 `relevance_potential ≈ 0.0007`，
+    被阈值全滤掉，用户看到的是"什么都没找到"。
+  - 修：`ActivationHub.activate()` 新增 `threshold` 参数（None = 实例默认），
+    `query_memory()` 传 `0.0`。**自动召回的阈值一个字没动。**
+- **前置过滤扫描上限写死**（`_MAX_FILTER_SCAN = 10000`）
+  - 生产有单用户 2 万+ 条记忆的账号 —— 那种账号每次向量搜索都因"子集超上限"
+    退回「全局检索 + 30 倍候选」，既慢、召回又可能不足。
+  - 修：默认提到 50000，并**真正接上配置** `SOMAConfig.vector_filter_scan_limit`
+    （构造参数 → `EpisodicStore` → `NumpyVectorIndex`）。
+  - 第二道闸 `_MAX_FILTER_SHARE`（子集占全库 >15% 不做前置过滤）仍在 ——
+    所以提高上限不会让超大账号拖垮查询。
+- **无 LLM 的 mock 路径跨用户泄漏**
+  - `SOMA._mock_respond()` 调 `hub.activate(foci)` **不传 user_id** ——
+    无 LLM 时会把所有用户的记忆都激活出来，和 `reason()` / `chat()` 口径不一致。
+  - 修：加 `user_id` 参数并传下去，三个调用点都补上
+    （顺带清掉 `chat()` 里连写两遍 `answer = ...` 的复制粘贴残留）。
+- 同时合并 `ActivationHub.activate()` 里两段连续 docstring
+  （第二段成了普通表达式，等于没生效）。
+
+### 判据
+
+`tests/test_ekko_feedback_20261023.py`（11 条），三条都做了注入自证：
+
+| 注入 | 变红的判据 |
+|---|---|
+| `query_memory` 去掉 `threshold=0.0` | `test_old_memory_found_by_keyword` |
+| `_MAX_FILTER_SCAN` 退回 10000 且不准传 | `test_default_raised` |
+| `_mock_respond` 不传 user_id | `test_passes_user_id_to_activate`、`test_real_mock_call_respects_user_scope` |
+| `MemoryCore` 不把配置传给索引 | `test_config_actually_reaches_instance` |
+
+---
+
+## [2.0.20] — 2026-10-23
+
+「越用越懂」的机制基础。这一版不改 API，但改了**记忆会不会被忘掉**。
+
+### 新增
+
+- **分级半衰期**（`MemoryUnit.effective_half_life()`）
+  - 半衰期不再写死 7 天，由三个因子决定：
+    `importance` > 0.6 开始保护（1.0 时 ×4，7 → 28 天）、
+    `nature=fact` ×3 / `state` ×0.5、`access_count` 每次 +10%（封顶 +100%）
+  - **普通记忆（importance ≤ 0.6）行为完全不变** —— 只保护真正重要的
+  - 效果：`用户叫孙岩`（0.95/fact/8 次）半衰期 **137 天**，
+    90 天后权重仍有 0.55；同期的琐碎记忆照旧快速衰减
+- **写入质量门控**（`soma/memory/quality.py`）
+  - 挡纯寒暄（**精确**匹配）、无实质内容、归一化后与最近记忆完全相同
+  - **不按长度挡**（"用户叫孙岩" 6 个字照样记）
+  - **重复只做归一化全等**，不做包含/相似度（避免误杀真信息）
+  - 配置 `memory_quality_gate=False` 可关
+
+### 变更
+
+- **L2 场景提取 / L3 画像提取默认开启**
+  （`scene_extraction_enabled` / `profile_extraction_enabled` 由 `False` 改为 `True`）
+  - 这两层自 v0.10.0 引入起**从未被启用过** —— `enable_layered_memory()`
+    没有任何地方调用。而"越用越懂"全靠它们：单条情节记忆只能记住
+    "说过什么"，说不出"这个人是什么样"
+  - 没有真 LLM 时 extractor 为 None，自动降级，不白跑不报错
+  - 提取是批量的（每 N 条场景一次），成本可控
+  - 仍可用 `disable_layered_memory()` 或配置关闭
+
+### 修复
+
+- **检索排序丢失重要性**（`memory/core.py:_hybrid_search`）
+  - 原来时间衰减只乘 `exp(-days/7)`，**不乘 importance** ——
+    「用户叫孙岩」和「今天天气不错」被乘上同一个系数
+  - 现在与 `relevance_potential()` 用同一套语义（`effective_half_life` + importance 权重）
+  - 两套衰减机制以前各写一套，是审计 C01「多套机制互相冲突」的形状
+
+### 升级须知
+
+- **行为变化**：L2/L3 默认开启后，`remember()` 会批量触发场景/画像提取
+  （需要真 LLM）。若接入方对成本敏感，显式设 `scene_extraction_enabled=False`。
+- **不兼容**：无。API 签名未变；被门控挡掉时 `remember()` 返回空串（原为总返回 id）。
+- 全量测试 1220 passed（原 1170）。
+
+---
+
+## [2.0.19] — 2026-09-25
+
+把接入方**已经在用裸 SQL 做的事**收成正式接口。架构规划 §4.1 列为「现在必须定
+（便宜且锁死，以后再改极贵）」的 SOMA 侧四项，本轮全部落地 —— 因为 soma-agent 的
+记忆管理页已经写完了，它此刻正穿透私有属性读库。等代码再长一轮就收不动了。
+
+### 新增
+
+- **`soma.memories` —— 记忆管理正式出口**（`soma/memory_api.py`）
+  - `list / get / search / update / delete / archived / restore / export_memories / iter_memories`
+  - **作用域在 SQL 层生效**，不是查完再在 Python 里筛 —— 后者既慢，又容易在改代码时
+    漏掉一处就泄库
+  - 键集游标分页（`(排序键, id)`）而非 OFFSET：管理页翻到第 20 页时中途增删不会错位
+  - `order_by="importance"` 支撑「最重要的记忆」视图（并补 `idx_episodic_importance`，
+    否则该查询是全表排序）
+  - **跨用户读写一律返回「不存在」而不是「无权限」** —— 后者会泄露「这个 id 属于别人」
+  - 删除**默认归档**，可 `restore` 反悔；`hard=True` 才真删
+  - `export_memories(path=...)` 流式写 NDJSON / `iter_memories` 逐批遍历 ——
+    26k 条的库不再一次性进内存
+- **`soma.token_usage` —— 真实 token 用量**（`soma/usage.py`）
+  - 取 `litellm` 响应的 provider 原值；取不到才按字符估算，**且一定标 `estimated=True`**
+  - 缓存命中不重复计费（命中即无真实请求）；provider 回全 0 视为缺失走估算
+  - `user_id` 走 thread-local 上下文 —— 多专家编排（v1.1.0 并行分发）下 6 线程
+    并发实测各记各的账，不串
+  - `soma.usage.on_usage(cb)`：回调在锁外执行，接入方发 HTTP 不会拖住并发线程；
+    回调抛异常不影响主链路
+  - **SOMA 不算钱、不管额度**（§4.3「现在绝对不碰」）—— 只负责把真实用量交出去
+- **CLI**：`soma memories / forget / export / usage` 四个子命令，全部支持 `--project`
+- 顶层导出 `MemoryApi` / `TokenUsage` / `UsageRecorder`；上述接口登记进
+  [API 稳定性承诺](docs/api_stability.md)，兼容至 1.0.0
+
+### 修复
+
+- **【P1】归档/恢复丢字段 —— 记忆时间感知静默失效**
+  `episodic_archived` 表从来没有 `agent_id` / `shared_group_id` / `nature` 三列，
+  `restore` 也不写回。后果不止丢数据：**一条 state 记忆归档再恢复就退化成
+  event，时效窗口就此永不触发** —— 正是 2.0.13/2.0.14 花两版建起来的那道防线，被一次
+  恢复悄悄抹掉。补列 + 幂等迁移（旧归档库自动 `ALTER`）+ 恢复写回三列。
+- **【P1】遗忘扫描的 SELECT 只取 6 列** —— `context_json` / `session_id` / `nature` 在归档时
+  被丢掉，恢复出来的是没有上下文、没有业务性质的空壳。改为 `SELECT *`。
+- **新库归档表未建即查询报错** —— `episodic_archived` 由 ForgettingEngine 懒建，没跑过
+  遗忘的新库里它不存在；`archived()` 现在确保表存在并返回空列表，而不是把
+  「还没有任何东西被归档」误报成 OperationalError。
+
+### 设计说明（为什么不顺手做 §4.1 剩下的那项）
+
+架构规划里还挂着一项「高 importance 的衰减豁免」（标注：中高成本、改内核公式）。
+**本轮刻意不做**，理由同 §3.4：时间衰减对所有记忆一视同仁是真问题，但解法是
+「把重要记忆**提取**成不衰减的形态」（L2/L3 分层，能力现成），而不是给衰减公式
+开个例外口子 —— 后者会让 2.0.13 那条「近因衰减是主防线」的结论不再成立，
+接入方据以写的 `max_age_days` / `is_stale` 语义全部漂移。
+
+### 测试
+
+- 新增 `tests/test_memory_api_usage.py`（52 项）：作用域（含越权返回 not_found）、
+  游标不漏不重 / 跨维度拒绝复用 / 坏游标报错、update 连带重算 hash 与向量、
+  删除→归档→恢复且 nature 与向量都回来、空库不报错、导出两模式、
+  provider 真实值原样记账 / 估算兜底标 estimated / 缓存不重复计费 / 6 线程按用户归属、
+  回调异常隔离、CLI 参数解析
+- 向量路径用注入的假 embedder 驱动（`FakeEmbedder`，16 维），CI 不下载 66MB 模型
+- 全量 **1170 passed**（1118 + 52），零回归
+
+## [2.0.18.3] — 2026-09-19
+
+接入方在 2.0.18.2 生产复验里定位的一条**性能缺陷**修复版。一处索引缺失，同时拖慢
+读路径、写路径、关键词兜底三处同源查询；修复是补一条复合索引，**一行 SQL 都不改**。
+
+> **对外发布说明**：本版是 2.0.18 系列**唯一对外发布**的版本。下方 2.0.18 /
+> 2.0.18.1 / 2.0.18.2 三个条目记的是内部复验过程 —— 每一版交接入方在生产环境验证后
+> 又发现了新缺陷，**均未单独对外发布**，其修复已全部包含在本版中。安装本版即可，
+> 不存在「先装 2.0.18 再逐级升」的路径；那几段里「请勿用于多租户」的告示是当时写给
+> 接入方的，对外不构成可用版本。
+
+### 修复
+
+- **【P0】带 `agent_id` 的隔离查询选错索引 —— 长尾用户按全表代价收费** ——
+  生产 hub 调用恒带 `user_id` + `agent_id`，`_build_filter_clause` 据此拼出
+  `AND user_id = ? AND agent_id = ?`。**子句本身没错**，但索引组合里没有这个搭配，
+  SQLite 于是放着选择性更好的 `idx_episodic_user` 不用，去扫
+  `idx_episodic_agent`（`agent_id` 近乎覆盖全表）：
+
+  ```
+  EXPLAIN QUERY PLAN
+    → SEARCH episodic_memories USING INDEX idx_episodic_agent (agent_id=?)
+  ```
+
+  **代价与用户记忆数无关**：本地 21,386 行 / 203 用户复现，只有 3 条记忆的长尾
+  用户单次「子集 COUNT 35.0ms + 取向量 34.9ms = 69.9ms」，而同库上「只带
+  `user_id`」的同一条查询是 **0.05ms** —— 差 1400×。接入方生产库上这一条占单次
+  `query_memory` 的 **63%**。
+
+  同一条索引同时覆盖**三处同形查询**（都拼 `user_id + agent_id`）：
+
+  | 查询 | 位置 | 修复前 | 修复后 |
+  |---|---|---|---|
+  | 向量子集检索 | `vector_store._exact_filtered_search` | 69.9ms | 0.05ms |
+  | 写路径去重 | `episodic.add()`（每次 remember 都付） | 10.0ms | 0.03ms |
+  | 关键词 LIKE 兜底 | `search_utils` 路径 2（中文 1~2 字词） | 33.4ms | 0.06ms |
+
+  （表内为 21k 行 / 203 用户下**长尾用户**的中位耗时。写路径那行与接入方报的
+  插入毛刺同源 —— 每记住一条记忆都要白扫一次全表；LIKE 那行则是「中文 2 字词慢」
+  的主要成因，此前被归因为 LIKE 全扫本身。）
+
+  修法是**在迁移里补一条复合索引**：
+
+  ```sql
+  CREATE INDEX IF NOT EXISTS idx_episodic_user_agent
+      ON episodic_memories(user_id, agent_id);
+  ```
+
+  与「在 SQL 里写 `INDEXED BY`」相比，这样不依赖计划器统计，也没有「索引被删就
+  直接报错」的硬绑定。实测在**先有数据、后补索引**的升级路径下（接入方的真实
+  形态），单加这条索引即可让计划器自觉选对，**不需要 `ANALYZE`**。
+
+  老库由 `EpisodicStore` 构造时执行 `_create_table` 自动补上，接入方无需手工迁移。
+  接入方此前为绕过该问题手工建过同名索引 —— `IF NOT EXISTS` 会直接命中，不重复建。
+  原有三个单列索引保留（只带 `user_id` 或只带 `agent_id` 的查询仍走它们）。
+
+- **`skills` 表同源问题一并修**（收益量级小，为一致性）—— `skills` 同样有
+  `idx_skill_user` / `idx_skill_agent`，其去重查询也是 `user_id + agent_id`。
+  实测 2 万行时 2.2ms → 0.02ms；真实部署里技能表远小于记忆表，绝对收益在 0.1ms
+  量级。加它是为了避免留下「记忆表修了、技能表没修」的半截状态。
+
+### 说明
+
+- 带 `group_id` 时子句是 `(agent_id = ? OR shared_group_id = ?)`，OR 条件用不上
+  单索引，本索引覆盖不到 —— 那条路径仍由计划器决定。
+- 本版**不改任何 SQL 语义**：所有查询的 WHERE 条件与原版逐字一致，只是让它们有
+  正确的索引可用。
+- 不需要重装依赖时用 `--no-deps`；本版未新增第三方依赖。
+
+---
+
+## [2.0.18.2] — 2026-09-14
+
+接入方在 2.0.18.1 复验里追问出来的三项缺陷修复版（一条 P0 召回、一条 P0 跨用户
+隔离、一条 FTS5 检索性能）。内部复验中间版本，未单独对外发布（见 2.0.18.3 说明）。
+
+### 修复
+
+- **【P0】向量通道是「检索后过滤」——多租户下对多数用户等于失效** ——
+  `query_by_vector` 先全局取 `fetch_k = top_k * 3` 条候选，再由调用方按
+  `mem.user_id != user_id` 逐条剔除。单个用户的记忆占全库比例很低时，这 3×top_k
+  条候选里往往**一条都不属于**该用户，于是向量通道返回空。它是 RRF 融合里的主通道
+  （权重 2.0，关键词通道 1.0），而关键词通道本来就是 SQL 前置过滤
+  （`AND t.user_id = ?`）—— **两条通道时机不一致正是缺陷根源**。
+
+  接入方的分布（27,008 条 / 130 用户，中位用户 17 条 = 0.06%）下，取 45 条候选的
+  期望命中不足 0.05 条；我们按同样形态合成 1,040 条 / 42 用户的库复现，`top_k=10`
+  只召回 **1 条**（同库的关键词通道返回 5 条，正常）。
+
+  **`max_age_days` 时间窗是同一类缺陷**，一并修：窗口内的条目同样会被全局候选挤
+  出去，原先也是取 top_k 条再按时间剔除。
+
+  现在隔离与时间条件下推给 `similarity_search`，在该条件下的**子集内做精确 top-k**
+  （`_exact_filtered_search`）。关键词通道与向量通道的过滤时机至此一致。
+
+  顺带：这条修复在真实分布下**比 v2.0.18.1 还快** —— 前置过滤路径不做那次全表
+  COUNT，2137 条的用户实测 18.7ms，而同库的无过滤 faiss 路径是 46ms。
+
+- **FTS5 关键词通道的查询计划退化 —— 每次检索固定付几十毫秒** ——
+  接入方在复验里报「FTS5 比 LIKE 慢一倍」，怀疑关键词通道是负优化。实测复现并
+  定位到**不是 FTS5 本身慢，是 SQL 写法**：
+
+  ```sql
+  -- 慢：SQLite 选成「t 驱动 → 逐行去 FTS 虚拟表探」
+  SELECT t.* FROM episodic_memories t
+  INNER JOIN episodic_fts fts ON t.rowid = fts.rowid
+  WHERE episodic_fts MATCH ? AND t.user_id = ?
+  ```
+
+  带 `user_id` 时该用户有多少行就探多少次 FTS 虚拟表，**代价与命中了多少条无关**。
+  本地 27,000 条 / 130 用户实测（中位数）：
+
+  | 场景 | JOIN 写法 | 子查询写法 | 倍数 |
+  |---|---|---|---|
+  | 稠密命中（37%） | 137.71ms | 16.53ms | 8.3× |
+  | 稀疏命中（命中 0 条） | **38.57ms** | **0.45ms** | 86× |
+  | LIKE 对照 | 0.36ms | 0.24ms | — |
+
+  稀疏那行是关键：**一条都没命中仍要固定付 38ms**。现改为把 FTS 命中物化成 rowid
+  列表再比对（`WHERE t.rowid IN (SELECT rowid FROM ... WHERE ... MATCH ?)`），
+  执行计划变成 `LIST SUBQUERY`（必要时带 bloom filter），仍走 `idx_episodic_user`：
+
+  ```sql
+  SELECT t.* FROM episodic_memories t
+  WHERE t.rowid IN (SELECT rowid FROM episodic_fts WHERE episodic_fts MATCH ?)
+    AND t.user_id = ?
+  ```
+
+  同一改写应用到另两个同类调用点：`memory/consolidation.py` 的巩固候选召回、
+  `memory/semantic.py` 的三元组召回（`semantic_fts` 由触发器维护、显式写入
+  `rowid`，与主表 rowid 同样等价）。三处语义均不变 —— `episodic_fts` 是
+  `content='episodic_memories', content_rowid='rowid'` 的 external-content 表，
+  `fts.rowid` 与主表 rowid 本就等价。
+
+- **【P0】自主目标来源不按用户过滤 —— 属于 2.0.18.1 那个跨用户泄漏的同类** ——
+  `GoalGenerator` 的四个来源里有**三个**不做用户过滤（`_from_stale_states`、
+  `_from_pending_plans`、`_from_buried_memories`），第四个读的是进程内观测值
+  `hub.last_conflicts`。这些来源生成的 goal 文本**直接内嵌记忆原文**
+  （`mem.content[:40]`、evidence `[:60]`），随后被 `BackgroundRunner.run_once()`
+  拿去 `run_autonomous()` 执行 —— 多租户下等于把**别人的**记忆端到自主循环面前。
+
+  `store` 层早就支持 `user_id`（`query_by_filters` / `query_by_context_type` 的
+  签名里都有，docstring 写明「多租户部署必须显式传入」），**断点只在 `GoalGenerator`
+  没往下传**。现在四个来源、门面 `generate_goals()` / `run_self_directed()`、
+  以及 `BackgroundRunner` 全链路按用户切分：`run_once()` 为本轮每个目标用户各生成
+  一轮目标，推进记录里带 `user_id`。
+
+  目标去重键同时带上用户前缀。`stale_state:{id}` / `conflict:{a}|{b}` 用的是记忆
+  id，本就全局唯一；但 `plan:{problem[:60]}` 用的是**计划文本前 60 字** —— 两个
+  用户写下同样的计划文字就会撞成同一个 key，于是 A 推进过的目标会把 B 的同名目标
+  错误地去重掉（跨用户串扰，方向是漏报而非泄漏，但同属「user 维度缺失」）。留空
+  不加前缀，单租户行为与已存的旧记录都零变化。
+
+  新增 `autonomous_background_user_ids` 配置（留空 / `"*"` 自动枚举轮转 / 逗号分隔
+  列表）与 `autonomous_background_max_users_per_tick`（每 tick 上限，游标轮转 ——
+  用户按条数降序，不轮转会永远只服务头部那几个）。
+
+  **未配置时的 fail-safe**：「未配置」和「真的是单租户」是两回事。留空时若库里
+  确实有多个用户，`_target_users()` 直接返回空列表（本轮不产出目标）并记
+  `status()["last_skip_reason"]`，而不是静默混合 —— 宁可漏跑，不可泄漏。单租户库
+  （只有一个用户或全空串桶）不受影响，仍是原语义。
+
+### 说明
+
+- **为什么不用 faiss 的 `IDSelector`**：实测在 `IndexHNSWFlat` 上它只过滤「图遍历
+  可达」的点 —— `efSearch=64` 探不到的子集成员直接丢失，400 条的用户只命中 1 条，
+  比不修还差。子集内的精确 top-k 只能穷举该子集，而这恰好很便宜。
+- **不额外建缓存**：见上，直扫已经比现状快。
+- **单用户部署行为零变化**：子集占全库超过 15%（`_MAX_FILTER_SHARE`）时不做前置
+  过滤，也不放大候选 —— 这种占比下全局候选里天然有足够多该用户的记忆。子集超过
+  10,000 条（`_MAX_FILTER_SCAN`）才退回全局检索并按 30 倍放大候选，并记一条 warning
+  提示排查超大用户。
+- **分数口径**：前置过滤路径两侧都归一化后做内积（= 余弦），与 faiss 侧
+  `normalize_L2` 同口径，RRF 融合不受影响。
+- **`fts5_speedup_vs_like` 这个指标本身不是有效的 FTS5-vs-LIKE 对照**：它由本包的
+  `soma/benchmarks.py` 计算（定义见 `:334`，赋值见 `:873`，取值 = `like_time /
+  fts5_time`），但两条基准查询跑的是**不同的关键词集** ——
+
+  ```python
+  agent.query_memory("第一性原理 系统思维", top_k=10)   # 两个 ≥3 字词 → FTS5 路径
+  agent.query_memory("思 系", top_k=10)                 # 两个单字词   → LIKE 路径
+  ```
+
+  本包内 FTS5 路径只处理 **≥3 字**关键词（trigram 分词器的下限），LIKE 路径只处理
+  **<3 字**短词；生产链路是「FTS5 先跑，抛 `OperationalError` 才降级 LIKE」，没有
+  「关掉 FTS5 就更快」的开关。所以这个比值**恒低于 1 是构造使然，不代表缺陷**。
+  本版修复后它从 0.01 升到 0.15，但仍在 1 以下 —— 这不是残留问题。
+
+  要用它做真实对照，两边必须跑同一批关键词（同库、同过滤、同 LIMIT、同 ORDER BY）。
+
+- **`generate_goals(user_id="")` 仍是「系统级」混合语义 —— 这是有意保留的**：
+  单租户部署（全部记忆都归属同一个用户，或根本不用 `user_id`）依赖它。多租户的
+  安全性不靠改这个默认值，而靠后台循环的 fail-safe —— 库里有多个用户却不配置
+  `autonomous_background_user_ids` 时，循环直接不产出目标。直接调用
+  `generate_goals()` 的接入方请自己传 `user_id`。
+- **`autonomous_background_enabled` 仍然默认关闭**，`start_background()` 未显式开启
+  时直接拒绝，不静默启动。
+- **上面那条修复只在「带过滤的检索」上体现**：无 user/agent/时间条件时 SQLite 本
+  来就选 FTS 驱动的计划，两种写法一样快。所以单用户、不带过滤的基准**看不出这个
+  缺陷** —— 它只在多租户（带 `user_id`）下暴露，正是接入方的生产形态。
+
+  用本包自己的基准指标在 3,000 条 / 60 用户（带 user 过滤）上实测：
+
+  | 指标 | JOIN 写法 | 子查询写法 |
+  |---|---|---|
+  | `fts5_avg_ms` | 12.11ms | **1.04ms**（11.7×） |
+  | `fts5_speedup_vs_like` | 0.01 | 0.15 |
+
+  对照：同一份库**不带** user 过滤时，两种写法都是 ~1.3ms，无差异。
+
+---
+
+## [2.0.18.1] — 2026-09-14
+
+由接入方在 **26,977 条记忆的生产库**上验证 2.0.18 后发现的缺陷修复版。
+**2.0.18 请勿用于多租户环境** —— 其中有一个跨用户记忆泄漏（P0），本版修复。
+
+### 修复
+
+- **【P0】「可能已过期的状态记录」块跨用户泄漏** —— `_stale_state_memories()` 调用
+  `query_by_filters()` 时没有传 `user_id`，而该函数是「传了才过滤」。多租户下 A 的
+  过期状态会因与 B 的问题共享 ≥2 个汉字而注入 **B 的 prompt**（接入方已复现，与
+  2026-08-24 修过的 `reason()` 泄漏同类）。现在两处调用点（`SOMA_Agent.respond()` 与
+  门面 `SOMA.chat()`）都把 `user_id` 透传下去；空串仍表示不按用户过滤（单用户部署
+  的常态），传值则严格限定该用户。
+- **过期状态候选池方向相反 —— 该功能在真实规模下等于死的** —— 原先按
+  `timestamp DESC` 取「最近 50 条 state」，再要求每条 `is_state_stale()`（超 30 天），
+  两个条件方向互斥。接入方在 26,977 条的生产库上造了 60/95 天前的 state 记忆，该块
+  仍不触发（排不进「最近 50 条」）。现按 `older_than_days=STATE_TTL_DAYS` 直取过期
+  子集，与 `is_state_stale()` 同源。`soma/autonomous.py` 的两个自主目标来源同源，
+  一并修正。
+- **【P2】搜索热路径重复的全表 COUNT** —— `similarity_search` 已算出
+  `index.ntotal - current_count`，随后的 `_schedule_prune → _should_prune →
+  stale_count → count_indexed` 又跑了一遍同样的全表 COUNT（接入方生产库上 59ms/次）。
+  现在把已算好的差值直接传下去。该分支只在「索引被判定比 DB 多出条目」时进入 ——
+  接入方复测确认生产服务路径本就是 109ms、无可感知回归，这是基准脚本索引重建后
+  才暴露的额外开销。
+- **FAISS 索引文件被写坏 → 每个新进程都要重建索引**（接入方生产日志
+  `read error: 43126570 != 55224480`）—— `_save_index_to_disk` 原先是**直接往目标
+  文件写**：写一半被打断（进程退出、磁盘满、Windows 上文件被占用）就留下半成品；
+  而主线程的同步重建与后台剪枝线程的写盘可以并发，两者写同一文件必然写坏。现改为
+  **原子写**（临时文件 + `os.replace`）。加载侧同时补上「索引 `ntotal` 与 ID 映射
+  条数必须自洽」的校验 —— 否则错配会一路静默：命中因查不到 `mem_id` 被丢弃（召回
+  莫名变少），两侧计数对不上又会被搜索路径当成「有待剪枝」而反复全表 COUNT。
+  **文件格式未变**，2.0.17 写出的索引仍可直接加载。
+
+### 变更
+
+**过期状态块的措辞**改为接入方定稿的折中版：
+
+```
+以下状态记录已超过时效窗口，可能已变化 ——
+不得直接当作当前状态回复；确需使用须先向用户确认：
+```
+
+原先的「勿当作当前状态，必要时先向用户确认」比接入方线上跑的强约束软一档；折中版
+既堵死 2026-08「失眠串台」那类直接误用，又保留追问余地。`MemoryUnit.staleness_note()`
+同步。接入方若对 prompt 做逐字节快照比对，需要重新采集基线。
+
+### 接入方升级须知
+
+1. **`pip install --force-reinstall` 会连带重装整个依赖树** —— 接入方反馈升级时约
+   70 个包被卸载重装、两个与 SOMA 无关的包被挤掉（关键包版本未变、服务正常）。
+   不需要重装依赖时用 `--no-deps`；本版未新增第三方依赖。
+2. **共享连接只能用 `SOMA(..., shared_sqlite_connection=True)` 开启** —— 模块级
+   `soma.db.set_shared_enabled(True)` 会被随后构造的 SOMA 实例按构造参数默认值重置
+   （接入方实测：先 set True 再建实例，`is_shared_enabled()` 又变 False）。该开关是
+   进程级的，多个实例共存时以最后构造者为准。
+3. **接入方需重打的补丁再减两项** —— agent 昵称（`user_name`/`twin_name`）与
+   timestamp 均已上游化，本版起只剩 reason 隔离一项。
+4. 时间标注的分档与接入方核对一致，可直接沿用。
+
+### Tested / 测试
+
+- 新增 `tests/test_vector_store.py::TestIndexFileIntegrity`（6 项）、
+  `tests/test_vector_prune.py::TestSearchCompensation` 补 2 项、
+  `tests/test_memory_time_aware.py::TestStaleStateInjection` 补 2 项
+- 四处修复都做了「**回退即失败**」验证：临时把修复改回去，对应测试必须 exit=1，
+  否则标明验证无效（`tmp/verify_regression_guards.py`、`tmp/verify_p2_guard.py`、
+  `tmp/verify_index_atomic_guard.py`）—— 避免「测试没守住任何东西」的假通过
+- 共享连接的 RSS 口径重新实测（`tmp/measure_shared_rss.py`，每个配置独立子进程），
+  见 2.0.18 节「更正：共享连接的内存收益」
+
+---
+
+## [2.0.18] — 2026-09-14
+
+> ⚠ **本版存在跨用户记忆泄漏（P0），多租户环境请直接使用 2.0.18.1。**
+
+自主与稳固版：把全自主认知循环补完（含后台常驻运行），给注入 LLM 的记忆带上时间
+标注，并清掉三项长期挂账 —— 多专家共享 SQLite 连接、语义索引过期向量清理、文档
+发布债。**索引维护有一处行为变化**，见下方「行为变化」。
+
+### 背景
+
+三条线索汇到这一版：
+
+1. **注入不带时间** —— 2.0.17 补的是「返回给调用方」的时间信息；SOMA 自己注入 LLM
+   的 prompt（四条注入路径）当时仍不携带时间。2026-08「失眠串台」事故的根因就在
+   这里：三个月前的状态记录被 LLM 当成当前状态。本次把这个缺口补齐，并把 2.0.13 /
+   2.0.14 两条「记入后续版本评估」的过时表述一并回填勘正。
+2. **认知循环只会单轮** —— `loop()` 是单轮闭环；`run_autonomous()` 虽能多轮，但目标
+   必须外部给，且没有常驻运行能力。
+3. **索引维护欠账** —— 记忆被删除时（forgetting 归档/清理、`episodic.delete()`）直接
+   删行、不通知 faiss 索引。残留向量既占 top_k 名额，又让删除后的首次搜索触发同步
+   全量重建（实测阻塞数秒）。
+
+### 新增
+
+**记忆注入携带时间信息**
+
+- `MemoryUnit.age_label()` —— 把 `age_days` 转成「今天 / 昨天 / N 天前 / 约 N 周前 /
+  约 N 个月前 / 约 N 年前」。口径与 `explain_activation()` 同源，只做表述转换，不另造名词
+- `MemoryUnit.staleness_note()` —— 状态类记忆（`nature=state` 且超过 `STATE_TTL_DAYS`）
+  附加「勿当作当前状态」提醒；非状态类返回空串
+- 四条注入路径全部带上时间标注（L1 轻量 / L2-L3 推理 / 反面视角 / 矛盾记忆）
+- 注入路径异常安全：任一步格式化失败退回空串，不中断对话
+- **过期状态单开一条注入通道**（`SOMA_Agent._stale_state_memories()`）。只给注入层加
+  标注并不够：主激活路径按「规律权重 × 近因衰减」打分（7 天半衰期），ranker 的
+  threshold(0.05) 闸门会把远期记忆整体挡在门外，而 `is_state_stale()` 判的是 30 天
+  以上 —— 两个条件互斥，过期状态永远到不了注入层。实测（库里只有这一条、问法最
+  相关）：7 天前 score=0.0997 还能注入，14 天起就取不到。「我最近睡眠怎么样」这类
+  口语问题还被判为 L1，连反视角检索都不跑 —— 正是「失眠串台」的场景。新通道按
+  `nature=state` 直查（不开向量检索，2 万条记忆上实测 5.9ms），用共同汉字数 ≥2 与
+  当前问题做相关性过滤，取相关且重要性最高的至多 2 条，在 prompt 里**单独成块**
+  「可能已过期的状态记录」，与普通记忆参考分开陈述
+
+**全自主认知循环**
+
+- `soma/autonomous.py`：`GoalGenerator` 四来源 —— 未解决记忆冲突 / 跨会话遗留执行
+  计划 / 过期状态类记忆 / 重要却被埋没的记忆，优先级由配置权重决定
+- `BackgroundRunner` 后台常驻：默认**关闭**，需显式开启；单次 tick 有并发上限与墙钟
+  上限；失败按指数退避，连续失败达阈值自动停驻，不再重试
+- 跨会话边界：已推进目标记入 `soma_meta` KV，重启后不重复推进同一个
+- `run_autonomous()` 支持 `goal=None` —— 由 SOMA 自己挑一个目标；无可用目标时返回
+  `stop_reason="no_goal"`，不空转
+- 三态目标判定：`complete` / `stalled` / `continue`。**`stalled` 不等于完成** —— 无 LLM
+  key 时本地启发式只识别「不再有进展」，不谎报完成
+- 防目标自我嵌套：自主生成的目标带 `origin="autonomous"`，不会再被当作来源
+- 门面 API：`generate_goals()` / `start_background()` / `stop_background()` /
+  `background_status()`
+- 新配置：`autonomous_background_enabled` / `_interval` / `_max_runtime` / `_max_goals` /
+  `_backoff_base` / `_max_failures`，以及四类目标的优先级权重
+
+**多专家共享 SQLite 连接**（`soma/db.py`）
+
+- 同一进程内指向同一 db 文件的 store 复用同一条连接，引用计数管理，减少文件句柄数
+  与 WAL 写锁竞争
+- 复用粒度是**每个 db 文件、每个线程一条**，不是「进程级一条」。CPython 的 `sqlite3`
+  即使 `check_same_thread=False`，并发使用同一条连接也会静默丢数据（实测 4×25 只落库
+  26~31 条）—— 这是刻意的设计约束，不是保守
+- 新配置 `shared_sqlite_connection`，**默认关闭**；关闭时逐字退化为历史行为
+- `transaction()` 上下文管理器：异常回滚、正常提交，共享与独立两种模式都可用
+- 配套结论：多专家**必须每线程一个 SOMA 实例**。多个线程共用一个实例写记忆本来就会
+  丢数据，与共享开关无关（实测 shared=False 同样只落 38/100）
+
+**语义索引过期向量清理**
+
+- `prune_stale_vectors(background=True)` / `count_stale_vectors()`（门面与
+  `EpisodicStore` 同名可用）
+- 只清理「DB 已无有效向量」的残留条目：用 `reconstruct` 把仍有效的向量从内存索引抽出来
+  重建，**不读 DB 取向量、不重新编码**
+- 阈值：残留 ≥ 32 条或 ≥ 索引总量的 5% 才值得重建（HNSW 全量构造要数秒）
+- 搜索侧 k 补偿：残留条目占住 top_k 名额时按差额扩大取 k，有效结果不会被挤空
+
+### 修复
+
+- **`delete_vector` 反向映射泄漏**（真缺陷）—— 原先只删正向映射 `_mem_to_faiss_id`，
+  反向 `_faiss_id_to_mem` 没删，残留向量在搜索时仍能取到 mem_id 并占住名额
+- **后台重建的替换竞态** —— 后台线程逐个赋值替换「索引对象 + 两个映射」，主线程若在
+  中间读会拿到错配组合，把向量认成别的记忆（实测复现：查 m015 返回 m016）。新增
+  `_state_lock` 保护三件套一致性，磁盘写仍留在锁外
+- **`store_vector` 与重建的竞态** —— 「写库 + 增量入索引」相对搜索侧重建不是原子的：
+  重建已把该条读进快照后这里又加一次，索引会多出重复条目（并发用例稳定命中）
+
+### 行为变化
+
+**删除记忆后不再当场同步重建索引。** 此前 `similarity_search` 一旦发现「DB 比索引少」
+就全量重建（HNSW 数秒，阻塞搜索）。2.0.18 起改为：本次搜索按 stale 补偿取 k、调用方
+过滤已删条目，清理交给后台剪枝。
+
+影响面：删除刚发生后，**索引条目数会短暂大于 DB 有效数**，直到后台清理完成。接入方
+若断言两者立刻相等需调整（我们自己的两处测试已随之调整）。已删条目不会被召回 ——
+这一点没有变化。
+
+**对话 prompt 里会多出「可能已过期的状态记录」块。** 当库里存在 `nature=state` 且超过
+30 天未更新、且与当前问题有至少 2 个共同汉字的记忆时，SOMA 会把这些记录单独成块注入
+（每次至多 2 条）。此前它们到不了 prompt，所以这是**新增内容而非改写既有内容** —— 但
+接入方若对 prompt 做逐字节快照比对，需要重新采集基线。`_build_prompt(...)` 的
+`stale_states` 参数默认为 `None`，直接调用 `_build_prompt` 的既有代码行为不变。
+
+### Tested / 测试
+
+- 新增 `tests/test_vector_prune.py`（17 项）、`tests/test_shared_db.py`（20 项）、
+  `tests/test_memory_time_aware.py::TestStaleStateInjection`（10 项）
+- 全量 **1043 passed，零回归**（2.0.17 基线 1016）
+- 过期向量清理端到端冒烟：写入 8 条 → 删 3 条 → 残留识别 3 → 同步清理 3 → 检索正常
+  且不返回已删条目 → 二次清理幂等
+- 记忆注入冒烟（`tmp/smoke_memory_time_inject.py`，29 项断言）：`age_label` 六档边界、
+  `staleness_note` 判据、四条注入路径的标注/提醒、过期状态块的闸门（相关性/上限/时效）、
+  真实 `chat()` 管道端到端、旧对象与坏对象的异常安全
+- 后台重建 vs 主线程搜索竞态压测 30/30 通过
+- 多专家并发（每线程一实例）：shared=False 与 shared=True 均 100/100 不丢写
+- 生产规模实测（2 万条，假嵌入）：索引自动切到 `hnsw(n=20000)`、检索 P50=34.3ms /
+  P95=47.4ms、删除后首次检索 128ms（对比同步重建 2135ms，快 17 倍）、已删条目泄漏 0
+- 多实例指向同一库：3 实例建实例阶段省 1~7MB RSS（详见下方「共享连接的内存收益」）
+
+### 更正：共享连接的内存收益（2.0.18.1 回填）
+
+本节原先写「多实例指向同一库省约 151MB RSS（3 实例）」—— **该数字不成立**，
+现更正如下。接入方在生产实测只有约 18MB，他们的质疑是对的。
+
+**正确口径**：共享连接省下的是「同一个 db 文件被重复打开的那些连接」，每条连接
+的 page cache 上限 8MB，所以收益上界 = 省掉的连接数 × 8MB，且只有缓存真正被读热
+时才接近上界。实测（每个配置跑在独立子进程，增量从 `import` 后起算）：
+
+| 场景 | 共享关闭 | 共享开启 | 差 |
+|------|---------|---------|-----|
+| 3 实例 · 不写不读 | +3.2MB | +1.9MB | 1.3MB |
+| 3 实例 · 每实例写 200 条 | +3.2MB | +2.1MB | 1.1MB |
+| 3 实例 · 开向量搜索 | +11.5MB | +4.7MB | 6.8MB |
+
+接入方在 26,977 条记忆的生产库上实测约 18MB，与上表同量级。
+
+**151MB 是怎么来的**：那是把两种配置放在**同一个进程里先后测量**得到的 ——
+进程 RSS 只增不减，后测的那个配置替先测的背了嵌入模型等懒加载资源的账。用同样
+的错法重测，立刻得到 191MB / 233MB 量级的假差（`tmp/measure_shared_rss.py` 的
+第一版就是这么写的，已改成每个配置独立子进程）。
+
+结论：这项优化的价值在**文件句柄复用与写锁竞争的减少**（接入方实测总 fd 28→16、
+同库连接 4→2），不在内存。
+
+### 已知问题 / 后续评估
+
+**写入吞吐随规模下降**（既有行为，非本版引入）。实测（假嵌入，`EpisodicStore.add`）：
+2,000 条 784~1294 条/秒 → 5,000 条 310 条/秒 → 20,000 条 49 条/秒。三段对照已排除两处
+嫌疑：写索引落盘（n=2000 占比 -3.2%、n=5000 占 6.1%）与周期后台全量重建
+（n=8000 两轮交替，禁用后只快 1.9%，噪声级别）。**关掉向量搜索后 20,000 条写入
+从 ~50 条/秒升到 ~500 条/秒** —— 瓶颈在向量路径本身（查询嵌入、faiss 增量插入、
+每条一次 SQLite 提交）。本版对写入路径只加了一把无竞争时的 RLock，未改变这条曲线。
+细分到具体成分留待 2.0.19。
+
+---
+
+## [2.0.17] — 2026-09-13
+
+稳健性版：修复「单条脏 context 让全库检索崩溃」，并把 SQLite 内存映射从硬编码改为
+可配置、默认关闭。**默认行为有变化** —— `sqlite_mmap_size` 默认 0（此前硬编码 256MB），
+理由见下方「默认值变化」。
+
+### 背景
+
+DSH 在生产跑官方基准（26,872 条记忆）时崩溃：
+
+    File "soma/memory/episodic.py", line 302, in query_by_vector
+        mem.context["_vector_score"] = score
+    TypeError: 'str' object does not support item assignment
+
+全库 26,872 条中有 1 条 `context_json` 是裸字符串而非 JSON 对象。读取路径把
+`json.loads` 的结果直接当 dict 用，一赋值就炸 —— **1 条脏数据毁掉整次全库查询**。
+带 user_id 的常规查询因该行 user_id 为空被过滤而幸免，所以生产未暴露；但官方基准、
+管理端全库检索、以及 2.0.15 新增的 `reclassify_nature`（默认扫全库）都会踩到。
+
+脏数据的来源正是写入侧：调用方把字符串传给 `remember(context=...)` 时，
+`json.dumps("文本")` 产出的是**合法但非对象**的 JSON，读回来就是 str。
+
+### 新增
+
+- **context 双向防御**（`soma/memory/context_utils.py`）
+  - 读取 `parse_context()`：任何形状的 `context_json` 都产出 dict，脏值收进
+    `{"_raw": <原值>}`，**不丢数据**；已覆盖非法 JSON、非对象 JSON、bytes、None
+  - 写入 `normalize_context()`：`remember(context=...)` 收到非 dict 时包一层并告警，
+    从源头不再产生脏数据
+  - 覆盖 `episodic` / `skill` 两处 `context_json` 读点，以及 `external.check_expired`
+  - `query_by_vector` 热路径补 `isinstance` 兜底 —— 外部直接构造的 MemoryUnit 也挡得住
+- **脏数据自愈工具**（`soma/repair.py`）
+  - `soma.repair_context(dry_run=True)` 扫描存量脏数据；默认只预览，落盘自动备份
+  - `soma.rollback_context(backup_path)` 按备份回滚
+  - CLI：`soma repair-context` / `--apply` / `--rollback`
+  - 修复形状 `{"_raw": <原值>, "_repaired_at": ...}` —— 与读取路径的规范化结果一致，
+    修复前后取出的内容不变，只是库里不再有破坏 SQL/FTS 假设的形状
+- **SQLite mmap 可配置**（`SOMAConfig.sqlite_mmap_size`，默认 0）
+
+### 默认值变化
+
+`sqlite_mmap_size` 默认 **0（禁用 mmap）**，此前 `episodic.py` 硬编码 256MB。
+
+DSH 定位到：Linux 上每实例 750MB 的 RSS 大头**不是** ONNX 会话，而是 SQLite mmap ——
+每个连接把整个 episodic.db 映射进进程 RSS，多专家架构一个实例开 4 个连接，
+同一个库被映射 4 份。他们的 A/B 实测：
+
+    每实例内存    实例创建耗时    映射量
+    94MB          2203ms         0.03MB    ← 本次默认值（0）
+    228MB         2249ms         512MB
+    754MB         1570ms         3247MB    ← 历史值（256MB）
+
+叠加 2.0.16 的会话共享后：建 3 个实例 2866MB → 742MB；生产主服务 cgroup
+16.4GB → 1.85GB。
+
+**代价（如实标注）**：关掉 mmap 后随机读走普通 I/O，DSH 实测查询 p50 从 38ms
+升到 107ms。多实例 / 多租户常驻服务建议保持 0；单实例、查询延迟敏感的场景可调大：
+
+    SOMAConfig(sqlite_mmap_size=32 * 1024 * 1024)
+
+**2.0.17 生产实测（DSH，同机、真实数据用户）**：mmap=32MB 时每实例 **228MB**，
+切到默认 0 后每实例约 **93MB**（连建 5 个真实数据用户实例，进程 RSS 仅 792MB），
+实例池上限据此从 5 调到 10；代价为查询中位 100.2ms → 112.9ms。结论不变 ——
+**多租户常驻服务推荐保持默认 0**，用内存换那十几毫秒是划算的。
+
+### 测试
+
+- 新增 `tests/test_context_safety.py`（40 项）：parse/normalize 全形状、脏行读取、
+  DSH 崩溃路径复现、repair 的预览/落盘/回滚/用户过滤/限额、mmap 配置与门面透传
+
+### 生产验证
+
+DSH 在服务器（约 148 用户 / 26,932 条记忆）从 2.0.16 升级到 2.0.17，`soma_upgrade.py`
+一次通过，数据规模升级前后一致（episodic 26,932 / semantic 9,833 / skill 335 /
+indexed_vectors 26,930）。官方基准（同机、同数据）：
+
+    维度            2.0.16        2.0.17
+    memory          74.2          90.9 ~ 91.0
+    wisdom          73.7          72.3 ~ 75.5
+    evolution       96.1          96.1
+    scalability    100.0         100.0
+    ────────────────────────────────────────
+    overall         83.4          88.0 ~ 88.9
+
+记忆维度 +16.8 最明显；wisdom 的波动在噪声范围内（跑了两次，约 1 分波动）。
+`SOMA.repair_context(dry_run=True)` 在真实生产库扫描 26,932 条、dirty 0，CLI 子命令
+与门面签名均验证通过。
+
+### 接入方升级须知
+
+**升级会覆盖的本地补丁 —— 请对照检查**（DSH 侧现有 3 个，均为字段/行为增量）：
+
+| 补丁 | 作用 | 影响文件 |
+|---|---|---|
+| agent 昵称 | `record_session` 的 `user_name` / `twin_name` | `soma/agent.py` |
+| reason 记忆隔离 | `reason` 路径的记忆按用户隔离 | `soma/agent.py` |
+| timestamp / memory_type | `ActivationHub.explain_activation` 返回时间与类型，用于区分「昨天的失眠」与「三个月前的失眠」 | `soma/hub/*.py` |
+
+前两个 DSH 的升级脚本已内置自动重打；第三个尚未并入上游，见下方「未纳入本次」。
+**其他接入方若持有自己的本地补丁，升级后请逐项复核** —— 上游不会保留它们。
+
+**升级后自检**（建议纳入发布流程）：
+
+    soma repair-context        # 默认 dry_run：只预览，不改动
+
+期望 `dirty = 0`。DSH 在 26,932 条生产记忆上实测 `scanned 26,932 / dirty 0 / 210ms`。
+若 `dirty > 0`：先看 `samples` 确认形状，再 `--apply` 落盘（自动备份，可 `--rollback`）。
+
+### 未纳入本次
+
+DSH 另建议「同一实例的多专家共享一个 SQLite 连接」（当前 4 个连接把同一库映射 4 次）。
+该改动涉及多专家架构的连接生命周期，回归面较大；本次先以「mmap 默认 0」消除其内存
+影响（映射归零后，多连接的成本主要是句柄而非 RSS），共享连接留待有明确压测数据后再评估。
+
+DSH 另建议把 `ActivationHub.explain_activation` 的 `timestamp` / `memory_type` 并入上游
+（源自 2026-08「失眠串台」事故：注入的记忆分不清「昨天的失眠」与「三个月前的失眠」）。
+字段纯增量、不破坏任何调用方，已排入 **2.0.18**。本次不塞进 2.0.17 —— 避免让刚通过
+生产验证的 wheel 失效，重新走一轮接入方验证。
+
+---
+
+## [2.0.16] — 2026-09-12
+
+多实例内存版：解决「每个 SOMA 实例独占一份 ONNX 嵌入会话」导致的随实例数线性增长的
+原生内存开销。**无行为破坏，纯增量** —— 不传 `embedder=` 时行为与 2.0.15 完全一致。
+
+### 背景
+
+接入方（DSH，148 用户 / 26,574 条记忆在线）实测：每新建一个 SOMA 用户实例，
+fastembed `TextEmbedding` 与 onnxruntime `InferenceSession` 数量 1:1 递增，
+生产 4 个 worker 在 4 小时内涨到 4.4 / 6.8 / 9.2 / 12 GB，两次撑爆 cgroup 触发
+OOM、全站 502。他们的临时对策是把热实例数压到 3 个/worker，代价是被淘汰用户的
+下一条消息要等 1.3s 重建实例。
+
+接入方定位准确：他们事后替换 `soma._agent.embedder` 无效 —— SOMA 在实例初始化
+阶段已经建好自己的会话，换引用之后旧会话仍被实例内部持有。
+
+### Added / 新增
+
+**进程级共享嵌入器 `get_shared_embedder()`**（`soma/embedder.py`）
+
+- 按 `模型名::维度` 缓存 + `threading.Lock` 线程安全，同进程内相同配置返回**同一实例**，
+  多个 SOMA 实例复用同一份 ONNX 推理会话
+- `release_shared_embedders()` 释放全部共享实例并返回释放数量（进程收尾 / 测试清理用）
+- 首次调用只创建对象，模型仍按 `warmup_on_init` / 首次 `encode()` 惰性加载，
+  与原有预热行为一致
+
+**门面依赖注入 `SOMA(embedder=...)`**（`soma/__init__.py`）
+
+- `SOMA_Agent` 自 v2.0.7 起就支持 `embedder=` 参数，但顶层门面没透传 ——
+  接入方按文档注入会被静默忽略。本次补齐门面 → agent 的透传
+- 用法：
+
+  ```python
+  from soma import SOMA
+  from soma.embedder import get_shared_embedder
+
+  shared = get_shared_embedder()          # 一个 worker 里只建这一份
+  s1 = SOMA(persist_dir=d1, embedder=shared)
+  s2 = SOMA(persist_dir=d2, embedder=shared)   # 复用，不新建会话
+  ```
+
+### Fixed / 修复
+
+**`SOMAEmbedder.close()` —— 显式释放 ONNX 会话**（`soma/embedder.py`）
+
+此前 SOMA 没有任何路径释放嵌入会话，实例销毁后原生内存只能等进程退出才归还。
+
+- 逐层断开 `TextEmbedding.model` → `OnnxTextModel.model` → `InferenceSession`
+  的引用链（只置空最外层引用不够，onnxruntime 会话会因残留引用不释放），再 `gc.collect()`
+- 可安全重复调用
+
+### 变更 / 所有权语义
+
+实例 close 时**只释放自己创建的 embedder**：
+
+| 场景 | `_owns_embedder` | close 行为 |
+|------|------------------|-----------|
+| `SOMA(...)` 自建 | `True` | 释放自己的 ONNX 会话 |
+| `SOMA(embedder=shared)` 注入 | `False` | **不动** —— 由调用方管理 |
+
+这条规则是必需的：多实例共享一份 embedder 时，若实例有权释放，第一个 `close()`
+的实例就会把其他实例正在用的会话打掉。
+
+配套调整：预热逻辑改为按加载状态触发（`is_loaded`），共享实例已加载则跳过预热，
+不会每个实例都重跑一遍 `warmup()`；探测用 `getattr`，因为 `warmup` / `is_loaded`
+是 `SOMAEmbedder` 的扩展、不在 `BaseEmbedder` 契约内，注入第三方 embedder 不会崩。
+
+### 实测（Windows，干净进程）
+
+| 路径 | 每新增实例 RSS 增量 |
+|------|--------------------|
+| 自建（2.0.15 行为） | +140 / +95 / +96 MB —— 线性增长 |
+| 注入共享（2.0.16） | +97 / **+0** / **+0** MB —— 首个实例加载，之后完全平坦 |
+
+即 N 个实例的嵌入会话从 N 份降为 1 份。关闭注入实例后共享会话仍可用。
+
+> 注：本地单实例 ONNX 增量（95~140MB）低于接入方报告的 750~860MB，差异应来自
+> 平台/运行时（glibc arena、onnxruntime 线程池策略、Linux 与 Windows 的原生分配器
+> 行为不同）。**改造解决的是「份数随实例数增长」这个结构性问题，与单份绝对值无关。**
+
+### 迁移建议 / Migration
+
+- 存量代码不传 `embedder=` 时行为不变，可平滑升级
+- 多用户/多租户长驻服务：进程启动时 `get_shared_embedder()` 一次，创建实例时注入；
+  进程退出调 `release_shared_embedders()`
+- 接入方原先的淘汰策略可以放宽 —— 被淘汰用户的实例重建不再需要重新加载 ONNX，
+  重建开销从秒级（模型加载）降为毫秒级（仅建 SQLite 连接）
+
+### 说明 / 未纳入本次
+
+接入方建议 ⑤（多租户共享内核：laws / 关系图谱 / 进化状态进程级共享）与建议 ④
+（`_load_from_db` / `_load_state` 惰性加载）未纳入。原因是这两项针对的是 Python 侧
+对象开销（接入方实测 semantic 2.7MB + evolve 9MB ≈ 每实例 12MB），而 750MB 量级
+的开销来自 ONNX 会话、已由本次单例解决。惰性加载收益与改动风险不成正比，留待后续。
+
+---
+
+## [2.0.15] — 2026-09-11
+
+接入方收尾版：把 2.0.13/2.0.14 的记忆时间感知能力补齐到顶层门面，并把 DSH 只能裸 SQL
+做的存量回填沉淀成内置能力。**无行为破坏，纯增量。**
+
+### Fixed / 修复
+
+**门面透传补全 —— 四层链路打通**（DSH 反馈的「接入方走门面会 TypeError」）
+
+2.0.13 的 `max_age_days`、2.0.14 的 `nature` 都只打通到 agent 层，顶层门面 `SOMA`
+没跟上：接入方按文档写 `get_soma().query_memory(q, max_age_days=30)` 会 **TypeError**，
+`SOMA.remember(..., nature=...)` 同样不可用 —— 只能绕过门面直接摸 `_agent`。
+
+- `SOMA.remember` / `remember_image` / `remember_table` 补 `nature` 透传（`soma/__init__.py`）
+- `SOMA.remember_code` 补 `nature` 且**默认 `fact`**（代码/技能不随时间过时）
+- `SOMA.query_memory` 补 `max_age_days` 透传
+- 至此 门面 → agent → memory → episodic/store 四层完全一致
+
+### Added / 新增
+
+**内置 nature 批量重分类工具**（`soma/nature.py`）
+
+存量记忆全是默认 `event` 时的一次性回填动作 —— 此前接入方只能裸 SQL UPDATE。
+
+- `NatureClassifier`：规则化分类（零 LLM 依赖）。优先级 **状态词 > 知识来源/长文档 > 事实词 > event**；状态词优先是因为时效性才是最要紧的属性
+- `reclassify_nature(store, classifier=None, dry_run=True, backup_dir=None, user_id="", only_nature="event", limit=None)`：
+  **默认 dry_run 只预览**；落盘前自动写备份（id → 原 nature），备份失败则中止不改库
+- `rollback_nature(store, backup_path)`：按备份还原
+- 默认只处理 `nature='event'` 的记忆 —— 已分类/人工修正过的一律不动
+- 默认规则覆盖：状态词（失眠/焦虑/发烧/…）、事实词（用户会/擅长/偏好/…）、长文档（>300 字）、知识来源（wiki/knowledge/external/doc/import）
+- CLI：`soma reclassify`（预览）/ `--apply`（落盘）/ `--rollback <备份>` / `--user-id` / `--limit`
+- 门面与 agent 层同步暴露：`SOMA.reclassify_nature()` / `SOMA.rollback_nature()`
+
+**实例索引重载 `reload()`**（`soma/__init__.py` → `agent` → `memory` → `episodic.reload_index()`）
+
+长驻服务场景：外部进程（CLI / 另一个 Agent / 批处理）往同一记忆库写入后，
+SQLite 读取是实时的，但内存里的 faiss 索引会滞后。
+
+- `SOMA.reload()` → `{"reloaded_vectors": N, "total": M}`
+- 说明：`similarity_search` 本身在「索引计数 ≠ DB 计数」时已会自愈重建，单纯新增记忆
+  通常下次搜索即可见；`reload()` 用于**想立刻生效**，并兜住自愈漏掉的情况 ——
+  外部「删 N 条 + 加 N 条」总数不变时，索引会留着已删向量、看不到新向量
+
+### Docs / 文档
+
+- 新增 `docs/guides/memory-recency.md` + `_zh.md`：**近因衰减 / `max_age_days` / `is_stale` 三层分工**
+  - 明确 `exp(-days/7)` 衰减是**主防线**（30 天后权重 <2%，过不了激活阈值）；
+    `is_stale` 是覆盖 10–30 天区间的**兜底**，不是拦远期记忆的手段
+  - 接入建议：`nature=fact` 直接注入 / `nature=event` 标注「N 天前」/ `nature=state 且 is_stale` 提示「可能已变化」
+  - README / README_zh / docs/index.md / mkdocs.yml 已加交叉引用
+
+### Tested / 测试
+- 门面透传测试（`tests/test_facade_passthrough.py` +9）：DSH 生产调用形式不抛 TypeError / max_age_days 真截断 / nature 各写入路径往返 / remember_code 默认 fact
+- nature 重分类与重载测试（`tests/test_nature_reclassify.py` +17）：分类规则 7 项 / dry_run 不改库 / 落盘生效+备份 / only_nature 保护 / 回滚还原 / 外部写入 reload 可见 / 同数替换场景
+- 全量无回归
+
+### CLI / 新增命令
+```bash
+soma reclassify                       # 预览（不改库）
+soma reclassify --apply               # 落盘，自动备份
+soma reclassify --rollback <备份路径>  # 回滚
+```
+
+---
+
+## [2.0.14] — 2026-08-31
+
+### Added / 新增
+
+**记忆业务性质字段（nature: state/fact/event）** —— 时间感知深化（DSH 接入方第 3 项）
+
+区分「状态类」记忆（失眠/情绪/健康，时效强，会变）与「事实/技能类」（长期有效）：
+- `MemoryUnit` 新增 `nature` 字段（`soma/base.py`），默认 `event`；`remember()`/`share_to_group()` 支持传入（`soma/agent.py` → `memory/core.py` → `episodic` 全链路透传）
+- DB schema 增量迁移（`nature` 列，向后兼容旧库）
+- `explain_activation()` 返回 `nature` + `is_stale`（`soma/hub/_core.py`）——接入方可判断「这条状态记忆是否已过时效窗口」
+- 状态类时效窗口：`STATE_TTL_DAYS = 30`（`soma/base.py`），`MemoryUnit.is_state_stale()` 判断 state 类是否超窗口；非 state 类恒不过期
+
+**faiss 后台异步重建**（2.0.11 遗留性能项）
+
+增量插入触发全量重建（HNSW + 磁盘写 ~5s）不再阻塞插入：
+- `_maybe_rebuild` 改为主线程轻量快照读取 + 后台线程执行 faiss 重建（`soma/vector_store.py`）
+- 重建期间的少量增量写 DB，由 `similarity_search` 一致性检查（失步自愈）兜底补入，不丢
+- `_rebuild_busy` 标志防止并发重建
+
+### Tested / 测试
+- nature 测试（+6）：存取往返 / 默认 event / is_state_stale 语义 / explain_activation 返回 nature+is_stale
+- faiss 后台重建测试（+3）：触发不阻塞主线程 / 后台完成索引可用 / 重建期间增量自愈补入
+- 全量无回归
+
+### 说明
+- nature + is_stale 与 2.0.13 的 age_days 联动：接入方注入层可据 `nature=state 且 is_stale=True` 明确提示「这是 N 天前的旧状态，可能已变化」，根治状态类记忆被当长期事实用
+
+---
+
+## [2.0.13] — 2026-08-28
+
+### Fixed / 修复
+
+**记忆时间感知 —— 记忆串台根因修复**（DigitalTwinHub 接入反馈）
+
+接入方（DSH/零熵智库）反馈：用户数月前记忆被召回，但注入 LLM 时**只有纯文本、无时间信息**，LLM 把远期旧状态当当前状态反复纠正。根因定位在 SOMA 包本身：`MemoryUnit.timestamp` 精确存在，但 `explain_activation()` 返回 dict 时丢弃了它。
+
+### Changed / 变更
+- **`explain_activation()` 返回时间信息**（`soma/hub/_core.py`）：返回 dict 增加 `timestamp`（记忆创建时间，UTC 秒）、`age_days`（记忆年龄，天）、`memory_type`——接入方与 LLM 可感知时间远近，旧状态不再被当作当前状态
+- **`query_memory()` 暴露 `max_age_days` 时间窗口**（`soma/agent.py` → `hub.activate` → `retriever.retrieve` → `memory.query` 四层透传）：底层 `episodic.query_by_keywords/query_by_vector` 已支持 `min_ts` 硬截断，公共接口现在可用（如 `query_memory("睡眠", max_age_days=30)` 只取 30 天内）
+
+### Tested / 测试
+- 记忆时间感知测试（`tests/test_memory_time_aware.py` +5）：时间字段返回 / max_age_days 透传 / 底层硬截断 / 端到端不含远期记忆
+- 全量无回归
+
+### 说明
+- 时间感知排序（近因衰减 `relevance_potential()` 7 天半衰期）此前已存在；本次补上「返回时间信息 + 硬截断参数」，接入方针对 `explain_activation` 的过渡补丁可移除
+- **补注（2.0.18 回填）**：本次修复的是**返回给调用方**的结构；SOMA **自身注入 LLM 的 prompt**（`_build_prompt` 的四条注入路径）当时仍不带时间信息 —— 该缺口在 2.0.18 补齐
+- 业务性质字段（state/fact/event，区分状态类与事实类时效）已在 **v2.0.14** 实现；存量批量重分类工具见 **v2.0.15**
+
+---
+
+## [2.0.12] — 2026-08-23
+
+### Fixed / 修复（hotfix：benchmark 测量修正）
+
+**`run_memory_benchmark` 的 avg_query 被基准自身插入污染**（DSH 生产验证反馈）：
+
+基准每次执行插入 10 条测试记忆，会触发 faiss 全量重建（2.3 万条 HNSW ~5s），把 query 延迟从真实 ~35ms 拖到 351ms（p99 5.4s），dashboard 基准页数字失真。
+
+### Fixed / 修复
+- **查询延迟采样前预热丢弃一次**（`soma/benchmarks.py`）: 采样前先执行一次 query（吸收索引重建/模型加载），再采集 20 次稳定态，avg_query 恢复真实延迟量级
+
+### 说明
+- **仅影响 benchmark 测量，生产功能零影响**，生产 2.0.11 无需升级（除非需要拿到测量修正）
+- 后台同步重建优化（增量 1000 条时 ~5s 阻塞插入）已在 **v2.0.14** 实现（faiss 后台异步重建，插入不阻塞）
+
+### Tested / 测试
+- benchmark + 向量严苛测试 20 通过，全量无回归
+
+---
+
+## [2.0.11] — 2026-08-22
+
+### Fixed / 修复
+
+**向量索引一致性重大修复（生产故障根因）**
+
+生产环境（2.0.9/2.0.10）出现记忆检索退化：语义召回率骤降、查询延迟 3 倍上升，且伴随「嵌入向量生成失败」日志。根因已定位为 `soma/vector_store.py` 的存量 bug + 状态污染，**并非 2.0.10 代码回归**（git diff 证实记忆链路 2.0.9→2.0.10 零改动）。
+
+### Fixed / 修复
+- **`store_vector()` 缺 `import faiss` → NameError**（`soma/vector_store.py`）: 函数内调用 `faiss.normalize_L2()` 却未 import，导致 faiss 索引构建后**每次插入记忆都抛异常**——DB 向量已写入但 faiss 索引不更新（失步），新记忆语义检索永远搜不到。这是 recall 下降与查询变慢的共同根因
+- **`similarity_search()` 失步处理遗漏**（`soma/vector_store.py`）: 仅在 `current_count > ntotal` 时重建，遗漏 `current_count < ntotal`（删除后 faiss 残留向量无法精确删除）→ 索引永久失步 + 残留向量占用 top-k 名额。现改为 **DB 与 faiss 不一致即从 DB 全量重建**，自愈恢复
+- **「嵌入向量生成失败」日志误导**（`soma/memory/episodic.py`）: 原 try 块同时包住 encode 与索引写入，无法区分失败来源。现拆开分别记录真实异常，便于生产定位
+
+### Added / 新增
+- 向量索引一致性回归测试（`tests/test_vector_store.py` +3）：索引构建后插入不失步 / 删除不残留 / 失步自愈
+- 严苛场景测试（`tests/test_vector_store_stress.py` +13）：45 轮一致性循环、300 条大量插入、磁盘持久化重启、未存盘窗口重建、损坏索引恢复、维度迁移、并发插入+查询、embed/索引失败降级、端到端多轮 benchmark 模拟召回、2000 条性能对照
+
+### Tested / 测试
+- **853 用例通过，3 遍 stress 稳定零 flaky**
+- 红绿验证：回退修复后一致性测试失败（NameError 实锤），恢复后通过——证明测试能抓 bug
+- 性能对照：一致状态查询快速（<100ms），仅失步后重建一次，重建后恢复，不再出现 300ms 常态
+
+### 生产升级建议
+1. 安装 2.0.11 后，删除数据目录下 `episodic.db.faiss_index` 和 `episodic.db.faiss_id_map.json`，重启服务强制全量重建一次索引（一次性，之后增量正常）
+2. 建议 `warmup_on_init=True`，避免服务启动早期 embedder 预热与请求竞态
+
+---
+
+## [2.0.10] — 2026-08-19
+
+### Autonomous Loop + Multimodal Memory + Test Hardening / 全自主循环 + 多模态记忆 + 测试强化
+
+**v2.0.10 adds an autonomous reasoning loop, image/table memory, knowledge-gate APIs, and major test coverage gains. 837 tests passed (3 rounds, zero regression).**
+
+### Added / 新增
+- **全自主认知循环** (`SOMA.run_autonomous()`): 给定目标，多轮迭代「感知→推理→行动→检查」，携带上轮结果推进直到完成或达上限；支持外部反馈函数 / LLM / 本地三种完成判断
+- **多模态记忆** (`soma/multimodal.py`): `remember_image()`（图片引用+描述+可选 OCR）、`remember_table()`（结构化数据 / markdown / CSV 三种输入自动解析）
+- **dash 知识门控 API**: `/api/knowledge/learn`（五层过滤入库）/ `/api/knowledge/config`（门控配置）/ `/api/knowledge/source-trust`（来源可信度评估）
+- **外部知识使用说明** (`docs/guides/external-knowledge.md`)
+
+### Changed / 变更
+- **测试覆盖大幅提升**: rbac 27%→95%、plugin 0%→98%、router 60%→83%；新增 test_autonomous / test_multimodal / test_rbac / test_plugin / test_router（30+ 测试）
+
+### Tested / 测试
+- 837 用例通过，3 轮全量测试零回归（较 2.0.9 新增 48 个测试）
+- 边界审查：run_autonomous（max_rounds=0/空目标/反馈函数异常）、multimodal（列不匹配/无分隔行/非法扩展名）全部健壮
+
+---
+
+## [2.0.9] — 2026-08-18
+
+### External Knowledge Quality & Filtering / 外部知识准确度/质量/过滤
+
+**v2.0.9 strengthens external knowledge ingestion with source trust, content quality detection, fact corroboration, and tunable strictness. 788 tests passed.**
+
+### Added / 新增
+- **来源可信度分级** (`soma/source_trust.py`): 域名白名单/黑名单 + 信誉分，URLSource 抓取与门控层0 双重校验，黑名单来源直接拒绝
+- **内容质量检测** (`soma/content_quality.py`): 信息密度/重复率/营销词/空话/噪音多维评分，可选 LLM 增强（有 key 自动用、无 key 纯本地兜底）
+- **事实印证层**: 用内容关键词检索已有记忆计算印证度，孤立事实（无已有知识支撑）降级为 quarantined
+- **严格度配置**: `strict/balanced/permissive` 三档，SOMAConfig 支持 `knowledge_gate_strictness` 等配置组
+- **CLI `--strictness`**: `soma learn --strictness strict "内容"`
+
+### Fixed / 修复
+- **冲突检测静默失效**: `MemoryManager.detect_conflicts()` 调用的 `SemanticStore.get_all_triples()` 不存在，被 except 吞掉 → 生产环境冲突检测从不工作。补真实接口
+- **风格样本静默失效**: `knowledge_gate._get_style_samples()` 调用的 `EpisodicStore.search()` 不存在 → 风格对齐样本永远为空。补 `get_style_samples()`
+- **弱 context 误拒**: `problem_context` 拆出的 Foci 与内容零命中时，回退用内容本身拆解，避免相关性过滤误拒所有内容
+
+### Changed / 变更
+- **URL 正文提取增强**: 跳过导航/页脚/广告区块，链接密度过高降级
+- **知识门控管道**: 五层 → 七层（层0 来源 + 层2.5 内容质量 + 层4.5 事实印证）
+- `learn_from_external()` 增加 `strictness` 参数
+
+### Tested / 测试
+- 788 用例通过，零回归（较 2.0.8 新增 25 个：来源可信度 7 / 内容质量 11 / 门控新层 7）
+
+---
+
+## [2.0.8] — 2026-08-17
+
+### Deployment & Agent Isolation Improvements / 部署与分身隔离改进
+
+**v2.0.8 adds load-on-init embedding, agent-scoped memory querying, pinned dependencies, and a multi-process deployment guide. 763 tests passed.**
+
+### Added / 新增
+- **`query_memory(agent_id=, group_id=)`**: 公开方法支持显式指定分身/组隔离维度，为空时回退到当前实例（向后兼容），集成层可用原生 agent 隔离替代手动内存过滤
+- **`warmup_on_init=True` 配置**: SOMA 构造时同步加载嵌入模型，把模型加载成本从「首个请求热路径」转移到「启动期」，消除首请求 30-100s 卡顿
+- **多进程部署文档** (`docs/guides/deployment.md`): embedder 内存预算、预热时机、进程内共享、离线环境建议
+
+### Changed / 变更
+- **`engine.decompose` 语义兜底**: embedder 未加载（`is_loaded=False`）时跳过向量语义匹配，直接走加权随机，避免热路径触发模型加载
+- **`reason()` 文档明确 use_llm 三档**: `False`=纯本地零 LLM / `"auto"`=智能路由 / `True`=强制 LLM，消除「零 LLM 自推理」命名误导
+- **激活异常日志**: 记忆激活失败时记录异常类型 + traceback 首行，不再静默吞掉
+
+### Fixed / 修复
+- **依赖版本锁定**: `litellm>=1.96.2,<1.97.0`（避免 1.97.0 Pydantic 循环引用错误）、`fastembed==0.7.4`（避免 ONNX 延迟回归 4.4x），防升级漂移
+
+### Tested / 测试
+- 763 用例通过，零回归（较 2.0.7 新增 3 个：query_memory 隔离透传 / warmup 配置 / decompose 跳过语义兜底）
+
+---
+
+## [2.0.7] — 2026-08-16
+
+### Security + Performance / 安全修复 + 性能优化
+
+**v2.0.7 fixes a path-traversal vulnerability, a memory-isolation test bug, and three performance regressions affecting multi-agent deployments. 760 tests passed.**
+
+### Added / 新增
+- **`soma` CLI `--project` 参数**: `soma recall/record/think/... --project <名>` 支持项目记忆库（`~/.soma/<项目>/`）与共享记忆库（`~/.soma/shared/`）隔离，默认不带参数仍走共享库（向后兼容）
+- **多智能体 embedder 共享**: 多个 agent 分身复用同一份 ONNX 模型，避免重复加载
+
+### Fixed / 修复
+- **路径穿越漏洞（高危）**: `soma record/recall --project` 无路径校验，可读写 `~/.soma/` 外任意路径，现加正则白名单 `^[A-Za-z0-9_-]+$`
+- **recall 阈值 bug**: CLI 搜索场景被自适应激活阈值（~0.3）全过滤导致返回空，现 CLI 场景清零阈值
+- **importance 越界**: `record -i` 未 clamp 到 [0,1]，可写入异常重要性，现钳制到 [0,1]
+- **测试隔离缺陷**: `test_backward_compat` 用默认 persist_dir 污染真实记忆库 + adaptive 阈值 flaky，现用 tmp_path 隔离
+
+### Changed / 变更
+- **性能优化 1**: `engine.decompose` 里 `_extract_keywords(problem)` 缓存只算一次，避免重复 jieba 分词
+- **性能优化 2**: `chat()` 预分析复用主流程已拆解的 foci/activated，避免重复一轮 decompose+activate 检索
+- **性能优化 3**: `SOMA_Agent` 支持传入共享 embedder，`create_agents` 多分身共享一份 ONNX 模型（内存 N×100MB → 1×100MB）
+
+### Tested / 测试
+- 760 用例通过，零回归（较 2.0.6 的 748 新增 12 个）
+
+---
+
+## [2.0.6] — 2026-07-27
+
+### Code Memory + Memory Lifecycle + Unified CLI / 代码结构化记忆 + 主动记忆管理 + 统一 CLI
+
+**v2.0.6 adds code memory, active memory management, unified CLI, knowledge gate, and auto graph builder. 748 tests passed.**
+
+### Added / 新增
+- **代码结构化记忆** (`soma/code_memory.py`): AST 解析 Python 代码，自动提取函数/类/调用图/导入关系，生成语义三元组 (CALLS/INHERITS/HAS_METHOD)。`SOMA.remember_code()` 一行接入
+- **主动记忆管理** (`soma/memory_manager.py`): 艾宾浩斯遗忘曲线 (情节7天/语义30天/技能90天半衰期)，同主题 ≥5 条情节记忆自动合并为语义摘要，矛盾三元组自动冲突检测+严重度分级，低于阈值记忆自动修剪。`SOMA.memory_health()` / `SOMA.memory_maintenance()`
+- **统一 CLI** (`soma/cli.py`): `soma recall/record/think/maintain/stats/health` 六个子命令，所有智能体一行终端命令接入 SOMA 共享记忆网络
+- **embedder 延迟健康监控**: `last_latency_ms` / `avg_latency_ms` / `is_healthy` / `latency_report()`，实时检测 ONNX 性能回归
+- **全智能体集成指南**: `AgentsCollab/knowledge/SOMA智能体集成指南.md` + 各智能体专属接入卡片
+- **SOMA Server 自启动脚本**: `scripts/start_soma_server.bat`
+- **SECURITY.md**: 安全策略与审计历史
+
+### Fixed / 修复
+- `skip_record` 参数: 内部 LLM 合成调用不再重复录制 session
+- Benchmark 评分公式: 大数据量查询延迟阈值 300→500ms + 对数衰减替代线性扣分，不再被 ONNX 版本波动灾难性扣分
+- P1 安全修复: 权限白名单收紧 (移除 21 条危险通配规则)
+- P2 安全修复: 遥测缓存清理 + CodexSandboxUsers ACL 移除 + AgentsCollab 权限收紧
+
+### Changed / 变更
+- `soma/__init__.py`: 新增 `remember_code()` / `memory_health()` / `memory_maintenance()` 方法
+- `pyproject.toml`: 注册 `soma` CLI 命令 + 版本号 → 2.0.6
+- Claude Code hooks: SessionStart 改用 `soma recall`，新增 Stop hook `soma maintain`
+- CLAUDE.md: 记忆操作命令更新为 `soma` CLI
+
+### Tested / 测试
+- 748 用例通过，零回归 (1个网络环境预现有失败)
+
+### Added (continued) / 新增（续）
+- **外部知识门控管道** (`soma/knowledge_gate.py`): 五层质量过滤 — 相关性→SOMA消化→风格对齐→一致性校验→分级存储。纯本地，零LLM。`SOMA.learn_from_external()` + `soma learn` CLI
+- **自动知识图谱构建** (`soma/graph_builder.py`): 三路自动生长 — 中文模式匹配(21种关系) + 会话共现边 + 关键词重叠边。`SOMA.build_knowledge_graph()` + `soma graph` CLI
+- 155 个新测试 (42 + 24 + 24 + 65)
+
+---
+
+## [2.0.5] — 2026-07-14
+
+### Counterfactual Reasoning + HTTP Server + Multi-Modal / 反事实推理 + 独立服务 + 多模态记忆
+
+**v2.0.5 adds 3 pure-additive features. Wisdom +1.9 from counterfactual reasoning. 649 tests passed.**
+
+### Added / 新增
+- F: L3 counterfactual reasoning — if assumptions fail, what alternatives exist
+- G: soma/server.py standalone HTTP service (soma-server CLI)
+- H: MemoryUnit content_type/structured_data multi-modal fields
+- pyproject.toml: fastembed version pinned to <0.8.0 (ONNX regression fix)
+
+### Fixed / 修复
+- llm_used initialization across all code paths (Codex verified)
+- fastembed version constraint to prevent ONNX latency regression
+
+### Changed / 变更
+- soma/__init__.py __version__ to 2.0.5
+- pyproject.toml version to 2.0.5
+- Codex verified: Wisdom 85.6 (+1.9), 10/10 semantic recall
+
+## [2.0.4] — 2026-07-07
+
+### Wisdom Perception Upgrade / 智慧感知升级
+
+**v2.0.4: L3 LLM-enhanced pre-analysis plus frontend-visible analysis depth. Benchmark 92.6 (all-time high).**
+
+### Added / 新增
+- L3 complex questions use LLM-enhanced pre-analysis (vs L2 lightweight local)
+- chat() returns pre_analysis field: text plus dimensions plus mode for frontend display
+- llm_used fully initialized across all code paths
+
+### Changed / 变更
+- soma/__init__.py __version__ to 2.0.4
+- pyproject.toml version to 2.0.4
+- Benchmark: Overall 92.6, Wisdom 83.7 (+7.8 vs v2.0.2)
+
+## [2.0.3] — 2026-07-06
+
+### Wisdom Depth Enhancement / 智慧深度提升
+
+**v2.0.3: L2+ questions auto-inject reason() pre-analysis into LLM prompt.**
+
+### Added / 新增
+- chat() pre-analysis injection for L2+ complexity
+- soma_enhancement field in API response
+- Version 2.0.3
+
+## [2.0.2] — 2026-07-03
+
+### Smart LLM Routing + Execute + FAISS Batch / 智能LLM路由 + 自主执行 + FAISS批量
+
+**v2.0.2 adds intelligent LLM auto-routing, autonomous action execution, and performance optimization.**
+
+### Added / 新增
+- reason(use_llm="auto"): L1→pure local, L2→LLM enhanced (with key), L3→LLM (smart routing)
+- soma.execute(): action execution — decision logging + evolution trigger + next steps
+- FAISS batch save: every 50 incremental adds (down from every add) for 16K+ memory performance
+- llm_mode field in reason() return: "local" / "llm_enhanced"
+
+### Fixed / 修复
+- llm_used uninitialized variable causing reason/execute crash (found by Codex)
+
+### Changed / 变更
+- soma/__init__.py `__version__` → 2.0.2
+- pyproject.toml version → 2.0.2
+- soma/vector_store.py `_SAVE_BATCH = 50`
+
+## [2.0.1] — 2026-06-30
+
+### Evolution + LLM Hybrid + Multi-Agent Loop / 进化自适应 + LLM混合 + 多Agent循环
+
+**v2.0.1 improves evolution with adaptive thresholds, adds optional LLM enhancement, and extends the autonomous loop to multi-agent mode.**
+
+### Added / 新增
+- evolve() adaptive thresholds: auto-scales based on data volume (more data = lower thresholds)
+- get_evolution_quality(): returns evolution quality score (0-1)
+- reason(use_llm=True): optional LLM-enhanced synthesis while keeping internal reasoning
+- loop_multi(): multi-agent autonomous loop with cross-validation + consensus
+
+### Fixed / 修复
+- law_discovery.py: disabled joblib multiprocessing (JOBLIB_MULTIPROCESSING=0), fixed 4 worker x embedding model = 10GB memory leak
+
+### Changed / 变更
+- soma/__init__.py `__version__` → 2.0.1
+- pyproject.toml version → 2.0.1
+
+## [2.0.0] — 2026-06-26
+
+### Autonomous Cognitive Loop / 自主认知循环
+
+**v2.0.0 introduces the full autonomous cognitive loop.**
+
+### Added / 新增
+- soma.reason_deep(): Multi-round self-dialogue with devil's advocate
+- soma.perceive(): Auto-detect problem complexity and memory relevance
+- soma.act(): Generate actionable recommendations from analysis
+- soma.loop(): Full closed loop — perceive→reason→act→feedback→evolve
+- soma_loop MCP tool
+
+### Changed / 变更
+- soma/__init__.py `__version__` → 2.0.0
+- pyproject.toml version → 2.0.0
+
+## [1.1.9] — 2026-06-19
+
+### soma.reason() Zero-LLM Autonomous Reasoning / 零LLM自主推理
+
+**v1.1.9 introduces autonomous reasoning: full pipeline without external LLM.**
+**v1.1.9 实现自主推理管道，无需外部LLM。**
+
+### Added / 新增
+- soma.reason(): Decompose(7 laws) → Activate(memories) → Reason(causal+analogy+hypothesis) → Synthesize(templates+evidence). Zero LLM, offline, ~500ms.
+- soma_reason MCP tool
+- Benchmark: Overall 80.0, Evolution 78.2 (all-time high)
+
+## [1.1.8] — 2026-06-18
+
+### force_evolve + Finance Sync + MCP / 进化修复 + 金融同步 + MCP扩展
+
+**Evolution recovered from 70.2 to 76.4 via force_evolve threshold tuning.**
+**进化分从70.2恢复到76.4。**
+
+### Added / 新增
+- evolve(force=True): lower thresholds, bigger adjustments, every 30th session
+- soma_force_evolve MCP tool
+- Finance Edition synced FAISS HNSW
+
+## [1.1.7] — 2026-06-17
+
+### v1.1.4 Baseline Rebuild / v1.1.4 基线重构
+
+**v1.1.7 rebuilds from v1.1.4 baseline with only proven improvements. Benchmark: 83.4 (historical best), Memory 91.6, Wisdom 77.8, Latency 58ms (2x faster).**
+**v1.1.7 从 v1.1.4 基线重构，仅保留验证有效的改进。基准 83.4 分（历史最佳），记忆 91.6，智慧 77.8，延迟 58ms（快 2 倍）。**
+
+### Added / 新增
+- FAISS HNSW efSearch=64: Recall 0.7→0.9 (Codex P0 validated)
+- orchestrator.cross_validate(): Multi-agent cross-review on demand
+- orchestrator.share_law_discovery(): >=2 agent consensus law sharing (every 20 solves)
+- orchestrator.consensus_evolve(): Weighted-average consensus evolution (every 20 solves)
+
+### Removed / 移除
+- _auto_tune_from_history (opened analytics DB on init, caused latency)
+- Adaptive recall_threshold (wisdom -2.0 regression)
+- Index tolerance window (recall 0.9→0.5)
+- Query cache (ineffective)
+
+## [1.1.6] — 2026-06-11
+
+### 跨会话自适应 + 反思闭环 + SSE实时推送 / Cross-Session Auto-Tuning + Reflection + SSE Push
+
+**v1.1.6 让中道引擎从单会话优化升级为跨会话持续进化。**
+**v1.1.6 upgrades Zhongdao from single-session optimization to cross-session continuous evolution.**
+
+### Added / 新增
+
+- **A 跨会话参数自适应 / Cross-Session Auto-Tuning**: 启动时自动从历史校正数据加载最优中道参数（≥5条时生效）。`auto_tune(days)` 手动触发。 / Auto-loads optimal Zhongdao params from history (>=5 corrections). Manual trigger available.
+- **B 反思闭环 / Reflection Loop**: `soma.reflect()` 无参数时复盘最近20条决策记忆，识别模式+生成建议并写入记忆库。 / Batch reviews 20 recent decisions, identifies error/success patterns, generates suggestions, writes to memory.
+- **D SSE实时推送 / SSE Push**: `GET /api/zhongdao/events` SSE端点，chat接口自动推送最近3条校正事件。 / SSE endpoint for real-time correction events, auto-pushes last 3 to frontend.
+
+### Changed / 变更
+
+- `soma/__init__.py` `__version__` → 1.1.6
+- `pyproject.toml` version → 1.1.6
+- `.github/SECURITY.md` supported versions: 1.1.6 is latest
+
+---
+
+## [1.1.5] — 2026-06-08
+
+### 中道引擎智能激活 — Zhongdao Auto-Activation
+
+**v1.1.5 引入中道引擎智能激活模式**，不再需要手动判断是否开启。
+
+### Changed
+
+- **智能激活 (`soma/config.py`)**: `enable_zhongdao` 新增 `"auto"` 选项。设为 `"auto"` 时，SOMA 根据问题复杂度自动决定：L1 简单问题跳过中道（零开销），L2+ 复杂问题自动启用偏差校正。
+- **Agent 自适应 (`soma/agent.py`)**: `respond()` 和 `chat()` 管道在 auto 模式下自动跳过 L1 问题的中道校正步骤，节省不必要的开销。
+- **SOMA 门面 (`soma/__init__.py`)**: `SOMA(enable_zhongdao="auto")` 一行配置即可启用智能模式。
+- **Dash 默认 (`dash/server.py`)**: 生产环境默认使用 `"auto"` 模式。
+- 100% 向后兼容：`True`/`False` 行为不变。
+
+---
+
+## [1.1.4] — 2026-06-04
+
+### 中道引擎闭环与智能化 — Correction Effectiveness + Auto-Tuning + Archiving
+
+**v1.1.4 闭合中道引擎反馈环路**，让校正从"执行"到"验证"到"优化"形成完整闭环。
+
+### Added
+
+- **B1 校正效果追踪 (`soma/analytics.py`)**: `get_correction_effectiveness(days)` — 返回每日校正次数趋势、各规律被校正频率分布、平均权重变化幅度。Dash 中道视图新增趋势柱状图和各规律校正频率面板。
+- **B2 自动调参建议 (`soma/analytics.py`)**: `suggest_optimal_params(days)` — 基于历史校正数据智能推荐最优 threshold_ratio/penalty_factor/boost_factor/min_samples。Dash 中道视图新增调参建议卡片（当前 vs 推荐参数对比 + 文字建议）。
+- **B3 Dash 趋势可视化 (`dash/frontend/src/views/ZhongdaoView.vue`)**: 新增校正趋势柱状图（14天）、各规律校正频率分布、智能调参建议卡片、归档清理按钮、时间范围选择器（7/14/30/90天）。
+- **B4 自动归档清理 (`soma/analytics.py`)**: `archive_old_corrections(days=90)` — 将旧校正记录迁移到 `zhongdao_corrections_archive` 表，防止 DB 膨胀。Dash 提供一键归档按钮。
+- **B5 零熵反馈修复**: Dash 移动端适配优化、API 端点冷却保护、中道视图 i18n 完善。
+- **6 项新测试 (`tests/test_zhongdao.py`)**: 校正效果追踪/空数据/有数据、调参建议/无数据/过载场景、归档清理/空表/旧记录。
+- **3 个新 API 端点** (`dash/server.py`): `GET /api/zhongdao/effectiveness`、`GET /api/zhongdao/suggest`、`POST /api/zhongdao/archive`。
+
+### Changed
+
+- `soma/__init__.py` `__version__` → 1.1.4
+- `pyproject.toml` version → 1.1.4
+- 测试从 644 → 650
+
+---
+
+## [1.1.3] — 2026-06-01
+
+### 中道引擎深化 — 参数可配+可视化+跨Agent协调+持久化日志 (Zhongdao Deepening)
+
+**v1.1.3 深化中道引擎**，基于零熵智库 v1.1.2 线上验证反馈（Wisdom +1.4, gini 0.2498→0.2226）进行四项升级。
+
+### Added
+
+- **A1 参数可配置化 (`soma/config.py`, `soma/__init__.py`)**: 中道引擎四个参数暴露为 `SOMAConfig` 字段：`zhongdao_threshold_ratio`(0.40)、`zhongdao_penalty_factor`(0.20)、`zhongdao_boost_factor`(0.15)、`zhongdao_min_samples`(5)。`SOMA(enable_zhongdao=True, zhongdao_threshold_ratio=0.30)` 一行配置。
+- **A2 Dash 仪表盘可视化 (`dash/frontend/src/views/ZhongdaoView.vue`, `dash/server.py`)**: 侧边栏新增 ☯️ 中道引擎视图 — 规律热力图 + 校正时间线。3个API端点：`GET /api/zhongdao/status`、`GET /api/zhongdao/history`、`POST /api/zhongdao/reset`。支持中英双语。
+- **A3 跨Agent趋同检测 (`soma/multi_agent/orchestrator.py`)**: `_detect_cross_agent_convergence` — ≥2个Agent在同一规律上过度使用>40%时自动标记，共识回答末尾附带中道协调提示脚注。中道配置通过 orchestrator 透传到各Agent。
+- **A4 持久化校正日志 (`soma/analytics.py`)**: 新增 `zhongdao_corrections` SQLite表 + `record_zhongdao_correction`/`get_zhongdao_history`/`get_zhongdao_summary` 三个方法。每次校正事件写入数据库，支持按规律/类型过滤查询。
+- **22项新测试 (`tests/test_zhongdao.py` +292行)**: 跨Agent趋同/持久化/参数化全覆盖。
+- **安装脚本** (`scripts/install_v1.1.3.bat`, `scripts/install_v1.1.3.sh`, `scripts/verify_install.py`): Windows/Linux 一键安装 + 4项验证。
+
+### Changed
+
+- `soma/__init__.py` `__version__` → 1.1.3
+- `pyproject.toml` version → 1.1.3
+- `docs/index.md` API 参考版本标注更新
+- `.github/SECURITY.md` 支持版本表：1.1.3 为 latest
+
+---
+
+## [1.1.2] — 2026-05-23
+
+### 中道引擎 — 会话内实时规律使用偏差检测与自校正 (Zhongdao Engine)
+
+**v1.1.2 引入中道引擎**，补齐 SOMA 认知校正体系最后一块拼图。SOMA 现拥有三层偏差校正：
+
+| 层级 | 机制 | 作用域 | 持久化 |
+|---|---|---|---|
+| FrameAnchoringDetector | 用户侧框架锁定检测 | 每轮 | 无（仅提醒） |
+| **ZhongdaoEngine (NEW)** | **AI侧规律过度使用校正** | **每会话** | **临时（单次调用）** |
+| MetaEvolver | 跨会话趋势校正 | 批量（每5次会话） | SQLite（持久化） |
+
+### Added
+
+- **中道引擎 (`soma/zhongdao.py`)**: `ZhongdaoEngine` — 会话内实时规律使用偏差检测与自校正（~177行）。`track()` 记录每次 respond() 的规律使用，`detect_and_correct()` 当单条规律使用率 >40%（最少5次采样）触发：过度使用降权 ×0.80 + 被忽略关联规律提权注入 ×1.15（最多2条）。纯规则匹配，零 LLM 依赖，默认关闭。`reset()` 清空会话统计，`last_corrections` 暴露最近校正记录。
+- **SOMAConfig 新字段 (`soma/config.py`)**: `enable_zhongdao: bool = False` — 默认关闭，100% 向后兼容。
+- **SOMA_Agent 集成 (`soma/agent.py`)**: respond() 管道在 decompose() 之后插入中道校正（~10行），含详细日志输出（使用分布/降权详情/提权详情三行格式）。
+- **SOMA 门面集成 (`soma/__init__.py`)**: `SOMA(enable_zhongdao=True)` 开启，chat() 返回字典含 zhongdao 校正信息。新增 `__version__` 属性。
+- **12 项测试 (`tests/test_zhongdao.py`)**: 默认关闭/track累计/采样不足不触发/单条>40%触发降权/被忽略规律提权注入/权重打折加成/reset清空/last_corrections/端到端开启关闭/与FrameAnchoringDetector共存/rationale标记。
+
+### Changed
+
+- `__main__.py` 版本号 v0.6.0→v1.1.2（跨越5个版本未更新）
+- `multi_agent/` 模块版本号 v1.1.1→v1.1.2
+- `.github/SECURITY.md` 支持版本表：1.0.0→1.1.2 为 latest
+- `docs/index.md` API 参考版本标注更新
+
+### Benchmark (零熵智库验证)
+
+- Run#38 (OFF) vs Run#39 (ON): Wisdom +1.4, gini 0.2498→0.2226, contradiction_analysis -9, pareto_principle +9, scalability 100.0 不变
+
+---
+
+## [1.1.1] — 2026-05-19
+
+零熵智库本地测试反馈修复版本。核心修复：L1简单问题跳过推理框架（回复膨胀从25倍降至正常），多Agent路由补齐（所有已注册Agent均参与），嵌入模型预热。
+
+### Fixed
+- **回复严重膨胀**：L1简单问题跳过推理框架注入，用户"50字以内"要求从实际返回1268字降至约50字。`_build_prompt` 复杂度自适应（L1轻量/L2+完整框架），自动提取用户长度约束
+- **多Agent仅激活1个**：`_solve_impl` 路由后补齐未匹配的已注册Agent（supplement策略），确保所有专家参与
+- **嵌入模型首次失败**：`SOMAEmbedder.warmup()` 后台预热，`episodic.py` 错误信息增加"首次下载中"提示
+- **Orchestrator API缺失**：新增 `list_agents()` 方法 + `_agents` 实例映射
+
+### Changed
+- `SOMA_Agent` 新增 `_current_complexity` 实例变量，跟踪问题复杂度
+- `_build_prompt` 重构为两分支：L1轻量直答 / L2+完整推理框架
+- `ExpertRouter.route_multi` 结果不足时自动补齐未匹配Agent
+
+## [1.1.0] — 2026-05-19
+
+### 协作深化 — 并行调度 + 分布式权重演化接入
+
+**v1.0.0 的 SOMAOrchestrator 逐个串行问专家，3个专家每个200ms就得等600ms。v1.1.0 改为并行分发，同样3个专家只需等最慢那个。同时将 DistributedEvolver（268行，v1.0.0已写完但零调用）接入编排管道，每次求解自动记录各Agent表现，定期合并全局权重并回写校准。**
+
+### Added
+
+- **并行 Agent 调度 (`orchestrator.py`)**: `_dispatch_parallel` 方法，用 `ThreadPoolExecutor` 同时向所有专家提问。5专家实测加速比 **4.9x**（502ms → 102ms）。自动退化：单专家时不启动线程池。结果按注册顺序重排保证确定性。
+- **分布式演化接入 (`orchestrator.py`)**: `_evolve_after_solve` 在每次 solve 后记录各 Agent 参与次数和成功率，每 N 次（默认10）自动调用 `DistributedEvolver.merge_weights()` + `apply_all()` 进行全局权重合并和回写。
+- **3 个配置项 (`config.py`)**: `orchestration_parallel`（并行开关，默认True）、`orchestration_evolution_enabled`（演化开关，默认True）、`orchestration_evolution_interval`（合并间隔，默认10）。
+- **14 项专项测试 (`tests/test_orchestrator_v1_1.py`)**: 覆盖串行/并行分发、失败隔离、确定性排序、单Agent退化、演化统计更新、定期合并、开关控制、注销清理、stats完整性、向后兼容。
+
+### Changed
+
+- `SOMAOrchestrator.__init__` 新增分布式演化器初始化、会话计数追踪
+- `SOMAOrchestrator.create_agents` 自动注册 agent 到 DistributedEvolver
+- `SOMAOrchestrator.remove_agent` 同步从演化器注销
+- `SOMAOrchestrator.stats` 新增 `solve_count`、`parallel_enabled`、`evolution_enabled`、`evolution` 字段
+
+### Compatibility
+
+- 100% 向后兼容。存量 604 项测试全部通过。所有新功能在默认 `orchestration_mode="single"` 下不触发。
+- SOMAConfig 新增字段均有默认值，现有配置无需修改。
+
+---
+
+## [1.0.0] — 2026-05-16
+
+### 🏔️ v1.0 里程碑 — 五线交汇，认知内核成形
+
+**从 v0.1.0 埋下第一颗种子，到 v1.0.0 五条能力线完整交汇。这不是功能堆叠出来的版本号，而是 SOMA 作为"AI Agent 认知内核"的架构宣言。**
+
+v0.1 只有 5 条硬编码规律 + ChromaDB 存储。v1.0 拥有了完整的三层记忆体系（碎片→场景→画像）、七条自进化思维规律、因果推理+冲突检测+跨域类比引擎、多Agent协作系统、框架锚定觉察层、五维基准测试体系、以及 511 个全通过测试。
+
+**设计原则贯彻始终**：所有新功能默认关闭，100% 向后兼容。从任何 0.x 版本升级到 v1.0.0，零代码改动。
+
+### 五条能力线 v1.0 终态
+
+| 能力线 | 始于 | 成于 | v1.0 核心交付 |
+|--------|------|------|---------------|
+| **记忆** | v0.1 ChromaDB | v1.0 三层体系 | L1情节碎片 + L2场景块(自动聚合) + L3用户画像(自动提炼) + 合并+遗忘+外部导入 |
+| **推理** | v0.5 规律链 | v1.0 深度推理 | 因果链追溯 + 冲突检测 + 跨域类比 + 质量自评 + 图谱检索扩展 + 反向传播 |
+| **协作** | v0.9.0 多Agent | v1.0 协作体系 | 专家注册+3级路由+3种共识+分布式进化+三态记忆隔离 |
+| **进化** | v0.5 偏差检测 | v1.0 完整闭环 | 反思→调权→固化→分享 + 自动场景捕获 + 动态步长 |
+| **工程** | v0.3 基准雏形 | v1.0 可信体系 | 511测试 + 五维基准(统计输出) + 50题标准数据集 + 竞品对比框架 |
+
+### 关键技术指标 (v1.0.0)
+
+- **511 项测试** 全部通过（v0.9.1: 485项）
+- **五维基准综合评分**: 85.5/100（记忆97.6 / 智慧87.3 / 进化60.2 / 可伸缩100.0）
+- **语义召回率**: 100%（1,050条生产记忆）
+- **查询延迟**: 209ms（完整框架路径），~30ms（简单查询）
+- **零外部服务依赖**: ONNX + SQLite + FAISS，纯 CPU 推理
+
+### 从 v0.1 到 v1.0 的关键跃迁
+
+```
+v0.1.0        v0.5.0        v0.7.0        v0.8.0        v0.9.0        v0.9.1        v1.0.0
+   │             │             │             │             │             │             │
+会存储        会思考        会整理        会推理        会协作        会觉察        会分层
+                                               ───────▶    ───────▶    ───────▶
+                                   从"工具"到"认知伙伴"的演进方向
+```
+
+---
+
+## [0.9.1] — 2026-05-13
+
+### 零熵觉察层 — 从"解决问题"到"看见自己在怎么想"
+
+**设计原则**: 100%向后兼容，所有新功能默认关闭。v0.8.0/v0.9.0 存量代码零改动升级。
+
+v0.9.1 新增一个维度：**觉察**。在 v0.9.0 多Agent协作的基础上，SOMA 现在能察觉用户的认知框架锁定——当你连续从单一视角分析问题时，系统以脚注形式温和提醒，不强制、不阻断、不改变管道。
+
+### Added
+
+- **框架锚定检测器 (`soma/hub/_frame_detector.py`)**: `FrameAnchoringDetector` — 纯关键词匹配（零 LLM/嵌入器依赖），8对认知框架（技术/商业/管理/法律/短期/长期/内求/外求），对立框架自动建议。检测阈值：window=5轮，同一框架占比≥60%触发，冷却3600秒去重。
+- **觉察提示注入 (`soma/agent.py`)**: `_build_prompt()` 在管道末尾以 blockquote 脚注形式注入觉察提示（修复前为 `##` 级标题插入问题前，干扰LLM输出——已修正为低干扰脚注格式）
+- **ActivationHub 集成 (`soma/hub/_core.py`)**: 新增 `detect_frame_anchoring()` 方法，带 G1 错误隔离（try/except 包裹，异常绝不传播到核心管道）
+- **SOMAConfig 新字段**: `enable_frame_detection: bool = False`（默认关闭）、`frame_detection_window: int = 5`
+- **SOMA 门面集成 (`soma/__init__.py`)**: `respond()` 和 `chat()` 双路径均支持框架检测（仅在 config flag 开启时生效）
+- **审核标准文档 (`docs/contribution-audit-standards.md`)**: 4类禁止内容 + 5柱接受量表（善行/善人/善心/善史/善修），审核员操作流程与10个边界案例
+
+### Changed
+
+- `ActivationHub.__init__` 新增可选 `frame_detector` 参数（末尾追加，不影响现有传参）
+- `SOMA_Agent.__init__` 新增 `_recent_user_turns` 和 `_last_frame_anchoring` 实例变量
+- `soma/hub/__init__.py` 导出 `FrameAnchoringDetector`
+
+### Fixed
+
+- **觉察提示干扰 LLM 输出质量**: 初版觉察提示以 `##` 级标题插入 `## 当前问题` 之前，且明确写出框架名称，与核心 prompt "不要在回答中提及任何规律/理论/框架的名称"产生指令矛盾，导致基准测试各项分数显著下降。修复：降级为 blockquote `>` 脚注、移至 prompt 最末尾（"重要"说明之后），视觉权重从核心段落级降为附注级。
+
+### Compatibility
+
+- 30+ 公开 API 签名零变更
+- `SOMA()`, `SOMA.respond()`, `SOMA.chat()` 等所有公开方法行为不变（检测默认关闭）
+- `pip install soma-wisdom==0.9.1` 直接替换 0.8.0/0.9.0，无需修改任何代码
+
+---
+
+## [0.9.0] — 2026-05-11
+
+### 多智能体协作 — 从"单智者思考"到"多智者协作"
+
+**生产验证**: 473项测试全通过。4个新模块（registry/router/evolve/consensus），~1,200行新增代码，零外部依赖增加。
+
+v0.9.0 实现了从个体到群体的范式跃迁。多个 SOMA Agent 以团队形式协作，各自拥有独立记忆、独立进化路径和专长领域，通过专家路由、分布式演化和共识协议形成超越个体的集体智能。
+
+### Added
+
+- **Agent 注册表 (`soma/multi_agent/registry.py`)**: `AgentRegistry` — 专家注册/注销、专长标签匹配（精确1.0/模糊0.7/不匹配0.0）、会话统计自动追踪。纯内存字典+dataclass，零外部依赖。
+- **专家路由器 (`soma/multi_agent/router.py`)**: `ExpertRouter` — 三层路由策略（L1关键词匹配8大领域80+关键词毫秒级 → L2语义匹配余弦相似度 → L3默认回退），零 LLM 参与路由决策。支持单专家路由和多专家路由（`route_multi()`）。
+- **共识协议 (`soma/multi_agent/consensus.py`)**: `ConsensusProtocol` — 三层策略（L1加权投票/L2 LLM仲裁/L3辩证综合），输出带置信度的共识结果。支持无 LLM 的纯规则模式。
+- **分布式演化 (`soma/multi_agent/evolve.py`)**: `DistributedEvolver` — 各Agent独立演化、定期合并全局权重（加权平均，样本量加权）、冲突仲裁（分歧>0.2时标记）。保留个体专长同时共享群体经验。
+- **记忆三态隔离 (`soma/memory/core.py`)**: agent_id + group_id 维度的三态隔离——私有记忆（agent_id=自己）、组共享（shared_group_id）、全局记忆（agent_id=""）。所有检索路径透传隔离参数。
+- **记忆检索增强**: `MemoryCore.query()` 新增跨域类比回退、图谱扩展BFS（O(1)哈希查找）、FTS5双路径（trigram + LIKE自动降级）
+
+### Changed
+
+- `SOMA.__init__` 新增 `agent_id` 和 `group_id` 参数（可选，默认""）
+- `SOMA_Agent.__init__` 新增 `agent_id` 和 `group_id` 参数
+- `MemoryCore` 所有检索方法支持 `agent_id`/`group_id` 隔离
+- `ActivationHub` 管道新增反向传播（高激活记忆→建议焦点）
+- 基准测试引擎支持多轮统计（均值±标准差/95%置信区间/CV%/稳定性评级）
+
+### Compatibility
+
+- 所有 v0.8.0 API 签名不变
+- `agent_id` 和 `group_id` 为可选参数，不传则行为与 v0.8.0 一致
+
+---
+
+## [0.8.0] — 2026-05-09
+
+### 知识图谱与推理引擎 — 从"记忆检索"到"认知推理"
+
+**生产验证**: 零熵智库1752条真实记忆。基准测试综合80.5分（含因果推理+冲突检测+跨域类比新维度）。422项测试全通过。基准测试耗时181s→66s（-63%），查询延迟1098ms→209ms（-81%），系统负载0.97→0.13。
+
+v0.8.0 引入六大认知能力：图谱检索扩展打破关键词孤岛，因果推理链回答"为什么"，冲突检测标记矛盾记忆，反向传播让记忆反向建议思维焦点，跨域类比在无关领域间架桥，质量评估自动评分反思输出。同时解决三项CPU性能瓶颈（逐条ONNX编码→批量、全图遍历O(N)→O(1)、AnalogyEngine无缓存重复扫描）。
+
+### Added
+
+- **图谱检索扩展 (`soma/memory/core.py`)**: `_expand_via_semantic_graph()` 从匹配关键词沿语义图谱BFS遍历（depth=2，衰减权重0.6→0.36），发现邻居概念作为扩展检索词。打破关键词检索孤岛——不再只搜用户输入的词，也搜图谱中关联的概念。O(K) hash查找替代O(N)全节点扫描。
+- **因果推理引擎 (`soma/memory/causal.py`)**: `CausalGraph` 基于语义三元组构建因果链。`find_root_causes()` 回溯根本原因，`get_causal_chain()` 查找两节点间的因果路径。`hub.causal_analyze()` 在激活阶段自动追踪因果链路。支持环路检测与max_depth保护。
+- **记忆冲突检测 (`soma/hub/_conflict.py`)**: `ConflictDetector` 在激活管道中识别逻辑矛盾的记忆对（如"降价→流失"vs"服务质量→流失"）。两阶段检测：(1) 否定模式匹配（中英双语），(2) 谓词冲突（causes↔prevents等高冲突对）。冲突分数≥0.5的记忆对自动降权（×0.4惩罚系数）。批量ONNX编码（单次推理替代逐条）确保<100ms延迟。
+- **反向传播 (`soma/hub/_core.py`)**: `_backward_propagate()` — 高激活记忆（score≥0.4）的领域标签反向映射到思维规律，自动生成建议焦点。权重上限不超过任一直接触发规律的50%，防止偏离主线。
+- **跨域类比引擎 (`soma/analogy.py`)**: `AnalogyEngine` 基于结构签名（in_predicates + out_predicates的frozenset）发现不同领域节点的拓扑同构。当两个看似无关的概念共享相同的图结构时自动桥接。节点扫描上限500、图谱上限2000防止大图CPU过载。结构签名缓存（边数变化时自动失效）。引擎实例在MemoryCore中惰性缓存复用。
+- **反思质量评估 (`soma/quality.py`)**: `QualityEvaluator` 对LLM生成的推理输出进行三维评分（一致性、连贯性、可操作性），0-1分制。加权综合（一致性40% + 连贯性30% + 可操作性30%），输出质量等级（excellent/good/fair/poor）。低质量回答通过 `needs_reflection` 标记提示。
+
+### Changed
+
+- `MemoryCore.query()` 新增图谱扩展关键词和跨域类比回退路径。检索顺序：关键词→图谱扩展→混合搜索→语义→技能→类比回退（仅当情节结果<3条时触发）
+- `MemoryCore._hybrid_search()` 新增图谱扩展词检索通道（权重×0.5，低于向量×2和关键词×1）
+- `MemoryCore._expand_via_semantic_graph()` 从 `list_nodes()` O(N)全量遍历 → `kw in graph` O(K)哈希查找
+- `MemoryCore.get_analogy_engine()` 新增实例缓存——引擎首次创建后跨查询复用结构签名缓存
+- `ActivationHub.activate()` 管道新增步骤6（冲突检测）和步骤8（反向传播）。冲突检测仅在框架会话（有laws参数）中运行
+- `ActivationHub.causal_analyze()` 从 `list_nodes()` → `kw in graph` O(K)查找
+- `ConflictDetector` 构造器移除未使用的 `semantic_store` 参数
+- `AnalogyEngine` 新增节点扫描上限(500)、图谱上限(2000)、结构签名字典缓存及边数变化失效机制
+- `SOMA.chat()` 管道新增suggested_foci收集和quality_evaluation评分
+- `benchmarks.py` `BenchmarkRun.version` 默认值从 `"0.6.1"` → `""`（自动获取）
+- `dash/server.py` FastAPI版本从 `"0.6.1"` → `importlib.metadata.version("soma-wisdom")` 自动检测
+- `competitors.py`、`scripts/live_benchmark.py` 硬编码版本号 → `_get_version()` 自动获取
+
+### Fixed
+
+- **CPU 100% 问题（零熵智库生产环境）**: 三处O(N×E)图遍历在1752条生产数据上被基准测试触发~65次：(1) `AnalogyEngine.find_analogous_nodes()` 全图扫描 `for node in graph.nodes()` × `_predicate_sets()` 每条迭代所有入/出边；(2) `_expand_via_semantic_graph()` 调用 `list_nodes()` 将NodeView转list；(3) `causal_analyze` 同样 `list_nodes()` 问题。修复：节点上限+缓存+O(1)hash查找
+- **ConflictDetector 重复ONNX编码**: 改进前每条候选记忆单独编码（M=15→~210次ONNX调用/查询）。改进后预编码每条一次（M次），v0.8.0进一步改为批量编码（1次ONNX调用替代M次）
+- **查询延迟回归 33ms→1098ms**: 根因为冲突检测在每次查询（包括简单`query_memory`）中逐条ONNX编码候选记忆（~10次×100ms=1000ms）。修复：批量编码+框架会话门控（仅laws参数时运行）
+- **版本号硬编码 "0.6.1"**: 6处硬编码版本号（dash/server.py、benchmarks.py×4、competitors.py、live_benchmark.py）统一改为 `importlib.metadata.version("soma-wisdom")` 自动获取
+- **Benchmark端点无保护机制**: `POST /api/benchmarks/run` 无冷却时间、无并发控制、无超时保护，直接同步调用 `run_full_benchmark()` 阻塞请求线程。修复：三层防护——运行中检查(409)、冷却间隔检查(429, 300s)、后台线程+600s超时。由零熵智库生产部署中发现并回传。（感谢 Qoder）
+
+### Performance
+
+| 指标 | v0.7.0 | v0.8.0 (修复前) | v0.8.0 (修复后) |
+|------|:---:|:---:|:---:|
+| 查询延迟 | 33ms | 1098ms | **209ms** |
+| 基准测试耗时 | — | 181s | **66s** |
+| 系统负载 | — | 0.97 | **0.13** |
+| Dash CPU | — | 40.9% | **8.6%** |
+
+---
+
+## [0.7.0] — 2026-05-07
+
+### 记忆智能 — 从"只增不减"到"合并+遗忘+外部知识"
+
+**生产验证**: 零熵智库1752条真实记忆，7天无重启。基准测试综合84.8分（v0.6.1: 65.7），进化闭环从0→71.9，可伸缩性100。342项测试全通过。
+
+v0.7.0 引入人脑式记忆管理三大机制：相似记忆自动摘要合并、低价值记忆主动遗忘归档、外部知识批量导入。让 AI Agent 的记忆系统从被动日志升级为主动精炼的知识引擎。
+
+### Added
+
+- **记忆摘要合并 (`soma/memory/consolidation.py`)**: ConsolidationEngine 提供两阶段相似度检测（FTS5 粗筛 + embedding 余弦相似度精排）、自动合并策略（保留高重要性为主体、独特信息追加、次要记忆标记待归档）、合并日志记录。`evolve()` 每次自动扫描最近30天记忆对，合并相似度 >0.85 的冗余记忆。
+- **主动遗忘引擎 (`soma/memory/forgetting.py`)**: ForgettingEngine 实现三层遗忘策略——(1) 时间衰减遗忘（Ebbinghaus 指数衰减 `strength = importance × e^(-λ × days) × (1 + recall_count × 0.2)`），(2) 访问频率遗忘（30天未访问+低重要性→冷记忆归档），(3) 冗余清理（合并后14天宽限期→永久删除）。类别差异化衰减率（策略0.07/事实0.10/洞察0.12/决策0.15/外部0.20）。归档到 `episodic_archived` 表，支持 `recall_archived()` 浏览和 `restore()` 恢复。
+- **外部知识集成 (`soma/memory/external.py`)**: KnowledgeSource 抽象基类 + FileSource（.md/.txt/.json/.jsonl/.yaml）分块导入 + URLSource（HTML抓取） + ExternalKnowledgeImporter。导入记忆标记 `memory_type="external"`，默认30天过期自动归档。`EpisodicStore.import_knowledge()` 一站式入口。
+- **LLM 重试机制 (`soma/retry.py`)**: tenacity 指数退避重试（3次、2s→30s）、可重试异常智能识别（网络超时/连接错误/5xx vs 认证失败/参数错误不重试）、`@llm_retry` 装饰器应用于所有 LLM 调用点（agent._do_llm_call / law_discovery / causal_extraction）。
+- **FTS5 搜索工具共用 (`soma/memory/search_utils.py`)**: 公共函数 `fts5_keyword_search()`，三库（episodic/semantic/skill）共用，FTS5 trigram + LIKE 双路径自动降级。
+
+### Changed
+
+- `SOMA.evolve()` 管道新增记忆合并和遗忘清理阶段，返回变更列表含 `memory_consolidation` 和 `memory_forgetting` 条目
+- `EpisodicStore` 新增 5 个公共方法：`consolidate()` / `forget()` / `recall_archived()` / `restore_archived()` / `import_knowledge()`
+- `_text_overlap()` 和 `_extract_unique_info()` 改用 jieba 分词，修复正则匹配中文整段为单 token 的问题
+- `_extract_json()` 拆分列表/字典两种解析分支，修复列表元素解包崩溃
+- `forgetting.py` 中 sqlite3.Row 访问改用 `row["key"] if "key" in row.keys() else default` 模式，修复 `.get()` 不存在的问题
+
+### Fixed
+
+- 中文文本相似度计算：正则 `[一-鿿]+` 将无空格中文匹配为整段单token → 改用 jieba 分词
+- JSON 列表导入解包崩溃：`_extract_json` 中 `enumerate` 返回 `(index, item)` 被错误解包为 `(k, item)` → 拆分为 list/dict 两分支
+- sqlite3.Row 访问崩溃：`row.get()` 不存在 → 改用 `in row.keys()` 检查
+
+---
+
+## [0.6.1] — 2026-05-06
+
+### 工程质量 + 客观测试体系
+
+v0.6.1 包含两部分工作：(1) 修复 0.6.0 在生产环境暴露的三个工程问题；(2) 建立四支柱客观测试评估体系，支撑对外可信展示。
+
+### Added
+
+- **多轮统计基准测试 (`MultiRunBenchmark`)**: 支持 N 轮独立运行（`--runs N`），每轮独立数据库。输出均值±标准差、95%置信区间、变异系数(CV%)、稳定性评级。CLI: `python -m soma.benchmarks --full --runs 5 --output reports/`。
+- **活体竞品基准测试**: `scripts/live_benchmark.py` — 使用真实库（ChromaDB）、同数据同查询实测竞品性能。输出 Recall@5/10、MRR、P50/P95 延迟、能力矩阵对比。所有数据标注"实测"或"不可用"，不使用 mock 数据。
+- **竞品适配器重写 (`competitors.py`)**: 移除所有 Dict mock 回退逻辑。适配器不可用时标记 `available=False` 并说明原因。ChromaDB 适配器使用真实客户端。
+- **标准化公开数据集扩展**: `test_dataset.json` v1.1 从 30 题扩展到 50 题（新增战略决策、创新设计两个领域），新增 `difficulty` 字段（1-3）。
+- **大规模检索数据集**: `benchmark_data/retrieval_1k.json` — 1000 条中文段落 + 50 个标注查询，覆盖 20 个领域，固定种子(42)可复现生成。
+- **统计存储扩展 (`analytics.py`)**: `benchmark_runs` 表新增 `runs_count` 和 `multi_run_stats_json` 列。新增 `record_multi_benchmark()` 和 `get_latest_multi_benchmark()` 方法。
+- **CI 基准测试工作流**: `.github/workflows/benchmark.yml` — PR 时轻量测试(N=1)，Release 时全量测试(N=5)+活体竞品对比，结果自动附加到 Release。
+- **Docker 标准化环境**: `Dockerfile.bench` — 固定 Python/依赖版本，消除环境差异。`docker run soma-bench --full --runs 5`。
+
+### Fixed
+
+- **SSE 流式端点会话记录补全**: `/api/chat/stream` 新增 `analytics.record_session()` 调用，在 "done" 事件后持久化会话数据（问题、答案、foci、激活记忆、响应耗时、记忆统计、权重）。修复前所有 SSE 流式请求不进入 AnalyticsStore，导致仪表盘分析面板缺少会话历史。
+- **向量维度修复**: `config.py` 中 `vector_dim` 恢复为 512。BAAI/bge-small-zh-v1.5 模型实际输出 512 维向量，此前被错误改为 384 导致 `could not broadcast input array from shape (512,) into shape (384,)` 运行时异常。
+- **`_token_stream` 重构**: 改为产出原始文本内容（而非预格式化 SSE 字符串），由流式端点包装 SSE 事件同时累积完整答案文本，确保会话记录包含完整回答。
+
+### Changed
+
+- **FTS5 搜索工具共用化**: 新增 `soma/memory/search_utils.py` 提供 `fts5_keyword_search()` 公共函数，支持双路径搜索（FTS5 trigram + LIKE 降级）。`episodic.py` 和 `skill.py` 的 `query_by_keywords()` 均委托至此。减少约 80 行重复代码。
+- **`skill.py` 查询精简**: `query_by_keywords()` 从约 100 行缩减至约 25 行委托调用，移除独立的 `_escape_fts5` 静态方法。
+- **异常日志增强**: SSE 会话记录失败时通过 `logging.getLogger("soma.dash").warning()` 输出完整 traceback，替换原先静默 `except Exception: pass`。
+
+### Security
+
+- **会话记录完整性**: SSE 流式端点现在与非流式端点行为一致，所有会话数据进入 AnalyticsStore 供仪表盘分析。
 
 ---
 
@@ -13,24 +2764,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 推理引擎 — 从"提供角度"到"执行推理"
 
+v0.6.0 的核心突破是在 LLM 调用之前插入 SOMA 自己的推理步骤。不再把问题直接丢给 LLM，而是先用模板将问题拆解为结构化推理任务——每条思维规律对应专属引导问题和可检验假设，并自动收集支持/反对证据对照。同时引入触发词自动扩展和思维模板挖掘，让 SOMA 的思维框架随使用自我生长。
+
 ### Added
-- **结构化推理引擎**: 17个模板（7推理+7假设+6组合），在LLM调用前构建推理框架——每条规律专属引导问题+可检验假设+正反证据对照
-- **触发词自动扩展**: 问题关键词与规律共现>=5次后自动提升为正式触发词
-- **思维模板挖掘**: 同一问题领域+规律组合模式>=5次出现后固化为可复用模板
-- **因果关系自动抽取**: L3复杂问题后提取三元组存入语义记忆，失败不影响主流程
-- **Foci上限控制**: 超过7个foci时按权重降序取前7
-- **因果抽取配置**: `causal_extraction`和`causal_extraction_complexity`可控开关
+
+- **结构化推理框架 (Pre-LLM Reasoning)**: `SOMA_Agent` 新增 `_REASONING_TEMPLATES`（7个）、`_HYPOTHESIS_TEMPLATES`（7个）、`_COMBO_REASONING`（6个）三层模板字典。`_execute_reasoning()` 在 LLM 调用前为每个 Focus 匹配专属推理模板、生成假设、收集正反证据，构建结构化推理框架注入 Prompt。
+- **假设检验框架**: 每条规律对应一个含 `{problem}` 占位符的可检验假设模板（如第一性原理→"忽略所有现有方案，从基本要素重新构建会得到___"），LLM 需结合证据给出检验结论。
+- **组合模板优先匹配**: `_match_template()` 对 combo_ 前缀的 law_id 优先匹配 `_COMBO_REASONING` 再回退 `_REASONING_TEMPLATES`，确保组合规律获得专属分析维度（如"根因系统分析""动态张力分析"等）。
+- **Foci 上限控制**: L3 复杂度超过 7 个 foci 时按权重降序取前 7，防止 Prompt 过长。
+- **触发词自动扩展**: `MetaEvolver.track_triggers()` 追踪问题关键词与成功规律的共现关系，同一词跨 5 次不同会话共现后 `_promote_triggers()` 自动提升为正式触发词。跳过 combo_ 和 _anti 规律防止污染。
+- **思维模板挖掘**: `MetaEvolver.track_focus_pattern()` 记录"问题领域→规律组合"映射，同一 (domain, law_ids) 模式出现 5 次后 `_mine_thought_templates()` 固化为可复用思维模板。
+- **因果关系自动抽取**: `SOMA_Agent._extract_causal_relations()` 在 L3 复杂问题回答后，用轻量 prompt（约 200 tokens）从 LLM 回答中提取"主语|谓语|宾语"三元组，以 confidence=0.4 存入语义记忆。失败不影响主流程。
+- **反视角证据对照**: `_execute_reasoning()` 在收集支持证据的同时收集 `anti_confirmation_search()` 返回的反视角证据（L2/L3 问题），在 Prompt 中以"支持/反对证据对照"呈现。
+- **推理框架可观察**: `_last_reasoning`、`_last_anti_memories`、`_last_prompt` 三个实例变量保存最近一次推理过程，供仪表盘和外部调试读取。
+- **因果抽取配置**: `SOMAConfig` 新增 `causal_extraction: bool = False` 和 `causal_extraction_complexity: int = 3` 两个配置项，管控因果抽取的开关和触发阈值。
+- **SQLite 持久化扩展**: `evolver.db` 新增 `candidate_triggers` 和 `focus_patterns` 两张表，触发词候选和思维模板模式跨会话持久化。
 
 ### Changed
-- `_build_prompt()` 重构为四段结构（推理框架+假设检验+证据对照+反视角）
-- `respond()` 新增Step 2.6（推理框架）和Step 4.5（因果抽取）
-- `MetaEvolver.set_current_context()` 新增`problem`参数
-- `SOMA.chat()` 返回新增`reasoning`字段
+
+- `SOMA_Agent._build_prompt()` 重构为"推理框架 + 假设检验 + 证据对照 + 反视角"四段结构
+- `SOMA_Agent.respond()` 管道新增 Step 2.6（推理框架构建）和 Step 4.5（因果抽取）
+- `MetaEvolver.set_current_context()` 新增 `problem` 参数，供触发词追踪使用
+- `MetaEvolver.reflect()` 中 v0.6.0 追踪（触发词+思维模式）仅在成功时执行
+- `MetaEvolver.clear_log()` 新增 v0.6.0 表的清理（candidate_triggers / focus_patterns）
+- `SOMA.chat()` 返回字典新增 `reasoning` 键，供调用方获取推理框架结果
 
 ### Fixed
-- `_promote_triggers()` law_found标记防止候选词永存
-- `_mine_thought_templates()` 保留已挖掘数据
-- `_match_template()` 组合模板优先匹配
+
+- `_promote_triggers()` 增加 `law_found` 标记——仅当对应规律存在时才删除候选词记录，避免候选词永存无法清理
+- `_mine_thought_templates()` 不再删除已挖掘的 `focus_patterns` 记录，保留数据供后续分析
+- `_match_template()` 支持前缀/双向子串匹配，确保 combo_ 模板不会因命名变体而遗漏
 
 ---
 
@@ -38,32 +2801,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 思维框架深化 — 从"平铺列表"到"推理网络"
 
+v0.5.0 的核心主题是激活已有的 `relations` 字段，让 7 条思维规律从独立触发升级为协同推理网络。
+同时引入认知偏差检测、确认偏误防御、问题复杂度自适应等机制，让 SOMA 的思考更接近真正的"智者"。
+
 ### Added
-- **规律链推理**: 利用 `relations` 字段，规律间通过关联链传播激活
-- **规律组合模板**: 双规律同时触发时生成合成视角Focus
-- **认知偏差检测**: 过度使用规律自动降权，优质低使用规律自动提权
-- **确认偏误防御**: `anti_confirmation_search()` 检索反对视角证据
-- **问题复杂度自适应**: L1/L2/L3三级调整top_k/foci数量
-- **向量语义匹配兜底**: 关键词无匹配时计算嵌入余弦相似度
-- **动态权重步长**: 根据样本量自适应调整权重变化幅度
-- **LLM缓存可配置**: `llm_cache_ttl`和`llm_cache_max_size`可配置
+
+- **规律链推理 (Law Chaining)**: `WisdomEngine.decompose()` 新增阶段2——当规律A的关键词命中问题时，其 `relations` 中的关联规律B获得权重加成（部分命中 ×0.50，纯链式 ×0.35）。利用 `wisdom_laws.yaml` 中已定义但从未使用的 `relations` 字段。
+- **规律组合模板**: `decompose()` 新增阶段2.5——当一对规律同时被直接触发时，生成第三个"合成视角"Focus（权重 = 两规律均值 ×1.1）。预定义 6 组组合：根因系统分析、动态张力分析、辩证反思、要素优先级排序、系统演进洞察、跨域本质映射。
+- **认知偏差检测与纠正**: `MetaEvolver.evolve()` 新增阶段0——当某规律使用频率 >40% 时自动降权 0.05（防止思维固化）；当某规律使用频率 <3% 但成功率 >60% 时自动提权 0.03（发掘被忽视的优质规律）。
+- **确认偏误检测**: `ActivationHub` 新增 `anti_confirmation_search()` 方法——为每个 Focus 用否定词（"不是""反对""反面"）构造反视角查询，检索可能矛盾的记忆证据。L2/L3 复杂度问题自动启用，反视角记忆注入 Prompt。
+- **可用性启发式修正**: `RelevanceScorer.compute_score()` 新增认知修正——当记忆 `access_count > 20` 且 `importance < 0.5` 时，激活分数 ×0.7。防止"容易想起的记忆就是重要记忆"的认知偏差。
+- **问题复杂度自动评级**: `SOMA_Agent._assess_complexity()` 根据问题长度和深度词（"为什么/如何/深层/根本/矛盾/机制"等12个）将问题分为 L1/L2/L3。L1 精简 foci 至 2 个、降低 top_k；L3 保留全部 foci、翻倍 top_k（上限 15）。
+- **向量语义匹配兜底**: `WisdomEngine._semantic_match()` — 当关键词完全无匹配时，用 ONNX 嵌入向量计算问题与各规律的余弦相似度（阈值 0.35），替代纯随机选取。`WisdomEngine` 现在可选接收 `embedder` 参数。
+- **动态权重调整步长**: `MetaEvolver._calc_step()` 根据样本量自适应——≥15 样本 → 0.03，≥5 样本 → 0.02，<5 样本 → 0.01。替代原先固定 ±0.02 步长。
+- **LLM 缓存可配置**: `SOMAConfig` 新增 `llm_cache_ttl`（默认 600s）和 `llm_cache_max_size`（默认 50），替代 `_call_llm()` 中的魔法数字。
+- **动态语境排序**: `decompose()` 的 Focus 排序策略改为 `weight × (1 + 关键词命中密度 × 0.3)`，让更贴合问题语境的规律排在前列。
+- **反馈闭环修复**: `SOMA.respond()` 和 `SOMA.chat()` 现在正确区分 LLM 成功调用与 mock 回退，`outcome` 不再无条件标记为 "success"。
 
 ### Changed
-- `WisdomEngine` 可选接收`embedder`参数
-- `_build_prompt()` 新增"反面视角与潜在矛盾"段落
-- 动态语境排序替代纯权重排序
 
-### Fixed
-- `respond()`/`chat()` 正确区分LLM成功与mock回退，outcome不再无条件标记success
+- `WisdomEngine.__init__()` 新增可选 `embedder` 参数（向后兼容）
+- `SOMA_Agent.__init__()` 将 embedder 创建移至引擎初始化之前
+- `SOMA.chat()` 现在与 `respond()` 共享复杂度评估、top_k 自适应和确认偏误检测
+- `_build_prompt()` 的 Prompt 模板新增"反面视角与潜在矛盾"段落
 
 ---
 
-## [0.4.0] — Unreleased
+## [0.4.2] — 2026-05-04
+## [0.4.0] — 2026-05-02
 
 ### Added
 - **API 稳定性承诺**: `API_STABILITY.md` 明确冻结 SOMA 门面类的 13 个公共方法、3 个数据模型、2 个工厂函数，承诺主版本号变更前不破坏向后兼容
 - **社区统计 sidebar**: 导航栏自动获取 GitHub Stars/Forks/Watchers/Contributors + 14日 Clones/Visitors 流量 + PyPI 下载量，1 小时缓存自动刷新
 - **竞品 GitHub 星数实时获取**: BenchmarkView 竞品对比表格自动填充 live star count
+- **MkDocs 文档站点**: MkDocs Material + mkdocstrings 自动 API 文档生成，GitHub Actions 自动部署到 GitHub Pages
+- **Docker 部署**: Dockerfile + docker-compose.yml + .dockerignore，一键 `docker compose up -d` 部署
+- **社区治理文件**: CODE_OF_CONDUCT.md、CONTRIBUTING.md 中英双语，GitHub 链接修正
+- **Awesome List 提交**: 4 个 awesome list PR（e2b-dev/awesome-ai-agents、Shubhamsaboo/awesome-llm-apps、vinta/awesome-python、ikaijua/Awesome-AITools）
+- **覆盖率 CI 集成**: CI 工作流添加 pytest-cov 覆盖率收集 + Codecov 上传，README 添加 Codecov badge
+- **记忆数据隔离**: episodic/semantic/skill 三库均支持 `user_id`/`namespace`/`session_id` 维度隔离，全 API 链路（SOMA → Agent → Hub → Retriever → MemoryCore → Store）透传
+- **时间衰减修复**: 近因衰减公式从 `1/(1+days)` 改为 `exp(-days/7)` 指数衰减（半衰期7天）；召回增加30天时间窗口过滤；RRF 融合施加时间惩罚因子
+- **数据隔离测试**: 新增 `test_isolation.py`（10个用例）覆盖三库 user_id/namespace 隔离 + 去重 + LIKE兜底路径
+- **时间窗口测试**: 新增 `test_time_window.py`（11个用例）覆盖三库 max_age_days 过滤 + 边界值 + 自定义参数
+- **审计修复回归测试**: 新增 `test_audit_fixes.py`（13个用例）覆盖 LLM 缓存隔离 / access_count 持久化 / 三元组去重 / 技能去重 / 数据库迁移兼容
+- **Pre-commit 验证脚本**: 新增 `scripts/verify_before_commit.py`（5步 15项检查）包含全量测试 + 数据隔离端到端 + 时间窗口 + 缓存隔离 + 迁移兼容性，退出码 0=通过
+- **资源管理 close()**: MemoryCore / SOMA_Agent / SOMA 三层添加 `close()` 方法和 context manager 支持（`__enter__`/`__exit__`），SQLite 连接可显式释放
+- **日志补齐**: 嵌入向量生成失败 → `logging.warning`；三库 FTS5 降级 LIKE → `logging.info`，生产环境可观测
+- **配置清理**: `episodic_persist_dir` 默认值从 `chroma_data` 改为 `soma_data`；`base.py` 增加 `_RECENCY_HALF_LIFE_DAYS` 与时间窗口关系的注释
+- **输入验证加固**: `ChatRequest.problem` 添加 `max_length=10000`；`ProviderUpdateRequest.base_url` 改为 `HttpUrl` 类型；`ReflectRequest.outcome` 改为 `Literal` 枚举
+
+### Fixed
+- **时间错乱**: 记忆检索不会再将7天前的事件以相近权重混入今日回复（30天外记忆权重<2%）
+- **数据泄漏**: 所有记忆存储/查询均支持 user_id 级别的命名空间隔离，杜绝跨用户数据污染
+- **`_like_fallback` 隔离失效**: episodic.py LIKE 兜底路径 OR 连接改为 AND，修复 user_id 过滤条件被绕过
+- **语义图 namespace 过滤失效**: semantic.py LIKE 路径从内存图遍历改为 SQLite 查询，同时修复 namespace 缺漏和子串误判
+- **LLM 缓存跨用户泄漏**: agent.py 缓存键加入 user_id，防止同内容查询命中其他用户的缓存响应
+- **API Key 前端泄漏**: 移除 SOMA_API_KEY 的 HTML 注入，改为 `/api/auth/status` + sessionStorage
+- **XSS 风险**: ChatView LLM 输出先转义 HTML 实体再 Markdown 渲染，防止 `<script>` 注入
+- **CORS 过于宽松**: `allow_origins=["*"]` 改为可配置的 localhost 白名单（环境变量 SOMA_CORS_ORIGINS）
+- **FTS 双引号未转义**: 三库 FTS5 查询关键词中的 `"` 正确转义为 `""`，防止语法损坏
+- **skill.py 缺时间窗口**: 添加默认 90 天时间窗口过滤
+- **异常静默吞没**: `__init__.py` 的 `except Exception` 添加 `logging.error` 记录完整 traceback
+- **Dash DevSidecar 代理拦截**: `_http_get_json()` 绕过系统代理 + SSL 证书回退，修复 GitHub API 返回 500 错误
+- **Dash 认证流程断裂**: App.vue `onMounted` 中调用 `initAuth()`，修复「请设置 X-API-Key」错误
+- **API Key 自动生成**: 未设置 `SOMA_API_KEY` 时自动生成随机密钥 (`secrets.token_hex(16)`) 并打印控制台、localhost 自动跳过认证
+- **三元组/技能去重缺失**: semantic `add_triple()` 和 skill `add_skill()` 添加去重检查，同 namespace/user_id 内相同内容不重复插入
+- **access_count 未持久化**: `respond()` 和 `chat()` 路径调用 `increment_access()`，访问计数正确写入 SQLite 并跨会话保留
+- **数据库迁移顺序**: ALTER TABLE 添加列移到 CREATE INDEX 之前，修复旧数据库首次启动崩溃
 
 ---
 ## [0.3.3b2] — 2026-05-01
