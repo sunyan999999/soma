@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.2">
     
     
       
@@ -595,10 +595,21 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#kind-namespace-2037" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        kind：与 namespace 互补的第二个维度（≥ 2.0.37）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
-        已知缺口
+        两个维度怎么配合
       
     </span>
   </a>
@@ -975,10 +986,21 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#kind-namespace-2037" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        kind：与 namespace 互补的第二个维度（≥ 2.0.37）
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#_4" class="md-nav__link">
     <span class="md-ellipsis">
       
-        已知缺口
+        两个维度怎么配合
       
     </span>
   </a>
@@ -1159,12 +1181,86 @@
 <li>抽 20 条被激活的全局三元组，让 LLM 判相关性
    —— 无关占比超过 30% 就该隔离了</li>
 </ol>
-<h2 id="_4">已知缺口<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
-<p>目前语义库<strong>没有区分「事实」和「图边」的类型字段</strong>。上面的约定靠
-namespace 手工维护，写错了不会报错。</p>
-<p>后续版本计划增加 <code>kind</code>（<code>fact</code> / <code>relation</code>），在注入阶段按类型过滤，
-让这一类错误在结构上不可能发生。在此之前，<strong>写入方是自己 namespace 的
-唯一守门人</strong>。</p>
+<h2 id="kind-namespace-2037"><code>kind</code>：与 namespace 互补的第二个维度（≥ 2.0.37）<a class="headerlink" href="#kind-namespace-2037" title="Permanent link">&para;</a></h2>
+<p>namespace 解决「谁能看见」，<code>kind</code> 解决「这条用来做什么」：</p>
+<table>
+<thead>
+<tr>
+<th><code>kind</code></th>
+<th>含义</th>
+<th>会进 prompt 吗</th>
+<th>参与图扩展吗</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fact</code>（默认）</td>
+<td>能直接回答用户问题的事实</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><code>relation</code></td>
+<td>导航/关联边（「A 和 B 有关」）</td>
+<td>❌</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember_semantic</span><span class="p">(</span><span class="s2">"数字分身"</span><span class="p">,</span> <span class="s2">"基于"</span><span class="p">,</span> <span class="s2">"命理八字"</span><span class="p">)</span>                      <span class="c1"># fact</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">soma</span><span class="o">.</span><span class="n">remember_semantic</span><span class="p">(</span><span class="s2">"《某文章》"</span><span class="p">,</span> <span class="s2">"关联概念"</span><span class="p">,</span> <span class="s2">"经络"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"relation"</span><span class="p">)</span>    <span class="c1"># 图边</span>
+</code></pre></div>
+<p><strong>关键：<code>relation</code> 边仍然参与图扩展。</strong> 它只是不再作为「知识」被注入。
+这样导航图既能帮你扩展召回关键词，又不会污染 prompt。</p>
+<p>默认注入过滤由配置控制，可回滚：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">soma</span> <span class="o">=</span> <span class="n">SOMA</span><span class="p">(</span><span class="n">semantic_inject_kinds</span><span class="o">=</span><span class="p">(</span><span class="s2">"fact"</span><span class="p">,))</span>   <span class="c1"># 默认：只注入事实</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">soma</span> <span class="o">=</span> <span class="n">SOMA</span><span class="p">(</span><span class="n">semantic_inject_kinds</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>        <span class="c1"># 回到 2.0.36：不过滤</span>
+</code></pre></div>
+<p>已有数据用工具重分类（<strong>默认只预览</strong>）：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>soma<span class="w"> </span>semantic-kind<span class="w">                 </span><span class="c1"># 预览：哪些会被标成 relation</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>soma<span class="w"> </span>semantic-kind<span class="w"> </span>--apply<span class="w">         </span><span class="c1"># 落盘（自动备份，可 --rollback）</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>soma<span class="w"> </span>semantic-kind<span class="w"> </span>--relation-namespaces<span class="w"> </span>wiki_graph<span class="w"> </span>graph
+</code></pre></div>
+<p>默认规则是 <code>namespace</code> 含 <code>graph</code> → <code>relation</code>。<code>''</code> 里如果混着导航边，
+需要显式给 predicate 规则：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>soma<span class="w"> </span>semantic-kind<span class="w"> </span>--predicate-relation<span class="w"> </span>关联<span class="w"> </span>参考<span class="w"> </span>属于<span class="w"> </span>--apply
+</code></pre></div>
+<h2 id="_4">两个维度怎么配合<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>namespace</th>
+<th>kind</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>真正的全局事实</td>
+<td><code>''</code></td>
+<td><code>fact</code></td>
+</tr>
+<tr>
+<td>全局导航图</td>
+<td><code>wiki_graph</code>（或 <code>''</code>）</td>
+<td><code>relation</code></td>
+</tr>
+<tr>
+<td>用户私有事实</td>
+<td><code>user_id</code></td>
+<td><code>fact</code></td>
+</tr>
+<tr>
+<td>用户私有关系（如人际图谱）</td>
+<td><code>user_id</code></td>
+<td><code>relation</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><code>''</code> 里放 <code>relation</code> 也不致命了（2.0.37 起注入会过滤掉），但仍然是
+概念上的错误 —— namespace 的约定没有因此放松。</p>
+</blockquote>
 <hr />
 <p><em>本文的案例数据来自下游生产环境实测（2026-11），已获授权引用。</em></p>
 
