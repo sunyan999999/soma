@@ -7,6 +7,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.38] — 2026-11-20
+
+**迁移类 CLI 的库路径显式参数 —— 修一个「扫描 0 条」的静默误读。**
+
+### 问题
+
+下游在生产上执行 `soma semantic-kind` 做 dry-run，输出 **`scanned: 0`**。
+
+CLI 解析的路径是 `~/.soma/<project>`，而他们的库在
+`SOMA_DATA_DIR=/data/DigitalTwinHub/soma_data/semantic.db`。
+
+**「扫描 0 条」看起来像「库里没有要处理的数据」** —— 运维会直接跳过迁移，
+而实际有 15,299 条图边没被标记。这比报错更危险：它给了一个「已经没事了」
+的错误结论。
+
+`reclassify`（nature）有同样的问题，不是 `semantic-kind` 独有。
+
+### 修复
+
+`semantic-kind` 与 `reclassify` 都增加两个参数：
+
+```
+--data-dir DIR   直接指定记忆库目录（覆盖 --project）
+--db FILE        直接指定 .db 文件（取其所在目录，优先级高于 --data-dir）
+```
+
+帮助文本明确写出：**默认读 `~/.soma/<project>`，不读 `SOMA_DATA_DIR`**。
+
+### 判据
+
+`tests/test_cli_data_dir.py`（9 条）：
+
+| 判据 | 注入后 |
+|---|---|
+| `--db` 优先于 `--data-dir` | — |
+| `--data-dir` 真的决定 `persist_dir` | 忽略 data_dir → 红 |
+| 两个命令都接受 `--data-dir` / `--db` | — |
+| **帮助文本必须包含 `SOMA_DATA_DIR`** | 删掉这句 → 红 |
+
+最后一条是防复发的：只要帮助里不提这件事，运维看到「扫描 0 条」仍会误读。
+
+### 下游 2.0.37 验证结果（附）
+
+| 项 | 结果 |
+|---|---|
+| kind 迁移 | 15,299 条图边，与 namespace 规则**收敛到同一答案** |
+| 注入过滤 | 知识型问句正常注入 fact；日常问句语义 0 条是 fact 被强匹配情节记忆挤出 top_k（非误杀） |
+| 图扩展 | 与 2.0.36 逐位一致 |
+| 稳定性 | sequence / candidate_set / bit_same_second 全部 0/16 失败 |
+| 预热基线 | 4,662ms ≤ 4,800ms PASS |
+| 三口径召回 | 逐位不变 |
+
+> **附带收益**：kind 过滤后 per_user 路径的 FTS/LIKE 兜底显著变少，
+> 基准轮间毛刺消失 —— wisdom 极差 **2.1 → 0.3**、overall 极差 **1.2 → 0.1**，
+> 历史最好（`benchmark_runs id=197`）。
+
+---
+
 ## [2.0.37] — 2026-11-20
 
 **语义三元组的 `kind`（事实 / 关系）：注入按用途过滤，图扩展不受影响。**

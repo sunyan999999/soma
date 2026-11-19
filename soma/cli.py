@@ -54,16 +54,22 @@ def _persist_dir(project: str = "") -> str:
     return str(Path.home() / ".soma" / project)
 
 
-def _get_soma(project: str = ""):
+def _get_soma(project: str = "", data_dir: str = ""):
     """惰性初始化 SOMA 实例。
 
     project 为空 → 共享记忆库 (~/.soma/shared/)
     project 非空 → 项目隔离记忆库 (~/.soma/<project>/)
+    data_dir 非空 → **直接用它**（覆盖 project），用于对准生产库
+
+    ⚠️ 这里**不读** `SOMA_DATA_DIR` 环境变量。迁移类命令（reclassify /
+    semantic-kind）默认只看 `~/.soma/...`，对不上生产库时会「扫描 0 条」——
+    那看起来像「库里没有要处理的数据」，是最容易被误读的静默结果。
+    要对准生产库请显式传 `--data-dir` 或 `--db`。
     """
     from soma import SOMA
 
     soma = SOMA(
-        persist_dir=_persist_dir(project),
+        persist_dir=data_dir or _persist_dir(project),
         llm=os.environ.get("SOMA_LLM", "mock"),
         top_k=5,
     )
@@ -461,7 +467,7 @@ def cmd_reclassify(args):
     默认只预览（dry_run），加 --apply 才落盘；落盘自动备份，可用 --rollback 回滚。
     """
     try:
-        soma = _get_soma(getattr(args, "project", ""))
+        soma = _get_soma(getattr(args, "project", ""), _resolve_data_dir(args))
 
         # 回滚模式
         rb = getattr(args, "rollback", "")
@@ -493,7 +499,7 @@ def cmd_semantic_kind(args):
     --rollback 回滚。relation 边仍参与图扩展，但不再注入 prompt。
     """
     try:
-        soma = _get_soma(getattr(args, "project", ""))
+        soma = _get_soma(getattr(args, "project", ""), _resolve_data_dir(args))
 
         rb = getattr(args, "rollback", "")
         if rb:
@@ -556,6 +562,31 @@ def _add_project_arg(p: argparse.ArgumentParser) -> None:
         "--project", type=str, default="",
         help="记忆库命名空间（默认 shared；项目记忆用 --project SOMA）",
     )
+
+
+def _add_data_dir_args(p: argparse.ArgumentParser) -> None:
+    """为迁移类子命令添加显式库路径参数（覆盖 --project）。
+
+    v2.0.38：CLI **不读** `SOMA_DATA_DIR`。对不上生产库时命令会「扫描 0 条」，
+    看起来像「库里没有可处理的数据」—— 这是最容易被误读的静默结果。
+    """
+    p.add_argument(
+        "--data-dir", type=str, default="",
+        help="直接指定记忆库目录（覆盖 --project）。默认读 ~/.soma/<project>，"
+             "**不读 SOMA_DATA_DIR**",
+    )
+    p.add_argument(
+        "--db", type=str, default="",
+        help="直接指定 .db 文件（取其所在目录，优先级高于 --data-dir）",
+    )
+
+
+def _resolve_data_dir(args) -> str:
+    """把 --db / --data-dir 归一成 persist_dir（都没给则空串走 project）。"""
+    db = getattr(args, "db", "") or ""
+    if db:
+        return str(Path(db).expanduser().resolve().parent)
+    return getattr(args, "data_dir", "") or ""
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -639,6 +670,7 @@ def build_parser() -> argparse.ArgumentParser:
                        help="最多处理条数")
     p_rc.add_argument("--rollback", type=str, default="",
                        help="按备份文件回滚一次重分类")
+    _add_data_dir_args(p_rc)
 
     # semantic-kind（v2.0.37）
     p_sk = sub.add_parser(
@@ -654,6 +686,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_sk.add_argument("--limit", type=int, default=None, help="最多处理条数")
     p_sk.add_argument("--rollback", type=str, default="",
                       help="按备份文件回滚一次重分类")
+    _add_data_dir_args(p_sk)
 
     # repair-context（v2.0.17）
     p_rp = sub.add_parser("repair-context",
