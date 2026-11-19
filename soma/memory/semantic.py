@@ -223,7 +223,7 @@ class SemanticStore(BaseMemoryStore):
                         SELECT rowid FROM semantic_fts WHERE semantic_fts MATCH ?
                     )
                     {time_clause} {ns_clause}
-                    ORDER BY st.confidence DESC
+                    ORDER BY st.confidence DESC, st.id DESC
                     LIMIT ?
                 """
                 if namespace:
@@ -288,7 +288,7 @@ class SemanticStore(BaseMemoryStore):
             sql = f"""
                 SELECT st.* FROM semantic_triples st
                 WHERE {' AND '.join(conditions)}
-                ORDER BY st.confidence DESC
+                ORDER BY st.confidence DESC, st.id DESC
                 LIMIT ?
             """
             params.append(remaining * 2)  # 过取以弥补后处理去重
@@ -368,7 +368,10 @@ class SemanticStore(BaseMemoryStore):
             if not frontier:
                 break
 
-        ranked = sorted(expanded.items(), key=lambda x: -x[1])
+        # 次键按名称排序：同一跳的邻居权重完全相同（0.6 / 0.36 两档），
+        # 只按权重排会让 `max_terms` 截断在并列处取谁不定 —— 上游关键词
+        # 一变，下游命中的三元组就跟着变（表现为激活结果不稳定）。
+        ranked = sorted(expanded.items(), key=lambda x: (-x[1], x[0]))
         return [term for term, _ in ranked[:max_terms]]
 
     def list_nodes(self) -> List[str]:

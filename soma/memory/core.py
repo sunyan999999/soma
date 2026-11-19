@@ -16,15 +16,21 @@ class MemoryCore:
     """统一记忆存储门面"""
 
     # ★ 2026-11-24：FTS 查询的关键词上限。图谱扩展的邻居只做辅助，
-    #   截到 4 个；送给 FTS 的整表截到 10 个（focus 自带词排在前面）。
+    #   截到 3 个；送给 FTS 的整表截到 10 个（focus 自带词排在前面）。
     #   依据：FTS5 trigram 的 OR 查询成本随词数近似线性（4 词 13ms → 18 词 62ms），
     #   下游 32k 库实测这一项占激活耗时 60%+。
+    #
+    #   v2.0.34：4 → 3。下游在 32k 生产库上 A/B 过，召回条数几乎不变、
+    #   单次再省约 8ms。依据是图谱邻居本来就只是辅助通道：1 跳邻居权重高、
+    #   排在前面，第 4 个之后被截掉的绝大多数是 2 跳，而它们的命中率很低。
+    #   `tests/test_keyword_cap.py::test_one_hop_neighbours_survive` 盯着
+    #   「1 跳邻居不能被截掉」这条底线。
     #
     #   ⚠️ 这两个是**类属性默认值**，实例可覆盖（构造 MemoryCore 后赋值即可），
     #   用于接入方做「封顶 vs 不封顶」的 A/B 对照：
     #       core._GRAPH_KEYWORD_CAP = 999
     #       core._FTS_KEYWORD_CAP = 999
-    _GRAPH_KEYWORD_CAP = 4
+    _GRAPH_KEYWORD_CAP = 3
     _FTS_KEYWORD_CAP = 10
 
     def __init__(

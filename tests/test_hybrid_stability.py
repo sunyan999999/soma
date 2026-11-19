@@ -90,6 +90,112 @@ class TestOrderStability:
         assert len(set(runs)) == 1, "混合检索结果不稳定"
 
 
+class TestTieBreakStability:
+    """★ 并列分数必须有稳定次键（2026-11-19 下游验证发现）。
+
+    ## 现象
+
+    同一题在同一进程内重复 activate，结果不完全稳定。50 题里 1 题在 top_k
+    边界上二选一：
+
+        只在 A: 整体性 --[关联]--> 杠杆点
+        只在 B: 反馈回路 --[关联]--> 延迟
+
+    两条三元组 confidence 相同，而两处 SQL 都是
+    `ORDER BY st.confidence DESC LIMIT ?` —— **没有次键**。
+    并列时返回哪几条由 SQLite 的执行计划决定（未定义），
+    所以同一查询重复跑就能拿到不同结果。
+
+    ## 修法
+
+    检索 SQL 的排序末尾统一补主键：`..., id DESC`。
+    与 `episodic.episodic_memories` 分页那条（原本就有 `id DESC`）保持一致。
+
+    ## 判据的区分力
+
+    无次键时 SQLite 走「全表扫描 + top-N 堆」，并列项保留**先遇到的**
+    （即 id 小的），所以断言「返回 id 最大的那几条」会在没有次键时变红。
+    """
+
+    @pytest.fixture(scope="class")
+    def tied(self, tmp_path_factory):
+        from soma.memory.semantic import SemanticStore
+        d = tmp_path_factory.mktemp("tie")
+        store = SemanticStore(d)
+        # 12 条 confidence 完全相同的三元组，全部命中同一个关键词
+        for i in range(12):
+            store.add_triple(f"并列判据主题{i}", "关联", f"对象{i}", 0.9)
+        yield store
+        store.close()
+
+    def test_tie_returns_newest_ids(self, tied):
+        """并列时按 id 降序 —— 次键缺失就会退化成「谁先扫到谁在前」。"""
+        got = [
+            int(u.context["subject"].replace("并列判据主题", ""))
+            for u in tied.query_by_keywords(["并列判据"], top_k=3)
+        ]
+        assert got == [11, 10, 9], (
+            f"并列三元组返回顺序是 {got}，应为 id 最大的 3 条 [11, 10, 9] —— "
+            f"排序缺稳定次键时 SQLite 会按扫描顺序返回最先遇到的")
+
+    def test_semantic_relevance_is_time_invariant(self, tied):
+        """★ 语义三元组的分数不能随「查询时刻」漂移。
+
+        语义 MemoryUnit 的 timestamp 是查询时构造的（取 now），所以
+        `exp(-days/half_life)` 里的 days 是微秒级浮点数 —— 每次查询相差
+        1e-10 级，足以在 top_k 并列边界上翻转结果。
+
+        修法：`relevance_potential()` 对 memory_type='semantic' 跳过近因衰减
+        （知识没有过期语义）。这条判据直接钉住「两次查询同一个三元组，
+        分数逐位相同」。
+        """
+        import time
+
+        first = tied.query_by_keywords(["并列判据"], top_k=3)[0].relevance_potential()
+        time.sleep(0.05)
+        second = tied.query_by_keywords(["并列判据"], top_k=3)[0].relevance_potential()
+        assert first == second, (
+            f"同一三元组间隔 50ms 两次查询分数不同：{first!r} vs {second!r} —— "
+            f"近因衰减用了查询时刻，会在并列边界上造成翻转")
+
+    def test_tie_is_repeatable(self, tied):
+        runs = {
+            tuple(u.id for u in tied.query_by_keywords(["并列判据"], top_k=3))
+            for _ in range(5)
+        }
+        assert len(runs) == 1, f"同一查询 5 次出现 {len(runs)} 种结果"
+
+    def test_episodic_tie_break_is_id_desc(self, tmp_path):
+        """情节记忆同理：同一时间戳 + 同一 importance 时按 id 降序。"""
+        from soma.memory.episodic import EpisodicStore
+
+        ep = EpisodicStore(tmp_path / "ep")
+        try:
+            ids = [ep.add(f"并列情节判据第{i}条内容", importance=0.6)
+                   for i in range(10)]
+            # 把时间戳压成同一个值，制造「时间和重要度都并列」
+            ep._conn.execute("UPDATE episodic_memories SET timestamp = 1000.0")
+            ep._conn.commit()
+
+            got = [u.id for u in ep.query_by_keywords(["并列情节判据"], top_k=3)]
+            assert got == ids[::-1][:3], (
+                f"并列情节记忆返回 {got}，应为 id 最大的 3 条 —— "
+                f"ORDER BY timestamp/importance 并列时缺稳定次键")
+        finally:
+            ep.close()
+
+    def test_activate_repeat_is_stable(self, soma):
+        """端到端：同一 foci 连跑 5 次，激活集合必须逐位一致。"""
+        foci = soma._agent.decompose("系统思维如何应用到产品设计")
+        runs = [
+            tuple(am.memory.id for am in soma._agent.hub.activate(foci))
+            for _ in range(5)
+        ]
+        assert len(set(runs)) == 1, (
+            f"同一 foci 连续激活出现 {len(set(runs))} 种结果 —— "
+            f"并列分数在 top_k 边界上抖动")
+
+
 class TestEncodeCache:
     """★ 文本级 LRU：命中不重复编码，且不污染延迟统计。"""
 

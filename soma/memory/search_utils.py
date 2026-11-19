@@ -67,6 +67,12 @@ def fts5_keyword_search(
     order_clause = f"t.{time_col} DESC"
     if importance_col is not None:
         order_clause += f", t.{importance_col} DESC"
+    # 稳定次键：时间和重要度都可能并列，没有它时 LIMIT 边界上返回哪几条
+    # 由 SQLite 的执行计划决定（未定义），同一查询重复跑就能拿到不同结果。
+    #
+    # 用 rowid 而不是 id：episodic 的主键是 UUID 文本，按字符串排序虽然也
+    # 稳定，但顺序是任意的；rowid 是插入顺序，等于「并列时后写入的优先」。
+    order_clause += ", t.rowid DESC"
 
     # ── 时间窗口 / 用户 / Agent 过滤 ──────────────────
     time_clause = ""
@@ -160,6 +166,7 @@ def fts5_keyword_search(
         like_order = f"{time_col} DESC"
         if importance_col is not None:
             like_order += f", {importance_col} DESC"
+        like_order += ", rowid DESC"  # 稳定次键，见上方 order_clause 说明
         sql = f"""
             SELECT * FROM {table_name}
             WHERE {' AND '.join(conditions)}
@@ -242,6 +249,7 @@ def _like_only(
     order_clause = f"{time_col} DESC"
     if importance_col is not None:
         order_clause += f", {importance_col} DESC"
+    order_clause += ", rowid DESC"  # 稳定次键，见上方 order_clause 说明
     sql = f"""
         SELECT * FROM {table_name}
         WHERE {' AND '.join(conditions)}

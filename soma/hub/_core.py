@@ -88,7 +88,9 @@ class ActivationHub:
                     candidates[mid] = [prev_am, count + 1]
 
         all_activated = [entry[0] for entry in candidates.values()]
-        all_activated.sort(key=lambda am: am.activation_score, reverse=True)
+        # 次键用 memory.id：分数并列时 SQL 能保证检索顺序，但这里再排一次序，
+        # 没有次键就会退化成「输入顺序」，而输入顺序在多 Focus 合并时并不直观。
+        all_activated.sort(key=lambda am: (-am.activation_score, am.memory.id))
 
         # MMR 多样性重排：在较宽的候选池上运行，最后再阈值过滤
         mmr_pool_size = (
@@ -112,7 +114,7 @@ class ActivationHub:
                     if id(am_b) not in penalized:
                         am_b.activation_score *= penalty
                         penalized.add(id(am_b))
-                mmr_pool.sort(key=lambda am: am.activation_score, reverse=True)
+                mmr_pool.sort(key=lambda am: (-am.activation_score, am.memory.id))
 
         _thr = self.threshold if threshold is None else threshold
         results = self.ranker.rerank(

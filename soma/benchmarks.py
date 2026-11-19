@@ -1234,6 +1234,11 @@ class MultiRunResult:
     raw_runs: List[BenchmarkRun] = field(default_factory=list)
     data_scale: str = "small"
     total_duration_s: float = 0.0
+    # v2.0.34: 是否做了不计分的预热阶段，以及它单独花掉了多少秒。
+    #   显式记下来，是为了让读报告的人知道「这次的分数不含冷启动」——
+    #   否则只能靠 std 变小去猜。
+    warmup_performed: bool = False
+    warmup_s: float = 0.0
 
 
 def compute_statistics(name: str, values: List[float]) -> RunStatistics:
@@ -1257,11 +1262,48 @@ def compute_statistics(name: str, values: List[float]) -> RunStatistics:
     )
 
 
+def _warmup_process_caches(agent, questions: int = 3) -> None:
+    """把「每个进程只付一次」的冷启动成本提前付掉。
+
+    首轮 activate 慢不是因为数据规模，而是三笔进程级的一次性账：
+
+    1. **ONNX 嵌入模型加载** —— `SOMA.__init__` 只在后台线程里起加载，
+       请求立刻进来时仍然要等它；
+    2. **jieba 词典构建** —— 第一个分词调用要建前缀词典（约 0.4s）；
+    3. **嵌入器文本 LRU 为空** —— focus 的维度文本每次都要重新编码。
+
+    这三样都跨 agent 共享（embedder 是进程级单例、jieba 是模块级全局），
+    所以在任意一个用完即弃的 agent 上真跑几题就能让它们全部就位，
+    之后每轮测到的都是稳态。
+
+    只做预热、不产出分数。
+    """
+    # 1) 同步等模型加载完（构造时那个后台线程不等）
+    emb = getattr(agent, "embedder", None)
+    if emb is not None:
+        sync_warmup = getattr(emb, "warmup", None)
+        if callable(sync_warmup) and not getattr(emb, "is_loaded", False):
+            sync_warmup()
+
+    # 2)+3) 真跑几题：同时触发分词、嵌入编码与首次 SQLite 读
+    heated = 0
+    for q in _load_test_dataset()[:max(0, questions)]:
+        foci = agent.decompose(q["problem"])
+        agent.hub.activate(foci)
+        heated += 1
+
+    if heated == 0 and emb is not None:
+        # 数据集缺失/为空时的兜底：至少把模型和分词走一遍
+        emb.encode("预热：系统思维与第一性原理")
+
+
 def run_multi_benchmark(
     agent_factory,
     runs: int = 5,
     version: str = "",
     ablation_data: Optional[Dict] = None,
+    warmup: bool = True,
+    warmup_questions: int = 3,
 ) -> MultiRunResult:
     """多轮独立基准测试 — 每轮新建 agent，隔离数据库
 
@@ -1270,6 +1312,14 @@ def run_multi_benchmark(
         runs: 运行轮数 (默认 5)
         version: 版本号
         ablation_data: 消融实验数据 (可选)
+        warmup: 正式计分前是否先跑一个不计分的预热阶段（默认开启）。
+            关掉它，首轮会把 ONNX 加载等冷启动成本算进 activate 平均耗时，
+            让 wisdom 的均值被首轮拖低数个百分点。见 `_warmup_process_caches`。
+        warmup_questions: 预热阶段跑几道题（默认 3；1 道就能触发全部一次性成本）
+
+    ★ 下游实测（2.0.33）：首轮 avg_activate 910ms → wisdom 71.8，
+      后三轮 210ms → 77.6，**5.8 分的极差全部来自冷启动**。
+      预热后每轮都是稳态，去掉的是测量误差而不是把慢的地方藏起来。
     """
     if not version:
         version = _get_version()
@@ -1278,6 +1328,29 @@ def run_multi_benchmark(
     raw_runs: List[BenchmarkRun] = []
     all_scores: Dict[str, List[float]] = {}
     all_details: Dict[str, List[float]] = {}
+
+    # ── 预热（不计分）───────────────────────────────────────────
+    warmup_performed = False
+    warmup_s = 0.0
+    if warmup:
+        print(f"\n{'='*50}")
+        print("  预热阶段（冷启动成本，不计入分数）")
+        print(f"{'='*50}")
+        _t_warm = time.time()
+        try:
+            warm_agent = agent_factory()
+            try:
+                _warmup_process_caches(warm_agent, warmup_questions)
+                warmup_performed = True
+            finally:
+                try:
+                    warm_agent.close()
+                except Exception:
+                    pass
+        except Exception as e:  # 预热不是评测的一部分，坏了也不能拖垮评测
+            print(f"  ⚠️ 预热失败，按原样继续（首轮会含冷启动）: {e}")
+        warmup_s = round(time.time() - _t_warm, 2)
+        print(f"  预热耗时 {warmup_s}s" if warmup_performed else "  预热未完成")
 
     for i in range(runs):
         print(f"\n{'='*50}")
@@ -1339,6 +1412,8 @@ def run_multi_benchmark(
         raw_runs=raw_runs,
         data_scale=data_scale,
         total_duration_s=round(duration, 1),
+        warmup_performed=warmup_performed,
+        warmup_s=warmup_s,
     )
 
 
@@ -1375,7 +1450,16 @@ def generate_markdown_report(result: MultiRunResult) -> str:
     lines.append(f"| 测试轮次 | {result.runs} 轮独立运行 |")
     lines.append(f"| 数据规模 | {result.data_scale} |")
     lines.append(f"| 总耗时 | {result.total_duration_s}s |")
+    if result.warmup_performed:
+        lines.append(f"| 预热 | 已执行（{result.warmup_s}s，不计入分数） |")
     lines.append("")
+    if result.warmup_performed:
+        lines.append(
+            "> 计分前已跑一个不计分的预热阶段，消掉了 ONNX 模型加载、"
+            "jieba 词典构建与嵌入器 LRU 冷启动对首轮的影响。"
+            "下面的分数是稳态表现。"
+        )
+        lines.append("")
 
     # 综合评分
     lines.append("## 综合评分")
@@ -1425,6 +1509,8 @@ def generate_json_report(result: MultiRunResult) -> dict:
         "timestamp": result.timestamp,
         "data_scale": result.data_scale,
         "total_duration_s": result.total_duration_s,
+        "warmup_performed": result.warmup_performed,
+        "warmup_s": result.warmup_s,
         "scores": {
             key: {
                 "mean": s.mean,
@@ -1469,6 +1555,10 @@ def _parse_args():
     parser.add_argument("--runs", type=int, default=5, help="多轮模式运行轮数 (默认 5)")
     parser.add_argument("--output", type=str, default="reports", help="报告输出目录 (默认 reports/)")
     parser.add_argument("--version", type=str, default="", help="版本号 (默认自动检测)")
+    parser.add_argument(
+        "--no-warmup", action="store_true",
+        help="跳过计分前的预热阶段。默认会预热，测的是稳态而不是冷启动",
+    )
     return parser.parse_args()
 
 
@@ -1488,6 +1578,7 @@ def main():
             agent_factory=agent_factory,
             runs=args.runs,
             version=args.version,
+            warmup=not args.no_warmup,
         )
 
         # 输出报告

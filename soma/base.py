@@ -96,6 +96,19 @@ class MemoryUnit:
         （2026-10-20 之前这里是写死的 `exp(-days/7)`，不区分记忆重要性 ——
           30 天后所有记忆都不足 1.4%，"越用越懂"从机制上就不成立。）
         """
+        # ★ 2026-11-19（下游验证）：语义知识不参与近因衰减。
+        #
+        # 三元组是「事实」，不是「事件」—— 它没有过期语义。更实际的是：
+        # 语义 MemoryUnit 的 timestamp 是**查询时刻**构造的（每次查都取 now），
+        # 于是 days 是微秒级的浮点数，recency 每次相差 1e-10 —— 同一题在不同
+        # 时刻激活就会得到略有不同的分数，在 top_k 的并列边界上直接翻转结果。
+        #
+        # 实测：同一题间隔数十次查询重复激活，分数从 0.763874999685 漂到
+        # 0.763874999810，激活集合随之二选一。这与「排序缺次键」是两个独立
+        # 来源，两处都修才能真正稳定。
+        if self.memory_type == "semantic":
+            return self.importance * (1.0 + 0.1 * self.access_count)
+
         now = datetime.now(timezone.utc).timestamp()
         days = max(now - self.timestamp, 0) / 86400.0
         recency = math.exp(-days / self.effective_half_life())

@@ -7,6 +7,116 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.34] — 2026-11-19
+
+**多轮基准的首轮冷启动（wisdom 虚低 5.8 分）+ 激活重复不稳定 + 图谱邻居封顶 4 → 3。**
+
+### 修复 1：`run_multi_benchmark` 增加不计分的预热阶段
+
+下游实测（2.0.33，`benchmark_runs id=187`，repeat=4 取中位）：
+
+```
+第 1 次 avg_activate 910.3ms → efficiency 0    → wisdom 71.8
+后 3 次 avg_activate 210~213ms → efficiency 0.58 → wisdom 77.6
+```
+
+**wisdom 的 5.8 分极差全部来自首轮。** 首轮慢不是数据规模问题，是三笔
+进程级的一次性成本：
+
+| 成本 | 为什么只在第一轮 |
+|---|---|
+| ONNX 嵌入模型加载 | `SOMA.__init__` 只起后台线程，请求进来时仍在等它 |
+| jieba 前缀词典构建 | 第一个分词调用建词典（约 0.4s） |
+| 嵌入器文本 LRU 为空 | focus 的维度文本每次重新编码 |
+
+三者都跨 agent 共享（embedder 进程级单例、jieba 模块级全局），所以在
+正式计分前用一个**用完即弃的 agent** 跑几题（默认 3 题）即可全部就位。
+
+```python
+run_multi_benchmark(agent_factory, runs=4)              # 默认预热
+run_multi_benchmark(agent_factory, runs=4, warmup=False)  # 回到旧行为
+```
+
+- 预热**不产出任何分数**，也不计入 `runs`
+- 预热失败只降级（打印警告后照常评测），不会让基准跑不起来
+- `MultiRunResult` 新增 `warmup_performed` / `warmup_s`，并在 Markdown /
+  JSON / `benchmark_runs.multi_run_stats_json` 三处可见 —— 读历史数据时
+  必须分得清「这次的分数含不含冷启动」
+- CLI 新增 `--no-warmup`
+
+> 这去掉的是**测量误差**，不是把慢的地方藏起来：预热后的分数是稳态表现，
+> 也就是真实请求会看到的表现。
+
+### 调整 2：`_GRAPH_KEYWORD_CAP` 4 → 3
+
+图谱扩展的邻居数（辅助通道）再收一个。
+
+本地对照（50 题 × 4 轮，同一实例热态 A/B，两轮取相同值）：
+
+```
+cap=4  召回 115 条  5.0ms/题
+cap=3  召回 115 条  4.8ms/题
+```
+
+下游 32k 生产库 A/B 结论一致（召回几乎不变，单次再省约 8ms）。依据是
+1 跳邻居权重高、排在前面；第 4 个之后被截掉的绝大多数是 2 跳，命中率很低。
+`test_one_hop_neighbours_survive` 继续盯着「1 跳邻居不能被截掉」这条底线。
+
+### 文档 3：`namespace` 约定（新增 `docs/guides/namespace-convention_zh.md`）
+
+下游把 1.5 万条 wiki 关联图写在 `namespace=''` 里，`include_global` 一开就
+把用户情节记忆挤掉 70%（192 → 58），而**分数面板看不出来**。文档把这个坑写清：
+
+- **写入的 `''`** = 全局共享；**查询的 `''`** = 不过滤（历史语义）——
+  两者不是一回事，所以要用 `include_global=True` 而不是传空串
+- 约定：`''` 只放能直接回答用户问题的**事实**；导航图/关系图用独立 namespace
+- 迁移不影响图扩展：`expand_query_terms` 走内存 NetworkX，不按 namespace 过滤
+- 附验证方法（语义激活占比 > 30% 基本可以确定混进了图边）
+
+mkdocs nav 已加入「语义命名空间约定」。
+
+### 判据
+
+`tests/test_benchmark_warmup.py`（8 条）。注入验证：把预热分支改成 `if False:`，
+3 条变红（预热未执行 / 失败降级 / 报告字段），恢复后 8 条全绿。
+
+`tests/test_keyword_cap.py` 8 条在 cap=3 下全绿。
+
+### 修复 3：激活结果重复不稳定（三个独立来源，逐一修掉）
+
+做 CAP 的 A/B 时发现的：**同一题在同一进程内重复 activate，结果不完全稳定。**
+50 题重复跑有 1 题在 top_k 边界二选一：
+
+```
+只在 A: 整体性 --[关联]--> 杠杆点
+只在 B: 反馈回路 --[关联]--> 延迟
+```
+
+拆开看是三个独立来源，缺一个都会继续抖：
+
+| # | 来源 | 修法 |
+|---|------|------|
+| 1 | 检索 SQL 只有 `ORDER BY confidence DESC`，并列时返回哪几行由执行计划决定 | 两处 SQL 补 `id DESC`（episodic 用 `rowid DESC`，即插入顺序） |
+| 2 | 图扩展 `sorted(key=-weight)` 在 1 跳/2 跳两档并列时取谁不定 | 次键按节点名排序 |
+| 3 | `relevance_potential()` 用当前时刻算近因，而语义三元组的 timestamp 是**查询时刻**构造的 → 分数每次漂移 1e-10 | `memory_type='semantic'` 跳过近因衰减（知识没有过期语义） |
+
+另外 `decompose` 里的 `list(set(...))` 改用 `list(dict.fromkeys(...))`：
+保序去重。原来 set 打乱了关键词顺序，而 `max_like_keywords` 的截断
+**假设主关键词排在前面** —— 这个假设在 set 下是不成立的。
+
+修复后实测（同样 50 题、两次完整 run）：
+
+```
+修复前：集合不同 1 题 / 顺序不同 6 题
+修复后：集合不同 0 题 / 顺序不同 0 题
+cap3 与 cap4 的召回差异也从 1 条归零（123 / 123）
+```
+
+> 第 3 条看似最小，却是最容易复发的一条：只要有人给语义 `MemoryUnit`
+> 填上真实时间戳又不改 `relevance_potential`，漂移就会回来。
+
+---
+
 ## [2.0.33] — 2026-11-25
 
 **知识图谱对真实用户没生效（功能性缺口）+ 短词 LIKE 全表扫描。**

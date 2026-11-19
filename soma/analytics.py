@@ -501,6 +501,9 @@ class AnalyticsStore:
                 "runs": multi_result.runs,
                 "total_duration_s": multi_result.total_duration_s,
                 "data_scale": multi_result.data_scale,
+                # v2.0.34: 这几次 run 的分数有没有含冷启动 —— 看历史数据时必须知道
+                "warmup_performed": getattr(multi_result, "warmup_performed", False),
+                "warmup_s": getattr(multi_result, "warmup_s", 0.0),
                 "scores": {
                     k: {
                         "mean": s.mean, "std": s.std,

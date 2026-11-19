@@ -149,7 +149,7 @@ class WisdomEngine(BaseFrameworkEngine):
             ]
             if matched_triggers:
                 dimension = f"从「{law.name}」出发：{law.description}。应用于问题：「{problem}」"
-                keywords = list(set(law.triggers + problem_keywords))
+                keywords = list(dict.fromkeys(law.triggers + problem_keywords))
                 focus = Focus(
                     law_id=law.id,
                     dimension=dimension,
@@ -171,7 +171,7 @@ class WisdomEngine(BaseFrameworkEngine):
                         f"从「{chosen.name}」出发（探索性视角）："
                         f"{chosen.description}。应用于问题：「{problem}」"
                     ),
-                    keywords=list(set(chosen.triggers + problem_keywords)),
+                    keywords=list(dict.fromkeys(chosen.triggers + problem_keywords)),
                     weight=round(chosen.weight * 0.7, 4),
                     rationale=f"探索因子：直接匹配规律较少（{len(foci)}条），主动引入「{chosen.name}」拓宽思维维度",
                 ))
@@ -200,7 +200,7 @@ class WisdomEngine(BaseFrameworkEngine):
                             f"从「{rlaw.name}」出发（由「{law.name}」关联激活）："
                             f"{rlaw.description}。应用于问题：「{problem}」"
                         ),
-                        keywords=list(set(rlaw.triggers + problem_keywords)),
+                        keywords=list(dict.fromkeys(rlaw.triggers + problem_keywords)),
                         weight=round(rlaw.weight * bonus, 4),
                         rationale=f"规律链推理：{law.name} → {rlaw.name}"
                         + (f"（{partial}个触发词部分命中）" if partial > 0 else ""),
@@ -216,7 +216,7 @@ class WisdomEngine(BaseFrameworkEngine):
                         f"从「{combo_name}」出发（{law_a.name} × {law_b.name}）："
                         f"{combo_desc}。应用于问题：「{problem}」"
                     )
-                    combo_keywords = list(set(
+                    combo_keywords = list(dict.fromkeys(
                         law_a.triggers + law_b.triggers + problem_keywords
                     ))
                     foci.append(Focus(
