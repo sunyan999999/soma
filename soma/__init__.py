@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "2.0.36"
+    __version__ = "2.0.37"
 
 from soma.config import SOMAConfig, load_config
 from soma.db import set_shared_enabled
@@ -126,6 +126,10 @@ class SOMA:
         group_id: str = "",
         # v2.0.8: 构造时立即加载嵌入模型（避免首请求热路径卡 30-100s）
         warmup_on_init: bool = False,
+        # v2.0.37: 语义三元组注入 prompt 时只取这些 kind。
+        # `("fact",)`（默认）—— relation 边只参与图扩展，不注入；
+        # `None` —— 回到 2.0.36 行为（不过滤）。
+        semantic_inject_kinds: Optional[tuple] = ("fact",),
         # v2.0.16: 注入外部嵌入器（通常来自 get_shared_embedder()），使多个实例
         # 复用同一份 ONNX 会话，不再随实例数各自占用原生内存。
         # 注入的实例由调用方管理生命周期 —— 本实例 close() 不会释放它。
@@ -184,6 +188,7 @@ class SOMA:
             recall_threshold=recall_threshold,
             default_top_k=top_k,
             warmup_on_init=warmup_on_init,
+            semantic_inject_kinds=semantic_inject_kinds,
             orchestration_mode=orchestration_mode,
             orchestration_top_k=orchestration_top_k,
             orchestration_consensus=orchestration_consensus,
@@ -1604,10 +1609,16 @@ class SOMA:
 
     def remember_semantic(
         self, subject: str, predicate: str, object_: str, confidence: float = 1.0,
-        namespace: str = "",
+        namespace: str = "", kind: str = "fact",
     ) -> None:
+        """存储语义三元组。
+
+        `kind`（v2.0.37）：`fact`（默认，会注入 prompt）或 `relation`
+        （导航/关联边，只参与图扩展）。写「文章 A 关联概念 B」这类边时
+        请显式传 `kind="relation"`。
+        """
         self._agent.remember_semantic(subject, predicate, object_, confidence,
-                                      namespace=namespace)
+                                      namespace=namespace, kind=kind)
 
     # ── v2.0.10: 多模态记忆 ────────────────────────────────────
 
@@ -1728,6 +1739,31 @@ class SOMA:
     def rollback_nature(self, backup_path: str) -> dict:
         """按 reclassify_nature 的备份文件回滚一次重分类（v2.0.15）"""
         return self._agent.rollback_nature(backup_path)
+
+    def reclassify_semantic_kind(
+        self, dry_run: bool = True, backup_dir: str = None,
+        relation_namespaces=None, predicate_relation=None, limit: int = None,
+    ) -> dict:
+        """把导航图三元组的 kind 批量标成 relation（v2.0.37）。
+
+        `kind='relation'` 的三元组仍参与图扩展，但**不再注入 prompt**。
+        默认规则只按 namespace 猜（含 "graph" 的视为导航图）；`''` 里
+        混进的导航边需要传 `predicate_relation=["关联", "参考"]` 这类规则。
+
+        **默认 dry_run=True 只预览不改库**；落盘自动备份，可
+        rollback_semantic_kind() 回滚。
+        """
+        from soma.semantic_kind import reclassify_semantic_kind
+        return reclassify_semantic_kind(
+            self._agent.memory.semantic, dry_run=dry_run,
+            backup_dir=backup_dir, relation_namespaces=relation_namespaces,
+            predicate_relation=predicate_relation, limit=limit)
+
+    def rollback_semantic_kind(self, backup_path: str) -> dict:
+        """按 reclassify_semantic_kind 的备份文件还原 kind（v2.0.37）"""
+        from soma.semantic_kind import rollback_semantic_kind
+        return rollback_semantic_kind(
+            self._agent.memory.semantic, backup_path)
 
     def repair_context(self, dry_run: bool = True, backup_dir: str = None,
                        user_id: str = "", limit: int = None) -> dict:

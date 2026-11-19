@@ -1035,10 +1035,11 @@ class SOMA_Agent:
         object_: str,
         confidence: float = 1.0,
         namespace: str = "",
+        kind: str = "fact",
     ) -> None:
-        """存储语义三元组"""
+        """存储语义三元组（`kind='relation'` 表示导航/关联边，不注入 prompt）"""
         self.memory.remember_semantic(subject, predicate, object_, confidence,
-                                      namespace=namespace)
+                                      namespace=namespace, kind=kind)
 
     def query_memory(self, query: str, top_k: int = 5, user_id: str = "",
                      agent_id: str = "", group_id: str = "",

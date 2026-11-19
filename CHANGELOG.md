@@ -7,6 +7,90 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.37] — 2026-11-20
+
+**语义三元组的 `kind`（事实 / 关系）：注入按用途过滤，图扩展不受影响。**
+
+### 背景
+
+下游 1.5 万条 wiki 关联图落在 `namespace=''` 里，`include_global` 一开就把
+用户情节记忆挤出 70%（192 → 58），而**分数面板看不出来**（wisdom 77.6 → 77.6）。
+
+他们用 `namespace='wiki_graph'` 隔离修好了，但那次修复依赖「写的人记得传
+namespace」—— 漏一次就会复发，而且仍然静默。
+
+`kind` 把这件事从「靠约定」变成「结构上可过滤」。
+
+### ★ 设计：kind 只管注入，不管扩展
+
+语义库有两条完全独立的消费路径：
+
+| 路径 | 入口 | 用什么 | 是否受污染 |
+|---|---|---|---|
+| 图扩展 | `_expand_via_semantic_graph` → `expand_query_terms` | 进程内 NetworkX 图 | ❌ 只用节点名 |
+| 知识注入 | `MemoryCore.query` → `query_by_keywords` | SQL | ✅ 污染只在这里 |
+
+所以 `kind` 只影响注入。与 `namespace` 互补：namespace 管「谁能看见」，
+kind 管「这条用来做什么」。
+
+### Schema
+
+```sql
+ALTER TABLE semantic_triples ADD COLUMN kind TEXT NOT NULL DEFAULT 'fact';
+CREATE INDEX idx_semantic_kind ON semantic_triples(kind);
+```
+
+幂等迁移，旧库自动补列，已有行全部 `'fact'`。
+
+取值不锁死：`fact` / `relation` 是约定值，也接受 `rule` / `preference` 等
+自定义字符串。
+
+### API
+
+```python
+remember_semantic(..., kind="fact")        # 四层透传
+query_by_keywords(..., include_kinds=None) # None = 不过滤
+SOMAConfig.semantic_inject_kinds = ("fact",)   # None = 回到 2.0.36
+```
+
+### ⚠️ 默认行为变化
+
+`MemoryCore.query` 默认只注入 `kind='fact'`。
+
+**受影响的一类**：把导航边写在 `''` 且依赖它被注入的下游 —— 他们的注入
+结果会变（导航边消失）。这是**预期修复**，但发布说明必须写清楚，并给出
+回滚开关 `SOMAConfig(semantic_inject_kinds=None)`。
+
+### 迁移工具
+
+```python
+soma.reclassify_semantic_kind(dry_run=True)    # 默认只预览
+soma.reclassify_semantic_kind(dry_run=False)   # 自动备份
+soma.rollback_semantic_kind(backup_path)
+soma semantic-kind [--apply] [--rollback PATH]
+```
+
+默认规则：`namespace` 含 `graph` → `relation`，其余不动。
+`''` 里混进的导航边需要传 `predicate_relation=["关联", "参考"]` 这类规则 ——
+那里本该只放事实，混进去说明写入方已违反约定，工具不替你猜。
+
+### 判据
+
+`tests/test_semantic_kind.py`（15 条）。核心不变量单独一组：
+
+| 判据 | 注入后 |
+|---|---|
+| `kind` 往返 / 默认 fact / context 带 kind | 去掉列 → 红 |
+| `include_kinds` 过滤 relation | 去掉过滤 → **2 条红** |
+| **relation 边仍参与图扩展** | relation 不进图 → **2 条红** |
+| `MemoryCore.query` 默认只注入 fact | 配置不生效 → 红 |
+| `semantic_inject_kinds=None` 回滚 | — |
+| reclassify 的 dry_run / apply / rollback / 备份失败中止 | 任一处失效 → 红 |
+
+全量回归 **1396 passed × 3 轮**零回归。
+
+---
+
 ## [2.0.36] — 2026-11-19
 
 **预热覆盖评测真正会用到的 dimension 集合 + memory 查询路径。**

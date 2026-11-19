@@ -122,14 +122,56 @@ ratio = sem_hits / max(1, len(activated))
 2. 抽 20 条被激活的全局三元组，让 LLM 判相关性
    —— 无关占比超过 30% 就该隔离了
 
-## 已知缺口
+## `kind`：与 namespace 互补的第二个维度（≥ 2.0.37）
 
-目前语义库**没有区分「事实」和「图边」的类型字段**。上面的约定靠
-namespace 手工维护，写错了不会报错。
+namespace 解决「谁能看见」，`kind` 解决「这条用来做什么」：
 
-后续版本计划增加 `kind`（`fact` / `relation`），在注入阶段按类型过滤，
-让这一类错误在结构上不可能发生。在此之前，**写入方是自己 namespace 的
-唯一守门人**。
+| `kind` | 含义 | 会进 prompt 吗 | 参与图扩展吗 |
+|---|---|---|---|
+| `fact`（默认） | 能直接回答用户问题的事实 | ✅ | ✅ |
+| `relation` | 导航/关联边（「A 和 B 有关」） | ❌ | ✅ |
+
+```python
+soma.remember_semantic("数字分身", "基于", "命理八字")                      # fact
+soma.remember_semantic("《某文章》", "关联概念", "经络", kind="relation")    # 图边
+```
+
+**关键：`relation` 边仍然参与图扩展。** 它只是不再作为「知识」被注入。
+这样导航图既能帮你扩展召回关键词，又不会污染 prompt。
+
+默认注入过滤由配置控制，可回滚：
+
+```python
+soma = SOMA(semantic_inject_kinds=("fact",))   # 默认：只注入事实
+soma = SOMA(semantic_inject_kinds=None)        # 回到 2.0.36：不过滤
+```
+
+已有数据用工具重分类（**默认只预览**）：
+
+```bash
+soma semantic-kind                 # 预览：哪些会被标成 relation
+soma semantic-kind --apply         # 落盘（自动备份，可 --rollback）
+soma semantic-kind --relation-namespaces wiki_graph graph
+```
+
+默认规则是 `namespace` 含 `graph` → `relation`。`''` 里如果混着导航边，
+需要显式给 predicate 规则：
+
+```bash
+soma semantic-kind --predicate-relation 关联 参考 属于 --apply
+```
+
+## 两个维度怎么配合
+
+| 场景 | namespace | kind |
+|---|---|---|
+| 真正的全局事实 | `''` | `fact` |
+| 全局导航图 | `wiki_graph`（或 `''`） | `relation` |
+| 用户私有事实 | `user_id` | `fact` |
+| 用户私有关系（如人际图谱） | `user_id` | `relation` |
+
+> `''` 里放 `relation` 也不致命了（2.0.37 起注入会过滤掉），但仍然是
+> 概念上的错误 —— namespace 的约定没有因此放松。
 
 ---
 

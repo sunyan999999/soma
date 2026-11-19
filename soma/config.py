@@ -64,6 +64,10 @@ class SOMAConfig(BaseModel):
     embedder_device: str = "cpu"  # "cpu" | "cuda"
     # v2.0.8: 构造时是否立即加载/预热嵌入模型（避免首个请求热路径卡 30-100s）
     warmup_on_init: bool = False
+    # v2.0.37：语义三元组注入 prompt 时只取这些 kind（None = 不过滤，回到
+    # 2.0.36 行为）。`relation` 是导航/关联边，仍参与图扩展但不进 prompt。
+    # 见 docs/guides/namespace-convention_zh.md 与 plan-v2.0.37。
+    semantic_inject_kinds: Optional[tuple] = ("fact",)
 
     # SQLite 内存映射大小（字节，v2.0.17）
     # 0 = 禁用。历史硬编码 256MB 会让每个连接把整个库映射进进程 RSS —— Linux 上

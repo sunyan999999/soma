@@ -2,7 +2,7 @@ import logging
 import os
 import sqlite3
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 import networkx as nx
 
@@ -40,7 +40,8 @@ class SemanticStore(BaseMemoryStore):
                 object TEXT NOT NULL,
                 confidence REAL DEFAULT 1.0,
                 created_at REAL NOT NULL,
-                namespace TEXT NOT NULL DEFAULT ''
+                namespace TEXT NOT NULL DEFAULT '',
+                kind TEXT NOT NULL DEFAULT 'fact'
             )
             """
         )
@@ -59,6 +60,24 @@ class SemanticStore(BaseMemoryStore):
             pass
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_semantic_namespace ON semantic_triples(namespace)"
+        )
+        # v2.0.37：kind —— 这条三元组「用来做什么」。
+        #
+        #   fact     = 能直接回答用户问题的事实（会进 prompt）
+        #   relation = 导航/关联边（只参与图扩展，不注入）
+        #
+        # 与 namespace 互补：namespace 管「谁能看见」，kind 管「这条用来做什么」。
+        # 下游踩过的坑：1.5 万条 wiki 关联图落在 namespace='' 里，include_global
+        # 一开就挤掉用户情节记忆 70% —— 那次靠 namespace 隔离修，但漏传一次
+        # 就会复发，且分数面板看不出来。kind 让它在结构上可过滤。
+        try:
+            self._conn.execute(
+                "ALTER TABLE semantic_triples ADD COLUMN kind TEXT NOT NULL DEFAULT 'fact'"
+            )
+        except sqlite3.OperationalError:
+            pass
+        self._conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_semantic_kind ON semantic_triples(kind)"
         )
         self._create_fts5()
         self._conn.commit()
@@ -121,7 +140,7 @@ class SemanticStore(BaseMemoryStore):
         """返回全部语义三元组（v2.0.9: 补接口，供 MemoryManager 冲突检测使用）。"""
         try:
             rows = self._conn.execute(
-                "SELECT subject, predicate, object, confidence, namespace "
+                "SELECT subject, predicate, object, confidence, namespace, kind "
                 "FROM semantic_triples"
             ).fetchall()
         except Exception:
@@ -133,6 +152,7 @@ class SemanticStore(BaseMemoryStore):
                 "object": r["object"],
                 "confidence": float(r["confidence"]),
                 "namespace": r["namespace"] or "",
+                "kind": (r["kind"] if "kind" in r.keys() else "fact") or "fact",
             }
             for r in rows
         ]
@@ -141,8 +161,14 @@ class SemanticStore(BaseMemoryStore):
         self, subject: str, predicate: str, object_: str,
         confidence: float = 1.0,
         namespace: str = "",
+        kind: str = "fact",
     ) -> None:
-        """添加三元组并持久化到 SQLite（同 namespace 内去重）"""
+        """添加三元组并持久化到 SQLite（同 namespace 内去重）。
+
+        `kind`（v2.0.37）：`fact`（默认，会进 prompt）或 `relation`
+        （导航/关联边，只参与图扩展）。也接受自定义字符串。
+        去重键不含 kind —— 同一条边改 kind 不算新边，会直接返回。
+        """
         import time
 
         # 去重检查：同 namespace 内相同的 (subject, predicate, object) 不重复插入
@@ -161,10 +187,12 @@ class SemanticStore(BaseMemoryStore):
         )
         self._conn.execute(
             """
-            INSERT INTO semantic_triples (subject, predicate, object, confidence, created_at, namespace)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO semantic_triples
+                (subject, predicate, object, confidence, created_at, namespace, kind)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (subject, predicate, object_, confidence, time.time(), namespace),
+            (subject, predicate, object_, confidence, time.time(), namespace,
+             kind or "fact"),
         )
         self._conn.commit()
 
@@ -174,6 +202,7 @@ class SemanticStore(BaseMemoryStore):
         max_age_days: Optional[float] = None,
         include_global: bool = False,
         max_like_keywords: int = 3,
+        include_kinds: Optional[Sequence[str]] = None,
     ) -> List[MemoryUnit]:
         """按关键词查语义三元组。
 
@@ -199,6 +228,17 @@ class SemanticStore(BaseMemoryStore):
             ns_clause = "AND st.namespace = ?"
         else:
             ns_clause = ""
+
+        # v2.0.37：kind 过滤。None = 不过滤（完全向后兼容）；空集合也当
+        # 不过滤 —— 「什么都不要」应该用 top_k=0 表达，不是一个隐式空 IN。
+        # 典型注入只传 ("fact",)，让导航边不进入 prompt。
+        kind_clause = ""
+        kind_params: List[str] = []
+        if include_kinds:
+            kinds = [k for k in include_kinds if k]
+            if kinds:
+                kind_clause = "AND st.kind IN (" + ", ".join("?" * len(kinds)) + ")"
+                kind_params = kinds
         time_clause = ""
         time_params = []
         if max_age_days is not None:
@@ -222,12 +262,13 @@ class SemanticStore(BaseMemoryStore):
                     WHERE st.rowid IN (
                         SELECT rowid FROM semantic_fts WHERE semantic_fts MATCH ?
                     )
-                    {time_clause} {ns_clause}
+                    {time_clause} {ns_clause} {kind_clause}
                     ORDER BY st.confidence DESC, st.id DESC
                     LIMIT ?
                 """
                 if namespace:
                     params.append(namespace)
+                params.extend(kind_params)
                 params.append(top_k)
                 rows = self._conn.execute(sql, params).fetchall()
                 for row in rows:
@@ -244,6 +285,7 @@ class SemanticStore(BaseMemoryStore):
                                     "predicate": pred,
                                     "object": v,
                                     "confidence": row["confidence"],
+                                    "kind": row["kind"],
                                 },
                                 memory_type="semantic",
                                 importance=0.7,
@@ -273,6 +315,12 @@ class SemanticStore(BaseMemoryStore):
                 else:
                     conditions.append("st.namespace = ?")
                 params.append(namespace)
+            if include_kinds:
+                kinds = [k for k in include_kinds if k]
+                if kinds:
+                    conditions.append(
+                        "st.kind IN (" + ", ".join("?" * len(kinds)) + ")")
+                    params.extend(kinds)
             if seen_ids:
                 # 用 rowid 构造唯一 ID 去重: sem_edge_{subject}_{predicate}_{object}
                 # 排除已由 FTS 路径返回的边
@@ -307,6 +355,7 @@ class SemanticStore(BaseMemoryStore):
                                 "predicate": pred,
                                 "object": v,
                                 "confidence": row["confidence"],
+                                "kind": row["kind"],
                             },
                             memory_type="semantic",
                             importance=0.7,

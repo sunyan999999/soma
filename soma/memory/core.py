@@ -40,6 +40,8 @@ class MemoryCore:
         scene_store=None,
         profile_store=None,
     ):
+        # v2.0.37：注入时按 kind 过滤，配置从 config 读（None = 不过滤）
+        self.config = config
         use_vector = config.use_vector_search and embedder is not None
         # 关键词上限做成实例属性（类默认值见类定义），便于接入方做 A/B 对照
         self._GRAPH_KEYWORD_CAP = type(self)._GRAPH_KEYWORD_CAP
@@ -145,9 +147,16 @@ class MemoryCore:
         object_: str,
         confidence: float = 1.0,
         namespace: str = "",
+        kind: str = "fact",
     ) -> None:
-        """存储语义三元组"""
-        self.semantic.add_triple(subject, predicate, object_, confidence, namespace=namespace)
+        """存储语义三元组。
+
+        `kind`（v2.0.37）：`fact`（默认，会注入 prompt）或 `relation`
+        （导航/关联边，只参与图扩展）。写文章关联图、目录结构这类「A 和 B
+        有关」的边时请显式传 `kind="relation"`。
+        """
+        self.semantic.add_triple(subject, predicate, object_, confidence,
+                                 namespace=namespace, kind=kind)
 
     def _expand_via_semantic_graph(self, keywords: List[str], max_terms: int = 8) -> List[str]:
         """通过语义图谱扩展关键词：从匹配节点沿图遍历获取邻居概念。"""
@@ -359,8 +368,13 @@ class MemoryCore:
         #   他们的 15,312 条三元组全部 namespace=''（全局知识），而这里传
         #   `agent_id or user_id` —— 查 namespace='1' 返回 0 行，知识图谱
         #   对真实用户完全没生效，每次只是空转。
+        # v2.0.37：注入只取 `fact`。导航/关联边（kind='relation'）仍然
+        # 参与上方的图扩展，但不再作为「知识」进入 prompt —— 下游实测
+        # 1.5 万条 wiki 关联图曾把用户情节记忆挤出 70%。
+        # `semantic_inject_kinds=None` 可回到 2.0.36 行为。
         semantic_results = self.semantic.query_by_keywords(
             fts_keywords, top_k, namespace=sem_namespace, include_global=True,
+            include_kinds=getattr(self.config, "semantic_inject_kinds", None),
         )
         for mem in semantic_results:
             matched = [kw for kw in all_keywords if kw.lower() in mem.content.lower()]

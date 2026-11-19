@@ -486,6 +486,39 @@ def cmd_reclassify(args):
         return 1
 
 
+def cmd_semantic_kind(args):
+    """批量把导航图三元组标成 kind='relation'（v2.0.37）。
+
+    默认只预览（dry_run），加 --apply 才落盘；落盘自动备份，可用
+    --rollback 回滚。relation 边仍参与图扩展，但不再注入 prompt。
+    """
+    try:
+        soma = _get_soma(getattr(args, "project", ""))
+
+        rb = getattr(args, "rollback", "")
+        if rb:
+            out = soma.rollback_semantic_kind(rb)
+            print(json.dumps(out, ensure_ascii=False, indent=2))
+            soma.close()
+            return 0
+
+        out = soma.reclassify_semantic_kind(
+            dry_run=not getattr(args, "apply", False),
+            relation_namespaces=getattr(args, "relation_namespaces", None),
+            predicate_relation=getattr(args, "predicate_relation", None),
+            limit=getattr(args, "limit", None),
+        )
+        print(json.dumps(out, ensure_ascii=False, indent=2))
+        if out.get("dry_run") and out.get("changed"):
+            print("\n（预览模式，未改动。确认无误后加 --apply 落盘）",
+                  file=sys.stderr)
+        soma.close()
+        return 0
+    except Exception as e:
+        print(json.dumps({"error": str(e)}, ensure_ascii=False))
+        return 1
+
+
 def cmd_repair_context(args):
     """扫描并修复 context 非 JSON 对象的存量脏数据（v2.0.17）
 
@@ -607,6 +640,21 @@ def build_parser() -> argparse.ArgumentParser:
     p_rc.add_argument("--rollback", type=str, default="",
                        help="按备份文件回滚一次重分类")
 
+    # semantic-kind（v2.0.37）
+    p_sk = sub.add_parser(
+        "semantic-kind",
+        help="把导航图三元组标成 kind=relation（不注入 prompt，仍参与图扩展）")
+    _add_project_arg(p_sk)
+    p_sk.add_argument("--apply", action="store_true",
+                      help="真正落盘（默认只预览 dry_run）")
+    p_sk.add_argument("--relation-namespaces", nargs="*", default=None,
+                      help="namespace 含这些子串即标 relation（默认 graph）")
+    p_sk.add_argument("--predicate-relation", nargs="*", default=None,
+                      help="predicate 含这些子串即标 relation（用于清理 '' 里的导航边）")
+    p_sk.add_argument("--limit", type=int, default=None, help="最多处理条数")
+    p_sk.add_argument("--rollback", type=str, default="",
+                      help="按备份文件回滚一次重分类")
+
     # repair-context（v2.0.17）
     p_rp = sub.add_parser("repair-context",
                           help="修复 context 非 JSON 对象的存量脏数据")
@@ -697,6 +745,7 @@ def main():
         "learn": cmd_learn,
         "graph": cmd_graph,
         "reclassify": cmd_reclassify,
+        "semantic-kind": cmd_semantic_kind,
         "repair-context": cmd_repair_context,
         "memories": cmd_memories,
         "forget": cmd_forget,
