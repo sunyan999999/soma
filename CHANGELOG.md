@@ -7,6 +7,97 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.39] — 2026-11-20
+
+**口径统一下放：基准记录必须自解释。**
+
+### 问题：三个可变因素，只有一个被完整记录
+
+| 因素 | 影响 | 之前落库 |
+|---|---|---|
+| `caliber` | 评分算法版本 | ❌ 多轮记录里没有 |
+| `eval_path` | 候选集不同，分数差 14 分 | ✅ 2.0.35 加了 |
+| `mem_precision_applicable` | **false 时该项被剔除、分母权重整体放大** | ❌ |
+
+第三条最隐蔽。同一份库、同一版本，仅因为路径不同就 82.8 vs 68.7，
+而记录里**看不出**是「剔除了一项」还是「真的低」。
+
+下游踩过一次：面板写入口径改成四维中位后 `scores` 里不再带 caliber，
+record 把新记录全写成 `v1-legacy`。
+
+### 设计：一条记录必须自解释
+
+新增 `build_benchmark_record(multi_result) -> dict`，schema 为
+`benchmark-record/1`：
+
+```json
+{
+  "schema": "benchmark-record/1",
+  "caliber": "v2-normalized",
+  "eval_path": "per_user",
+  "eval_user_id": "1",
+  "wisdom": {
+    "items":   {"relevance": {"mean": 0.41, "values": [0.41, 0.41]}, ...},
+    "weights": {"coverage": {...}, "law_recall": {...}},
+    "mem_precision_applicable": [false, false],
+    "unstable_applicability": false
+  }
+}
+```
+
+**落库与对外结构用同一个函数生成** —— `record_multi_benchmark` 内部调用它，
+`generate_json_report` 也嵌入它。这是本次最重要的一条：下游那个 caliber
+丢失就是「两处各写一份」造成的。
+
+### `mem_precision_applicable`：只标记，不修正
+
+- 逐轮记录数组（四次运行可能不一致）
+- 不一致时标 `unstable_applicability: true` + `partial: true`
+- **不强制所有子项参与** —— 那会把「测不出来」当成「测得差」
+
+### 真实运行验证（本地 60 条库，runs=2）
+
+```
+caliber: v2-normalized
+eval_path: per_user | eval_user_id: u1
+wisdom.items 键:   [coverage, cross_domain, diversity, efficiency,
+                    law_recall, mem_precision, relevance]   ← 7 项
+wisdom.weights 键: [coverage, cross_domain, diversity, efficiency,
+                    law_recall, relevance]                   ← 6 项
+mem_precision_applicable: [False, False]
+```
+
+`items` 有 7 项而 `weights` 只有 6 项 —— 这一处差异就是「该项被剔除、
+其余按比例放大」的直接证据。以前只能靠猜。
+
+### 默认路径不改
+
+`run_full_benchmark(user_id="")` 仍是 namespaceless。改默认会让所有老脚本
+静默换路径 —— 比分数虚高更危险。改为**显式标注**：空值记 `"unknown"` 并打
+warning。
+
+### 判据
+
+`tests/test_benchmark_record.py`（12 条）：
+
+| 判据 | 注入后 |
+|---|---|
+| caliber / eval_path / eval_user_id 齐全 | 删字段 → 红 |
+| caliber 缺失记 `unknown` | 静默留空 → 红 |
+| items / weights 保留逐轮 values | 只存均值 → 红 |
+| applicable 逐轮记录 + 不一致标记 | 压成单个 bool → 红 |
+| **落库结构 == build_benchmark_record** | 两处各写一份 → **2 条红** |
+| 旧顶层键（warmup_performed / warmup_s / runs）保留 | 删掉 → 红 |
+| `SOMA.benchmark_record` 存在 | — |
+
+全量回归 **1418 passed × 3 轮**零回归。
+
+### 文档
+
+新增 `docs/plan-v2.0.39-caliber.md`（方案与取舍）。
+
+---
+
 ## [2.0.38] — 2026-11-20
 
 **迁移类 CLI 的库路径显式参数 —— 修一个「扫描 0 条」的静默误读。**

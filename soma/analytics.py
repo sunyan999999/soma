@@ -482,7 +482,7 @@ class AnalyticsStore:
 
     # ── 多轮基准测试存储 (v0.6.1+) ───────────────────────────
 
-    def record_multi_benchmark(self, multi_result) -> int:
+    def record_multi_benchmark(self, multi_result, record: Optional[dict] = None) -> int:
         """存储多轮基准测试结果，返回 run_id
 
         将 MultiRunResult 的统计摘要存入 benchmark_runs 表。
@@ -496,28 +496,13 @@ class AnalyticsStore:
             if key in multi_result.scores:
                 scores_dict[key] = multi_result.scores[key].mean
 
-        multi_json = json.dumps(
-            {
-                "runs": multi_result.runs,
-                "total_duration_s": multi_result.total_duration_s,
-                "data_scale": multi_result.data_scale,
-                # v2.0.34: 这几次 run 的分数有没有含冷启动 —— 看历史数据时必须知道
-                "warmup_performed": getattr(multi_result, "warmup_performed", False),
-                "warmup_s": getattr(multi_result, "warmup_s", 0.0),
-                # v2.0.35：两条评估路径的分数不可比（生产实测差 14 分）
-                "eval_path": getattr(multi_result, "eval_path", ""),
-                "scores": {
-                    k: {
-                        "mean": s.mean, "std": s.std,
-                        "ci95": [s.ci95_low, s.ci95_high],
-                        "cv_pct": s.cv_pct, "stability": s.stability,
-                        "values": s.values,
-                    }
-                    for k, s in multi_result.scores.items()
-                },
-            },
-            ensure_ascii=False,
-        )
+        # ★ v2.0.39：落库结构与对外记录**用同一个函数**生成。
+        #   下游踩过「scores 里不带 caliber → record 全写成 v1-legacy」的坑，
+        #   根因就是两处各写一份。
+        if record is None:
+            from soma.benchmarks import build_benchmark_record
+            record = build_benchmark_record(multi_result)
+        multi_json = json.dumps(record, ensure_ascii=False)
 
         self._conn.execute(
             """

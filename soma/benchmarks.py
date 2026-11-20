@@ -8,6 +8,7 @@ v2 新增:
 每次运行生成一条 benchmark_run 记录，追踪 SOMA 能力随时间的变化。
 """
 import json
+import logging
 import math
 import time
 from collections import Counter
@@ -17,6 +18,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
+
+_log = logging.getLogger("soma.benchmarks")
 
 
 def _get_version() -> str:
@@ -1274,6 +1277,15 @@ class MultiRunResult:
     warmup_s: float = 0.0
     # v2.0.35：这些分数评的是哪条路径（namespaceless / per_user）
     eval_path: str = ""
+    # v2.0.39：口径元数据。三个可变因素（caliber / eval_path /
+    # mem_precision_applicable）里，后者会让 wisdom 的**分母权重**变化 ——
+    # applicable=false 时该项被剔除、其余按比例放大。不记下来，
+    # 「82.8 vs 68.7」永远只能靠猜。
+    caliber: str = ""
+    eval_user_id: str = ""
+    wisdom_items: Dict[str, RunStatistics] = field(default_factory=dict)
+    wisdom_weights: Dict[str, RunStatistics] = field(default_factory=dict)
+    mem_precision_applicable: List[bool] = field(default_factory=list)
 
 
 def compute_statistics(name: str, values: List[float]) -> RunStatistics:
@@ -1477,6 +1489,12 @@ def run_multi_benchmark(
     raw_runs: List[BenchmarkRun] = []
     all_scores: Dict[str, List[float]] = {}
     all_details: Dict[str, List[float]] = {}
+    # v2.0.39：口径元数据（逐轮原始数组，不压缩成单个值）
+    all_items: Dict[str, List[float]] = {}
+    all_weights: Dict[str, List[float]] = {}
+    applicable_flags: List[bool] = []
+    caliber = ""
+    eval_user_id = ""
 
     # ── 预热（不计分）───────────────────────────────────────────
     warmup_performed = False
@@ -1542,6 +1560,21 @@ def run_multi_benchmark(
                     if isinstance(val, (int, float)) and not isinstance(val, bool):
                         detail_key = f"evolution/{key}"
                         all_details.setdefault(detail_key, []).append(float(val))
+
+            # v2.0.39：口径元数据 —— 逐轮收集，不做布尔压缩
+            if not caliber:
+                caliber = run.scores.get("caliber", "") or ""
+            if not eval_user_id:
+                eval_user_id = run.wisdom.details.get("eval_user_id", "") or ""
+            for k, v in (run.scores.get("wisdom_items") or {}).items():
+                if isinstance(v, (int, float)) and not isinstance(v, bool):
+                    all_items.setdefault(k, []).append(float(v))
+            for k, v in (run.scores.get("wisdom_weights") or {}).items():
+                if isinstance(v, (int, float)) and not isinstance(v, bool):
+                    all_weights.setdefault(k, []).append(float(v))
+            applicable_flags.append(bool(
+                (run.scores.get("wisdom_meta") or {}).get(
+                    "mem_precision_applicable", False)))
         finally:
             if dispose_agents:
                 try:
@@ -1572,8 +1605,88 @@ def run_multi_benchmark(
         total_duration_s=round(duration, 1),
         warmup_performed=warmup_performed,
         warmup_s=warmup_s,
-        eval_path=(raw_runs[0].eval_path if raw_runs else ""),
+        eval_path=(raw_runs[0].eval_path if raw_runs else "") or "unknown",
+        caliber=caliber,
+        eval_user_id=eval_user_id,
+        wisdom_items={k: compute_statistics(k, v) for k, v in all_items.items()},
+        wisdom_weights={k: compute_statistics(k, v) for k, v in all_weights.items()},
+        mem_precision_applicable=applicable_flags,
     )
+
+
+BENCHMARK_RECORD_SCHEMA = "benchmark-record/1"
+
+
+def build_benchmark_record(multi_result) -> Dict[str, Any]:
+    """把 MultiRunResult 转成**自解释**的记录（v2.0.39）。
+
+    目标：看一条记录就能知道「这个分数是用什么口径、走哪条路径、哪些子项
+    参与了」，不需要去翻当时的代码版本。
+
+    三个可变因素里，`mem_precision_applicable` 最隐蔽 —— 它为 false 时
+    该项被剔除、其余六项按比例放大，wisdom 会**虚高**（下游实测同一份库
+    两条路径差 14 分）。所以逐轮记录，并在几次运行不一致时明确标出来。
+
+    下游写库（`record_multi_benchmark`）和出报告用**同一个函数**，
+    避免「对外一个结构、落库另一个结构」——那个坑丢过 caliber。
+    """
+    scores = {
+        k: {
+            "mean": s.mean, "std": s.std,
+            "ci95": [s.ci95_low, s.ci95_high],
+            "cv_pct": s.cv_pct, "stability": s.stability,
+            "values": list(s.values),
+        }
+        for k, s in multi_result.scores.items()
+    }
+
+    items = {
+        k: {"mean": s.mean, "values": list(s.values)}
+        for k, s in (multi_result.wisdom_items or {}).items()
+    }
+    weights = {
+        k: {"mean": s.mean, "values": list(s.values)}
+        for k, s in (multi_result.wisdom_weights or {}).items()
+    }
+
+    flags = list(multi_result.mem_precision_applicable or [])
+    unstable = len(set(flags)) > 1
+
+    eval_path = multi_result.eval_path or "unknown"
+    if eval_path == "unknown":
+        _log.warning(
+            "benchmark record: eval_path 为空，已记为 'unknown'。"
+            "namespaceless 与 per_user 的分数不可比（可差 14 分），"
+            "请传 user_id 或显式标 eval_path。")
+
+    return {
+        "schema": BENCHMARK_RECORD_SCHEMA,
+        "version": multi_result.version,
+        "timestamp": multi_result.timestamp,
+        "runs": multi_result.runs,
+        "total_duration_s": multi_result.total_duration_s,
+        "data_scale": multi_result.data_scale,
+        # ── 口径元数据 ──
+        "caliber": multi_result.caliber or "unknown",
+        "eval_path": eval_path,
+        "eval_user_id": multi_result.eval_user_id or "",
+        "warmup": {
+            "performed": bool(multi_result.warmup_performed),
+            "s": multi_result.warmup_s,
+        },
+        # 兼容 2.0.34~2.0.38 的顶层解析（下游已按这两个键读）
+        "warmup_performed": bool(multi_result.warmup_performed),
+        "warmup_s": multi_result.warmup_s,
+        "scores": scores,
+        "wisdom": {
+            "items": items,
+            "weights": weights,
+            # 逐轮记录：false 时该项被剔除，分母权重放大，分数不可与 true 相比
+            "mem_precision_applicable": flags,
+            "unstable_applicability": unstable,
+            "partial": unstable,
+        },
+    }
 
 
 def _stability_emoji(stability: str) -> str:
@@ -1673,6 +1786,8 @@ def generate_json_report(result: MultiRunResult) -> dict:
         "warmup_performed": result.warmup_performed,
         "warmup_s": result.warmup_s,
         "eval_path": result.eval_path,
+        # v2.0.39：完整的自解释记录（与落库结构一致）
+        "record": build_benchmark_record(result),
         "scores": {
             key: {
                 "mean": s.mean,

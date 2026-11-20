@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "2.0.38"
+    __version__ = "2.0.39"
 
 from soma.config import SOMAConfig, load_config
 from soma.db import set_shared_enabled
@@ -1764,6 +1764,18 @@ class SOMA:
         from soma.semantic_kind import rollback_semantic_kind
         return rollback_semantic_kind(
             self._agent.memory.semantic, backup_path)
+
+    def benchmark_record(self, multi_result) -> dict:
+        """把 `run_multi_benchmark` 的结果转成自解释记录（v2.0.39）。
+
+        记录里带 caliber / eval_path / eval_user_id，以及 wisdom 的
+        items / weights / mem_precision_applicable（逐轮）。下游直接存它，
+        不要再自己拼 —— 少一个字段就再也看不出分数是怎么来的。
+
+        与 `analytics.record_multi_benchmark` 落库的结构**完全一致**。
+        """
+        from soma.benchmarks import build_benchmark_record
+        return build_benchmark_record(multi_result)
 
     def repair_context(self, dry_run: bool = True, backup_dir: str = None,
                        user_id: str = "", limit: int = None) -> dict:
