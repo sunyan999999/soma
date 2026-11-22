@@ -7,6 +7,107 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.40] — 2026-11-22
+
+**nature 分类器移除 5 个高频误判词 + dry-run 输出命中原因；补 API 别名与 CLI 扫描说明。**
+
+### ★ 修复 1：时间副词不是状态
+
+下游 `reclassify --data-dir` 扫到 **221 条 event→state**，但没有 apply ——
+担心混着「一次性事件被误判成状态」。这个担心是对的：
+
+```
+今天上午在家做饭，下午去的父母家        → state  ✗
+最近在学 Python 的异步编程              → state  ✗
+这周完成了三个需求评审                  → state  ✗
+目前在做一个数据迁移项目                → state  ✗
+我在学习睡眠科学的相关知识              → state  ✗
+```
+
+根因是状态词表里有四个**时间副词**（`今天 / 这周 / 最近在 / 目前在`）和
+一个**中性名词**（`睡眠`）。时间副词是时间标记，不是状态 ——
+「最近在学 X」是持续中的事件，不是处境。
+
+移除这 5 个词后 8/8 符合预期：
+
+```
+今天上午在家做饭        → event  ✓
+最近在学 Python         → event  ✓
+今天又失眠了            → state  ✓（命中「失眠」）
+最近压力大，晚上睡不好   → state  ✓（命中「压力大」/「睡不好」）
+```
+
+真正的状态由「失眠 / 压力大 / 焦虑」这类具体词表达，不需要时间词兜底。
+
+### 新增 2：`classify_with_reason()` + dry-run 的 `by_reason`
+
+```python
+nature, reason = clf.classify_with_reason(text)
+# → ("state", "state_keyword:失眠")
+```
+
+`reclassify_nature(dry_run=True)` 现在输出：
+
+```json
+{
+  "by_reason": {"state_keyword:失眠": 12, "fact_long_doc:412": 3, "default": 17850},
+  "samples": [{"id": "...", "from": "event", "to": "state", "reason": "state_keyword:失眠"}]
+}
+```
+
+以前只给一个 `changed: 221`，下游无法判断是哪些规则命中的，只能整体不落盘。
+现在可以按规则分组抽查，发现某条误伤就单独收紧。
+
+### 修复 3：模块级 API 别名
+
+文档/信里常写成 `soma.benchmark_record(result)`，但之前只有
+`SOMA.benchmark_record()` 方法与 `soma.benchmarks.build_benchmark_record()`。
+现在三种写法都可用：
+
+```python
+soma.benchmark_record(result)
+soma.build_benchmark_record(result)
+soma.benchmarks.build_benchmark_record(result)
+```
+
+### 修复 4：CLI 帮助写清扫描对象
+
+```
+reclassify      ...（扫描 episodic 记忆；默认只预览）
+semantic-kind   ...（扫描 semantic 三元组；默认只预览）
+```
+
+下游看到 `scanned=18096` 与 `scanned=15312` 两个不同数字会疑惑，写明即可。
+
+### 文档：基准环境守卫（下游经验）
+
+下游发现 RAG 索引重建期间跑基准，wisdom 从 68.5 掉到 **66.7**，
+`warmup_s` 从 2.0 涨到 4.2 —— 而它看起来就像「正常波动」：
+
+```
+pid 3630964  rag_build_daemon.py  CPU 98.9%  RSS 5.4GB  持续 6 分钟
+load1 2.68（4 核）
+```
+
+**跑基准前请确认没有索引重建 / 备份 / 大 CPU 任务在跑**，否则基线会被污染。
+下游已加 `env_guard()`（检测重建进程 + load1 阈值）并写进结果 JSON；
+上游不内置检测（无法知道外部在跑什么），但 `record` 里可带 `env` 字段。
+
+### 判据
+
+| 判据 | 注入后 |
+|---|---|
+| 时间副词不判 state（5 条 parametrize） | 把词加回去 → **4 条红** |
+| 真实状态词仍命中（2 条） | — |
+| `classify_with_reason` 返回命中词 | — |
+| dry-run 输出 `by_reason` 与含 reason 的 samples | 只给总数 → 红 |
+| 模块级两个别名可调用 | — |
+| 两个命令的帮助含扫描对象 | 删掉 → 红 |
+
+全量回归 **1430 passed × 3 轮**零回归。
+
+---
+
 ## [2.0.39] — 2026-11-20
 
 **口径统一下放：基准记录必须自解释。**

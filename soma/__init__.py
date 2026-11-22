@@ -9,7 +9,7 @@ try:
     from importlib.metadata import version as _get_version
     __version__ = _get_version("soma-wisdom")
 except Exception:
-    __version__ = "2.0.39"
+    __version__ = "2.0.40"
 
 from soma.config import SOMAConfig, load_config
 from soma.db import set_shared_enabled
@@ -2322,3 +2322,23 @@ class SOMA:
         if self._capture_pipeline is not None:
             base["capture_state"] = self._capture_pipeline.get_state()
         return base
+
+
+# ── v2.0.40：模块级别名 ──────────────────────────────────────────
+# 文档和协作信里常写成 `soma.benchmark_record(result)` 或
+# `soma.build_benchmark_record(result)`，但之前只暴露了 `SOMA` 类的方法
+# 和 `soma.benchmarks.build_benchmark_record`。下游按实际 API 接的，
+# 但两种写法并存更容易记错 —— 补一层别名，让直觉写法也能用。
+
+def build_benchmark_record(multi_result, **kwargs):
+    """把 `run_multi_benchmark` 的结果转成自解释记录（v2.0.40）。
+
+    与 `soma.benchmarks.build_benchmark_record` 是同一个实现；
+    在这里暴露是为了让 `soma.build_benchmark_record(result)` 也能用。
+    """
+    from soma.benchmarks import build_benchmark_record as _impl
+    return _impl(multi_result, **kwargs)
+
+
+# `soma.benchmark_record(...)` 的简写形式
+benchmark_record = build_benchmark_record

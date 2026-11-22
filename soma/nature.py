@@ -31,7 +31,7 @@ import json
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from soma.memory.context_utils import parse_context
 
@@ -42,12 +42,23 @@ VALID_NATURES = (NATURE_STATE, NATURE_FACT, NATURE_EVENT)
 
 # 状态类强特征词 —— 时效强：健康状况 / 情绪 / 处境，会随时间变化
 # 刻意选具体词，避免误伤（如「会」这种单字不进表）
+#
+# ★ 2026-11-22（下游 221 条 event→state 抽样触发）：移除了 5 个高频误判词。
+#
+#   时间副词「今天 / 这周 / 最近在 / 目前在」**不是状态**，只是时间标记：
+#     「今天上午在家做饭」        → 一次性事件
+#     「最近在学 Python 异步编程」 → 持续中的事件
+#     「这周完成了三个需求评审」   → 已完成的事件
+#   它们原本是想捕获「最近在 X」这种处境描述，但「最近在学 X」不是状态。
+#   真正的状态由「失眠 / 压力大 / 焦虑」这类具体词表达，不需要时间词兜。
+#
+#   名词「睡眠」同理：它被「失眠 / 睡不着 / 睡不好」覆盖，
+#   单独出现时多是知识语境（「睡眠科学的研究」）。
 DEFAULT_STATE_KEYWORDS: tuple = (
-    "失眠", "睡不着", "睡不好", "睡眠", "熬夜", "头疼", "头痛", "头晕",
+    "失眠", "睡不着", "睡不好", "熬夜", "头疼", "头痛", "头晕",
     "焦虑", "心情", "情绪", "压力大", "烦躁", "紧张", "抑郁", "疲惫",
     "疲劳", "没精神", "感冒", "发烧", "咳嗽", "过敏", "血压", "血糖",
     "体重", "胃口", "食欲", "腰疼", "背疼", "身体不适", "状态不好",
-    "最近在", "目前在", "这周", "今天",
 )
 
 # 事实技能类特征词 —— 长期有效：技能 / 偏好 / 身份 / 知识
@@ -82,12 +93,17 @@ class NatureClassifier:
         self.fact_sources = tuple(fact_sources) if fact_sources is not None \
             else DEFAULT_FACT_SOURCES
 
-    def classify(self, content: str, context: Optional[dict] = None) -> str:
-        """判定一条记忆的 nature。
+    def classify_with_reason(
+        self, content: str, context: Optional[dict] = None,
+    ) -> Tuple[str, str]:
+        """判定 nature，并返回**命中原因**（v2.0.40）。
 
-        优先级：状态词 > 知识来源/长文档 > 事实词 > event。
-        状态词优先是因为它最具体 —— 「用户最近在减肥」既是状态也有偏好味道，
-        但时效性才是它最要紧的属性。
+        reason 形如 `state_keyword:失眠` / `fact_source:wiki` /
+        `fact_long_doc:412` / `fact_keyword:方法论` / `default`。
+
+        为什么需要它：下游 dry-run 只看到 `changed: 221`，无法判断这 221 条
+        是被什么规则命中的 —— 于是只能整体不落盘。有了 reason，可以按
+        `by_reason` 分组人工抽查，发现某条规则误伤就单独收紧。
         """
         text = content or ""
         ctx = context or {}
@@ -95,23 +111,34 @@ class NatureClassifier:
         # 1. 状态类强特征（时效强，优先）
         for kw in self.state_keywords:
             if kw and kw in text:
-                return NATURE_STATE
+                return NATURE_STATE, f"state_keyword:{kw}"
 
         # 2. 知识来源 → 事实类
         src = str(ctx.get("source", "") or ctx.get("origin", "")).lower()
-        if src and any(s in src for s in self.fact_sources):
-            return NATURE_FACT
+        if src:
+            for s in self.fact_sources:
+                if s and s in src:
+                    return NATURE_FACT, f"fact_source:{s}"
 
         # 3. 长文档 → 知识
         if self.fact_min_len and len(text) > self.fact_min_len:
-            return NATURE_FACT
+            return NATURE_FACT, f"fact_long_doc:{len(text)}"
 
         # 4. 事实技能词
         for kw in self.fact_keywords:
             if kw and kw in text:
-                return NATURE_FACT
+                return NATURE_FACT, f"fact_keyword:{kw}"
 
-        return NATURE_EVENT
+        return NATURE_EVENT, "default"
+
+    def classify(self, content: str, context: Optional[dict] = None) -> str:
+        """判定一条记忆的 nature。
+
+        优先级：状态词 > 知识来源/长文档 > 事实词 > event。
+        状态词优先是因为它最具体 —— 「用户最近在减肥」既是状态也有偏好味道，
+        但时效性才是它最要紧的属性。
+        """
+        return self.classify_with_reason(content, context)[0]
 
     def describe(self) -> dict:
         """规则概览（便于调用方自查当前规则）"""
@@ -169,8 +196,9 @@ def reclassify_nature(
 
     rows = conn.execute(sql, params).fetchall()
 
-    changes: List[tuple] = []      # (id, old, new)
+    changes: List[tuple] = []      # (id, old, new, reason)
     by_nature: Dict[str, int] = {NATURE_STATE: 0, NATURE_FACT: 0, NATURE_EVENT: 0}
+    by_reason: Dict[str, int] = {}
 
     for row in rows:
         mid = row["id"]
@@ -178,10 +206,12 @@ def reclassify_nature(
         # v2.0.17: 统一走 parse_context —— 脏 context 收进 _raw 而不是丢成 {}，
         # 分类器还能从原始文本里取到线索（如 "部署验证/分身健康检查"）
         ctx = parse_context(row["context_json"])
-        new = clf.classify(row["content"] or "", ctx)
+        # v2.0.40: 带命中原因 —— dry-run 里能按规则分组抽查，而不是只看到一个总数
+        new, reason = clf.classify_with_reason(row["content"] or "", ctx)
         by_nature[new] = by_nature.get(new, 0) + 1
+        by_reason[reason] = by_reason.get(reason, 0) + 1
         if new != old:
-            changes.append((mid, old, new))
+            changes.append((mid, old, new, reason))
 
     result: Dict[str, Any] = {
         "dry_run": dry_run,
@@ -189,15 +219,18 @@ def reclassify_nature(
         "changed": len(changes),
         "unchanged": len(rows) - len(changes),
         "by_nature": by_nature,
+        # v2.0.40：按命中规则分组 —— 发现某条规则误伤时能单独收紧
+        "by_reason": by_reason,
         "backup_path": None,
         "elapsed_ms": 0,
     }
 
     if dry_run or not changes:
         if dry_run and changes:
-            # 预览时也给出几条样例，便于人工确认规则是否符合预期
+            # 预览给 10 条样例（含命中原因），便于人工确认规则是否符合预期
             result["samples"] = [
-                {"id": i, "from": o, "to": n} for i, o, n in changes[:5]
+                {"id": i, "from": o, "to": n, "reason": r}
+                for i, o, n, r in changes[:10]
             ]
         return result
 
@@ -215,7 +248,8 @@ def reclassify_nature(
         bpath = bdir / f"nature_backup_{stamp}.json"
         bpath.write_text(json.dumps(
             {"created": stamp, "changes": [
-                {"id": i, "from": o, "to": n} for i, o, n in changes]},
+                {"id": i, "from": o, "to": n, "reason": r}
+                for i, o, n, r in changes]},
             ensure_ascii=False, indent=1), encoding="utf-8")
         result["backup_path"] = str(bpath)
     except OSError as e:      # 备份失败就不改库——宁可不动，也不留无法回滚的改动
@@ -223,7 +257,7 @@ def reclassify_nature(
         return result
 
     done = 0
-    for i, (mid, _old, new) in enumerate(changes):
+    for mid, _old, new, _reason in changes:
         conn.execute("UPDATE episodic_memories SET nature=? WHERE id=?", (new, mid))
         done += 1
         if done % batch_size == 0:

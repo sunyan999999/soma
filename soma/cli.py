@@ -660,7 +660,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     # reclassify（v2.0.15）
     p_rc = sub.add_parser("reclassify",
-                          help="批量重分类记忆的业务性质 nature（迁移期一次性动作）")
+                          help="批量重分类记忆的业务性质 nature（扫描 episodic 记忆；默认只预览）")
     _add_project_arg(p_rc)
     p_rc.add_argument("--apply", action="store_true",
                        help="真正落盘（默认只预览 dry_run）")
@@ -675,7 +675,7 @@ def build_parser() -> argparse.ArgumentParser:
     # semantic-kind（v2.0.37）
     p_sk = sub.add_parser(
         "semantic-kind",
-        help="把导航图三元组标成 kind=relation（不注入 prompt，仍参与图扩展）")
+        help="把导航图三元组标成 kind=relation（扫描 semantic 三元组；默认只预览）")
     _add_project_arg(p_sk)
     p_sk.add_argument("--apply", action="store_true",
                       help="真正落盘（默认只预览 dry_run）")

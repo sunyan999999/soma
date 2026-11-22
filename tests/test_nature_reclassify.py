@@ -87,6 +87,43 @@ class TestNatureClassifier:
         assert clf.classify("今天很累") == NATURE_EVENT
 
 
+class TestStateFalsePositives:
+    """★ 2026-11-22：时间副词不是状态（下游 221 条 event→state 抽样触发）。
+
+    根因是状态词表里有「今天 / 这周 / 最近在 / 目前在」四个时间副词 ——
+    「今天上午在家做饭」会被判成 state，而它是一次性事件。
+    名词「睡眠」同理（被「失眠 / 睡不着 / 睡不好」覆盖）。
+    """
+
+    @pytest.mark.parametrize("text", [
+        "今天上午在家做饭，下午去的父母家",
+        "最近在学 Python 的异步编程",
+        "这周完成了三个需求评审",
+        "目前在做一个数据迁移项目",
+        "我在学习睡眠科学的相关知识",
+    ])
+    def test_time_adverbs_are_not_state(self, text):
+        assert NatureClassifier().classify(text) == NATURE_EVENT, (
+            f"「{text}」被判成了 state —— 时间副词不是状态")
+
+    @pytest.mark.parametrize("text", [
+        "今天又失眠了，三点才睡着",
+        "最近压力大，晚上睡不好",
+    ])
+    def test_real_state_still_detected(self, text):
+        """去掉时间词后，具体状态词仍能命中。"""
+        assert NatureClassifier().classify(text) == NATURE_STATE
+
+    def test_reason_reports_matched_keyword(self):
+        nature, reason = NatureClassifier().classify_with_reason("今天又失眠了")
+        assert nature == NATURE_STATE
+        assert reason == "state_keyword:失眠"
+
+    def test_default_reason(self):
+        nature, reason = NatureClassifier().classify_with_reason("随便一句无关的话")
+        assert (nature, reason) == (NATURE_EVENT, "default")
+
+
 class TestReclassify:
     def test_dry_run_does_not_change(self, store):
         """dry_run 只统计不改库"""
@@ -98,6 +135,21 @@ class TestReclassify:
         assert "samples" in out
         assert _nature_of(store, mid) == "event", "dry_run 不应改动库"
         assert out["backup_path"] is None
+
+    def test_dry_run_reports_reason(self, store):
+        """★ dry-run 要给出命中规则 —— 只给总数无法判断规则是否误伤。
+
+        下游看到 `changed: 221` 时只能整体不落盘；有了 by_reason 才能
+        按规则分组抽查，发现某条误伤就单独收紧。
+        """
+        _add(store, "用户最近失眠严重")
+
+        out = reclassify_nature(store, dry_run=True)
+
+        assert out["by_reason"], "dry-run 没有输出命中原因"
+        assert any(k.startswith("state_keyword:") for k in out["by_reason"]), (
+            f"by_reason 里没有 state_keyword 分组：{out['by_reason']}")
+        assert out["samples"] and "reason" in out["samples"][0]
 
     def test_apply_changes_and_backs_up(self, store):
         """落盘生效 + 自动生成备份文件"""

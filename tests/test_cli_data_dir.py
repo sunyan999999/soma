@@ -75,6 +75,35 @@ class TestParserSurface:
         args = self._parse([cmd, "--db", "/data/soma/semantic.db"])
         assert args.db == "/data/soma/semantic.db"
 
+    def test_help_states_scan_target(self):
+        """★ 两个迁移命令的帮助要写清扫描对象。
+
+        下游看到 `scanned=18096`（episodic）和 `scanned=15312`（semantic）
+        两个不同数字会疑惑 —— 写明扫描对象即可消除。
+        """
+        import io
+        from contextlib import redirect_stdout
+
+        buf = io.StringIO()
+        with redirect_stdout(buf), pytest.raises(SystemExit):
+            build_parser().parse_args(["-h"])
+        text = buf.getvalue()
+
+        assert "episodic" in text, "reclassify 的帮助没写扫描 episodic"
+        assert "semantic 三元组" in text, "semantic-kind 的帮助没写扫描对象"
+
+    def test_module_level_record_alias(self):
+        """★ `soma.benchmark_record` / `soma.build_benchmark_record` 两种写法都得能用。
+
+        下游指出信里写的 module 级名字在包里不存在（只有 SOMA 方法与
+        benchmarks 模块里的函数）。补别名后三种写法统一。
+        """
+        import soma
+
+        assert callable(getattr(soma, "build_benchmark_record", None))
+        assert callable(getattr(soma, "benchmark_record", None))
+        assert hasattr(soma.SOMA, "benchmark_record")
+
     def test_help_mentions_soma_data_dir_not_read(self):
         """★ 帮助里必须写明不读 SOMA_DATA_DIR。
 
